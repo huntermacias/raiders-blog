@@ -1,4 +1,6 @@
-import "../styles/globals.css";
+import Banner from "../../components/Banner";
+import Header from "../../components/Header";
+import "../../styles/globals.css";
 
 export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
@@ -12,7 +14,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="max-2-7xl mx-auto">
+
+        <Header />
+        <Banner />
+        {children}
+        
+      </body>
     </html>
   )
 }
