@@ -7,7 +7,7 @@ export const RichTextComponents = {
 	types: {
 		image: ({value}: any) => {
 			return (
-				<div>
+				<div className="relative w-full h-96 m-10 mx-auto">
 					<Image
 						className="object-contain"
 						src={urlFor(value).url()}
@@ -44,7 +44,7 @@ export const RichTextComponents = {
 		h5: ({children}: any) => (
 			<h5 className="text-xl py-10 font-bold">{children}</h5>
 		),
-		blockquote: ({children}: any) => (
+		blockquote: ({children}: any) => (  
 			<blockquote className="border-l-[#363a3b] border-l-4 pl-5 py-5 my-5">{children}</blockquote>
 		),
 	},

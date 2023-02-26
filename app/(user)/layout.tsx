@@ -3,8 +3,35 @@ import Header from "../../components/Header";
 import "../../styles/globals.css";
 
 export const metadata = {
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
+  colorScheme: 'dark',
+  creator: 'Hunter Macias',
+  image: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg', 
+  icons: {
+    icon: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+    shortcut: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+    apple: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+    other: {
+      rel: 'raider-image',
+      url: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+    },
+  },
+  icon: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
+    description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
+    siteId: '1467726470533754880',
+    creator: 'Hunter Macias',
+    creatorId: '1467726470533754880',
+    images: ['https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg'],
+  },
 }
 
 export default function RootLayout({
