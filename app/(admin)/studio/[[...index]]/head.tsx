@@ -12,7 +12,7 @@ export default function CustomStudioHead() {
         rel="icon"
         type="image/png"
         sizes="32x32"
-        href="https://www.sanity.io/static/images/favicons/favicon-32x32.png"
+        href="https://wallpaperaccess.com/full/4284608.jpg"
       />
     </>
   )
