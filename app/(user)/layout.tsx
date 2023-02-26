@@ -41,6 +41,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+      <meta name="twitter:title" content={metadata.twitter.title} />
+      <meta name="twitter:description" content={metadata.twitter.description} />
+      <meta name="twitter:image" content={metadata.twitter.images[0]} />
+      <meta name="twitter:card" content={metadata.twitter.description} />
+      </head>
       <body className="max-2-7xl mx-auto">
 
         <Header />
