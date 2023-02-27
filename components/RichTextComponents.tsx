@@ -39,7 +39,7 @@ export const RichTextComponents = {
 			<h3 className="text-3xl py-10 font-bold">{children}</h3>
 		),
 		h4: ({children}: any) => (
-			<h4 className="text-xl py-10 font-bold">{children}</h4>
+			<h4 className="text-2xl py-10 font-bold">{children}</h4>
 		),
 		h5: ({children}: any) => (
 			<h5 className="text-xl py-10 font-bold">{children}</h5>
