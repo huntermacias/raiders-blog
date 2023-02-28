@@ -9,6 +9,7 @@ import { getDefaultDocumentNode } from './structure';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!;
+const token = process.env.NEXT_SANITY_TOKEN!;
 
 export default defineConfig({
   basePath: "/studio",
@@ -16,6 +17,7 @@ export default defineConfig({
   title: "Las Vegas Raiders Content Studio",
   projectId,
   dataset,
+  token,
 
   plugins: [deskTool({
     defaultDocumentNode: getDefaultDocumentNode,
