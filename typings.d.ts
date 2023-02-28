@@ -10,10 +10,12 @@ interface Post extends Base {
 	author: Author;
 	body: Block[];
 	categories: Category[];
+	comments: Comment[];
 	mainImage: Image;
 	slug: Slug;
 	title: string;
 	description: string;
+	
 }
 
 interface Author extends Base {
@@ -66,4 +68,22 @@ interface MainImage {
 interface Title {
 	_type: 'string';
 	current: string;
+}
+
+
+interface Comment extends Base {
+	approved: boolean;  
+	title: string;
+	comment: string; 
+	email: string; 
+	name: string;
+	post: {
+		_ref: string;
+		_type: string;
+	};
+	// _createdAt: string; 
+	// _id: string;
+	// _rev: string;
+	// _type: string;
+	// _updatedAt: string;
 }
