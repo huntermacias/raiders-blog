@@ -3,7 +3,6 @@ import Image from "next/image";
 import urlFor from "../lib/urlFor";
 import ClientSideRoute from "./ClientSideRoute";
 
-
 type Props = {
 	posts: Post[];
 };
@@ -54,7 +53,7 @@ function BlogList({posts}: Props) {
 							<p className="underline text-lg font-bold">{post.title}</p>
 							<p className="line-clamp-2 text-gray-500">{post.description}</p>
 						</div>
-
+<!-- 			TODO: add upvotes/downvotes			 -->
 						<p className="mt-5 font-bold flex items-center group-hover:underline">
 							Read Post
 							<ArrowUpRightIcon className="ml-2 h-4 2-4" />
