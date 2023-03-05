@@ -1,4 +1,5 @@
 import { ArrowUpRightIcon } from "@heroicons/react/24/solid";
+import { HandThumbUpIcon, HandThumbDownIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import urlFor from "../lib/urlFor";
 import ClientSideRoute from "./ClientSideRoute";
@@ -6,6 +7,10 @@ import ClientSideRoute from "./ClientSideRoute";
 type Props = {
 	posts: Post[];
 };
+
+// export const metadata = {
+
+// };
 
 
 function BlogList({posts}: Props) {
@@ -53,11 +58,18 @@ function BlogList({posts}: Props) {
 							<p className="underline text-lg font-bold">{post.title}</p>
 							<p className="line-clamp-2 text-gray-500">{post.description}</p>
 						</div>
-<!-- 			TODO: add upvotes/downvotes			 -->
-						<p className="mt-5 font-bold flex items-center group-hover:underline">
-							Read Post
-							<ArrowUpRightIcon className="ml-2 h-4 2-4" />
-						</p>
+						<div className="">
+
+							<p className="mt-5 font-bold flex items-center group-hover:underline">
+								Read Post
+								<ArrowUpRightIcon className="ml-2 h-4 w-4" />
+								<HandThumbUpIcon className="ml-6 rounded-lg text-white h-6 w-6 hover:bg-emerald-400/30" />
+								<HandThumbDownIcon className="ml-14 rounded-lg text-white h-6 w-6 hover:bg-red-500/30" />
+							</p>
+
+							
+
+						</div>
 					</div>
 
 				</ClientSideRoute>
