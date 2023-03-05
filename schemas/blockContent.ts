@@ -39,11 +39,6 @@ export default defineType({
         decorators: [
           {title: 'Strong', value: 'strong'},
           {title: 'Emphasis', value: 'em'},
-          {
-            title: 'Highlight', 
-            value: 'highlight', 
-            icon: 'H'
-          },
           {title: 'Code', value: 'code'},
           {title: "Underline", value: "underline" },
           {title: "Strike", value: "strike-through" }
