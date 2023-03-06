@@ -4,6 +4,8 @@ import { client } from "../../lib/sanity.client";
 import PreviewSuspense from "../../components/PreviewSuspense"
 import PreviewBlogList from "../../components/PreviewBlogList";
 import BlogList from "../../components/BlogList";
+import Script from "next/script";
+import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
 const query = groq`
 	*[_type=='post'] {
@@ -32,9 +34,30 @@ export default async function page() {
 		)
 	} 
 
+	
+
 	const posts = await client.fetch(query);
 
   return (
-	<BlogList posts={posts} />
+	  <div>
+		  <BlogList posts={posts} />
+
+		  <GoogleAnalytics measurementId="G-P1HE62KWXG" />
+
+		  {/* <Script strategy="afterInteractive"
+				src="https://www.googletagmanager.com/gtag/js?id=G-P1HE62KWXG" 
+		/>
+
+		<Script id="google-analytics" strategy="afterInteractive">
+			{`
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
+				gtag('config', 'G-P1HE62KWXG');
+			`}
+		</Script> */}
+
+	  </div>
+
   )
 }
