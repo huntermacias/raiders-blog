@@ -44,19 +44,6 @@ export default async function page() {
 
 		  <GoogleAnalytics measurementId="G-P1HE62KWXG" />
 
-		  {/* <Script strategy="afterInteractive"
-				src="https://www.googletagmanager.com/gtag/js?id=G-P1HE62KWXG" 
-		/>
-
-		<Script id="google-analytics" strategy="afterInteractive">
-			{`
-				window.dataLayer = window.dataLayer || [];
-				function gtag(){dataLayer.push(arguments);}
-				gtag('js', new Date());
-				gtag('config', 'G-P1HE62KWXG');
-			`}
-		</Script> */}
-
 	  </div>
 
   )

@@ -5,6 +5,8 @@ import urlFor from "../../../../lib/urlFor";
 import { PortableText } from "@portabletext/react";
 import { RichTextComponents } from "../../../../components/RichTextComponents";
 import CommentField from "../../../../components/CommentField";
+import SocialShare from "../../../../components/SocialShare";
+
 
 type Props = {
 	params: {
@@ -87,10 +89,6 @@ async function Post({params: {slug}} : Props) {
 								/>	
 								<div className="w-64">
 									<h3 className="text-lg font-bold">{post.author.name}</h3>
-									
-									<div>
-										{/* TODO: author bio */}
-									</div>
 								</div>
 
 
@@ -99,10 +97,16 @@ async function Post({params: {slug}} : Props) {
 
 						<div>
 							<h2 className="italic pt-10">{post.description}</h2>
+							<div className='mt-4'>
+								<SocialShare url={`https://www.raidersrundown/post/${post.slug}`} />
+
+							</div>
 							<div className="flex items-center justify-end mt-auto space-x-2">
 								{post.categories.map((category) => (
 									<div key={category._id}>
 										<p className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-semibold mt-4">{category.title}</p>
+										{/* add social sharing feature */}
+										
 									</div>
 								))}
 							</div>
