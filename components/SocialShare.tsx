@@ -11,19 +11,19 @@ import {
   } from 'next-share';
 
 
-function SocialShare({url}: any) {
+function SocialShare({customurl}: any) {
   return (
 	<div className='space-x-2'>
-		<TwitterShareButton url={url} >
+		<TwitterShareButton url={customurl} >
 			<TwitterIcon size={28} round />
 		</TwitterShareButton>
-		<FacebookShareButton url={url} >
+		<FacebookShareButton url={customurl} >
 			<FacebookIcon size={28} round />
 		</FacebookShareButton>
-		<RedditShareButton url={url} >
+		<RedditShareButton url={customurl} >
 			<RedditIcon size={28} round />
 		</RedditShareButton>
-		<LinkedinShareButton url={url} >
+		<LinkedinShareButton url={customurl} >
 			<LinkedinIcon size={28} round />
 		</LinkedinShareButton>
 		
