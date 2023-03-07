@@ -11,6 +11,7 @@ function Banner() {
 		<p className="mt-5 md:mt-2 text-gray-400 max-w-sm">
 			Game Recaps | Player Profiles | Draft Predictions | Latest Updates & Rumors | Analysis & More !
 		</p>
+		
 	</div>
   )
 }
