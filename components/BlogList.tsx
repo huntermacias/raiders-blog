@@ -3,15 +3,11 @@ import { ArrowUpRightIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import urlFor from "../lib/urlFor";
 import ClientSideRoute from "./ClientSideRoute";
-import Script from "next/script";
+
 
 type Props = {
 	posts: Post[];
 };
-
-// export const metadata = {
-
-// };
 
 
 function BlogList({posts}: Props) {
@@ -21,8 +17,10 @@ function BlogList({posts}: Props) {
 		<hr className="border-[#383837] mb-10" />
 
 		<div className="grid grid-cols-1 md:grid-cols-2 px-10 gap-10 gap-y-16 pb-24">
+			
 			{/* posts */}
 			{posts.map(post => (
+				
 				<ClientSideRoute key={post._id} route={`/post/${post.slug.current}`}>
 					<div className="group cursor-pointer flex flex-col ">
 						<div className="relative w-full h-80 drop-shadow-xl group-hover:scale-105 transition-transform duration-200 ease-out">

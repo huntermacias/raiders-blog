@@ -102,18 +102,19 @@ async function Post({params: {slug}} : Props) {
 								{post.categories.map((category) => (
 									<div key={category._id}>
 										<p className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-semibold mt-4">{category.title}</p>
-										{/* add social sharing feature */}
 										
 									</div>
 								))}
 							</div>
+							
 						</div>
 					</section>
 				</div>
 			</section>
 
+			{/* add social sharing feature */}
 			<div className='mt-4'>
-				<SocialShare customurl={`https://www.raidersrundown/post/${post.slug}`} />
+				<SocialShare customurl={`https://www.raidersrundown/post/${post.slug.current}`} />
 			</div>
 
 			<PortableText value={post.body} components={RichTextComponents} />

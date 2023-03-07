@@ -14,7 +14,7 @@ import {
 function SocialShare({customurl}: any) {
   return (
 	<div className='space-x-2'>
-		<TwitterShareButton url={customurl} >
+		<TwitterShareButton url={customurl}>
 			<TwitterIcon size={28} round />
 		</TwitterShareButton>
 		<FacebookShareButton url={customurl} >
