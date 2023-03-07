@@ -97,10 +97,7 @@ async function Post({params: {slug}} : Props) {
 
 						<div>
 							<h2 className="italic pt-10">{post.description}</h2>
-							<div className='mt-4'>
-								<SocialShare url={`https://www.raidersrundown/post/${post.slug}`} />
-
-							</div>
+							
 							<div className="flex items-center justify-end mt-auto space-x-2">
 								{post.categories.map((category) => (
 									<div key={category._id}>
@@ -114,6 +111,10 @@ async function Post({params: {slug}} : Props) {
 					</section>
 				</div>
 			</section>
+
+			<div className='mt-4'>
+				<SocialShare url={`https://www.raidersrundown/post/${post.slug}`} />
+			</div>
 
 			<PortableText value={post.body} components={RichTextComponents} />
 
