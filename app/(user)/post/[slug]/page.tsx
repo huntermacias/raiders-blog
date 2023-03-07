@@ -114,7 +114,7 @@ async function Post({params: {slug}} : Props) {
 
 			{/* add social sharing feature */}
 			<div className='mt-4'>
-				<SocialShare customurl={`https://www.raidersrundown/post/${post.slug.current}`} />
+				<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
 			</div>
 
 			<PortableText value={post.body} components={RichTextComponents} />
