@@ -26,7 +26,8 @@ function SocialShare({customurl}: any) {
 		<LinkedinShareButton url={customurl} >
 			<LinkedinIcon size={28} round />
 		</LinkedinShareButton>
-		
+	
+
 	</div>
   )
 }

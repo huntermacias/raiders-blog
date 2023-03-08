@@ -10,8 +10,8 @@ type Props = {
 };
 
 
+
 function BlogList({posts}: Props) {
-	
   return (
 	<div>
 		<hr className="border-[#383837] mb-10" />
@@ -57,11 +57,12 @@ function BlogList({posts}: Props) {
 							<p className="underline text-lg font-bold">{post.title}</p>
 							<p className="line-clamp-2 text-gray-500">{post.description}</p>
 						</div>
-						<div className="">
-
+						<div>
+							
 							<p className="mt-5 font-bold flex items-center group-hover:underline">
 								Read Post
 								<ArrowUpRightIcon className="ml-2 h-4 w-4" />
+
 								{/* <HandThumbUpIcon className="ml-6 rounded-lg text-white h-6 w-6 hover:bg-emerald-400/30" />
 								<HandThumbDownIcon className="ml-14 rounded-lg text-white h-6 w-6 hover:bg-red-500/30" /> */}
 							</p>

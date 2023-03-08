@@ -6,6 +6,8 @@ import { PortableText } from "@portabletext/react";
 import { RichTextComponents } from "../../../../components/RichTextComponents";
 import CommentField from "../../../../components/CommentField";
 import SocialShare from "../../../../components/SocialShare";
+import { ChatBubbleBottomCenterIcon } from "@heroicons/react/24/outline";
+import { useRef } from "react";
 
 
 type Props = {
@@ -13,6 +15,7 @@ type Props = {
 		slug: string;
 	};
 };
+
 
 
 export const revalidate = 60; // revalide this page every 60 seconds
@@ -49,7 +52,7 @@ async function Post({params: {slug}} : Props) {
 	`
 
 	const post: Post = await client.fetch(query, { slug });
-	// console.log('comment', post.comments);
+	// console.log('comment', post.comments.length);
 
   return (
 	<div>
@@ -112,9 +115,16 @@ async function Post({params: {slug}} : Props) {
 				</div>
 			</section>
 
-			{/* add social sharing feature */}
-			<div className='mt-4'>
-				<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
+			
+			<div className="flex flex-row justify-between mt-2">
+				<div>
+					<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
+				</div>
+				
+				<div className="flex flex-row p-2 space-x-4 text-white mt-2 items-center align-middle outline outline-emerald-700 rounded-lg ">
+					<h2 className="text-2xl">{post.comments.length}</h2>
+					<ChatBubbleBottomCenterIcon className="h-7 w-7" />
+				</div>
 			</div>
 
 			<PortableText value={post.body} components={RichTextComponents} />
