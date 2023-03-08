@@ -23,7 +23,7 @@ function BlogList({posts}: Props) {
 				
 				<ClientSideRoute key={post._id} route={`/post/${post.slug.current}`}>
 					<div className="group cursor-pointer flex flex-col ">
-						<div className="relative w-full h-80 drop-shadow-xl group-hover:scale-105 transition-transform duration-200 ease-out">
+						<div className="relative w-full h-80 drop-shadow-xl group-hover:scale-105 transition-transform duration-200 ease-out shadow-lg shadow-emerald-800">
 							<Image 
 								className="object-cover object-left lg:object-center"
 								src={urlFor(post.mainImage).url()}
