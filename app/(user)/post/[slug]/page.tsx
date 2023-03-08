@@ -121,8 +121,8 @@ async function Post({params: {slug}} : Props) {
 					<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
 				</div>
 				
-				<div className="flex flex-row p-2 space-x-4 text-white mt-2 items-center align-middle outline outline-emerald-700 rounded-lg ">
-					<h2 className="text-2xl">{post.comments.length}</h2>
+				<div className="flex flex-row p-2 space-x-4 text-white mt-2 items-center align-middle">
+					<h2 className="text-xl">{post.comments.length}</h2>
 					<ChatBubbleBottomCenterIcon className="h-7 w-7" />
 				</div>
 			</div>
