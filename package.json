@@ -8,6 +8,7 @@
   "dependencies": {
     "@bradgarropy/next-google-analytics": "^1.0.2",
     "@heroicons/react": "^2.0.16",
+    "@nextui-org/react": "^1.0.0-beta.12",
     "@portabletext/react": "^2.0.1",
     "@sanity/image-url": "^1.0.2",
     "@sanity/vision": "^3.5.0",
