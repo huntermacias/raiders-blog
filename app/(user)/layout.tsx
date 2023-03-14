@@ -12,17 +12,17 @@ export const metadata = {
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   colorScheme: 'dark',
   creator: 'Hunter Macias',
-  image: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg', 
+  image: 'https://i.imgur.com/q0mNqvS.jpeg', 
   icons: {
-    icon: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
-    shortcut: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
-    apple: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+    icon: 'https://i.imgur.com/q0mNqvS.jpeg',
+    shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',
+    apple: 'https://i.imgur.com/q0mNqvS.jpeg',
     other: {
       rel: 'raider-image',
-      url: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+      url: 'https://i.imgur.com/q0mNqvS.jpeg',
     },
   },
-  icon: 'https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg',
+  icon: 'https://i.imgur.com/q0mNqvS.jpeg',
   twitter: {
     card: 'summary_large_image',
     title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
@@ -30,7 +30,7 @@ export const metadata = {
     siteId: '1467726470533754880',
     creator: 'Hunter Macias',
     creatorId: '1467726470533754880',
-    images: ['https://c4.wallpaperflare.com/wallpaper/526/747/724/football-oakland-raiders-wallpaper-preview.jpg'],
+    images: ['https://i.imgur.com/q0mNqvS.jpeg'],
   },
 }
 
