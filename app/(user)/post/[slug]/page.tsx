@@ -92,6 +92,7 @@ async function Post({params: {slug}} : Props) {
 								/>	
 								<div className="w-64">
 									<h3 className="text-lg font-bold">{post.author.name}</h3>
+									{/* <p>{post.author.bio}</p> */}
 								</div>
 
 
