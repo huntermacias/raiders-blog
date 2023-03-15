@@ -13,7 +13,7 @@ function Banner() {
 					Welcome to the home of <span className="underline decoration-4 decoration-[#212725]">Raider Nation!</span>
 				</h2>
 			</div>
-			<p className="mt-5 md:mt-2 text-gray-200 max-w-sm">
+			<p className="mt-5 md:mt-2 text-gray-100 max-w-sm">
 				Game Recaps | Player Profiles | Draft Predictions | Latest Updates & Rumors | Analysis & More !
 			</p>
 		</div>
