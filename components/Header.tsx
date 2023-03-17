@@ -22,7 +22,7 @@ function Header() {
 				href="https://www.huntermacias.io"
 				className="px-5 py-3 text-sm md:text-base bg-gray-900 text-[#2acb8c] flex items-center rounded-full text-center"
 			>
-				Sign up to the Panda Bit Tech Blog
+				Tech Blog
 			</Link>
 		</div>
 	</header>
