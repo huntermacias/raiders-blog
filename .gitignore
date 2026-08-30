@@ -40,3 +40,6 @@ node_modules
 next-env.d.ts
 
 .vercel
+
+# yarn berry cache artifacts (project uses classic yarn v1 lockfile)
+.yarn/install-state.gz

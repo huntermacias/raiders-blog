@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 const navLinks = [
 	{ href: "/", label: "Home" },
 	{ href: "/#latest", label: "Latest" },
-	{ href: "https://www.huntermacias.io", label: "Tech Blog", external: true },
+	{ href: "https://www.huntermacias.com", label: "Tech Blog", external: true },
 ]
 
 function NavLink({
