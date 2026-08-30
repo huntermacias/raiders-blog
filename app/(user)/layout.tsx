@@ -1,6 +1,25 @@
-import Banner from "../../components/Banner";
-import Header from "../../components/Header";
-import "../../styles/globals.css";
+import { Inter, Fraunces } from "next/font/google"
+
+import Banner from "../../components/Banner"
+import Header from "../../components/Header"
+import Footer from "../../components/Footer"
+import { ThemeProvider } from "../../components/theme-provider"
+import { cn } from "../../lib/utils"
+import "../../styles/globals.css"
+
+const fontSans = Inter({
+	subsets: ["latin"],
+	variable: "--font-sans",
+	display: "swap",
+})
+
+const fontSerif = Fraunces({
+	subsets: ["latin"],
+	variable: "--font-serif",
+	weight: ["400", "500", "600", "700"],
+	style: ["normal", "italic"],
+	display: "swap",
+})
 
 export const metadata = {
   viewport: {
@@ -9,9 +28,7 @@ export const metadata = {
   },
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
-  colorScheme: 'dark',
   creator: 'Hunter Macias',
-  image: 'https://i.imgur.com/q0mNqvS.jpeg', 
   icons: {
     icon: 'https://i.imgur.com/q0mNqvS.jpeg',
     shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',
@@ -21,7 +38,6 @@ export const metadata = {
       url: 'https://i.imgur.com/q0mNqvS.jpeg',
     },
   },
-  icon: 'https://i.imgur.com/q0mNqvS.jpeg',
   twitter: {
     card: 'summary_large_image',
     title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
@@ -39,19 +55,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-      <meta name="twitter:title" content={metadata.twitter.title} />
-      <meta name="twitter:description" content={metadata.twitter.description} />
-      <meta name="twitter:image" content={metadata.twitter.images[0]} />
-      <meta name="twitter:card" content={metadata.twitter.description} />
+        <meta name="twitter:title" content={metadata.twitter.title} />
+        <meta name="twitter:description" content={metadata.twitter.description} />
+        <meta name="twitter:image" content={metadata.twitter.images[0]} />
+        <meta name="twitter:card" content={metadata.twitter.description} />
       </head>
-      <body className="max-2-7xl mx-auto">
-
-        <Header />
-        <Banner />
-        {children}
-        
+      <body className={cn("min-h-screen font-sans antialiased", fontSans.variable, fontSerif.variable)}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <Banner />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   )

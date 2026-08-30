@@ -1,40 +1,43 @@
-// 'use client'
-
-// import { Input } from "@nextui-org/react";
-
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 function Banner() {
-  return (
-	// <div className="flex flex-col">
-		<div className="flex flex-col lg:flex-row lg:space-x-5 justify-between font-bold px-10 py-5 mb-10">
-			<div>
-				<h1 className="text-6xl">All About the Shield</h1>
-				<h2 className="mt-5 md:mt-0">
-					Welcome to the home of <span className="underline decoration-4 decoration-[#212725]">Raider Nation!</span>
-				</h2>
+	const today = new Date().toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+	})
+
+	return (
+		<section className="border-b border-border/60 bg-gradient-to-b from-muted/60 to-background">
+			<div className="container flex flex-col gap-8 py-14 lg:flex-row lg:items-end lg:justify-between lg:py-20">
+				<div className="max-w-2xl space-y-5 animate-fade-in">
+					<Badge variant="secondary" className="uppercase tracking-widest">
+						{today}
+					</Badge>
+
+					<h1 className="font-serif text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+						All About the Shield
+					</h1>
+
+					<p className="text-lg text-muted-foreground">
+						Independent coverage of the Las Vegas Raiders &mdash; game recaps, roster
+						moves, draft analysis, and the stories that matter to{" "}
+						<span className="font-semibold text-foreground">Raider Nation</span>.
+					</p>
+				</div>
+
+				<div className="flex max-w-xs flex-col gap-3 border-l border-border/60 pl-6 text-sm text-muted-foreground lg:text-right lg:border-l-0 lg:border-r lg:pl-0 lg:pr-6">
+					<p>Game Recaps</p>
+					<p>Player Profiles</p>
+					<p>Draft Predictions</p>
+					<p>Rumors &amp; Roster Moves</p>
+				</div>
 			</div>
-			<p className="mt-5 md:mt-2 text-gray-100 max-w-sm">
-				Game Recaps | Player Profiles | Draft Predictions | Latest Updates & Rumors | Analysis & More !
-			</p>
-		</div>
-
-
-		
-			/* <div className="text-white text-2xl px-10 py-6">
-			<Input className="text-white"
-				rounded
-				bordered
-				label="Search"
-				placeholder="Search by Category..."
-				status="success"
-				color="success"
-			/>
-		 </div> */
-		
-
-
-	// </div>
-  )
+			<Separator />
+		</section>
+	)
 }
 
 export default Banner
