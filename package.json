@@ -1,5 +1,8 @@
 {
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,9 +17,10 @@
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
     "@sanity/image-url": "^1.0.2",
-    "@sanity/vision": "^3.5.0",
+    "@sanity/vision": "3.99.0",
     "@tailwindcss/line-clamp": "^0.4.2",
     "@tailwindcss/typography": "^0.5.9",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.279.0",
@@ -29,9 +33,9 @@
     "react-hook-form": "^7.43.2",
     "react-portable-text": "^0.6.0",
     "react-social-icons": "^5.15.0",
-    "sanity": "^3.0.0",
+    "sanity": "3.99.0",
     "sanity-plugin-iframe-pane": "^2.1.1",
-    "styled-components": "^5.2.0",
+    "styled-components": "^6.1.15",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7"
   },
@@ -44,5 +48,6 @@
     "postcss": "^8.4.18",
     "tailwindcss": "^3.2.4",
     "typescript": "4.9.4"
-  }
+  },
+  "packageManager": "yarn@4.1.1+sha512.ec40d0639bb307441b945d9467139cbb88d14394baac760b52eca038b330d16542d66fef61574271534ace5a200518dabf3b53a85f1f9e4bfa37141b538a9590"
 }

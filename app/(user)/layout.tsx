@@ -1,4 +1,5 @@
 import { Inter, Fraunces } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
 
 import Banner from "../../components/Banner"
 import Header from "../../components/Header"
@@ -71,6 +72,7 @@ export default function RootLayout({
             <Footer />
           </div>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
