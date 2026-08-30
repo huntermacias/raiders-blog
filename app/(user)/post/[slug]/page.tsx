@@ -1,42 +1,50 @@
-import { groq } from "next-sanity";
-import Image from "next/image";
-import { client } from "../../../../lib/sanity.client";
-import urlFor from "../../../../lib/urlFor";
-import { PortableText } from "@portabletext/react";
-import { RichTextComponents } from "../../../../components/RichTextComponents";
-import CommentField from "../../../../components/CommentField";
-import SocialShare from "../../../../components/SocialShare";
-import { ChatBubbleBottomCenterIcon } from "@heroicons/react/24/outline";
-import { useRef } from "react";
+import { groq } from "next-sanity"
+import Image from "next/image"
+import { MessageCircle } from "lucide-react"
 
+import { client } from "../../../../lib/sanity.client"
+import urlFor from "../../../../lib/urlFor"
+import { PortableText } from "@portabletext/react"
+import { RichTextComponents } from "../../../../components/RichTextComponents"
+import CommentField from "../../../../components/CommentField"
+import SocialShare from "../../../../components/SocialShare"
+import RelatedPosts from "../../../../components/RelatedPosts"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
 
 type Props = {
 	params: {
-		slug: string;
-	};
-};
+		slug: string
+	}
+}
 
-
-
-export const revalidate = 60; // revalide this page every 60 seconds
+export const revalidate = 60 // revalidate this page every 60 seconds
 
 export async function generateStaticParams() {
 	const query = groq`
 	*[_type=="post"]
 	{
 		slug
-	}`;
+	}`
 
-	const slugs: Post[] = await client.fetch(query); 
-	const slugRoutes = slugs.map((slug) => slug.slug.current);
+	const slugs: Post[] = await client.fetch(query)
+	const slugRoutes = slugs.map((slug) => slug.slug.current)
 
-	return slugRoutes.map(slug => ({
+	return slugRoutes.map((slug) => ({
 		slug,
-	}));
+	}))
 }
 
-async function Post({params: {slug}} : Props) {
+function formatDate(date: string) {
+	return new Date(date).toLocaleDateString("en-US", {
+		day: "numeric",
+		month: "long",
+		year: "numeric",
+	})
+}
 
+async function Post({ params: { slug } }: Props) {
 	const query = groq`
 	*[_type=='post' && slug.current == $slug][0]
 	{
@@ -44,114 +52,116 @@ async function Post({params: {slug}} : Props) {
 		author->,
 		categories[]->,
 		'comments': *[
-		_type=="comment" && 
+		_type=="comment" &&
 		post._ref == ^._id &&
 		approved == true
 		],
 	}
 	`
 
-	const post: Post = await client.fetch(query, { slug });
-	// console.log('comment', post.comments.length);
+	const post: Post = await client.fetch(query, { slug })
 
-  return (
-	<div>
+	const categoryIds = post.categories?.map((c) => c._id) ?? []
+	const relatedQuery = groq`
+	*[_type=='post' && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
+	| order(_createdAt desc) [0...3] {
+		_id, title, slug, mainImage, _createdAt
+	}
+	`
+	const related = categoryIds.length
+		? await client.fetch(relatedQuery, { slug, categoryIds })
+		: []
 
-		<article className="px-10 pb-28">
-			<section className="space-y-2 border border-[#363a3b] text-white">
-				<div className="relative min-h-56 flex flex-col md:flex-row justify-between">
-					<div className="absolute top-0 w-full h-full opacity-10 blur-sm p-10">
-						<Image
-							className="object-cover object-center mx-auto"
-							src={urlFor(post.mainImage).url()}
-							alt={post.author.name}
-							fill
-						/>
+	return (
+		<article>
+			{/* header */}
+			<div className="container max-w-3xl py-12">
+				<div className="mb-4 flex flex-wrap gap-2">
+					{post.categories?.map((category) => (
+						<Badge key={category._id} variant="secondary">
+							{category.title}
+						</Badge>
+					))}
+				</div>
+
+				<h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
+					{post.title}
+				</h1>
+
+				{post.description && (
+					<p className="mt-4 text-xl text-muted-foreground">{post.description}</p>
+				)}
+
+				<div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-border/70 py-4">
+					<div className="flex items-center gap-3">
+						<Avatar>
+							<AvatarImage src={urlFor(post.author.image).url()} alt={post.author.name} />
+							<AvatarFallback>{post.author.name?.[0]}</AvatarFallback>
+						</Avatar>
+						<div className="text-sm">
+							<p className="font-semibold">{post.author.name}</p>
+							<p className="text-muted-foreground">{formatDate(post._createdAt)}</p>
+						</div>
 					</div>
 
-					<section className="p-5 bg-[#363a3b] w-full">
-						<div className="flex flex-col md:flex-row justify-between gap-y-5">
-							<div>
-								<h1 className="text-4xl font-extrabold">{post.title}</h1>
-								<p>
-									{new Date(post._createdAt).toLocaleDateString("en-US", {
-										day: "numeric", 
-										month: "long", 
-										year: "numeric", 
-									})}
-								</p>
-							</div>
-
-							<div className="flex items-center space-x-2">
-								<Image
-									className="rounded-full"
-									src={urlFor(post.author.image).url()}
-									alt={post.author.name}
-									height={40}
-									width={40}
-								/>	
-								<div className="w-64">
-									<h3 className="text-lg font-bold">{post.author.name}</h3>
-									{/* <p>{post.author.bio}</p> */}
-								</div>
-
-
-							</div>
+					<div className="flex items-center gap-4">
+						<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
+						<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+							<MessageCircle className="h-4 w-4" />
+							{post.comments?.length ?? 0}
 						</div>
-
-						<div>
-							<h2 className="italic pt-10">{post.description}</h2>
-							
-							<div className="flex items-center justify-end mt-auto space-x-2">
-								{post.categories.map((category) => (
-									<div key={category._id}>
-										<p className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-semibold mt-4">{category.title}</p>
-										
-									</div>
-								))}
-							</div>
-							
-						</div>
-					</section>
-				</div>
-			</section>
-
-			
-			<div className="flex flex-row justify-between mt-2">
-				<div>
-					<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
-				</div>
-				
-				<div className="flex flex-row p-2 space-x-4 text-white mt-2 items-center align-middle">
-					<h2 className="text-xl">{post.comments.length}</h2>
-					<ChatBubbleBottomCenterIcon className="h-7 w-7" />
+					</div>
 				</div>
 			</div>
 
-			<PortableText value={post.body} components={RichTextComponents} />
-
-		</article>
-		
-		{/* comment form */}
-		<CommentField postId={post._id} />
-
-		{/* comments */}
-		<div className="flex flex-col p-10 my-10 max-w-2xl mx-auto shadow-emerald-500 shadow space-y-2">
-			<h3 className="text-4xl"> Comments </h3>
-			<hr className="pb-2"/>
-			{post.comments.map((comment) => (
-				<div key={comment._id}>
-					<p>
-						<span className="text-emerald-500">@{comment.name}</span>
-						: {comment.comment}</p>
+			{/* hero image */}
+			<div className="container max-w-5xl">
+				<div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-[28rem]">
+					<Image
+						className="object-cover"
+						src={urlFor(post.mainImage).url()}
+						alt={post.title}
+						fill
+						sizes="100vw"
+						priority
+					/>
 				</div>
-			))}
-		</div>
-		
+			</div>
 
-	</div>
-	
-  )
+			{/* body */}
+			<div className="container max-w-3xl py-12">
+				<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
+					<PortableText value={post.body} components={RichTextComponents} />
+				</div>
+			</div>
+
+			<Separator className="container max-w-5xl" />
+
+			<RelatedPosts posts={related} />
+
+			{/* comment form */}
+			<CommentField postId={post._id} />
+
+			{/* comments */}
+			{post.comments?.length > 0 && (
+				<div className="container max-w-2xl py-10">
+					<h3 className="mb-4 font-serif text-2xl font-bold">
+						Comments <span className="text-muted-foreground">({post.comments.length})</span>
+					</h3>
+					<div className="flex flex-col divide-y divide-border">
+						{post.comments.map((comment) => (
+							<div key={comment._id} className="py-4">
+								<p className="text-sm">
+									<span className="font-semibold text-primary">@{comment.name}</span>
+									<span className="ml-2 text-foreground">{comment.comment}</span>
+								</p>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+		</article>
+	)
 }
 
 export default Post

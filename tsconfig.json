@@ -18,6 +18,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "plugins": [
       {
         "name": "next"
@@ -28,8 +32,9 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "schemas/youtube.ts"  ],
+    ".next/types/**/*.ts",
+    "schemas/youtube.ts"
+  ],
   "exclude": [
     "node_modules"
   ]
