@@ -39,6 +39,16 @@ export const metadata = {
       url: 'https://i.imgur.com/q0mNqvS.jpeg',
     },
   },
+  // Site-wide fallback for pages that don't set their own (e.g. the
+  // homepage). Individual posts and game reports override this with
+  // generateMetadata so shared links show the right image/title.
+  openGraph: {
+    type: 'website',
+    siteName: 'Raiders Rundown',
+    title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
+    description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
+    images: ['https://i.imgur.com/q0mNqvS.jpeg'],
+  },
   twitter: {
     card: 'summary_large_image',
     title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
@@ -57,12 +67,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <meta name="twitter:title" content={metadata.twitter.title} />
-        <meta name="twitter:description" content={metadata.twitter.description} />
-        <meta name="twitter:image" content={metadata.twitter.images[0]} />
-        <meta name="twitter:card" content={metadata.twitter.description} />
-      </head>
+      <head />
       <body className={cn("min-h-screen font-sans antialiased", fontSans.variable, fontSerif.variable)}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="flex min-h-screen flex-col">

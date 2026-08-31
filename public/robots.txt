@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /studio
+
+Sitemap: https://www.raidersrundown.com/sitemap.xml

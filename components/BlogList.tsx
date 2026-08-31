@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { ArrowUpRight } from "lucide-react"
 import Image from "next/image"
 
-import urlFor from "../lib/urlFor"
+import { featuredImageUrl, cardImageUrl } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import CategoryFilter from "./CategoryFilter"
 import SearchBar from "./SearchBar"
@@ -81,7 +81,7 @@ function BlogList({ posts }: Props) {
 										<div className="relative h-72 w-full overflow-hidden lg:h-[28rem]">
 											<Image
 												className="object-cover transition-transform duration-300 group-hover:scale-105"
-												src={urlFor(featured.mainImage).url()}
+												src={featuredImageUrl(featured.mainImage)}
 												alt={featured.title}
 												fill
 												sizes="(min-width: 1024px) 50vw, 100vw"
@@ -119,7 +119,7 @@ function BlogList({ posts }: Props) {
 										<div className="relative h-52 w-full overflow-hidden">
 											<Image
 												className="object-cover transition-transform duration-300 group-hover:scale-105"
-												src={urlFor(post.mainImage).url()}
+												src={cardImageUrl(post.mainImage)}
 												alt={post.title}
 												fill
 												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

@@ -18,8 +18,10 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
 	{ href: "/", label: "Home" },
-	{ href: "/#latest", label: "Latest" },
-	{ href: "https://www.huntermacias.com", label: "Tech Blog", external: true },
+	//{ href: "/#latest", label: "Latest" },
+	{ href: "/games", label: "Game Reports" },
+	{ href: "/community", label: "Discussion" },
+	{ href: "https://huntermacias.com", label: "Meet the Maintainer", external: true },
 ]
 
 function NavLink({

@@ -87,3 +87,79 @@ interface Comment extends Base {
 	// _type: string;
 	// _updatedAt: string;
 }
+
+interface TeamStatRow {
+	_key: string;
+	stat: string;
+	raiders: string;
+	opponent: string;
+}
+
+interface PlayerStatRow {
+	_key: string;
+	category: 'Passing' | 'Rushing' | 'Receiving' | 'Defense' | 'Special Teams';
+	player: string;
+	line: string;
+	standout?: boolean;
+}
+
+interface QuarterScoreRow {
+	_key: string;
+	quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT';
+	raiders?: number;
+	opponent?: number;
+}
+
+interface KeyMoment {
+	_key: string;
+	quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT';
+	time?: string;
+	description: string;
+}
+
+interface VideoEmbedItem {
+	_key: string;
+	url: string;
+	caption?: string;
+}
+
+interface PotmCandidate {
+	_key: string;
+	name: string;
+	image?: Image;
+	votes?: number;
+}
+
+interface Reactions {
+	fire?: number;
+	thumbsDown?: number;
+	angry?: number;
+}
+
+interface GameReport extends Base {
+	title: string;
+	slug: Slug;
+	description: string;
+	opponent: string;
+	gameDate: string;
+	homeAway: 'home' | 'away';
+	raidersScore: number;
+	opponentScore: number;
+	mainImage: Image;
+	author: Author;
+	categories: Category[];
+	teamStats: TeamStatRow[];
+	quarterScores?: QuarterScoreRow[];
+	playerStats: PlayerStatRow[];
+	videoEmbeds: VideoEmbedItem[];
+	keyMoments?: KeyMoment[];
+	body: Block[];
+	pollQuestion?: string;
+	pollOptionA?: string;
+	pollOptionB?: string;
+	pollVotesA?: number;
+	pollVotesB?: number;
+	potmCandidates?: PotmCandidate[];
+	reactions?: Reactions;
+	comments?: Comment[];
+}
