@@ -16,6 +16,12 @@ const query = groq`
 	} | order(_createdAt desc)
 `
 
+const gameReportsQuery = groq`
+	*[_type=='gameReport' && !(_id in path('drafts.**'))] {
+		_id, title, slug, opponent, gameDate, raidersScore, opponentScore, mainImage
+	} | order(gameDate desc) [0...3]
+`
+
 export const revalidate = 60; // revalide this page every 60 seconds
 
 export default async function page() {
@@ -37,11 +43,14 @@ export default async function page() {
 
 	
 
-	const posts = await client.fetch(query);
+	const [posts, games] = await Promise.all([
+		client.fetch(query),
+		client.fetch(gameReportsQuery),
+	]);
 
   return (
 	  <div>
-		  <GameReportsTeaser />
+		  <GameReportsTeaser games={games} />
 
 		  <BlogList posts={posts} />
 
