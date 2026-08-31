@@ -1,24 +1,24 @@
-import { groq } from "next-sanity"
 import Image from "next/image"
 
-import { client } from "../lib/sanity.client"
 import { cardImageUrl } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-const query = groq`
-	*[_type=='gameReport' && !(_id in path('drafts.**'))] {
-		_id, title, slug, opponent, gameDate, raidersScore, opponentScore, mainImage
-	} | order(gameDate desc) [0...3]
-`
-
 function formatDate(date: string) {
 	return new Date(date).toLocaleDateString("en-US", { day: "numeric", month: "short" })
 }
 
-async function GameReportsTeaser() {
-	const games: GameReport[] = await client.fetch(query)
+// Plain (non-async) presentational component -- the homepage fetches the
+// data and passes it in, the same way it already does for BlogList. An
+// async function component used as a *nested* JSX element (rather than a
+// route's page.tsx default export, which Next special-cases) trips a real
+// TypeScript error: "Promise<Element> is not a valid JSX element."
+type Props = {
+	games: GameReport[]
+}
+
+function GameReportsTeaser({ games }: Props) {
 	if (!games?.length) return null
 
 	return (
