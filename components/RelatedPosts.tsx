@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-import urlFor from "../lib/urlFor"
+import { thumbImageUrl } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import { Card } from "@/components/ui/card"
 
@@ -26,7 +26,7 @@ function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
 								<div className="relative h-32 w-full overflow-hidden">
 									<Image
 										className="object-cover transition-transform duration-300 group-hover:scale-105"
-										src={urlFor(post.mainImage).url()}
+										src={thumbImageUrl(post.mainImage)}
 										alt={post.title}
 										fill
 										sizes="(min-width: 640px) 33vw, 100vw"

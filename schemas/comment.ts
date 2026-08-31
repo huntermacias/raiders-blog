@@ -27,7 +27,10 @@ export default defineType ({
 		defineField({
 			name: "post", 
 			type: "reference", 
-			to: [{ type: "post" }],
+			// Kept the field name "post" for backward compatibility with
+			// existing comment documents -- it now also accepts game reports
+			// so both content types share one comment system.
+			to: [{ type: "post" }, { type: "gameReport" }],
 		}),
 	],
 });

@@ -30,7 +30,7 @@ function Footer() {
 					<ul className="space-y-2 text-muted-foreground">
 						<li>
 							<a
-								href="https://www.huntermacias.com"
+								href="https://huntermacias.com"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="hover:text-foreground"

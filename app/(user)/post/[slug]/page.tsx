@@ -3,7 +3,7 @@ import Image from "next/image"
 import { MessageCircle } from "lucide-react"
 
 import { client } from "../../../../lib/sanity.client"
-import urlFor from "../../../../lib/urlFor"
+import urlFor, { heroImageUrl } from "../../../../lib/urlFor"
 import { PortableText } from "@portabletext/react"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import CommentField from "../../../../components/CommentField"
@@ -23,7 +23,7 @@ export const revalidate = 60 // revalidate this page every 60 seconds
 
 export async function generateStaticParams() {
 	const query = groq`
-	*[_type=="post"]
+	*[_type=="post" && !(_id in path("drafts.**"))]
 	{
 		slug
 	}`
@@ -46,7 +46,7 @@ function formatDate(date: string) {
 
 async function Post({ params: { slug } }: Props) {
 	const query = groq`
-	*[_type=='post' && slug.current == $slug][0]
+	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]
 	{
 		...,
 		author->,
@@ -63,7 +63,7 @@ async function Post({ params: { slug } }: Props) {
 
 	const categoryIds = post.categories?.map((c) => c._id) ?? []
 	const relatedQuery = groq`
-	*[_type=='post' && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
+	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
 	| order(_createdAt desc) [0...3] {
 		_id, title, slug, mainImage, _createdAt
 	}
@@ -95,7 +95,9 @@ async function Post({ params: { slug } }: Props) {
 				<div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-border/70 py-4">
 					<div className="flex items-center gap-3">
 						<Avatar>
+							{post.author.image && (
 							<AvatarImage src={urlFor(post.author.image).url()} alt={post.author.name} />
+						)}
 							<AvatarFallback>{post.author.name?.[0]}</AvatarFallback>
 						</Avatar>
 						<div className="text-sm">
@@ -119,7 +121,7 @@ async function Post({ params: { slug } }: Props) {
 				<div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-[28rem]">
 					<Image
 						className="object-cover"
-						src={urlFor(post.mainImage).url()}
+						src={heroImageUrl(post.mainImage)}
 						alt={post.title}
 						fill
 						sizes="100vw"
