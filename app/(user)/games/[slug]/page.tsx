@@ -6,7 +6,7 @@ import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
 import { client } from "../../../../lib/sanity.client"
-import { heroImageUrl, ogImageUrl } from "../../../../lib/urlFor"
+import { heroImageUrl, ogImageUrl, hotspotPosition } from "../../../../lib/urlFor"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import BoxScore from "../../../../components/BoxScore"
 import GameLeaders from "../../../../components/GameLeaders"
@@ -207,7 +207,7 @@ async function GameReportPage({ params: { slug } }: Props) {
 
 			<div className="container max-w-5xl">
 				<div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-[28rem]">
-					<Image className="object-cover" src={heroImageUrl(game.mainImage)} alt={game.title} fill sizes="100vw" priority />
+					<Image className="object-cover" src={heroImageUrl(game.mainImage)} alt={game.title} fill style={{ objectPosition: hotspotPosition(game.mainImage) }} sizes="100vw" priority />
 				</div>
 			</div>
 

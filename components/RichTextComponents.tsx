@@ -1,18 +1,25 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import urlFor from "../lib/urlFor"
+import { bodyImageUrl, hotspotPosition } from "../lib/urlFor"
 
 export const RichTextComponents = {
 	types: {
 		image: ({ value }: any) => {
+			// object-cover (not object-contain) + a standardized server-side crop
+			// so every inline image fills this box edge-to-edge regardless of its
+			// original aspect ratio, instead of being letterboxed/pillarboxed to
+			// fit -- object-contain was leaving portrait photos with big dark
+			// bars down the sides.
 			return (
 				<span className="relative my-8 block h-96 w-full overflow-hidden rounded-lg not-prose">
 					<Image
-						className="object-contain"
-						src={urlFor(value).url()}
+						className="object-cover"
+						src={bodyImageUrl(value)}
 						alt="Blog post image"
 						fill
+						style={{ objectPosition: hotspotPosition(value) }}
+						sizes="(min-width: 1024px) 768px, 100vw"
 					/>
 				</span>
 			)

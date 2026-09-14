@@ -1,7 +1,7 @@
 import { groq } from "next-sanity"
 
 import { client } from "../../../lib/sanity.client"
-import { cardImageUrl } from "../../../lib/urlFor"
+import { cardImageUrl, hotspotPosition } from "../../../lib/urlFor"
 import ClientSideRoute from "../../../components/ClientSideRoute"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -71,6 +71,7 @@ export default async function GamesPage() {
 												src={cardImageUrl(game.mainImage)}
 												alt={game.title}
 												fill
+												style={{ objectPosition: hotspotPosition(game.mainImage) }}
 												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											/>
 											<Badge
