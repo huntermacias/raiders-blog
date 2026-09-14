@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { ArrowUpRight } from "lucide-react"
 import Image from "next/image"
 
-import { featuredImageUrl, cardImageUrl } from "../lib/urlFor"
+import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import CategoryFilter from "./CategoryFilter"
 import SearchBar from "./SearchBar"
@@ -45,9 +45,6 @@ function BlogList({ posts }: Props) {
 		})
 	}, [posts, category, query])
 
-	const [featured, ...rest] = filteredPosts
-	const showFeatured = featured && category === "All" && !query
-
 	return (
 		<div id="latest" className="scroll-mt-20">
 			<div className="container flex flex-col gap-4 py-10 sm:flex-row sm:items-center sm:justify-between">
@@ -74,45 +71,7 @@ function BlogList({ posts }: Props) {
 					</div>
 				) : (
 					<div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
-						{showFeatured && (
-							<ClientSideRoute route={`/post/${featured.slug.current}`}>
-								<article className="group cursor-pointer lg:col-span-3">
-									<Card className="grid overflow-hidden border-border/70 transition-shadow hover:shadow-lg lg:grid-cols-2">
-										<div className="relative h-72 w-full overflow-hidden lg:h-[28rem]">
-											<Image
-												className="object-cover transition-transform duration-300 group-hover:scale-105"
-												src={featuredImageUrl(featured.mainImage)}
-												alt={featured.title}
-												fill
-												sizes="(min-width: 1024px) 50vw, 100vw"
-												priority
-											/>
-										</div>
-										<div className="flex flex-col justify-center gap-4 p-8">
-											<div className="flex flex-wrap gap-2">
-												{featured.categories?.map((c) => (
-													<Badge key={c._id} variant="secondary">
-														{c.title}
-													</Badge>
-												))}
-											</div>
-											<h3 className="font-serif text-3xl font-bold leading-tight tracking-tight group-hover:underline">
-												{featured.title}
-											</h3>
-											<p className="line-clamp-3 text-muted-foreground">{featured.description}</p>
-											<div className="flex items-center justify-between text-sm text-muted-foreground">
-												<span>{formatDate(featured._createdAt)}</span>
-												<span className="flex items-center gap-1 font-medium text-foreground">
-													Read story <ArrowUpRight className="h-4 w-4" />
-												</span>
-											</div>
-										</div>
-									</Card>
-								</article>
-							</ClientSideRoute>
-						)}
-
-						{(showFeatured ? rest : filteredPosts).map((post) => (
+						{filteredPosts.map((post) => (
 							<ClientSideRoute key={post._id} route={`/post/${post.slug.current}`}>
 								<article className="group flex cursor-pointer flex-col">
 									<Card className="flex h-full flex-col overflow-hidden border-border/70 transition-shadow hover:shadow-lg">
@@ -122,6 +81,7 @@ function BlogList({ posts }: Props) {
 												src={cardImageUrl(post.mainImage)}
 												alt={post.title}
 												fill
+												style={{ objectPosition: hotspotPosition(post.mainImage) }}
 												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											/>
 										</div>

@@ -2996,14 +2996,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/state@npm:^6.0.0, @codemirror/state@npm:^6.1.1, @codemirror/state@npm:^6.1.4, @codemirror/state@npm:^6.2.0":
-  version: 6.2.0
-  resolution: "@codemirror/state@npm:6.2.0"
-  checksum: 10c0/9e1569b3b01a80e634a97816adc82ba938d36d0a0626c82d7ff74faecfd9e1b94b29de58564e0d40b702ac833de34e96448f4ee5c148b68f33c8d7e1c23a3b1b
-  languageName: node
-  linkType: hard
-
-"@codemirror/state@npm:^6.5.2, @codemirror/state@npm:^6.7.0":
+"@codemirror/state@npm:6.7.1":
   version: 6.7.1
   resolution: "@codemirror/state@npm:6.7.1"
   dependencies:

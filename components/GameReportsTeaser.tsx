@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-import { cardImageUrl } from "../lib/urlFor"
+import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +45,7 @@ function GameReportsTeaser({ games }: Props) {
 											src={cardImageUrl(game.mainImage)}
 											alt={game.title}
 											fill
+											style={{ objectPosition: hotspotPosition(game.mainImage) }}
 											sizes="80px"
 										/>
 									</div>

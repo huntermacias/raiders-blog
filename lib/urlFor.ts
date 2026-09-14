@@ -11,6 +11,30 @@ function urlFor(source: any) {
 export default urlFor
 
 /**
+ * Returns a CSS `object-position` string derived from an image's Sanity
+ * hotspot (the focal point set in Studio, 0-1 fractional coordinates).
+ *
+ * This matters because `next/image`'s `fill` + `object-cover` pattern used
+ * throughout this project renders the image into a fixed-size container
+ * and lets the *browser* do the final crop -- completely ignoring the
+ * server-side hotspot-aware crop from `cropped()` below whenever the
+ * container's aspect ratio doesn't exactly match the requested crop size
+ * (which, across responsive breakpoints, it basically never does). Without
+ * this, the browser defaults to `object-position: 50% 50%` and re-crops
+ * dead-center, undoing the hotspot and slicing through faces. Pass this as
+ * the `style.objectPosition` on every `fill` image alongside `cropped()`.
+ */
+export function hotspotPosition(source: any): string {
+	const hotspot = source?.hotspot
+	if (!hotspot || typeof hotspot.x !== "number" || typeof hotspot.y !== "number") {
+		return "50% 50%"
+	}
+	const x = Math.min(100, Math.max(0, hotspot.x * 100))
+	const y = Math.min(100, Math.max(0, hotspot.y * 100))
+	return `${x}% ${y}%`
+}
+
+/**
  * Preset crops for cards/hero spots.
  *
  * Source images here are copy-pasted from all over the web at wildly
@@ -44,19 +68,31 @@ export function featuredImageUrl(source: any) {
 	return cropped(source, 900, 700)
 }
 
-// Standard grid card thumbnail - wide, ~16:9-ish.
+// Standard grid card thumbnail. Less aggressively wide than before -- the
+// object-position fix above (hotspotPosition) does the real work of
+// keeping faces in frame, so this ratio just needs to be a reasonable
+// starting point rather than an exact match for every container.
 export function cardImageUrl(source: any) {
-	return cropped(source, 800, 440)
+	return cropped(source, 800, 500)
 }
 
-// Small related-post thumbnail - wider still.
+// Small related-post thumbnail.
 export function thumbImageUrl(source: any) {
-	return cropped(source, 800, 360)
+	return cropped(source, 700, 420)
 }
 
 // Full-width article hero image.
 export function heroImageUrl(source: any) {
-	return cropped(source, 1600, 700)
+	return cropped(source, 1600, 800)
+}
+
+// Inline body image, used inside article rich text (RichTextComponents).
+// Standardizes every author-dropped image to the same 16:9 frame instead
+// of rendering each one at its own native aspect ratio (which, combined
+// with object-contain, is what caused portrait photos to show up
+// pillarboxed with dark bars on the sides).
+export function bodyImageUrl(source: any) {
+	return cropped(source, 1200, 675)
 }
 
 // Open Graph / Twitter card image - the fixed 1200x630 ratio social

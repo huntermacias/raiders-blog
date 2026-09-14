@@ -4,7 +4,7 @@ import { MessageCircle, ExternalLink } from "lucide-react"
 import type { Metadata } from "next"
 
 import { client } from "../../../lib/sanity.client"
-import { cardImageUrl } from "../../../lib/urlFor"
+import { cardImageUrl, hotspotPosition } from "../../../lib/urlFor"
 import ClientSideRoute from "../../../components/ClientSideRoute"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -137,6 +137,7 @@ async function CommunityPage() {
 												src={cardImageUrl(item.mainImage)}
 												alt={item.title}
 												fill
+												style={{ objectPosition: hotspotPosition(item.mainImage) }}
 												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											/>
 											{item._type === "gameReport" && item.raidersScore != null && (

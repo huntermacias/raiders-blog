@@ -3,7 +3,7 @@ import Image from "next/image"
 import { MessageCircle } from "lucide-react"
 
 import { client } from "../../../../lib/sanity.client"
-import urlFor, { heroImageUrl } from "../../../../lib/urlFor"
+import urlFor, { heroImageUrl, hotspotPosition } from "../../../../lib/urlFor"
 import { PortableText } from "@portabletext/react"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import CommentField from "../../../../components/CommentField"
@@ -124,6 +124,7 @@ async function Post({ params: { slug } }: Props) {
 						src={heroImageUrl(post.mainImage)}
 						alt={post.title}
 						fill
+						style={{ objectPosition: hotspotPosition(post.mainImage) }}
 						sizes="100vw"
 						priority
 					/>

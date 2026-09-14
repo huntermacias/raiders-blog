@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-import { thumbImageUrl } from "../lib/urlFor"
+import { thumbImageUrl, hotspotPosition } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
 import { Card } from "@/components/ui/card"
 
@@ -29,6 +29,7 @@ function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
 										src={thumbImageUrl(post.mainImage)}
 										alt={post.title}
 										fill
+										style={{ objectPosition: hotspotPosition(post.mainImage) }}
 										sizes="(min-width: 640px) 33vw, 100vw"
 									/>
 								</div>
