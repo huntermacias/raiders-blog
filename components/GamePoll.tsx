@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Trophy } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
@@ -20,16 +20,24 @@ function GamePoll({ docId, question, optionA, optionB, initialVotesA, initialVot
 	const [votesA, setVotesA] = useState(initialVotesA ?? 0)
 	const [votesB, setVotesB] = useState(initialVotesB ?? 0)
 	const storageKey = `poll:${docId}`
-	const [choice, setChoice] = useState<"A" | "B" | null>(() => {
-		if (typeof window === "undefined") return null
-		try {
-			return (window.localStorage.getItem(`raiders-rundown:poll-choice:${docId}`) as "A" | "B" | null) ?? null
-		} catch {
-			return null
-		}
-	})
+	// Start with SSR-safe defaults (no localStorage access during render) so the
+	// server-rendered HTML and the client's first hydration pass match exactly.
+	// The real, persisted vote/choice is picked up client-side in the effect below.
+	const [choice, setChoice] = useState<"A" | "B" | null>(null)
+	const [voted, setVoted] = useState(false)
 	const [pending, setPending] = useState(false)
-	const voted = hasVoted(storageKey)
+
+	useEffect(() => {
+		setVoted(hasVoted(storageKey))
+		try {
+			const stored = window.localStorage.getItem(`raiders-rundown:poll-choice:${docId}`) as "A" | "B" | null
+			if (stored) setChoice(stored)
+		} catch {
+			// ignore - storage may be unavailable (private mode, etc.)
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [docId, storageKey])
+
 	const total = votesA + votesB
 	const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50
 	const pctB = 100 - pctA
@@ -40,6 +48,7 @@ function GamePoll({ docId, question, optionA, optionB, initialVotesA, initialVot
 		if (pick === "A") setVotesA((v) => v + 1)
 		else setVotesB((v) => v + 1)
 		setChoice(pick)
+		setVoted(true)
 		markVoted(storageKey)
 		try {
 			window.localStorage.setItem(`raiders-rundown:poll-choice:${docId}`, pick)
