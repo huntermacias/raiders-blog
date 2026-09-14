@@ -8,7 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import type { Metadata } from "next"
 
-export const revalidate = 60
+// Always render fresh from Sanity. Time-based ISR (revalidate) only refreshes
+// this page in the background on the *next* real visitor request after the
+// window elapses -- on a low-traffic route that can mean it never refreshes.
+// force-dynamic renders on every request instead, so newly published content
+// (or the games index / homepage list of recent posts) shows immediately.
+export const dynamic = "force-dynamic"
 
 const GAMES_URL = "https://www.raidersrundown.com/games"
 
