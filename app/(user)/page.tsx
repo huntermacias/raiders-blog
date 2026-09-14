@@ -22,7 +22,12 @@ const gameReportsQuery = groq`
 	} | order(gameDate desc) [0...3]
 `
 
-export const revalidate = 60; // revalide this page every 60 seconds
+// Always render fresh from Sanity. Time-based ISR (revalidate) only refreshes
+// this page in the background on the *next* real visitor request after the
+// window elapses -- on a low-traffic route that can mean it never refreshes.
+// force-dynamic renders on every request instead, so newly published content
+// (or the games index / homepage list of recent posts) shows immediately.
+export const dynamic = "force-dynamic"
 
 export default async function page() {
 
