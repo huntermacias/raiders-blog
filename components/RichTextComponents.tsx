@@ -1,20 +1,29 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import { bodyImageUrl, hotspotPosition } from "../lib/urlFor"
+import { bodyImageUrl, hotspotPosition, imageAspectRatio } from "../lib/urlFor"
+import VideoEmbed from "./VideoEmbed"
 
 export const RichTextComponents = {
 	types: {
 		image: ({ value }: any) => {
-			// object-cover (not object-contain) + a standardized server-side crop
-			// so every inline image fills this box edge-to-edge regardless of its
-			// original aspect ratio, instead of being letterboxed/pillarboxed to
-			// fit -- object-contain was leaving portrait photos with big dark
-			// bars down the sides.
+			// The container's aspect-ratio is derived from this specific
+			// image's real dimensions (read off its Sanity asset ref, no
+			// network round trip), so it always matches the photo exactly --
+			// nothing is ever cropped (the old object-cover behavior) and
+			// nothing is ever letterboxed (the old fixed-16:9-box behavior).
+			// A tall phone screenshot gets a tall box; a wide screenshot gets
+			// a wide one. object-contain is safe here specifically because
+			// the box already matches the image, so it never has to shrink
+			// to fit and reveal empty space.
+			const ratio = imageAspectRatio(value)
 			return (
-				<span className="relative my-8 block h-96 w-full overflow-hidden rounded-lg not-prose">
+				<span
+					className="relative my-8 block w-full max-h-[80vh] overflow-hidden rounded-lg bg-muted not-prose"
+					style={{ aspectRatio: ratio }}
+				>
 					<Image
-						className="object-cover"
+						className="object-contain"
 						src={bodyImageUrl(value)}
 						alt="Blog post image"
 						fill
@@ -24,6 +33,10 @@ export const RichTextComponents = {
 				</span>
 			)
 		},
+		// Lets an editor place a YouTube or X (Twitter) embed anywhere inside
+		// the rich text body, reusing the same detection/rendering used for
+		// the game report's standalone "Video / social embeds" field.
+		videoEmbed: ({ value }: any) => <VideoEmbed url={value.url} caption={value.caption} />,
 	},
 
 	list: {

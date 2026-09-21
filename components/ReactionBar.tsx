@@ -55,7 +55,15 @@ function ReactionBar({ docId, initialReactions }: Props) {
 					size="sm"
 					disabled={voted}
 					onClick={() => react(key)}
-					className={cn("gap-1.5", voted && "opacity-70")}
+					// Smaller/tighter on mobile (h-8, less padding, smaller text)
+					// than the default "sm" button -- three of these sitting next
+					// to share icons and a comment count was overflowing narrow
+					// screens before. Back to the normal "sm" size from the sm:
+					// breakpoint up.
+					className={cn(
+						"h-8 gap-1 px-2 text-xs sm:h-9 sm:gap-1.5 sm:px-3 sm:text-sm",
+						voted && "opacity-70"
+					)}
 					aria-label={label}
 				>
 					<span>{emoji}</span>
