@@ -163,3 +163,19 @@ interface GameReport extends Base {
 	reactions?: Reactions;
 	comments?: Comment[];
 }
+
+interface LiveUpdate {
+	_key: string;
+	body: string;
+	embedUrl?: string;
+	postedAt: string;
+}
+
+interface LiveEvent extends Base {
+	title: string;
+	slug: Slug;
+	status: 'upcoming' | 'live' | 'final';
+	relatedGame?: GameReport;
+	startedAt?: string;
+	updates?: LiveUpdate[];
+}

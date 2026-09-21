@@ -20,6 +20,7 @@ const navLinks = [
 	{ href: "/", label: "Home" },
 	//{ href: "/#latest", label: "Latest" },
 	{ href: "/games", label: "Game Reports" },
+	{ href: "/live", label: "Live" },
 	{ href: "/community", label: "Discussion" },
 	{ href: "https://huntermacias.com", label: "Meet the Maintainer", external: true },
 ]

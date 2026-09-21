@@ -31,14 +31,6 @@ export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
-  // Pins the canonical URL to the www host explicitly. Every other page
-  // (game reports, posts) already sets its own canonical via
-  // generateMetadata -- this covers the homepage, which previously had
-  // none, so Google has no ambiguity if the apex domain or a non-www
-  // request ever serves the same content.
-  alternates: {
-    canonical: 'https://www.raidersrundown.com/',
-  },
   icons: {
     icon: 'https://i.imgur.com/q0mNqvS.jpeg',
     shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',

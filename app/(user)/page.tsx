@@ -1,5 +1,6 @@
 import { previewData } from "next/headers";
 import { groq } from "next-sanity";
+import type { Metadata } from "next";
 import { client } from "../../lib/sanity.client";
 import PreviewSuspense from "../../components/PreviewSuspense"
 import PreviewBlogList from "../../components/PreviewBlogList";
@@ -27,6 +28,19 @@ const gameReportsQuery = groq`
 // force-dynamic renders on every request instead, so newly published content
 // (or the games index / homepage list of recent posts) shows immediately.
 export const dynamic = "force-dynamic"
+
+// Set here (page-level), not on the root layout: every other route already
+// sets its own `alternates.canonical` via generateMetadata, and adding one
+// at the layout level too made Next 13.2.1's metadata merge crash
+// ("Cannot clone object of unsupported type") on every route that has to
+// reconcile a layout-level `alternates` against its own page-level one.
+// Page-level only, matching the working pattern everywhere else, avoids
+// that merge entirely.
+export const metadata: Metadata = {
+	alternates: {
+		canonical: "https://www.raidersrundown.com/",
+	},
+}
 
 export default async function page() {
 
