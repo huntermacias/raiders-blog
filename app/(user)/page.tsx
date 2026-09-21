@@ -6,7 +6,6 @@ import PreviewBlogList from "../../components/PreviewBlogList";
 import BlogList from "../../components/BlogList";
 import GameReportsTeaser from "../../components/GameReportsTeaser";
 import Script from "next/script";
-import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
 const query = groq`
 	*[_type=='post' && !(_id in path('drafts.**'))] {
@@ -58,9 +57,6 @@ export default async function page() {
 		  <GameReportsTeaser games={games} />
 
 		  <BlogList posts={posts} />
-
-		  <GoogleAnalytics measurementId="G-P1HE62KWXG" />
-
 	  </div>
 
   )

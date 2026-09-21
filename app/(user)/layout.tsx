@@ -1,5 +1,6 @@
 import { Inter, Fraunces } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
+import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
 import Banner from "../../components/Banner"
 import Header from "../../components/Header"
@@ -30,6 +31,14 @@ export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
+  // Pins the canonical URL to the www host explicitly. Every other page
+  // (game reports, posts) already sets its own canonical via
+  // generateMetadata -- this covers the homepage, which previously had
+  // none, so Google has no ambiguity if the apex domain or a non-www
+  // request ever serves the same content.
+  alternates: {
+    canonical: 'https://www.raidersrundown.com/',
+  },
   icons: {
     icon: 'https://i.imgur.com/q0mNqvS.jpeg',
     shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',
@@ -67,7 +76,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        {/* Google Search Console site ownership verification (URL-prefix
+            property for https://www.raidersrundown.com) -- lets Google
+            confirm you control the site without a DNS record. */}
+        <meta name="google-site-verification" content="bSslkMdt7Yxw4H6hlQvdGcwK3UWfXjJqcWWc3Z4LDbo" />
+      </head>
       <body className={cn("min-h-screen font-sans antialiased", fontSans.variable, fontSerif.variable)}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="flex min-h-screen flex-col">
@@ -78,6 +92,14 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <Analytics />
+        {/* Moved here from the homepage's page.tsx: this component (per its
+            own docs) is meant to be mounted once at the app root so it
+            tracks every route. Mounted only on "/" it was firing solely on
+            the homepage -- meaning GA4 was blind to every game report,
+            post, and the /games and /community pages, which is most of
+            this site's actual content and where real reader behavior would
+            show up. */}
+        <GoogleAnalytics measurementId="G-P1HE62KWXG" />
       </body>
     </html>
   )
