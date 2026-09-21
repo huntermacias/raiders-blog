@@ -92,7 +92,12 @@ async function Post({ params: { slug } }: Props) {
 					<p className="mt-4 text-xl text-muted-foreground">{post.description}</p>
 				)}
 
-				<div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-border/70 py-4">
+				{/* Stacked on mobile (author/date, then share + comment count on
+				    their own row) instead of one wide flex-wrap row that was
+				    squeezing the share icons up against the author block on
+				    narrow screens. Back to a single row with justify-between
+				    from sm: up. */}
+				<div className="mt-8 flex flex-col gap-3 border-y border-border/70 py-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-center gap-3">
 						<Avatar>
 							{post.author.image && (
@@ -106,9 +111,9 @@ async function Post({ params: { slug } }: Props) {
 						</div>
 					</div>
 
-					<div className="flex items-center gap-4">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
-						<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+						<div className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
 							<MessageCircle className="h-4 w-4" />
 							{post.comments?.length ?? 0}
 						</div>

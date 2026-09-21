@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Script from "next/script"
+import { useTheme } from "next-themes"
 
 declare global {
 	interface Window {
@@ -55,16 +56,30 @@ function YouTubeEmbed({ url, caption }: { url: string; caption?: string }) {
 
 function XEmbed({ url, caption }: { url: string; caption?: string }) {
 	const ref = useRef<HTMLDivElement>(null)
+	const { resolvedTheme } = useTheme()
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	// Match the reader's light/dark mode so the embedded tweet card doesn't
+	// render as a jarring white box on a dark page. Defaults to "light" until
+	// the theme is known client-side, matching the server-rendered markup.
+	const tweetTheme = mounted && resolvedTheme === "dark" ? "dark" : "light"
 
 	useEffect(() => {
 		window.twttr?.widgets?.load(ref.current ?? undefined)
-	}, [url])
+	}, [url, tweetTheme])
 
 	return (
 		<figure className="my-8 flex flex-col items-center not-prose">
 			<Script src="https://platform.twitter.com/widgets.js" strategy="lazyOnload" id="twitter-widgets" />
-			<div ref={ref} className="w-full max-w-lg">
-				<blockquote className="twitter-tweet" data-theme="light">
+			{/* key remounts the blockquote when the theme flips, so Twitter's
+			    widget script re-processes it instead of leaving the stale
+			    (already-converted) light or dark iframe in place */}
+			<div ref={ref} key={tweetTheme} className="w-full max-w-lg">
+				<blockquote className="twitter-tweet" data-theme={tweetTheme}>
 					<a href={url}>{url}</a>
 				</blockquote>
 			</div>

@@ -20,9 +20,12 @@ export default async function createComment(
 			email, 
 			comment
 		});
-	} catch (error) {
+	} catch (error: any) {
 		console.log("error: ", error);
-		return res.status(500).json({message: `Couldn't submit comment`, error});
+		// Surface the real Sanity error (e.g. an insufficient-permissions token)
+		// instead of a generic message -- the client now actually checks this.
+		const message = error?.message || error?.response?.body?.message || "Couldn't submit comment"
+		return res.status(500).json({ message });
 	}
 
 	console.log('comment submitted', comment);

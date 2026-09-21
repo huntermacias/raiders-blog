@@ -87,12 +87,43 @@ export function heroImageUrl(source: any) {
 }
 
 // Inline body image, used inside article rich text (RichTextComponents).
-// Standardizes every author-dropped image to the same 16:9 frame instead
-// of rendering each one at its own native aspect ratio (which, combined
-// with object-contain, is what caused portrait photos to show up
-// pillarboxed with dark bars on the sides).
+//
+// This used to force every author-dropped image into the same 16:9 crop,
+// which was fixing pillarboxing (dark bars from object-contain inside a
+// mismatched fixed-ratio box) by cropping instead -- trading "the whole
+// image doesn't show" for "the frame is always the same shape". That's the
+// wrong trade: readers noticed photos getting cut off far more than they'd
+// ever notice one inline image being taller than the next. Now this just
+// requests the image at a sensible max width with no forced height/crop,
+// and RichTextComponents sizes each image's container to that specific
+// image's real aspect ratio (see imageAspectRatio below) -- so the
+// container always matches the photo exactly and nothing is cropped *or*
+// letterboxed.
 export function bodyImageUrl(source: any) {
-	return cropped(source, 1200, 675)
+	if (!source) return "/placeholder-card.jpg"
+	try {
+		return urlFor(source).width(1400).auto("format").url()
+	} catch {
+		return "/placeholder-card.jpg"
+	}
+}
+
+/**
+ * Reads an image's real width/height straight out of its Sanity asset
+ * reference (e.g. "image-abc123-1600x900-jpg") so a caller can size a
+ * container to the image's actual aspect ratio without a network round
+ * trip. Falls back to a 16:9 guess if the ref is missing or unparseable
+ * (e.g. a still-uploading asset, or a non-Sanity source).
+ */
+export function imageAspectRatio(source: any, fallback = 16 / 9): number {
+	const ref: string | undefined = source?.asset?._ref
+	if (!ref) return fallback
+	const match = ref.match(/-(\d+)x(\d+)-/)
+	if (!match) return fallback
+	const width = parseInt(match[1], 10)
+	const height = parseInt(match[2], 10)
+	if (!width || !height) return fallback
+	return width / height
 }
 
 // Open Graph / Twitter card image - the fixed 1200x630 ratio social

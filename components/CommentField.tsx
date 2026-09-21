@@ -23,17 +23,37 @@ type Props = {
 function CommentField({ postId }: Props) {
 	const { register, handleSubmit, formState: { errors } } = useForm<IFormInput>()
 	const [submitted, setSubmitted] = useState(false)
+	const [submitError, setSubmitError] = useState<string | null>(null)
+	const [submitting, setSubmitting] = useState(false)
 
-	const onSubmit: SubmitHandler<IFormInput> = (data) => {
-		fetch("/api/createComment", {
-			method: "POST",
-			body: JSON.stringify(data),
-		})
-			.then(() => setSubmitted(true))
-			.catch((err) => {
-				console.log("error", err)
-				setSubmitted(false)
+	const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+		setSubmitting(true)
+		setSubmitError(null)
+		try {
+			// fetch() only rejects on a network failure -- an HTTP error status
+			// (e.g. the Sanity write failing server-side) still resolves here,
+			// so the response has to be checked explicitly or a failed submit
+			// silently shows the success state.
+			const res = await fetch("/api/createComment", {
+				method: "POST",
+				body: JSON.stringify(data),
 			})
+
+			if (!res.ok) {
+				const body = await res.json().catch(() => null)
+				throw new Error(body?.message || `Submission failed (${res.status})`)
+			}
+
+			setSubmitted(true)
+		} catch (err) {
+			console.log("error", err)
+			setSubmitError(
+				err instanceof Error ? err.message : "Something went wrong submitting your comment. Please try again."
+			)
+			setSubmitted(false)
+		} finally {
+			setSubmitting(false)
+		}
 	}
 
 	return (
@@ -79,8 +99,14 @@ function CommentField({ postId }: Props) {
 							</div>
 						)}
 
-						<Button type="submit" className="self-start">
-							Submit comment
+						{submitError && (
+							<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+								{submitError}
+							</div>
+						)}
+
+						<Button type="submit" className="self-start" disabled={submitting}>
+							{submitting ? "Submitting..." : "Submit comment"}
 						</Button>
 					</form>
 				)}

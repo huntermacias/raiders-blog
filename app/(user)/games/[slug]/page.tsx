@@ -160,16 +160,24 @@ async function GameReportPage({ params: { slug } }: Props) {
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
 			<div className="container max-w-3xl py-12">
-				<nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-					<Link href="/" className="hover:text-foreground hover:underline">
+				{/* min-w-0 on the nav + flex-1/min-w-0 on the title span is what
+				    actually lets `truncate` kick in -- flex items don't shrink
+				    below their content size by default, so without this the
+				    title just overflowed instead of ellipsizing on narrow
+				    screens. The middle crumb also shortens to "Games" below the
+				    sm breakpoint so two crumbs of chrome don't crowd out the
+				    part that actually matters, the title. */}
+				<nav className="mb-4 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+					<Link href="/" className="shrink-0 hover:text-foreground hover:underline">
 						Home
 					</Link>
-					<span>/</span>
-					<Link href="/games" className="hover:text-foreground hover:underline">
-						Game Reports
+					<span className="shrink-0">/</span>
+					<Link href="/games" className="shrink-0 hover:text-foreground hover:underline">
+						<span className="sm:hidden">Games</span>
+						<span className="hidden sm:inline">Game Reports</span>
 					</Link>
-					<span>/</span>
-					<span className="truncate text-foreground/70">{game.title}</span>
+					<span className="shrink-0">/</span>
+					<span className="min-w-0 flex-1 truncate text-foreground/70">{game.title}</span>
 				</nav>
 
 				<div className="mb-4 flex flex-wrap gap-2">
@@ -189,13 +197,19 @@ async function GameReportPage({ params: { slug } }: Props) {
 
 				{game.description && <p className="mt-4 text-xl text-muted-foreground">{game.description}</p>}
 
-				<div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-border/70 py-4 text-sm text-muted-foreground">
+				{/* Stacked on mobile (date, then a wrapping row of share/comment/
+				    reactions) instead of one wide flex-wrap row -- cramming four
+				    share icons, a comment count, and three reaction pills into
+				    whatever width was left next to the date was overflowing and
+				    wrapping mid-icon on phones. From sm: up it goes back to a
+				    single row with the date on the left. */}
+				<div className="mt-6 flex flex-col gap-3 border-y border-border/70 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
 					<span>{formatDate(game.gameDate)}</span>
-					<div className="flex items-center gap-4">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<SocialShare customurl={pageUrl} />
 						<a
 							href="#comments"
-							className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+							className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
 						>
 							<MessageCircle className="h-4 w-4" />
 							{game.comments?.length ?? 0}

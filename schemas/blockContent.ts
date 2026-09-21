@@ -1,4 +1,4 @@
-import {defineType, defineArrayMember} from 'sanity'
+import {defineType, defineArrayMember, defineField} from 'sanity'
 
 /**
  * This is the schema definition for the rich text fields used for
@@ -68,6 +68,24 @@ export default defineType({
     defineArrayMember({
       type: 'image',
       options: {hotspot: true},
+    }),
+    // Lets an editor drop a YouTube or X (Twitter) post embed at any point
+    // inside the body -- not just before/after it -- so a tweet reaction or
+    // highlight clip can sit right next to the paragraph it's about.
+    defineArrayMember({
+      type: 'object',
+      name: 'videoEmbed',
+      title: 'Video / X (Twitter) embed',
+      fields: [
+        defineField({name: 'url', title: 'URL', type: 'url'}),
+        defineField({name: 'caption', title: 'Caption', type: 'string'}),
+      ],
+      preview: {
+        select: {title: 'caption', subtitle: 'url'},
+        prepare({title, subtitle}: {title?: string; subtitle?: string}) {
+          return {title: title || 'Video / X embed', subtitle}
+        },
+      },
     }),
   ],
 })
