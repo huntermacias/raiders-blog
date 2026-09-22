@@ -67,7 +67,13 @@ export async function generateMetadata({ params: { slug } }: Props): Promise<Met
 			description,
 			url,
 			siteName: "Raiders Rundown",
-			images: [{ url: image, width: 1200, height: 630, alt: post.title }],
+			// A plain string entry first, then the structured object with
+			// width/height/alt as a second entry. This Next.js version's
+			// metadata API only emits a real `og:image` tag from a plain
+			// string -- the object-only form was rendering `og:image:url`
+			// (a secondary property with no corresponding primary tag),
+			// which strict Open Graph consumers ignore entirely.
+			images: [image, { url: image, width: 1200, height: 630, alt: post.title }],
 			publishedTime: post._createdAt,
 			authors: post.author?.name ? [post.author.name] : undefined,
 		},
