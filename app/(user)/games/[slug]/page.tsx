@@ -1,4 +1,5 @@
 import { groq } from "next-sanity"
+import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { PortableText } from "@portabletext/react"
@@ -104,6 +105,8 @@ async function GameReportPage({ params: { slug } }: Props) {
 		client.fetch(query, { slug }),
 		client.fetch(allGamesQuery),
 	])
+
+	if (!game) return notFound()
 
 	const won = game.raidersScore > game.opponentScore
 	const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
