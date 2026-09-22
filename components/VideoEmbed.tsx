@@ -74,7 +74,24 @@ function XEmbed({ url, caption }: { url: string; caption?: string }) {
 
 	return (
 		<figure className="my-8 flex flex-col items-center not-prose">
-			<Script src="https://platform.twitter.com/widgets.js" strategy="lazyOnload" id="twitter-widgets" />
+			<Script
+				src="https://platform.twitter.com/widgets.js"
+				strategy="afterInteractive"
+				id="twitter-widgets"
+				// The mount-time effect below only converts this embed if
+				// window.twttr already exists. On a heavier page (many embeds,
+				// more to hydrate), "lazyOnload" can finish loading the script
+				// AFTER that effect already ran and found twttr undefined --
+				// silently leaving the tweet as a plain link to x.com instead of
+				// an embedded player. This onLoad re-runs widgets.load() (with no
+				// arg, so it scans the whole page) the moment the script actually
+				// finishes, catching every embed that lost that race. Next.js
+				// calls onLoad for every <Script id="twitter-widgets"> instance
+				// once the (deduped, single) script tag loads, so this fires once
+				// per embed on the page -- redundant but harmless, since
+				// widgets.load() no-ops on blockquotes it's already converted.
+				onLoad={() => window.twttr?.widgets?.load()}
+			/>
 			{/* key remounts the blockquote when the theme flips, so Twitter's
 			    widget script re-processes it instead of leaving the stale
 			    (already-converted) light or dark iframe in place */}
