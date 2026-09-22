@@ -1,10 +1,11 @@
 import { groq } from "next-sanity"
 import { notFound } from "next/navigation"
 import Image from "next/image"
+import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
 import { client } from "../../../../lib/sanity.client"
-import urlFor, { heroImageUrl, hotspotPosition } from "../../../../lib/urlFor"
+import urlFor, { heroImageUrl, hotspotPosition, ogImageUrl } from "../../../../lib/urlFor"
 import { PortableText } from "@portabletext/react"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import CommentField from "../../../../components/CommentField"
@@ -35,6 +36,48 @@ export async function generateStaticParams() {
 	return slugRoutes.map((slug) => ({
 		slug,
 	}))
+}
+
+const SITE_URL = "https://www.raidersrundown.com"
+
+export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
+	const query = groq`
+	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
+		title, description, mainImage, _createdAt, author->{name}
+	}`
+	const post = await client.fetch(query, { slug })
+	if (!post) return {}
+
+	const title = `${post.title} | Raiders Rundown`
+	const description = post.description || "Las Vegas Raiders news, analysis and commentary from Raiders Rundown."
+	const url = `${SITE_URL}/post/${slug}`
+	// This Next version (13.2.1) doesn't support `metadataBase`, so image/
+	// canonical URLs here must already be absolute strings rather than
+	// relying on it to resolve relative ones.
+	const rawImage = ogImageUrl(post.mainImage)
+	const image = rawImage.startsWith("/") ? `${SITE_URL}${rawImage}` : rawImage
+
+	return {
+		title,
+		description,
+		alternates: { canonical: url },
+		openGraph: {
+			type: "article",
+			title,
+			description,
+			url,
+			siteName: "Raiders Rundown",
+			images: [{ url: image, width: 1200, height: 630, alt: post.title }],
+			publishedTime: post._createdAt,
+			authors: post.author?.name ? [post.author.name] : undefined,
+		},
+		twitter: {
+			card: "summary_large_image",
+			title,
+			description,
+			images: [image],
+		},
+	}
 }
 
 function formatDate(date: string) {
