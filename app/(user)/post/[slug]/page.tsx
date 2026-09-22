@@ -1,4 +1,5 @@
 import { groq } from "next-sanity"
+import { notFound } from "next/navigation"
 import Image from "next/image"
 import { MessageCircle } from "lucide-react"
 
@@ -60,6 +61,8 @@ async function Post({ params: { slug } }: Props) {
 	`
 
 	const post: Post = await client.fetch(query, { slug })
+
+	if (!post) return notFound()
 
 	const categoryIds = post.categories?.map((c) => c._id) ?? []
 	const relatedQuery = groq`
