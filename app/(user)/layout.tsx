@@ -48,7 +48,7 @@ export const metadata = {
     siteName: 'Raiders Rundown',
     title: 'Las Vegas Raiders News | Latest Updates, Rumors, and Analysis',
     description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
-    images: ['https://www.raidersrundown.com/og-default.png'],
+    images: ['https://www.raidersrundown.com/og-default-v2.png'],
   },
   twitter: {
     card: 'summary_large_image',
@@ -57,7 +57,7 @@ export const metadata = {
     siteId: '1467726470533754880',
     creator: 'Hunter Macias',
     creatorId: '1467726470533754880',
-    images: ['https://www.raidersrundown.com/og-default.png'],
+    images: ['https://www.raidersrundown.com/og-default-v2.png'],
   },
 }
 
