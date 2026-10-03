@@ -49,6 +49,15 @@ export type CardSpec =
 			final?: { away: number; home: number; result: "hit" | "miss" | "push" } | null
 	  }
 	| {
+			type: "rankings"
+			season: number
+			week: number
+			/** The Raiders' rank this week, if they are on the list */
+			raidersRank?: number | null
+			/** Positive = up. null when there is no previous week */
+			change?: number | null
+	  }
+	| {
 			type: "scoreboard"
 			season: number
 			/** All zeros / null before anything is graded */
@@ -417,6 +426,78 @@ export function renderCard(spec: CardSpec): ReactElement {
 									Who you got?
 								</div>
 							)}
+						</div>
+					</div>
+					<Brand />
+				</Shell>
+			)
+		}
+
+		case "rankings": {
+			const rr = spec.raidersRank
+			const move =
+				spec.change === null || spec.change === undefined
+					? null
+					: spec.change === 0
+						? "No change"
+						: spec.change > 0
+							? `Up ${spec.change}`
+							: `Down ${Math.abs(spec.change)}`
+			return (
+				<Shell
+					right={
+						<Panel>
+							{rr ? (
+								<div
+									style={{
+										display: "flex",
+										flexDirection: "column",
+										alignItems: "center",
+										justifyContent: "center",
+										width: 250,
+										height: 300,
+										border: `4px solid ${SILVER}`,
+									}}
+								>
+									<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: 22, letterSpacing: 5, color: DIM }}>
+										RAIDERS
+									</div>
+									<div style={{ display: "flex", fontFamily: "Anton", fontSize: 150, lineHeight: 1.05, color: WHITE }}>{rr}</div>
+									{move ? (
+										<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 26, letterSpacing: 4, color: SILVER, ...caps }}>
+											{move}
+										</div>
+									) : (
+										<div style={{ display: "flex" }} />
+									)}
+								</div>
+							) : (
+								<RRMark size={210} />
+							)}
+						</Panel>
+					}
+				>
+					<Eyebrow text={`${spec.season} season`} />
+					<div style={{ display: "flex", flexDirection: "column" }}>
+						<div style={{ display: "flex", fontFamily: "Anton", fontSize: 112, lineHeight: 1.0, letterSpacing: 0.5, color: WHITE, ...caps }}>
+							Power rankings
+						</div>
+						<div style={{ display: "flex", fontFamily: "Anton", fontSize: 112, lineHeight: 1.0, letterSpacing: 0.5, color: SILVER, ...caps }}>
+							{`Week ${spec.week}`}
+						</div>
+						<div
+							style={{
+								display: "flex",
+								marginTop: 22,
+								fontFamily: "Oswald",
+								fontWeight: 600,
+								fontSize: 30,
+								letterSpacing: 4,
+								color: SILVER,
+								...caps,
+							}}
+						>
+							All 32 teams
 						</div>
 					</div>
 					<Brand />
