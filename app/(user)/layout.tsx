@@ -31,6 +31,11 @@ export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
+  // Lets feed readers and browsers discover the RSS feed from any page that
+  // doesn't set its own `alternates` (the homepage, for one).
+  alternates: {
+    types: { 'application/rss+xml': 'https://www.raidersrundown.com/rss.xml' },
+  },
   icons: {
     icon: 'https://i.imgur.com/q0mNqvS.jpeg',
     shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',

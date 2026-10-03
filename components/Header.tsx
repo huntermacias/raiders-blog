@@ -21,6 +21,8 @@ const navLinks = [
 	//{ href: "/#latest", label: "Latest" },
 	{ href: "/games", label: "Game Reports" },
 	{ href: "/predictions", label: "Predictions" },
+	{ href: "/rankings", label: "Rankings" },
+	{ href: "/schedule", label: "Schedule" },
 	{ href: "/live", label: "Live" },
 	{ href: "/community", label: "Discussion" },
 	{ href: "https://huntermacias.com", label: "Meet the Maintainer", external: true },
@@ -87,7 +89,7 @@ function Header() {
 					</div>
 				</Link>
 
-				<nav className="hidden items-center gap-6 md:flex">
+				<nav className="hidden items-center gap-5 lg:flex">
 					{navLinks.map((link) => (
 						<NavLink key={link.label} {...link} />
 					))}
@@ -98,7 +100,7 @@ function Header() {
 
 					<Sheet open={open} onOpenChange={setOpen}>
 						<SheetTrigger asChild>
-							<Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+							<Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
 								<Menu className="h-5 w-5" />
 							</Button>
 						</SheetTrigger>

@@ -4,6 +4,7 @@
 //   /api/og?type=game&slug=<game report slug>
 //   /api/og?type=pick&id=<gamePrediction id>
 //   /api/og?type=scoreboard
+//   /api/og?type=rankings
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -19,6 +20,7 @@ import { Resvg } from "@resvg/resvg-js"
 import { readClient } from "../../lib/sanity.client"
 import urlFor from "../../lib/urlFor"
 import { teamInfo } from "../../lib/nfl"
+import { buildBoards, raidersRow, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
 import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
@@ -95,6 +97,11 @@ const picksQuery = groq`
 		keys[]{ _key, text, result }
 	}`
 
+const rankingsQuery = groq`
+	*[_type == "powerRankings" && season == $season && !(_id in path("drafts.**"))] | order(_updatedAt asc){
+		_id, season, week, teams[]{ _key, team }
+	}`
+
 const flagsQuery = groq`
 	*[_type == "flagPlant" && season == $season && !(_id in path("drafts.**"))]{
 		_id, week, text, result
@@ -153,6 +160,15 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 					? { away: p.actualAwayScore as number, home: p.actualHomeScore as number, result: grade.result }
 					: null,
 		}
+	}
+
+	if (type === "rankings") {
+		const docs: RankingsDoc[] = (await readClient.fetch(rankingsQuery, { season: SEASON })) ?? []
+		const boards = buildBoards(docs)
+		const latest = boards[boards.length - 1]
+		if (!latest) return null
+		const lv = raidersRow(latest.rows)
+		return { type: "rankings", season: SEASON, week: latest.week, raidersRank: lv?.rank ?? null, change: lv?.change ?? null }
 	}
 
 	if (type === "scoreboard") {
