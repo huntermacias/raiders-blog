@@ -59,7 +59,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			readerVotesHome: result.readerVotesHome,
 		})
 	} catch (error) {
-		console.log("prediction-vote error:", error)
+		// statusCode 401/403 here means the NEXT_SANITY_TOKEN on this deploy is
+		// missing, revoked, or doesn't have write (Editor) permission.
+		const e = error as { statusCode?: number; message?: string }
+		console.log("prediction-vote error:", e?.statusCode, e?.message ?? error)
 		return res.status(500).json({ message: "Could not save pick" })
 	}
 }

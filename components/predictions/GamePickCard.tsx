@@ -38,6 +38,7 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 	const [voted, setVoted] = useState(false)
 	const [choice, setChoice] = useState<Side | null>(null)
 	const [pending, setPending] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 
 	const storageKey = `pick:${pick._id}`
 	const choiceKey = `raiders-rundown:pick-choice:${pick._id}`
@@ -62,25 +63,58 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 	async function vote(side: Side) {
 		if (!canVote || pending) return
 		setPending(true)
-		if (side === "away") setVotesAway((v) => v + 1)
-		else setVotesHome((v) => v + 1)
+		setError(null)
+
+		// Optimistic: show the pick right away, but only keep it if the server
+		// confirms the write. Otherwise roll everything back so a failed save
+		// never looks like a counted vote (or locks the reader out).
+		const prevAway = votesAway
+		const prevHome = votesHome
+		if (side === "away") setVotesAway(prevAway + 1)
+		else setVotesHome(prevHome + 1)
 		setChoice(side)
 		setVoted(true)
-		markVoted(storageKey)
-		try {
-			window.localStorage.setItem(choiceKey, side)
-		} catch {
-			// ignore
-		}
+
 		try {
 			const res = await fetch("/api/prediction-vote", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ _id: pick._id, choice: side }),
 			})
-			if (res.status === 409) setLocked(true)
+
+			if (res.ok) {
+				const data = await res.json().catch(() => null)
+				if (data && typeof data.readerVotesAway === "number" && typeof data.readerVotesHome === "number") {
+					setVotesAway(data.readerVotesAway)
+					setVotesHome(data.readerVotesHome)
+				}
+				markVoted(storageKey)
+				try {
+					window.localStorage.setItem(choiceKey, side)
+				} catch {
+					// ignore
+				}
+				return
+			}
+
+			// Not saved: undo the optimistic update.
+			setVotesAway(prevAway)
+			setVotesHome(prevHome)
+			setChoice(null)
+			setVoted(false)
+			if (res.status === 409) {
+				setLocked(true)
+			} else {
+				console.log("prediction vote rejected", res.status)
+				setError("Couldn't save your pick. Please try again in a moment.")
+			}
 		} catch (err) {
 			console.log("prediction vote failed", err)
+			setVotesAway(prevAway)
+			setVotesHome(prevHome)
+			setChoice(null)
+			setVoted(false)
+			setError("Couldn't save your pick. Check your connection and try again.")
 		} finally {
 			setPending(false)
 		}
@@ -187,6 +221,12 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 				</div>
 
 				{canVote ? (
+					<div>
+					{error && (
+						<p role="alert" className="mb-2 text-xs font-medium text-red-600 dark:text-red-400">
+							{error}
+						</p>
+					)}
 					<div className="grid grid-cols-2 gap-2">
 						{rows.map((r) => (
 							<button
@@ -200,6 +240,7 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 								{r.info.nick}
 							</button>
 						))}
+					</div>
 					</div>
 				) : (
 					<div>
