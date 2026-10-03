@@ -20,8 +20,11 @@ function Footer() {
 					<p className="font-semibold">Coverage</p>
 					<ul className="space-y-2 text-muted-foreground">
 						<li><Link href="/#latest" className="hover:text-foreground">Latest News</Link></li>
-						<li><Link href="/#latest" className="hover:text-foreground">Game Recaps</Link></li>
-						<li><Link href="/#latest" className="hover:text-foreground">Draft &amp; Rumors</Link></li>
+						<li><Link href="/games" className="hover:text-foreground">Game Recaps</Link></li>
+						<li><Link href="/predictions" className="hover:text-foreground">Prediction Scoreboard</Link></li>
+						<li><Link href="/rankings" className="hover:text-foreground">Power Rankings</Link></li>
+						<li><Link href="/schedule" className="hover:text-foreground">Raiders Schedule</Link></li>
+						<li><a href="/rss.xml" className="hover:text-foreground">RSS Feed</a></li>
 					</ul>
 				</div>
 
