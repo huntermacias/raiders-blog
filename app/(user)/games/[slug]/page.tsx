@@ -139,7 +139,7 @@ async function GameReportPage({ params: { slug } }: Props) {
 			publisher: {
 				"@type": "Organization",
 				name: "Raiders Rundown",
-				logo: { "@type": "ImageObject", url: "https://i.imgur.com/q0mNqvS.jpeg" },
+				logo: { "@type": "ImageObject", url: "https://www.raidersrundown.com/og-default-v2.png" },
 			},
 			mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl },
 		},
