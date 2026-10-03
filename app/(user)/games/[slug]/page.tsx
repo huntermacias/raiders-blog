@@ -20,7 +20,9 @@ import SocialShare from "../../../../components/SocialShare"
 import CommentField from "../../../../components/CommentField"
 import RelatedGameReports from "../../../../components/RelatedGameReports"
 import GameReportNav from "../../../../components/GameReportNav"
+import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import { Badge } from "@/components/ui/badge"
+import type { PickKey } from "../../../../lib/predictions"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -39,7 +41,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
 	const query = groq`
 	*[_type=='gameReport' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
-		title, description, opponent, gameDate, raidersScore, opponentScore, mainImage
+		title, description, opponent, gameDate, raidersScore, opponentScore, _updatedAt
 	}`
 	const game = await client.fetch(query, { slug })
 	if (!game) return {}
@@ -50,11 +52,11 @@ export async function generateMetadata({ params: { slug } }: Props): Promise<Met
 		game.description ||
 		`Raiders ${won ? "beat" : "fell to"} the ${game.opponent} ${game.raidersScore}-${game.opponentScore}.`
 	const url = `${SITE_URL}/games/${slug}`
-	// This Next version (13.2.1) doesn't support `metadataBase`, so image/
-	// canonical URLs here must already be absolute strings rather than
-	// relying on it to resolve relative ones.
-	const rawImage = ogImageUrl(game.mainImage)
-	const image = rawImage.startsWith("/") ? `${SITE_URL}${rawImage}` : rawImage
+	// Designed share card (see pages/api/og.tsx). `v` changes when the report
+	// is edited so social networks re-fetch instead of serving a stale image.
+	// Absolute URL because this Next version (13.2.1) has no `metadataBase`.
+	const stamp = game._updatedAt ? new Date(game._updatedAt).getTime() : 0
+	const image = `${SITE_URL}/api/og?type=game&slug=${encodeURIComponent(slug)}&v=${stamp}`
 
 	return {
 		title,
@@ -113,6 +115,13 @@ async function GameReportPage({ params: { slug } }: Props) {
 	])
 
 	if (!game) return notFound()
+
+	// The pre-game "keys to the game", if a preview was linked to this
+	// recap in Studio (Game Prediction -> keys), graded hit/miss.
+	const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+		groq`*[_type=="gamePrediction" && gameReport._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
+		{ id: game._id }
+	)
 
 	const won = game.raidersScore > game.opponentScore
 	const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
@@ -252,6 +261,8 @@ async function GameReportPage({ params: { slug } }: Props) {
 				))}
 
 				<GameTimeline moments={game.keyMoments} />
+
+				<KeysScorecard keys={keysDoc?.keys} title="The keys, graded" />
 
 				{game.body && (
 					<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
