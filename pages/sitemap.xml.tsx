@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next"
 import { groq } from "next-sanity"
 
-import { client } from "../lib/sanity.client"
+import { readClient as client } from "../lib/sanity.client"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -21,6 +21,7 @@ function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${url(`${SITE_URL}/`, undefined, "1.0", "daily")}
 ${url(`${SITE_URL}/games`, undefined, "0.9", "daily")}
+${url(`${SITE_URL}/predictions`, undefined, "0.9", "daily")}
 ${url(`${SITE_URL}/live`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/community`, undefined, "0.6", "daily")}
 ${games.map((g) => url(`${SITE_URL}/games/${g.slug.current}`, g._updatedAt, "0.8")).join("\n")}
@@ -45,7 +46,10 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 	}`
 	const { posts, games, liveEvents } = await client.fetch(query)
 
-	res.setHeader("Content-Type", "text/xml")
+	res.setHeader("Content-Type", "application/xml; charset=utf-8")
+	// Crawlers re-fetch this often; let the CDN absorb repeat hits while still
+	// picking up new posts within the hour.
+	res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400")
 	res.write(generateSiteMap(posts ?? [], games ?? [], liveEvents ?? []))
 	res.end()
 
