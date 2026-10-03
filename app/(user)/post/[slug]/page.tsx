@@ -14,6 +14,7 @@ import RelatedPosts from "../../../../components/RelatedPosts"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import type { PickKey } from "../../../../lib/predictions"
 
@@ -205,6 +206,10 @@ async function Post({ params: { slug } }: Props) {
 				<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
 					<PortableText value={post.body} components={RichTextComponents} />
 				</div>
+			</div>
+
+			<div className="container max-w-3xl pb-12">
+				<SubscribeBox source="post" />
 			</div>
 
 			<Separator className="container max-w-5xl" />
