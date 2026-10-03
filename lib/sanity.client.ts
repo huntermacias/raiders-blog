@@ -12,3 +12,17 @@ export const client = createClient({
 	useCdn: false, 
 	token,
 });
+
+// Token-free, read-only client for statically generated / ISR pages.
+//
+// Next 13.x treats any fetch that carries an `Authorization` header as
+// uncacheable, so using the token-bearing client above on a page that has
+// generateStaticParams/revalidate throws "Page changed from static to
+// dynamic at runtime". The production dataset is public, so published
+// content is readable without a token. Keep using `client` for writes.
+export const readClient = createClient({
+	projectId,
+	dataset,
+	apiVersion,
+	useCdn: false,
+});

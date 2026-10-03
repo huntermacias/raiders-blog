@@ -3,7 +3,7 @@ import Image from "next/image"
 import { MessageCircle, ExternalLink } from "lucide-react"
 import type { Metadata } from "next"
 
-import { client } from "../../../lib/sanity.client"
+import { readClient as client } from "../../../lib/sanity.client"
 import { cardImageUrl, hotspotPosition } from "../../../lib/urlFor"
 import ClientSideRoute from "../../../components/ClientSideRoute"
 import { Card } from "@/components/ui/card"
