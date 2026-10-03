@@ -23,6 +23,17 @@ export type GamePrediction = {
 	readerVotesAway?: number | null
 	readerVotesHome?: number | null
 	report?: { slug: string; title: string } | null
+	/** The preview post this pick was made in, if linked. */
+	preview?: { slug: string; title: string } | null
+	/** "Keys to the game" from the preview, graded after the final. */
+	keys?: PickKey[] | null
+}
+
+/** One key to the game. `result` stays empty until it can be judged. */
+export type PickKey = {
+	_key?: string
+	text: string
+	result?: "hit" | "miss" | null
 }
 
 export type PickResult = "hit" | "miss" | "push" | "pending"
@@ -256,4 +267,78 @@ export function seasonSummary(rows: SeasonTeamRow[], seasonIsFinal = false) {
 	const counts: Record<SeasonStatus, number> = { none: 0, alive: 0, over: 0, under: 0, hit: 0, close: 0, miss: 0 }
 	for (const r of rows) counts[seasonStanding(r, seasonIsFinal).status]++
 	return counts
+}
+
+/* ------------------------------------------------------------------ */
+/* Keys to the game                                                    */
+/* ------------------------------------------------------------------ */
+
+export type KeysTally = { hit: number; miss: number; open: number; total: number }
+
+export function tallyKeys(keys?: PickKey[] | null): KeysTally {
+	const list = keys ?? []
+	let hit = 0
+	let miss = 0
+	for (const k of list) {
+		if (k.result === "hit") hit++
+		else if (k.result === "miss") miss++
+	}
+	return { hit, miss, open: list.length - hit - miss, total: list.length }
+}
+
+export type KeysSummary = {
+	hit: number
+	miss: number
+	/** Fraction of graded keys that were hit, or null when none are graded. */
+	rate: number | null
+	/** How many games contributed at least one graded key. */
+	games: number
+}
+
+export function summarizeKeys(picks: GamePrediction[]): KeysSummary {
+	let hit = 0
+	let miss = 0
+	let games = 0
+	for (const p of picks) {
+		const t = tallyKeys(p.keys)
+		hit += t.hit
+		miss += t.miss
+		if (t.hit + t.miss > 0) games++
+	}
+	const decided = hit + miss
+	return { hit, miss, rate: decided > 0 ? hit / decided : null, games }
+}
+
+/* ------------------------------------------------------------------ */
+/* Flag plants: bold, specific calls graded after the fact             */
+/* ------------------------------------------------------------------ */
+
+export type FlagPlant = {
+	_id: string
+	week: number
+	text: string
+	detail?: string | null
+	result?: "hit" | "miss" | null
+	resultNote?: string | null
+	post?: { slug: string; title: string } | null
+}
+
+export type FlagSummary = {
+	hit: number
+	miss: number
+	open: number
+	rate: number | null
+}
+
+export function summarizeFlags(flags: FlagPlant[]): FlagSummary {
+	let hit = 0
+	let miss = 0
+	let open = 0
+	for (const f of flags) {
+		if (f.result === "hit") hit++
+		else if (f.result === "miss") miss++
+		else open++
+	}
+	const decided = hit + miss
+	return { hit, miss, open, rate: decided > 0 ? hit / decided : null }
 }

@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 import {TEAM_NAMES} from '../lib/nfl'
 
 /**
@@ -98,6 +98,59 @@ export default defineType({
 			description: 'Optional. Adds a "Read the recap" link to the card once the report is up.',
 			type: 'reference',
 			to: [{type: 'gameReport'}],
+		}),
+		defineField({
+			name: 'previewPost',
+			title: 'Preview post',
+			description: 'Optional. Links the pick card to your preview and shows the keys at the top of that post.',
+			type: 'reference',
+			to: [{type: 'post'}],
+		}),
+		defineField({
+			name: 'keys',
+			title: 'Keys to the game',
+			description:
+				'Up to 5 short keys from your preview. After the game, set each one to Hit or Missed and the site scores them.',
+			type: 'array',
+			of: [
+				defineArrayMember({
+					type: 'object',
+					name: 'pickKey',
+					fields: [
+						defineField({
+							name: 'text',
+							title: 'Key',
+							type: 'string',
+							description: 'e.g. "Rush four and still get home"',
+							validation: (Rule) => Rule.required().max(100),
+						}),
+						defineField({
+							name: 'result',
+							title: 'Result',
+							type: 'string',
+							description: 'Leave empty until the game is over.',
+							options: {
+								list: [
+									{title: 'Hit', value: 'hit'},
+									{title: 'Missed', value: 'miss'},
+								],
+								layout: 'radio',
+								direction: 'horizontal',
+							},
+						}),
+					],
+					preview: {
+						select: {title: 'text', result: 'result'},
+						prepare({title, result}) {
+							return {
+								title,
+								subtitle: result === 'hit' ? '✓ Hit' : result === 'miss' ? '✗ Missed' : 'Pending',
+							}
+						},
+					},
+				}),
+			],
+			validation: (Rule) => Rule.max(5),
 		}),
 		defineField({
 			name: 'actualAwayScore',

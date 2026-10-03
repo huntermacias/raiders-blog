@@ -1,7 +1,7 @@
 import { Check, Flame, Minus, Snowflake, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import type { Summary } from "@/lib/predictions"
+import type { FlagSummary, KeysSummary, Summary } from "@/lib/predictions"
 
 function pct(n: number | null) {
 	return n === null ? "—" : `${Math.round(n * 100)}%`
@@ -16,7 +16,17 @@ function record(hits: number, misses: number) {
  * both themes (same family as the header's eyebrow strip) so the numbers pop
  * and the status colors always sit on a surface they were chosen for.
  */
-export default function ScoreboardHero({ summary, season }: { summary: Summary; season: number }) {
+export default function ScoreboardHero({
+	summary,
+	season,
+	keys,
+	flags,
+}: {
+	summary: Summary
+	season: number
+	keys?: KeysSummary
+	flags?: FlagSummary
+}) {
 	const s = summary
 	const hasGraded = s.graded > 0
 	const decided = s.hits + s.misses
@@ -123,6 +133,37 @@ export default function ScoreboardHero({ summary, season }: { summary: Summary; 
 							</li>
 						))}
 					</ul>
+				</div>
+			)}
+
+			{((keys && keys.hit + keys.miss > 0) || (flags && flags.hit + flags.miss > 0)) && (
+				<div className="grid grid-cols-1 gap-px border-t border-[#27272a] bg-[#27272a] sm:grid-cols-2">
+					{keys && keys.hit + keys.miss > 0 && (
+						<div className="bg-[#09090b] px-5 py-4">
+							<p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Keys to the game</p>
+							<p className="mt-1 flex flex-wrap items-baseline gap-x-2 tabular-nums">
+								<span className="font-serif text-3xl font-bold">
+									{keys.hit}&ndash;{keys.miss}
+								</span>
+								<span className="text-sm text-zinc-300">
+									{pct(keys.rate)} hit across {keys.games} game{keys.games === 1 ? "" : "s"}
+								</span>
+							</p>
+						</div>
+					)}
+					{flags && flags.hit + flags.miss > 0 && (
+						<div className="bg-[#09090b] px-5 py-4">
+							<p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Flags planted</p>
+							<p className="mt-1 flex flex-wrap items-baseline gap-x-2 tabular-nums">
+								<span className="font-serif text-3xl font-bold">
+									{flags.hit}&ndash;{flags.miss}
+								</span>
+								<span className="text-sm text-zinc-300">
+									{pct(flags.rate)} called{flags.open > 0 ? `, ${flags.open} open` : ""}
+								</span>
+							</p>
+						</div>
+					)}
 				</div>
 			)}
 

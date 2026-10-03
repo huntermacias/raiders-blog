@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Lock, Users } from "lucide-react"
+import { ArrowRight, Lock, Share2, Users } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { cn, hasVoted, markVoted } from "@/lib/utils"
@@ -10,6 +10,9 @@ import { teamInfo } from "@/lib/nfl"
 import { type GamePrediction, type Side, gradeGame, involvesRaiders, predictedWinner } from "@/lib/predictions"
 import { TeamChip } from "./TeamChip"
 import { PickPill } from "./StatusPill"
+import KeysScorecard from "./KeysScorecard"
+
+const SITE_URL = "https://www.raidersrundown.com"
 
 // Fixed timezone so the server render and the client hydration agree exactly.
 function formatKickoff(iso: string) {
@@ -135,8 +138,18 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 			: null
 	const pickNick = pickSide === "home" ? home.nick : away.nick
 
+	const shareText = grade.final
+		? `My Week ${pick.week} pick: ${away.nick} ${pick.predictedAwayScore}, ${home.nick} ${pick.predictedHomeScore}. Final: ${pick.actualAwayScore}-${pick.actualHomeScore}.${
+				grade.result === "hit" ? " Called it." : grade.result === "miss" ? " Missed." : ""
+		  }`
+		: `My Week ${pick.week} pick: ${away.nick} ${pick.predictedAwayScore}, ${home.nick} ${pick.predictedHomeScore}. Who you got?`
+	const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({
+		text: shareText,
+		url: `${SITE_URL}/predictions/pick/${pick._id}`,
+	}).toString()}`
+
 	return (
-		<Card className={cn("flex h-full flex-col overflow-hidden border-border/70", involvesRaiders(pick) && "ring-1 ring-foreground/20")}>
+		<Card id={`pick-${pick._id}`} className={cn("flex h-full scroll-mt-24 flex-col overflow-hidden border-border/70", involvesRaiders(pick) && "ring-1 ring-foreground/20")}>
 			<div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/40 px-5 py-2.5">
 				<div className="min-w-0">
 					<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -195,13 +208,21 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 
 				{pick.writeup && <p className="mt-4 line-clamp-4 text-sm italic leading-relaxed text-muted-foreground">&ldquo;{pick.writeup}&rdquo;</p>}
 
-				{pick.report?.slug && (
-					<Link
-						href={`/games/${pick.report.slug}`}
-						className="mt-4 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-					>
-						Read the recap <ArrowRight aria-hidden className="h-3.5 w-3.5" />
-					</Link>
+				{pick.keys && pick.keys.length > 0 && <KeysScorecard keys={pick.keys} variant="compact" className="mt-4" />}
+
+				{(pick.preview?.slug || pick.report?.slug) && (
+					<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+						{pick.preview?.slug && (
+							<Link href={`/post/${pick.preview.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold hover:underline">
+								Read the preview <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+							</Link>
+						)}
+						{pick.report?.slug && (
+							<Link href={`/games/${pick.report.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold hover:underline">
+								Read the recap <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+							</Link>
+						)}
+					</div>
 				)}
 			</div>
 
@@ -275,6 +296,18 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 						)}
 					</div>
 				)}
+
+				<div className="mt-3 flex justify-end">
+					<a
+						href={shareHref}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+					>
+						<Share2 aria-hidden className="h-3.5 w-3.5" /> Share this pick
+						<span className="sr-only"> (opens in a new tab)</span>
+					</a>
+				</div>
 			</div>
 		</Card>
 	)
