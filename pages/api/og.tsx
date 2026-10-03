@@ -200,7 +200,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		// The page URL carries `v=<updatedAt>`, so a long cache is safe: an edit
 		// changes the URL. Reader votes are not on the card, only results.
 		res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800")
-		res.status(200).send(Buffer.from(png))
+		res.status(200)
+		res.end(png)
 	} catch (err) {
 		console.error("og card failed", err)
 		fallback(res)
