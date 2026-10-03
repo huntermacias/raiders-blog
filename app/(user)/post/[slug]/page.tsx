@@ -4,7 +4,7 @@ import Image from "next/image"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
-import { client } from "../../../../lib/sanity.client"
+import { readClient as client } from "../../../../lib/sanity.client"
 import urlFor, { heroImageUrl, hotspotPosition, ogImageUrl } from "../../../../lib/urlFor"
 import { PortableText } from "@portabletext/react"
 import { RichTextComponents } from "../../../../components/RichTextComponents"

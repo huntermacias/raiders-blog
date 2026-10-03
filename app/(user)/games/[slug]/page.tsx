@@ -6,7 +6,7 @@ import { PortableText } from "@portabletext/react"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
-import { client } from "../../../../lib/sanity.client"
+import { readClient as client } from "../../../../lib/sanity.client"
 import { heroImageUrl, ogImageUrl, hotspotPosition } from "../../../../lib/urlFor"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import BoxScore from "../../../../components/BoxScore"
