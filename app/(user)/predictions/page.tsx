@@ -11,6 +11,7 @@ import {
 	summarizeFlags,
 	summarizeKeys,
 } from "../../../lib/predictions"
+import SubscribeBox from "../../../components/SubscribeBox"
 import ScoreboardHero from "../../../components/predictions/ScoreboardHero"
 import PicksFeed from "../../../components/predictions/PicksFeed"
 import SeasonTracker from "../../../components/predictions/SeasonTracker"
@@ -169,6 +170,10 @@ export default async function PredictionsPage() {
 					</div>
 				)}
 			</section>
+
+			<div className="mt-16 max-w-3xl">
+				<SubscribeBox source="predictions" />
+			</div>
 
 			<section id="how-it-works" className="mt-16 scroll-mt-28 max-w-3xl" aria-labelledby="how-it-works-title">
 				<h2 id="how-it-works-title" className="font-serif text-2xl font-bold tracking-tight">

@@ -20,6 +20,7 @@ import SocialShare from "../../../../components/SocialShare"
 import CommentField from "../../../../components/CommentField"
 import RelatedGameReports from "../../../../components/RelatedGameReports"
 import GameReportNav from "../../../../components/GameReportNav"
+import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import { Badge } from "@/components/ui/badge"
 import type { PickKey } from "../../../../lib/predictions"
@@ -284,6 +285,8 @@ async function GameReportPage({ params: { slug } }: Props) {
 				{game.potmCandidates && game.potmCandidates.length > 0 && (
 					<PlayerOfTheGame docId={game._id} candidates={game.potmCandidates} />
 				)}
+
+				<SubscribeBox source="recap" />
 
 				<GameReportNav prevGame={prevGame} nextGame={nextGame} />
 			</div>
