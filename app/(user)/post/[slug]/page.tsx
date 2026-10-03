@@ -14,6 +14,8 @@ import RelatedPosts from "../../../../components/RelatedPosts"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import KeysScorecard from "../../../../components/predictions/KeysScorecard"
+import type { PickKey } from "../../../../lib/predictions"
 
 type Props = {
 	params: {
@@ -43,7 +45,7 @@ const SITE_URL = "https://www.raidersrundown.com"
 export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
 	const query = groq`
 	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
-		title, description, mainImage, _createdAt, author->{name}
+		title, description, _createdAt, _updatedAt, author->{name}
 	}`
 	const post = await client.fetch(query, { slug })
 	if (!post) return {}
@@ -51,11 +53,11 @@ export async function generateMetadata({ params: { slug } }: Props): Promise<Met
 	const title = `${post.title} | Raiders Rundown`
 	const description = post.description || "Las Vegas Raiders news, analysis and commentary from Raiders Rundown."
 	const url = `${SITE_URL}/post/${slug}`
-	// This Next version (13.2.1) doesn't support `metadataBase`, so image/
-	// canonical URLs here must already be absolute strings rather than
-	// relying on it to resolve relative ones.
-	const rawImage = ogImageUrl(post.mainImage)
-	const image = rawImage.startsWith("/") ? `${SITE_URL}${rawImage}` : rawImage
+	// Designed share card (see pages/api/og.tsx). `v` changes when the post
+	// is edited so social networks re-fetch instead of serving a stale image.
+	// Absolute URL because this Next version (13.2.1) has no `metadataBase`.
+	const stamp = post._updatedAt ? new Date(post._updatedAt).getTime() : 0
+	const image = `${SITE_URL}/api/og?type=post&slug=${encodeURIComponent(slug)}&v=${stamp}`
 
 	return {
 		title,
@@ -112,6 +114,13 @@ async function Post({ params: { slug } }: Props) {
 	const post: Post = await client.fetch(query, { slug })
 
 	if (!post) return notFound()
+
+	// If this post is a game preview linked in Studio (Game Prediction ->
+	// previewPost), show its keys to the game with live grading.
+	const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+		groq`*[_type=="gamePrediction" && previewPost._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
+		{ id: post._id }
+	)
 
 	const categoryIds = post.categories?.map((c) => c._id) ?? []
 	const relatedQuery = groq`
@@ -190,6 +199,9 @@ async function Post({ params: { slug } }: Props) {
 
 			{/* body */}
 			<div className="container max-w-3xl py-12">
+				{keysDoc?.keys && keysDoc.keys.length > 0 && (
+					<KeysScorecard keys={keysDoc.keys} className="mb-10" />
+				)}
 				<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
 					<PortableText value={post.body} components={RichTextComponents} />
 				</div>

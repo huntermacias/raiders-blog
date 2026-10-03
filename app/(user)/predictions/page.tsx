@@ -2,10 +2,19 @@ import { groq } from "next-sanity"
 import type { Metadata } from "next"
 
 import { client } from "../../../lib/sanity.client"
-import { SEASON, type GamePrediction, type SeasonDoc, summarize } from "../../../lib/predictions"
+import {
+	SEASON,
+	type FlagPlant,
+	type GamePrediction,
+	type SeasonDoc,
+	summarize,
+	summarizeFlags,
+	summarizeKeys,
+} from "../../../lib/predictions"
 import ScoreboardHero from "../../../components/predictions/ScoreboardHero"
 import PicksFeed from "../../../components/predictions/PicksFeed"
 import SeasonTracker from "../../../components/predictions/SeasonTracker"
+import FlagLedger from "../../../components/predictions/FlagLedger"
 
 // Same reasoning as the game reports index: render fresh on every request so
 // newly graded picks and reader votes show immediately instead of waiting for
@@ -17,28 +26,32 @@ const TITLE = "Prediction Scoreboard | Raiders Rundown"
 const DESCRIPTION =
 	"Every pick on the record: weekly game predictions graded in public, win-total picks for all 32 teams, and reader picks versus mine."
 // Metadata on a page replaces (not merges) the layout's openGraph/twitter, so
-// the fallback share image has to be restated here. A plain string first --
-// this Next version only emits a real og:image tag from a string entry.
-const DEFAULT_IMAGE = "https://www.raidersrundown.com/og-default-v2.png"
-
-export const metadata: Metadata = {
-	title: TITLE,
-	description: DESCRIPTION,
-	alternates: { canonical: PAGE_URL },
-	openGraph: {
-		type: "website",
+// the share image has to be restated here. A plain string first -- this Next
+// version only emits a real og:image tag from a string entry. The card shows
+// the live record (pages/api/og.tsx); `v` rolls hourly so a newly graded game
+// reaches X and Facebook without waiting on their image caches.
+export function generateMetadata(): Metadata {
+	const hour = Math.floor(Date.now() / 3_600_000)
+	const image = `https://www.raidersrundown.com/api/og?type=scoreboard&v=${hour}`
+	return {
 		title: TITLE,
 		description: DESCRIPTION,
-		url: PAGE_URL,
-		siteName: "Raiders Rundown",
-		images: [DEFAULT_IMAGE],
-	},
-	twitter: {
-		card: "summary_large_image",
-		title: TITLE,
-		description: DESCRIPTION,
-		images: [DEFAULT_IMAGE],
-	},
+		alternates: { canonical: PAGE_URL },
+		openGraph: {
+			type: "website",
+			title: TITLE,
+			description: DESCRIPTION,
+			url: PAGE_URL,
+			siteName: "Raiders Rundown",
+			images: [image, { url: image, width: 1200, height: 630, alt: "Raiders Rundown prediction scoreboard" }],
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: TITLE,
+			description: DESCRIPTION,
+			images: [image],
+		},
+	}
 }
 
 const picksQuery = groq`
@@ -47,7 +60,16 @@ const picksQuery = groq`
 		predictedAwayScore, predictedHomeScore, writeup,
 		actualAwayScore, actualHomeScore,
 		readerVotesAway, readerVotesHome,
-		"report": gameReport->{ "slug": slug.current, title }
+		"report": gameReport->{ "slug": slug.current, title },
+		"preview": previewPost->{ "slug": slug.current, title },
+		keys[]{ _key, text, result }
+	}
+`
+
+const flagsQuery = groq`
+	*[_type == 'flagPlant' && season == $season && !(_id in path('drafts.**'))] | order(week desc, _createdAt desc) {
+		_id, week, text, detail, result, resultNote,
+		"post": post->{ "slug": slug.current, title }
 	}
 `
 
@@ -68,12 +90,15 @@ function SectionHeading({ id, title, subtitle }: { id: string; title: string; su
 }
 
 export default async function PredictionsPage() {
-	const [picks, season]: [GamePrediction[], SeasonDoc | null] = await Promise.all([
+	const [picks, season, flags]: [GamePrediction[], SeasonDoc | null, FlagPlant[]] = await Promise.all([
 		client.fetch(picksQuery, { season: SEASON }),
 		client.fetch(seasonQuery, { season: SEASON }),
+		client.fetch(flagsQuery, { season: SEASON }),
 	])
 
 	const summary = summarize(picks)
+	const keysSummary = summarizeKeys(picks)
+	const flagSummary = summarizeFlags(flags ?? [])
 	const teamRows = season?.teams ?? []
 
 	return (
@@ -88,6 +113,11 @@ export default async function PredictionsPage() {
 					<a href="#weekly-picks" className="underline-offset-4 hover:underline">
 						Weekly picks
 					</a>
+					{flags && flags.length > 0 && (
+						<a href="#flags" className="underline-offset-4 hover:underline">
+							Flags planted
+						</a>
+					)}
 					<a href="#season-tracker" className="underline-offset-4 hover:underline">
 						All 32 teams
 					</a>
@@ -97,7 +127,7 @@ export default async function PredictionsPage() {
 				</nav>
 			</div>
 
-			<ScoreboardHero summary={summary} season={SEASON} />
+			<ScoreboardHero summary={summary} season={SEASON} keys={keysSummary} flags={flagSummary} />
 
 			<section className="mt-16" aria-labelledby="weekly-picks">
 				<SectionHeading
@@ -107,6 +137,17 @@ export default async function PredictionsPage() {
 				/>
 				<PicksFeed picks={picks} />
 			</section>
+
+			{flags && flags.length > 0 && (
+				<section className="mt-16" aria-labelledby="flags">
+					<SectionHeading
+						id="flags"
+						title="Flags planted"
+						subtitle="The bold, specific calls I put my name on before the game: a player stat line, a turnover, a play. Each one is graded when it's over."
+					/>
+					<FlagLedger flags={flags} pageUrl={PAGE_URL} />
+				</section>
+			)}
 
 			<section className="mt-16" aria-labelledby="season-tracker">
 				<SectionHeading
@@ -141,6 +182,10 @@ export default async function PredictionsPage() {
 					<p>
 						<strong className="text-foreground">Win totals</strong> are graded exactly: nail the win total and it&rsquo;s a hit, off by one is close, anything else is a miss. During the season a pick
 						shows as &ldquo;too many wins&rdquo; or &ldquo;too many losses&rdquo; once it&rsquo;s mathematically gone, and what a team still needs while it&rsquo;s alive.
+					</p>
+					<p>
+						<strong className="text-foreground">Keys to the game</strong> are the three or so things I say have to happen for the Raiders to win. After the final I mark each one hit or missed, and
+						the scoreboard keeps a running hit rate. <strong className="text-foreground">Flags planted</strong> are single bold calls, like a specific player making a specific play, graded the same way.
 					</p>
 					<p>
 						<strong className="text-foreground">Reader picks</strong> are anonymous and lock at kickoff.
