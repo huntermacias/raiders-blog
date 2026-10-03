@@ -7,5 +7,6 @@ import gameReport from "./gameReport"
 import liveEvent from "./liveEvent"
 import gamePrediction from "./gamePrediction"
 import seasonPredictions from "./seasonPredictions"
+import flagPlant from "./flagPlant"
 
-export const schemaTypes = [post, gameReport, liveEvent, gamePrediction, seasonPredictions, author, category, blockContent, comment]
+export const schemaTypes = [post, gameReport, liveEvent, gamePrediction, seasonPredictions, flagPlant, author, category, blockContent, comment]
