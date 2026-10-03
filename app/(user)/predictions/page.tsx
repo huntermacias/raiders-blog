@@ -19,7 +19,7 @@ const DESCRIPTION =
 // Metadata on a page replaces (not merges) the layout's openGraph/twitter, so
 // the fallback share image has to be restated here. A plain string first --
 // this Next version only emits a real og:image tag from a string entry.
-const DEFAULT_IMAGE = "https://i.imgur.com/q0mNqvS.jpeg"
+const DEFAULT_IMAGE = "https://www.raidersrundown.com/og-default.png"
 
 export const metadata: Metadata = {
 	title: TITLE,
