@@ -143,7 +143,7 @@ export default async function PredictionsPage() {
 						shows as &ldquo;too many wins&rdquo; or &ldquo;too many losses&rdquo; once it&rsquo;s mathematically gone, and what a team still needs while it&rsquo;s alive.
 					</p>
 					<p>
-						<strong className="text-foreground">Reader picks</strong> are anonymous and lock at kickoff. There are no accounts, so each browser gets one pick per game; that keeps it casual and fun, but it isn&rsquo;t tamper-proof, so treat the reader split as a pulse check rather than a poll.
+						<strong className="text-foreground">Reader picks</strong> are anonymous and lock at kickoff.
 					</p>
 				</div>
 			</section>
