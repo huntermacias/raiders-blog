@@ -13,6 +13,8 @@ import { Card } from "@/components/ui/card"
 
 type Props = {
 	posts: Post[]
+	/** Stories already shown in the homepage's "Top stories". Hidden from the default (unfiltered) list so nothing repeats. */
+	featuredIds?: string[]
 }
 
 function formatDate(date: string) {
@@ -23,7 +25,7 @@ function formatDate(date: string) {
 	})
 }
 
-function BlogList({ posts }: Props) {
+function BlogList({ posts, featuredIds = [] }: Props) {
 	const [query, setQuery] = useState("")
 	const [category, setCategory] = useState("All")
 
@@ -34,7 +36,9 @@ function BlogList({ posts }: Props) {
 	}, [posts])
 
 	const filteredPosts = useMemo(() => {
+		const unfiltered = category === "All" && !query
 		return (posts ?? []).filter((post) => {
+			if (unfiltered && featuredIds.includes(post._id)) return false
 			const matchesCategory =
 				category === "All" || post.categories?.some((c) => c.title === category)
 			const matchesQuery =
@@ -43,13 +47,13 @@ function BlogList({ posts }: Props) {
 				post.description?.toLowerCase().includes(query.toLowerCase())
 			return matchesCategory && matchesQuery
 		})
-	}, [posts, category, query])
+	}, [posts, category, query, featuredIds])
 
 	return (
 		<div id="latest" className="scroll-mt-20">
 			<div className="container flex flex-col gap-4 py-10 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h2 className="font-serif text-2xl font-bold tracking-tight sm:text-3xl">Latest Stories</h2>
+					<h2 className="font-serif text-2xl font-bold tracking-tight sm:text-3xl">{featuredIds.length > 0 ? "More stories" : "Latest Stories"}</h2>
 					<p className="text-sm text-muted-foreground">
 						{filteredPosts.length} article{filteredPosts.length === 1 ? "" : "s"}
 					</p>
