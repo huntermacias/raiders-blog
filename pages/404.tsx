@@ -1,5 +1,5 @@
 import Head from "next/head"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 
 // Unmatched URLs. The pages router can't use the site layout (header, theme),
 // so this is a self-contained black-and-silver page that matches the share

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 
 import { signed } from "@/lib/league"
 import { loadCreds } from "@/lib/league.client"

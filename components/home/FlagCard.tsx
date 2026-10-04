@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowRight, Check, Clock, Flag, Share2, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"

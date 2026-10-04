@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import Image from "next/image"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowRight, Clock } from "lucide-react"
 
 import { cn } from "@/lib/utils"

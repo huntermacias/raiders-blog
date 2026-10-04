@@ -1,7 +1,7 @@
 import { groq } from "next-sanity"
 import { notFound } from "next/navigation"
 import Image from "next/image"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { PortableText } from "@portabletext/react"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
@@ -32,13 +32,13 @@ type Props = {
 	params: { slug: string }
 }
 
-export const revalidate = 60
-
-export async function generateStaticParams() {
-	const query = groq`*[_type=="gameReport" && !(_id in path("drafts.**"))]{slug}`
-	const slugs: GameReport[] = await client.fetch(query)
-	return slugs.map((s) => ({ slug: s.slug.current }))
-}
+// Rendered on every request, not through ISR. On Next 13.2.1, `revalidate` plus
+// `generateStaticParams` makes the server throw "invariant: Expected pageData to
+// be a string for app data request" whenever a client navigation or link
+// prefetch (an RSC request) reaches a page that was not pre-rendered at build,
+// which is every one published after the last deploy. Move back to ISR after
+// upgrading Next.
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
 	const query = groq`

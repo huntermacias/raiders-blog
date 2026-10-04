@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowRight, Trophy } from "lucide-react"
 
 import { type StandingRow, type WeekSummary, signed } from "@/lib/league"

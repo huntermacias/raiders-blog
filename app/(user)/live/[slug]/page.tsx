@@ -1,5 +1,5 @@
 import { groq } from "next-sanity"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
