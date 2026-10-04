@@ -53,6 +53,22 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // The Lab: values live in styles/globals.css (.lab), one set per theme.
+        lab: {
+          page: "var(--lab-page)",
+          surface: "var(--lab-surface)",
+          line: "var(--lab-line)",
+          "line-strong": "var(--lab-line-strong)",
+          ink: "var(--lab-ink)",
+          soft: "var(--lab-ink-soft)",
+          muted: "var(--lab-ink-muted)",
+          tint: "var(--lab-tint)",
+          hover: "var(--lab-hover)",
+          team: "var(--lab-team)",
+          opp: "var(--lab-opp)",
+          "on-team": "var(--lab-on-team)",
+          "on-opp": "var(--lab-on-opp)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,22 +1,28 @@
-// Colors for the Lab. The Lab is always dark (broadcast graphics), whatever
-// theme the rest of the site is in.
+// Colors for the Lab, as CSS variable references so the same markup works in light and dark.
 //
-// The Raiders are silver, the one neutral on the page, so the eye goes there
-// first. The opponent is a warm orange that stays ~30 delta-E away from silver
-// for every kind of color vision (checked with the dataviz palette validator on
-// a dark surface). Both sides are also named in text on the chart, so the
-// colors are never the only way to tell them apart.
+// The values live in styles/globals.css (.lab and .lab-opp). The opponent's color is set per game
+// from lib/lab/colors.ts. Use these in `style` props and SVG attributes; in class names use the
+// matching Tailwind colors (bg-lab-surface, text-lab-ink, border-lab-line, ...).
+//
+// The Raiders are silver on dark and black on light. The opponent wears its own team color.
+// Both sides are named in text next to every chart, so color is never the only cue.
 export const LAB = {
-	surface: "#0b0d10",
-	panel: "#12151a",
-	line: "rgba(255,255,255,0.10)",
-	grid: "rgba(255,255,255,0.07)",
-	ink: "#f3f4f6",
-	inkSoft: "#b4bac4",
-	inkMuted: "#8b93a0",
-	team: "#dfe3ea",
-	opp: "#d95926",
-	yardLine: "#e5e7eb",
-	firstDown: "#f5d90a",
-	scrimmage: "#4da3ff",
+	page: "var(--lab-page)",
+	surface: "var(--lab-surface)",
+	line: "var(--lab-line)",
+	grid: "var(--lab-grid)",
+	axis: "var(--lab-axis)",
+	ink: "var(--lab-ink)",
+	inkSoft: "var(--lab-ink-soft)",
+	inkMuted: "var(--lab-ink-muted)",
+	team: "var(--lab-team)",
+	opp: "var(--lab-opp)",
+	onTeam: "var(--lab-on-team)",
+	onOpp: "var(--lab-on-opp)",
+	field: "var(--lab-field)",
+	fieldBand: "var(--lab-field-band)",
+	fieldLine: "var(--lab-field-line)",
+	fieldNum: "var(--lab-field-num)",
+	firstDown: "var(--lab-first-down)",
+	scrimmage: "var(--lab-scrimmage)",
 } as const

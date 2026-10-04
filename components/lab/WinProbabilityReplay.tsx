@@ -3,6 +3,8 @@
 import * as React from "react"
 import { Check, Link2, Pause, Play, RotateCcw } from "lucide-react"
 
+import Tip from "@/components/lab/Tip"
+import { LEGEND, SWING_HELP, SYMBOLS, WP_HELP } from "@/lib/lab/glossary"
 import { LAB } from "@/lib/lab/theme"
 import type { KeyPlay, WpPoint } from "@/lib/lab/types"
 import {
@@ -67,12 +69,14 @@ function Marker({
 	play,
 	selected,
 	onSelect,
+	onHover,
 }: {
 	cx: number
 	cy: number
 	play: KeyPlay
 	selected: boolean
 	onSelect: () => void
+	onHover: (on: boolean) => void
 }) {
 	const swing = swingPoints(play)
 	const good = (swing ?? 0) >= 0
@@ -92,6 +96,10 @@ function Marker({
 				onSelect()
 			}}
 			onPointerDown={(e) => e.stopPropagation()}
+			onPointerEnter={(e) => e.pointerType === "mouse" && onHover(true)}
+			onPointerLeave={() => onHover(false)}
+			onFocus={() => onHover(true)}
+			onBlur={() => onHover(false)}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
 					e.preventDefault()
@@ -102,7 +110,7 @@ function Marker({
 			className="group"
 		>
 			<circle cx={cx} cy={cy} r={19} fill="transparent" />
-			{selected && <circle cx={cx} cy={cy} r={17} fill="none" stroke="#fff" strokeWidth={2} opacity={0.9} />}
+			{selected && <circle cx={cx} cy={cy} r={17} fill="none" stroke={LAB.ink} strokeWidth={2} opacity={0.9} />}
 			{turnover ? (
 				<rect
 					x={cx - 10}
@@ -126,7 +134,7 @@ function Marker({
 				textAnchor="middle"
 				fontSize={9}
 				fontWeight={700}
-				fill={big ? fill : LAB.surface}
+				fill={big ? fill : good ? LAB.onTeam : LAB.onOpp}
 				style={{ pointerEvents: "none", fontFamily: "var(--font-sans), system-ui, sans-serif" }}
 			>
 				{tag}
@@ -136,11 +144,63 @@ function Marker({
 				cy={cy}
 				r={16}
 				fill="none"
-				stroke="#fff"
+				stroke={LAB.ink}
 				strokeWidth={2}
 				className="opacity-0 group-focus-visible:opacity-100"
 			/>
 		</g>
+	)
+}
+
+/** The hover and focus card for a marker. Lives in HTML over the chart so it can wrap and use theme colors. */
+function MarkerTip({ play, x, y, width, teamName, oppName }: { play: KeyPlay; x: number; y: number; width: number; teamName: string; oppName: string }) {
+	const info = SYMBOLS[play.kind]
+	const swing = swingPoints(play)
+	const left = Math.min(width - 130, Math.max(130, x))
+	const below = y < 150
+	const c = clockAt(play.el)
+	return (
+		<div
+			className="pointer-events-none absolute z-20 w-60 rounded-xl border border-lab-line-strong bg-lab-surface p-3 text-left shadow-[var(--lab-shadow)]"
+			style={{ left, top: below ? y + 22 : y - 22, transform: below ? "translateX(-50%)" : "translate(-50%, -100%)" }}
+		>
+			<div className="flex items-center justify-between gap-2">
+				<span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-lab-ink">
+					<span className="rounded bg-lab-ink px-1.5 py-0.5 text-[10px] text-lab-surface">{info.tag}</span>
+					{info.title}
+				</span>
+				<span className="font-mono text-[11px] tabular-nums text-lab-muted">
+					{c.q} {play.clock}
+				</span>
+			</div>
+			<p className="mt-1.5 text-xs leading-snug text-lab-soft">{play.text}</p>
+			{swing != null && (
+				<p className="mt-1.5 font-mono text-xs font-semibold tabular-nums text-lab-ink">
+					{formatSwing(swing)} <span className="font-sans font-normal text-lab-muted">for the {swing >= 0 ? teamName : oppName}</span>
+				</p>
+			)}
+		</div>
+	)
+}
+
+/** A marker shape, drawn small, for the legend. */
+function Glyph({ kind }: { kind: keyof typeof SYMBOLS }) {
+	const info = SYMBOLS[kind]
+	const size = 22
+	const mid = size / 2
+	return (
+		<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden className="shrink-0">
+			{info.shape === "diamond" ? (
+				<rect x={mid - 7} y={mid - 7} width={14} height={14} rx={2} fill={LAB.inkMuted} transform={`rotate(45 ${mid} ${mid})`} />
+			) : info.shape === "ring" ? (
+				<circle cx={mid} cy={mid} r={7.5} fill="none" stroke={LAB.inkMuted} strokeWidth={2.5} />
+			) : (
+				<circle cx={mid} cy={mid} r={8} fill={LAB.inkMuted} />
+			)}
+			<text x={mid} y={mid + 3} textAnchor="middle" fontSize={info.shape === "ring" ? 9 : 7.5} fontWeight={800} fill={info.shape === "ring" ? LAB.inkMuted : LAB.surface}>
+				{info.tag}
+			</text>
+		</svg>
 	)
 }
 
@@ -179,6 +239,7 @@ export default function WinProbabilityReplay({
 	const [playing, setPlaying] = React.useState(false)
 	const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1)
 	const [pinned, setPinned] = React.useState<number | null>(null)
+	const [hovered, setHovered] = React.useState<number | null>(null)
 	const [copied, setCopied] = React.useState(false)
 	const startedRef = React.useRef(false)
 	const tRef = React.useRef(t)
@@ -326,31 +387,37 @@ export default function WinProbabilityReplay({
 	return (
 		<div
 			ref={rootRef}
-			className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b0d10] text-white shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]"
+			className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface text-lab-ink shadow-[var(--lab-shadow)]"
 		>
 			{/* scorebug */}
-			<div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent px-4 py-3 sm:px-6">
+			<div className="flex flex-wrap items-center justify-between gap-4 border-b border-lab-line bg-lab-tint px-4 py-3 sm:px-6">
 				<div className="flex items-center gap-4 sm:gap-6">
-					<div className="text-right">
-						<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">{teamName}</div>
-						<div className="font-mono text-3xl font-bold tabular-nums leading-none sm:text-4xl" style={{ color: LAB.team }}>
-							{score[0]}
+					<div className="flex items-stretch gap-2.5">
+						<span className="w-1.5 rounded-full" style={{ background: LAB.team }} aria-hidden />
+						<div>
+							<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-lab-muted">{teamName}</div>
+							<div className="font-mono text-3xl font-bold tabular-nums leading-none sm:text-4xl">{score[0]}</div>
 						</div>
 					</div>
 					<div className="flex flex-col items-center leading-tight">
-						<span className="rounded bg-white/10 px-2 py-0.5 font-mono text-xs font-semibold tabular-nums">
+						<span className="rounded bg-lab-hover px-2 py-0.5 font-mono text-xs font-semibold tabular-nums">
 							{done ? "FINAL" : `${clock.q} ${clock.clock}`}
 						</span>
 					</div>
-					<div>
-						<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">{oppName}</div>
-						<div className="font-mono text-3xl font-bold tabular-nums leading-none sm:text-4xl" style={{ color: LAB.opp }}>
-							{score[1]}
+					<div className="flex items-stretch gap-2.5">
+						<span className="w-1.5 rounded-full" style={{ background: LAB.opp }} aria-hidden />
+						<div>
+							<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-lab-muted">{oppName}</div>
+							<div className="font-mono text-3xl font-bold tabular-nums leading-none sm:text-4xl">{score[1]}</div>
 						</div>
 					</div>
 				</div>
 				<div className="text-right">
-					<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">{teamName} win probability</div>
+					<div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-lab-muted">
+						<Tip text={WP_HELP} align="end" side="bottom">
+							<span className="border-b border-dotted border-lab-line-strong">{teamName} win probability</span>
+						</Tip>
+					</div>
 					<div className="font-mono text-3xl font-bold tabular-nums leading-none sm:text-4xl" aria-live="off">
 						{pct(prob)}
 					</div>
@@ -359,7 +426,7 @@ export default function WinProbabilityReplay({
 
 			{/* chart */}
 			<div className="px-2 pt-3 sm:px-4">
-				<div ref={wrapRef}>
+				<div ref={wrapRef} className="relative">
 				<svg
 					ref={svgRef}
 					viewBox={`0 0 ${W} ${H}`}
@@ -393,12 +460,12 @@ export default function WinProbabilityReplay({
 							<rect x={M.left} y={mid} width={PLOT_W} height={M.top + PLOT_H - mid} />
 						</clipPath>
 						<linearGradient id={`${uid}-gteam`} x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" stopColor={LAB.team} stopOpacity={0.42} />
-							<stop offset="100%" stopColor={LAB.team} stopOpacity={0.04} />
+							<stop offset="0%" style={{ stopColor: LAB.team, stopOpacity: 0.42 }} />
+							<stop offset="100%" style={{ stopColor: LAB.team, stopOpacity: 0.04 }} />
 						</linearGradient>
 						<linearGradient id={`${uid}-gopp`} x1="0" y1="1" x2="0" y2="0">
-							<stop offset="0%" stopColor={LAB.opp} stopOpacity={0.5} />
-							<stop offset="100%" stopColor={LAB.opp} stopOpacity={0.05} />
+							<stop offset="0%" style={{ stopColor: LAB.opp, stopOpacity: 0.5 }} />
+							<stop offset="100%" style={{ stopColor: LAB.opp, stopOpacity: 0.05 }} />
 						</linearGradient>
 					</defs>
 
@@ -410,7 +477,7 @@ export default function WinProbabilityReplay({
 						<line key={q.s} x1={x(q.s)} x2={x(q.s)} y1={M.top} y2={M.top + PLOT_H} stroke={LAB.grid} strokeDasharray={q.label ? "0" : "3 5"} />
 					))}
 					{!regOnly && <line x1={x(3600)} x2={x(3600)} y1={M.top} y2={M.top + PLOT_H} stroke={LAB.grid} />}
-					<line x1={M.left} x2={W - M.right} y1={mid} y2={mid} stroke="rgba(255,255,255,0.28)" strokeWidth={1.25} />
+					<line x1={M.left} x2={W - M.right} y1={mid} y2={mid} stroke={LAB.axis} strokeWidth={1.25} />
 
 					{/* axis labels */}
 					{[
@@ -436,10 +503,12 @@ export default function WinProbabilityReplay({
 					)}
 
 					{/* side labels, so color is never the only cue */}
-					<text x={M.left + 10} y={M.top + 16} fontSize={11} fontWeight={700} letterSpacing="0.14em" fill={LAB.team}>
+					<rect x={M.left + 10} y={M.top + 7} width={9} height={9} rx={2} fill={LAB.team} />
+					<text x={M.left + 25} y={M.top + 16} fontSize={11} fontWeight={700} letterSpacing="0.14em" fill={LAB.inkSoft}>
 						{narrow ? teamName.toUpperCase() : `${teamName.toUpperCase()} AHEAD`}
 					</text>
-					<text x={M.left + 10} y={M.top + PLOT_H - 9} fontSize={11} fontWeight={700} letterSpacing="0.14em" fill={LAB.opp}>
+					<rect x={M.left + 10} y={M.top + PLOT_H - 18} width={9} height={9} rx={2} fill={LAB.opp} />
+					<text x={M.left + 25} y={M.top + PLOT_H - 9} fontSize={11} fontWeight={700} letterSpacing="0.14em" fill={LAB.inkSoft}>
 						{narrow ? oppName.toUpperCase() : `${oppName.toUpperCase()} AHEAD`}
 					</text>
 
@@ -451,7 +520,7 @@ export default function WinProbabilityReplay({
 						<g clipPath={`url(#${uid}-below)`}>
 							<path d={areaPath} fill={`url(#${uid}-gopp)`} />
 						</g>
-						<path d={linePath} fill="none" stroke="#fff" strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" />
+						<path d={linePath} fill="none" stroke={LAB.ink} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" />
 					</g>
 
 					{/* key plays that have happened by now */}
@@ -466,6 +535,7 @@ export default function WinProbabilityReplay({
 								play={k}
 								selected={shownIdx === i && (pinned != null || playing)}
 								onSelect={() => jumpTo(k.el, i)}
+								onHover={(on) => setHovered((h) => (on ? i : h === i ? null : h))}
 							/>
 						)
 					})}
@@ -473,10 +543,10 @@ export default function WinProbabilityReplay({
 					{/* playhead */}
 					{!done || pinned != null ? (
 						<g style={{ pointerEvents: "none" }}>
-							<line x1={revealX} x2={revealX} y1={M.top} y2={M.top + PLOT_H} stroke="#fff" strokeOpacity={0.55} strokeWidth={1.25} strokeDasharray="4 4" />
-							<circle cx={revealX} cy={curWp} r={6} fill="#fff" stroke={LAB.surface} strokeWidth={2.5} />
+							<line x1={revealX} x2={revealX} y1={M.top} y2={M.top + PLOT_H} stroke={LAB.ink} strokeOpacity={0.55} strokeWidth={1.25} strokeDasharray="4 4" />
+							<circle cx={revealX} cy={curWp} r={6} fill={LAB.ink} stroke={LAB.surface} strokeWidth={2.5} />
 							<g transform={`translate(${bubbleX}, ${Math.max(M.top + 12, curWp - 26)})`}>
-								<rect x={-24} y={-13} width={48} height={22} rx={5} fill="#fff" />
+								<rect x={-24} y={-13} width={48} height={22} rx={5} fill={LAB.ink} />
 								<text x={0} y={3} textAnchor="middle" fontSize={12} fontWeight={700} fill={LAB.surface} className="tabular-nums">
 									{pct(prob)}
 								</text>
@@ -484,6 +554,16 @@ export default function WinProbabilityReplay({
 						</g>
 					) : null}
 				</svg>
+				{hovered != null && keyPlays[hovered] && keyPlays[hovered].el <= t + 0.001 && (
+					<MarkerTip
+						play={keyPlays[hovered]}
+						x={x(keyPlays[hovered].el)}
+						y={y(keyPlays[hovered].wpAfter ?? wpAt(series, keyPlays[hovered].el))}
+						width={W}
+						teamName={teamName}
+						oppName={oppName}
+					/>
+				)}
 				</div>
 			</div>
 
@@ -492,7 +572,7 @@ export default function WinProbabilityReplay({
 				<button
 					type="button"
 					onClick={togglePlay}
-					className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-[#0b0d10] transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+					className="inline-flex h-10 items-center gap-2 rounded-full bg-lab-ink px-4 text-sm font-semibold text-lab-surface transition hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lab-ink"
 					aria-label={playing ? "Pause replay" : done ? "Replay from the start" : "Play replay"}
 				>
 					{playing ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
@@ -501,12 +581,12 @@ export default function WinProbabilityReplay({
 				<button
 					type="button"
 					onClick={restart}
-					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					aria-label="Restart replay"
 				>
 					<RotateCcw className="h-4 w-4" aria-hidden />
 				</button>
-				<div className="inline-flex overflow-hidden rounded-full border border-white/15" role="group" aria-label="Replay speed">
+				<div className="inline-flex overflow-hidden rounded-full border border-lab-line-strong" role="group" aria-label="Replay speed">
 					{SPEEDS.map((s) => (
 						<button
 							key={s}
@@ -514,8 +594,8 @@ export default function WinProbabilityReplay({
 							onClick={() => setSpeed(s)}
 							aria-pressed={speed === s}
 							className={
-								"h-10 px-3 text-xs font-semibold tabular-nums transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white " +
-								(speed === s ? "bg-white/15 text-white" : "text-white/60 hover:text-white")
+								"h-10 px-3 text-xs font-semibold tabular-nums transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink " +
+								(speed === s ? "bg-lab-ink text-lab-surface" : "text-lab-muted hover:text-lab-ink")
 							}
 						>
 							{s}x
@@ -526,7 +606,7 @@ export default function WinProbabilityReplay({
 					<button
 						type="button"
 						onClick={copyLink}
-						className="inline-flex h-10 items-center gap-2 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/80 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+						className="inline-flex h-10 items-center gap-2 rounded-full border border-lab-line-strong px-3 text-xs font-semibold text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					>
 						{copied ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
 						{copied ? "Copied" : "Link to this moment"}
@@ -534,7 +614,7 @@ export default function WinProbabilityReplay({
 					<button
 						type="button"
 						onClick={postOnX}
-						className="inline-flex h-10 items-center rounded-full border border-white/15 px-3 text-xs font-semibold text-white/80 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+						className="inline-flex h-10 items-center rounded-full border border-lab-line-strong px-3 text-xs font-semibold text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					>
 						Post on X
 					</button>
@@ -553,27 +633,31 @@ export default function WinProbabilityReplay({
 					value={Math.round(t)}
 					onChange={(e) => jumpTo(Number(e.target.value))}
 					aria-valuetext={`${clock.q} ${clock.clock}, ${pct(prob)} ${teamName} win probability`}
-					className="h-2 w-full cursor-pointer accent-white"
+					className="h-2 w-full cursor-pointer accent-lab-ink"
 				/>
 			</div>
 
 			{/* the play on screen */}
-			<div className="border-t border-white/10 bg-white/[0.03] px-4 py-4 sm:px-6" aria-live="polite">
+			<div className="border-t border-lab-line bg-lab-tint px-4 py-4 sm:px-6" aria-live="polite">
 				{shownPlay ? (
 					<div className="flex flex-wrap items-start justify-between gap-3">
 						<div className="min-w-0 flex-1">
-							<div className="mb-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
+							<div className="mb-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">
 								<span>
 									{kindLabel(shownPlay.kind)} &middot; {clockAt(shownPlay.el).q} {shownPlay.clock}
 								</span>
 							</div>
-							<p className="text-sm leading-relaxed text-white/90 sm:text-base">{shownPlay.text}</p>
+							<p className="text-sm leading-relaxed text-lab-ink sm:text-base">{shownPlay.text}</p>
 						</div>
 						<div className="text-right">
-							<div className="font-mono text-2xl font-bold tabular-nums" style={{ color: (swingNow ?? 0) >= 0 ? LAB.team : LAB.opp }}>
-								{formatSwing(swingNow)}
+							<div className="font-mono text-2xl font-bold tabular-nums">
+								<Tip text={SWING_HELP} align="end" side="bottom">
+									<span className="border-b-[3px] pb-0.5" style={{ borderColor: (swingNow ?? 0) >= 0 ? LAB.team : LAB.opp }}>
+										{formatSwing(swingNow)}
+									</span>
+								</Tip>
 							</div>
-							<div className="text-[11px] text-white/50">
+							<div className="text-[11px] text-lab-muted">
 								{shownPlay.wpBefore != null && shownPlay.wpAfter != null
 									? `${pct(shownPlay.wpBefore)} to ${pct(shownPlay.wpAfter)}`
 									: ""}
@@ -581,14 +665,14 @@ export default function WinProbabilityReplay({
 						</div>
 					</div>
 				) : (
-					<p className="text-sm text-white/60">Press play, or drag across the chart to move through the game.</p>
+					<p className="text-sm text-lab-muted">Press play, or drag across the chart to move through the game.</p>
 				)}
 			</div>
 
 			{/* every key play, as a list people can jump through */}
-			<div className="border-t border-white/10 px-2 py-2 sm:px-4">
-				<h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">Key plays</h3>
-				<ol className="divide-y divide-white/5">
+			<div className="border-t border-lab-line px-2 py-2 sm:px-4">
+				<h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">Key plays</h3>
+				<ol className="divide-y divide-lab-line" aria-label="Key plays">
 					{keyPlays.map((k, i) => {
 						const s = swingPoints(k)
 						const active = shownIdx === i && pinned === i
@@ -599,37 +683,71 @@ export default function WinProbabilityReplay({
 									onClick={() => jumpTo(k.el, i)}
 									aria-current={active ? "true" : undefined}
 									className={
-										"flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white " +
-										(active ? "bg-white/[0.08]" : "")
+										"flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink " +
+										(active ? "bg-lab-hover" : "")
 									}
 								>
-									<span className="w-14 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-white/50">
+									<span className="w-14 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-lab-muted">
 										{clockAt(k.el).q} {k.clock}
 									</span>
-									<span
-										className="mt-0.5 inline-flex h-5 min-w-[2rem] shrink-0 items-center justify-center rounded px-1 text-[10px] font-bold"
-										style={{
-											background: (s ?? 0) >= 0 ? LAB.team : LAB.opp,
-											color: LAB.surface,
-										}}
+									<Tip
+										focusable={false}
+										align="start"
+										text={
+											<>
+												<strong className="font-semibold">{SYMBOLS[k.kind].title}.</strong> {SYMBOLS[k.kind].body}
+											</>
+										}
+										className="mt-0.5 shrink-0"
 									>
-										{kindTag(k.kind)}
-									</span>
-									<span className="min-w-0 flex-1 text-sm leading-snug text-white/85">{k.text}</span>
-									<span
-										className="shrink-0 pt-0.5 font-mono text-xs font-semibold tabular-nums"
-										style={{ color: (s ?? 0) >= 0 ? LAB.team : LAB.opp }}
-									>
-										{formatSwing(s)}
+										<span
+											className="inline-flex h-5 min-w-[2rem] items-center justify-center rounded px-1 text-[10px] font-bold"
+											style={{
+												background: (s ?? 0) >= 0 ? LAB.team : LAB.opp,
+												color: (s ?? 0) >= 0 ? LAB.onTeam : LAB.onOpp,
+											}}
+											aria-hidden
+										>
+											{kindTag(k.kind)}
+										</span>
+									</Tip>
+									<span className="sr-only">{kindLabel(k.kind)}: </span>
+									<span className="min-w-0 flex-1 text-sm leading-snug text-lab-ink">{k.text}</span>
+									<span className="shrink-0 pt-0.5 font-mono text-xs font-semibold tabular-nums text-lab-ink">
+										<span className="border-b-2 pb-px" style={{ borderColor: (s ?? 0) >= 0 ? LAB.team : LAB.opp }}>
+											{formatSwing(s)}
+										</span>
 									</span>
 								</button>
 							</li>
 						)
 					})}
 				</ol>
-				<p className="px-2 pb-2 pt-3 text-[11px] leading-relaxed text-white/45">
-					Circles are scores, diamonds are turnovers, outlined circles are the biggest swings that were neither. Silver helped the {teamName}; orange helped the {oppName}.
-				</p>
+				<div className="border-t border-lab-line px-2 pb-2 pt-3">
+					<h4 className="pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">What the symbols mean</h4>
+					<ul className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Symbol legend">
+						{LEGEND.map((kind) => (
+							<li key={kind}>
+								<Tip
+									align="start"
+									text={
+										<>
+											<strong className="font-semibold">{SYMBOLS[kind].title}.</strong> {SYMBOLS[kind].body}
+										</>
+									}
+								>
+									<span className="inline-flex items-center gap-1.5 text-xs text-lab-soft">
+										<Glyph kind={kind} />
+										{SYMBOLS[kind].title}
+									</span>
+								</Tip>
+							</li>
+						))}
+					</ul>
+					<p className="pt-3 text-[11px] leading-relaxed text-lab-muted">
+						Circles are scores, diamonds are turnovers, outlined circles are big swings that were neither. A marker wears the color of the team the play helped: {teamName} or {oppName}.
+					</p>
+				</div>
 			</div>
 		</div>
 	)
