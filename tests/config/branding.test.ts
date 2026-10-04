@@ -42,3 +42,23 @@ describe("no hotlinked brand images", () => {
 		expect(offenders).toEqual([])
 	})
 })
+
+describe("header navigation", () => {
+	const header = read("components/Header.tsx")
+	const footer = read("components/Footer.tsx")
+
+	it("keeps the main bar short and puts the quieter pages under More", () => {
+		const main = header.slice(header.indexOf("const mainLinks"), header.indexOf("const moreLinks"))
+		const more = header.slice(header.indexOf("const moreLinks"), header.indexOf("function NavLink"))
+		expect((main.match(/href:/g) ?? []).length).toBeLessThanOrEqual(6)
+		for (const href of ["/live", "/community", "https://huntermacias.com"]) {
+			expect(more).toContain(href)
+			expect(main).not.toContain(href)
+		}
+	})
+
+	it("still lists the live and discussion pages in the footer", () => {
+		expect(footer).toContain('href="/live"')
+		expect(footer).toContain('href="/community"')
+	})
+})

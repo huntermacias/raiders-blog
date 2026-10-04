@@ -14,20 +14,24 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet"
+import NavMore, { isUnder, type MoreItem } from "@/components/NavMore"
 import { ThemeToggle } from "@/components/theme-toggle"
 
-const navLinks = [
-	{ href: "/", label: "Home" },
-	//{ href: "/#latest", label: "Latest" },
+/** The pages most visitors come for. Home is the logo on desktop, and a row in the phone menu. */
+const mainLinks = [
 	{ href: "/games", label: "Game Reports" },
 	{ href: "/predictions", label: "Predictions" },
 	{ href: "/league", label: "League" },
 	{ href: "/rankings", label: "Rankings" },
 	{ href: "/lab", label: "Lab" },
 	{ href: "/schedule", label: "Schedule" },
-	{ href: "/live", label: "Live" },
-	{ href: "/community", label: "Discussion" },
-	{ href: "https://huntermacias.com", label: "Meet the Maintainer", external: true },
+]
+
+/** Quieter pages, tucked under "More" so the bar stays short. */
+const moreLinks: MoreItem[] = [
+	{ href: "/live", label: "Live", hint: "Live-updating threads for games, as they happen." },
+	{ href: "/community", label: "Discussion", hint: "Every conversation on the site, in one place." },
+	{ href: "https://huntermacias.com", label: "Meet the Maintainer", hint: "Hunter's tech blog, and who builds this site.", external: true },
 ]
 
 function NavLink({
@@ -42,7 +46,7 @@ function NavLink({
 	onClick?: () => void
 }) {
 	const pathname = usePathname()
-	const isActive = !external && href === pathname
+	const isActive = !external && (href === "/" ? pathname === "/" : isUnder(href, pathname))
 
 	return (
 		<Link
@@ -93,10 +97,11 @@ function Header() {
 					</div>
 				</Link>
 
-				<nav className="hidden items-center gap-5 lg:flex">
-					{navLinks.map((link) => (
+				<nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
+					{mainLinks.map((link) => (
 						<NavLink key={link.label} {...link} />
 					))}
+					<NavMore items={moreLinks} />
 				</nav>
 
 				<div className="flex items-center gap-1">
@@ -112,10 +117,17 @@ function Header() {
 							<SheetHeader>
 								<SheetTitle className="font-serif">Raiders Rundown</SheetTitle>
 							</SheetHeader>
-							<nav className="mt-8 flex flex-col gap-6">
-								{navLinks.map((link) => (
+							<nav aria-label="Menu" className="mt-8 flex flex-col gap-5">
+								<NavLink href="/" label="Home" onClick={() => setOpen(false)} />
+								{mainLinks.map((link) => (
 									<NavLink key={link.label} {...link} onClick={() => setOpen(false)} />
 								))}
+								<div className="mt-1 flex flex-col gap-5 border-t border-border/60 pt-5">
+									<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">More</p>
+									{moreLinks.map((link) => (
+										<NavLink key={link.label} href={link.href} label={link.label} external={link.external} onClick={() => setOpen(false)} />
+									))}
+								</div>
 							</nav>
 						</SheetContent>
 					</Sheet>
