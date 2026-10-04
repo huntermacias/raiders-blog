@@ -224,7 +224,7 @@ export default async function page() {
 				"@id": `${SITE_URL}/#org`,
 				name: "Raiders Rundown",
 				url: `${SITE_URL}/`,
-				logo: "https://i.pinimg.com/originals/07/e6/4d/07e64d8088fd0ead3d3f15339008eb29.jpg",
+				logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
 			},
 		],
 	}
