@@ -31,11 +31,6 @@ export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
-  // Lets feed readers and browsers discover the RSS feed from any page that
-  // doesn't set its own `alternates` (the homepage, for one).
-  alternates: {
-    types: { 'application/rss+xml': 'https://www.raidersrundown.com/rss.xml' },
-  },
   icons: {
     icon: 'https://i.imgur.com/q0mNqvS.jpeg',
     shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',
@@ -74,6 +69,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* RSS auto-discovery. A plain tag rather than metadata.alternates.types:
+            on Next 13.2 that becomes a URL object, which the dev-mode metadata
+            clone can't copy ("Cannot clone object of unsupported type"). */}
+        <link rel="alternate" type="application/rss+xml" title="Raiders Rundown" href="https://www.raidersrundown.com/rss.xml" />
         {/* Google Search Console site ownership verification (URL-prefix
             property for https://www.raidersrundown.com) -- lets Google
             confirm you control the site without a DNS record. */}
