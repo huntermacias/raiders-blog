@@ -9,8 +9,10 @@ import { type GamePrediction, SEASON } from "../../../lib/predictions"
 import { type ScheduleGame, joinSchedule, nextGame, recordText, scheduleRecord } from "../../../lib/schedule"
 import ScheduleList, { kickoffText } from "../../../components/schedule/ScheduleList"
 
-// Token-free client => static page, refreshed every minute.
-export const revalidate = 60
+// Rendered on every request, like /predictions: these pages are small, the data
+// changes by hand in Studio, and an edit should show up immediately instead of
+// waiting on (or getting stuck behind) a cached copy.
+export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/schedule`
