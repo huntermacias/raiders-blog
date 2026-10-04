@@ -20,6 +20,14 @@ function sameSite(req: NextApiRequest): boolean {
 	}
 }
 
+/** The visitor's address as Vercel saw it, so Buttondown's firewall judges them rather than our server. */
+function visitorIp(req: NextApiRequest): string | undefined {
+	const fwd = req.headers["x-forwarded-for"]
+	const raw = Array.isArray(fwd) ? fwd[0] : fwd
+	const ip = (raw ? raw.split(",")[0] : req.socket?.remoteAddress)?.trim()
+	return ip && ip.length <= 64 ? ip : undefined
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	if (req.method !== "POST") {
 		res.setHeader("Allow", "POST")
@@ -53,20 +61,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 				headers: {
 					Authorization: `Token ${key}`,
 					"Content-Type": "application/json",
-					// Re-signups succeed quietly instead of revealing who is already on the list.
+					// A re-signup of an existing address should succeed quietly rather
+					// than reveal who is already on the list.
 					"X-Buttondown-Collision-Behavior": "add",
 				},
-				body: JSON.stringify({ email_address: email, utm_source: "raidersrundown.com", utm_medium: source }),
+				body: JSON.stringify({
+					email_address: email,
+					// Buttondown's firewall scores signups by IP. Without the visitor's
+					// own address every signup looks like it comes from our server.
+					ip_address: visitorIp(req),
+					referrer_url: typeof req.headers.referer === "string" ? req.headers.referer.slice(0, 300) : "https://www.raidersrundown.com/",
+					utm_source: "raidersrundown.com",
+					utm_medium: source,
+				}),
 				signal: ctrl.signal,
 			})
 		} finally {
 			clearTimeout(timer)
 		}
 
-		if (r.ok || r.status === 400) return res.status(200).json({ ok: true })
-		if (r.status === 422) return res.status(400).json({ message: "That email address doesn't look right." })
+		if (r.ok) return res.status(200).json({ ok: true })
 
-		console.error("newsletter signup failed", r.status)
+		// Only a 2xx counts as signed up. Log why Buttondown refused (with the
+		// address redacted) so a blocked signup shows up in the Vercel logs instead
+		// of being reported to the reader as a success.
+		const detail = (await r.text().catch(() => "")).split(email).join("[email]").slice(0, 300)
+		console.error("newsletter signup refused", r.status, detail)
+
+		if (r.status === 422) return res.status(400).json({ message: "That email address doesn't look right." })
+		if (r.status === 400 || r.status === 403) {
+			return res.status(422).json({ message: "We couldn't add that address. Try another email, or let me know if it keeps happening." })
+		}
 		return res.status(502).json({ message: "Couldn't sign you up right now. Try again in a minute." })
 	} catch (err) {
 		console.error("newsletter signup error", err instanceof Error ? err.name : "unknown")
