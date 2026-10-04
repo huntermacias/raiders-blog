@@ -1,5 +1,6 @@
 import { Inter, Fraunces } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
+import UtmCapture from "../../components/UtmCapture"
 import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
 import Header from "../../components/Header"
@@ -96,6 +97,7 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <Analytics />
+        <UtmCapture />
         {/* Moved here from the homepage's page.tsx: this component (per its
             own docs) is meant to be mounted once at the app root so it
             tracks every route. Mounted only on "/" it was firing solely on

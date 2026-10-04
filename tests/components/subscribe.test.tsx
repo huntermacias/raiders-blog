@@ -100,3 +100,52 @@ describe("<SubscribeBox />", () => {
 		expect(screen.getByLabelText("Email address")).toBeTruthy()
 	})
 })
+
+describe("campaign attribution", () => {
+	it("sends the remembered campaign with the signup and records a tagged conversion", async () => {
+		const { track } = await import("@vercel/analytics")
+		vi.mocked(track).mockClear()
+		window.localStorage.setItem("raiders-rundown:utm", JSON.stringify({ utm: { source: "x", medium: "social", campaign: "week4-league" }, at: Date.now() }))
+		const f = reply(200, { ok: true })
+		vi.stubGlobal("fetch", f)
+		render(<SubscribeForm source="home" />)
+		fill("fan@example.com")
+		fireEvent.click(screen.getByRole("button", { name: "Get the Sunday picks" }))
+		await screen.findByRole("status")
+		const [, init] = f.mock.calls[0] as unknown as [string, RequestInit]
+		expect(JSON.parse(init.body as string).utm).toEqual({ source: "x", medium: "social", campaign: "week4-league" })
+		expect(track).toHaveBeenCalledWith("newsletter_signup", { source: "x", campaign: "week4-league" })
+		window.localStorage.clear()
+	})
+
+	it("records an untagged signup as direct, and never tracks a failed one", async () => {
+		const { track } = await import("@vercel/analytics")
+		vi.mocked(track).mockClear()
+		vi.stubGlobal("fetch", reply(422, { message: "nope" }))
+		render(<SubscribeForm source="home" />)
+		fill("fan@example.com")
+		fireEvent.click(screen.getByRole("button", { name: "Get the Sunday picks" }))
+		await screen.findByText("nope")
+		expect(track).not.toHaveBeenCalled()
+		cleanup()
+
+		vi.stubGlobal("fetch", reply(200, { ok: true }))
+		render(<SubscribeForm source="home" />)
+		fill("fan@example.com")
+		fireEvent.click(screen.getByRole("button", { name: "Get the Sunday picks" }))
+		await screen.findByRole("status")
+		expect(track).toHaveBeenCalledWith("newsletter_signup", { source: "direct", campaign: "none" })
+	})
+
+	it("a tracking failure never breaks the signup", async () => {
+		const { track } = await import("@vercel/analytics")
+		vi.mocked(track).mockImplementationOnce(() => {
+			throw new Error("blocked")
+		})
+		vi.stubGlobal("fetch", reply(200, { ok: true }))
+		render(<SubscribeForm source="home" />)
+		fill("fan@example.com")
+		fireEvent.click(screen.getByRole("button", { name: "Get the Sunday picks" }))
+		expect((await screen.findByRole("status")).textContent).toMatch(/You're in/)
+	})
+})

@@ -61,6 +61,27 @@ describe("POST /api/league/join", () => {
 		expect(JSON.stringify(doc)).not.toContain(body.key)
 	})
 
+	it("records which tagged link brought the player, cleaned, without exposing it", async () => {
+		c.createIfNotExists.mockImplementationOnce(async (doc) => doc)
+		const res = mockRes()
+		await join(post({ handle: "Tagged1", utm: { source: "X", medium: "social", campaign: "Week 4 League", content: "scoring", evil: "1" } }), res)
+		expect(res.statusCode).toBe(200)
+		const doc = c.createIfNotExists.mock.calls[0][0]
+		expect(doc.signupSource).toBe("x")
+		expect(doc.signupMedium).toBe("social")
+		expect(doc.signupCampaign).toBe("week-4-league")
+		expect(doc.signupContent).toBe("scoring")
+		expect(doc).not.toHaveProperty("evil")
+		expect(JSON.stringify(res.body)).not.toContain("week-4-league")
+	})
+
+	it.each([undefined, null, "x", 7, {}])("stores no signup fields for utm=%j", async (utm) => {
+		c.createIfNotExists.mockImplementationOnce(async (doc) => doc)
+		await join(post({ handle: "Untagged1", utm }), mockRes())
+		const doc = c.createIfNotExists.mock.calls[0][0]
+		expect(Object.keys(doc).filter((k) => k.startsWith("signup"))).toEqual([])
+	})
+
 	it("returns 409 when the handle already belongs to someone else", async () => {
 		c.createIfNotExists.mockResolvedValueOnce({ ...PLAYER, keyHash: hashKey(generateKey()) })
 		const res = mockRes()

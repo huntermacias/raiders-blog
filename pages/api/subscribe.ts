@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
+import { sanitizeUtm } from "../../lib/utm"
+
 // Newsletter signup. Emails go straight to Buttondown (https://buttondown.com)
 // and are NOT stored in Sanity: this project's dataset is public, so anything
 // saved there could be read by anyone. Set BUTTONDOWN_API_KEY in Vercel to turn
@@ -7,7 +9,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/
 
-type Body = { email?: unknown; website?: unknown; source?: unknown }
+type Body = { email?: unknown; website?: unknown; source?: unknown; utm?: unknown }
 
 function sameSite(req: NextApiRequest): boolean {
 	const origin = req.headers.origin
@@ -51,6 +53,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			return res.status(400).json({ message: "Enter a valid email address." })
 		}
 		const source = typeof body.source === "string" ? body.source.slice(0, 60) : "site"
+		// The campaign that brought this visitor (from a tagged link), cleaned again
+		// here because the browser can send anything.
+		const utm = sanitizeUtm(body.utm)
 
 		const ctrl = new AbortController()
 		const timer = setTimeout(() => ctrl.abort(), 8000)
@@ -71,8 +76,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 					// own address every signup looks like it comes from our server.
 					ip_address: visitorIp(req),
 					referrer_url: typeof req.headers.referer === "string" ? req.headers.referer.slice(0, 300) : "https://www.raidersrundown.com/",
-					utm_source: "raidersrundown.com",
-					utm_medium: source,
+					// Buttondown's own attribution fields. A tagged visit wins; otherwise
+					// fall back to "which box on the site" so untagged signups still say where.
+					utm_source: utm.source ?? "raidersrundown.com",
+					utm_medium: utm.medium ?? source,
+					...(utm.campaign ? { utm_campaign: utm.campaign } : {}),
+					metadata: { placement: source, ...(utm.content ? { utm_content: utm.content } : {}) },
 				}),
 				signal: ctrl.signal,
 			})

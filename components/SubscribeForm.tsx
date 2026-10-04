@@ -5,6 +5,8 @@ import { Check, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { trackConversion } from "@/lib/analytics"
+import { loadUtm } from "@/lib/utm"
 
 type Status = "idle" | "sending" | "done" | "error"
 
@@ -20,13 +22,15 @@ export default function SubscribeForm({ source }: { source: string }) {
 		setStatus("sending")
 		setMessage("")
 		try {
+			const utm = loadUtm()
 			const res = await fetch("/api/subscribe", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, website, source }),
+				body: JSON.stringify({ email, website, source, utm: utm ?? undefined }),
 			})
 			const data = await res.json().catch(() => ({}))
 			if (res.ok) {
+				trackConversion("newsletter_signup", utm)
 				setStatus("done")
 				setMessage("You're in. Check your inbox for a confirmation link.")
 			} else {
