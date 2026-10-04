@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import type { PickKey } from "../../../../lib/predictions"
+import { readingMinutes } from "../../../../lib/home"
 
 type Props = {
 	params: {
@@ -127,7 +128,8 @@ async function Post({ params: { slug } }: Props) {
 	const relatedQuery = groq`
 	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
 	| order(_createdAt desc) [0...3] {
-		_id, title, slug, mainImage, _createdAt
+		_id, title, slug, mainImage, _createdAt,
+		"words": length(string::split(pt::text(body), " "))
 	}
 	`
 	const related = categoryIds.length
@@ -169,7 +171,9 @@ async function Post({ params: { slug } }: Props) {
 						</Avatar>
 						<div className="text-sm">
 							<p className="font-semibold">{post.author.name}</p>
-							<p className="text-muted-foreground">{formatDate(post._createdAt)}</p>
+							<p className="text-muted-foreground">
+								{formatDate(post._createdAt)} &middot; {readingMinutes(post.body)} min read
+							</p>
 						</div>
 					</div>
 

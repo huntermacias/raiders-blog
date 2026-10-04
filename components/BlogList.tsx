@@ -1,10 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowUpRight, Clock } from "lucide-react"
 import Image from "next/image"
 
 import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
+import { readingMinutes } from "../lib/home"
 import ClientSideRoute from "./ClientSideRoute"
 import CategoryFilter from "./CategoryFilter"
 import SearchBar from "./SearchBar"
@@ -104,7 +105,14 @@ function BlogList({ posts, featuredIds = [] }: Props) {
 												{post.description}
 											</p>
 											<div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-												<span>{formatDate(post._createdAt)}</span>
+												<span className="flex flex-wrap items-center gap-x-2">
+													{formatDate(post._createdAt)}
+													<span aria-hidden>&middot;</span>
+													<span className="inline-flex items-center gap-1">
+														<Clock aria-hidden className="h-3 w-3" />
+														{post.readMinutes ?? readingMinutes(post.body)} min read
+													</span>
+												</span>
 												<span className="flex items-center gap-1 font-medium text-foreground group-hover:underline">
 													Read <ArrowUpRight className="h-3.5 w-3.5" />
 												</span>

@@ -43,6 +43,11 @@ export function playedGames(rows: ScheduleRow[]): ScheduleRow[] {
 	return rows.filter((r) => !r.bye && r.outcome).sort((a, b) => a.week - b.week)
 }
 
+/** Whole minutes for a word count, never less than one. */
+export function minutesFromWords(words: number, wordsPerMinute = 225): number {
+	return Math.max(1, Math.round((Number.isFinite(words) ? words : 0) / wordsPerMinute))
+}
+
 /** Whole minutes to read a Portable Text body, never less than one. */
 export function readingMinutes(body: unknown, wordsPerMinute = 225): number {
 	if (!Array.isArray(body)) return 1
@@ -54,7 +59,7 @@ export function readingMinutes(body: unknown, wordsPerMinute = 225): number {
 			if (typeof c?.text === "string") words += c.text.trim().split(/\s+/).filter(Boolean).length
 		}
 	}
-	return Math.max(1, Math.round(words / wordsPerMinute))
+	return minutesFromWords(words, wordsPerMinute)
 }
 
 /**

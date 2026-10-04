@@ -1,6 +1,7 @@
 import Image from "next/image"
 
 import { thumbImageUrl, hotspotPosition } from "../lib/urlFor"
+import { minutesFromWords } from "../lib/home"
 import ClientSideRoute from "./ClientSideRoute"
 import { Card } from "@/components/ui/card"
 
@@ -10,6 +11,8 @@ type RelatedPost = {
 	slug: { current: string }
 	mainImage: any
 	_createdAt: string
+	/** Word count of the body, from the GROQ query. */
+	words?: number
 }
 
 function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
@@ -37,6 +40,9 @@ function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
 									<p className="line-clamp-2 text-sm font-semibold leading-snug group-hover:underline">
 										{post.title}
 									</p>
+									{typeof post.words === "number" && (
+										<p className="mt-1.5 text-xs text-muted-foreground">{minutesFromWords(post.words)} min read</p>
+									)}
 								</div>
 							</Card>
 						</article>

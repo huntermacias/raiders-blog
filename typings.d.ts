@@ -15,7 +15,8 @@ interface Post extends Base {
 	slug: Slug;
 	title: string;
 	description: string;
-	
+	/** Filled in by the homepage so the client list needn't carry every article body. */
+	readMinutes?: number;
 }
 
 interface Author extends Base {

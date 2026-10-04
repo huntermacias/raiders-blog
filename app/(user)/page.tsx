@@ -218,6 +218,9 @@ export default async function page() {
 		],
 	}
 
+	// BlogList is a client component: hand it the read time, not 34 article bodies.
+	const listPosts: Post[] = (posts ?? []).map((p) => ({ ...p, body: [], readMinutes: readingMinutes(p.body) }))
+
   return (
 	  <div>
 		  {/* eslint-disable-next-line react/no-danger */}
@@ -252,7 +255,7 @@ export default async function page() {
 
 		  <SubscribeBox source="home" variant="band" />
 
-		  <BlogList posts={posts} featuredIds={featured.map((f) => f._id)} />
+		  <BlogList posts={listPosts} featuredIds={featured.map((f) => f._id)} />
 	  </div>
 
   )
