@@ -172,11 +172,10 @@ describe("<DriveReplay />", () => {
 		}
 	})
 
-	it("names both end zones", () => {
-		const { container } = renderDrives()
-		const text = container.querySelector("svg")!.textContent ?? ""
-		expect(text).toContain("RAIDERS")
-		expect(text).toContain("SAINTS")
+	it("says which way the offense is going, and orients left and right", () => {
+		renderDrives()
+		expect(screen.getByRole("img", { name: /moves up the screen toward the Saints end zone/ })).toBeTruthy()
+		expect(screen.getByText(/left and right are the offense/)).toBeTruthy()
 	})
 
 	it("switches drives from the picker and resets to the first play", () => {

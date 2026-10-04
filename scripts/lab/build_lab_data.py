@@ -85,6 +85,39 @@ def lv_wp(row, team: str, when: str = "pre"):
     return _num(row.get(col))
 
 
+LANES = {"left": "L", "middle": "M", "right": "R"}
+GAPS = {"end": "E", "tackle": "T", "guard": "G"}
+
+
+def lane_fields(row, ptype: str) -> dict:
+    """Which third of the field a play went to, from the play log (no player-location data is involved).
+
+    nflverse records run_location / pass_location as left, middle or right from the offense's
+    point of view, and for runs a gap (end, tackle, guard). Passes also carry air yards and
+    yards after the catch. Keys are left out when the log has no value.
+    """
+    out: dict = {}
+    if ptype == "run":
+        lane = LANES.get(_text(row.get("run_location")))
+        gap = GAPS.get(_text(row.get("run_gap")))
+        if lane:
+            out["loc"] = lane
+        if gap:
+            out["gap"] = gap
+    elif ptype == "pass":
+        lane = LANES.get(_text(row.get("pass_location")))
+        if lane:
+            out["loc"] = lane
+        ay = _num(row.get("air_yards"))
+        if ay is not None:
+            out["ay"] = int(round(ay))
+        yac = _num(row.get("yards_after_catch"))
+        if yac is not None:
+            out["yac"] = int(round(yac))
+    return out
+
+
+
 def build_game(g: pd.DataFrame, team: str) -> dict | None:
     g = g.sort_values("play_id").reset_index(drop=True)
     last = g.iloc[-1]
@@ -214,7 +247,7 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
                 xe = round(100 - nxt, 1)
             else:
                 xe = round(min(100.0, max(0.0, x + yds)), 1)
-            out_plays.append({
+            play = {
                 "n": i + 1,
                 "dn": _int(r.get("down"), 0) or None,
                 "ytg": _int(r.get("ydstogo"), 0),
@@ -225,7 +258,9 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
                 "fd": _int(r.get("first_down")) == 1,
                 "td": _int(r.get("touchdown")) == 1,
                 "text": clean_desc(_text(r["desc"])),
-            })
+            }
+            play.update(lane_fields(r, ptype))
+            out_plays.append(play)
         if not out_plays:
             continue
         first = rows[0]

@@ -120,6 +120,7 @@
 		--lab-field-num: rgba(15, 23, 42, 0.34);
 		--lab-first-down: #e6a800;
 		--lab-scrimmage: #1b6fd6;
+		--lab-bad: #d92d3a;
 		--lab-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.45);
 	}
 	.dark .lab {
@@ -137,11 +138,12 @@
 		--lab-team: #dfe3ea;
 		--lab-on-team: #0b0d10;
 		--lab-field: #10151b;
-		--lab-field-band: rgba(255, 255, 255, 0.025);
-		--lab-field-line: rgba(255, 255, 255, 0.15);
-		--lab-field-num: rgba(255, 255, 255, 0.3);
+		--lab-field-band: rgba(255, 255, 255, 0.035);
+		--lab-field-line: rgba(255, 255, 255, 0.24);
+		--lab-field-num: rgba(255, 255, 255, 0.45);
 		--lab-first-down: #f5d90a;
 		--lab-scrimmage: #4da3ff;
+		--lab-bad: #ff5a5f;
 		--lab-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.9);
 	}
 

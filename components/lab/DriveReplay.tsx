@@ -3,20 +3,11 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from "lucide-react"
 
-import { framesForDrive, resultLabel, resultTone, type Frame, yardLineName } from "@/lib/lab/drive"
+import { framesForDrive, HASH, resultLabel, resultTone, type Frame, yardLineName } from "@/lib/lab/drive"
+import { BOTTOM, DEPTH, H, MAX_YARD, MIN_YARD, NEAR_W, TOP, W, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom } from "@/lib/lab/field"
 import { LAB } from "@/lib/lab/theme"
 import type { Drive } from "@/lib/lab/types"
 
-const W = 1000
-const H = 332
-const PAD = 16
-const FIELD_W = W - PAD * 2
-const FIELD_TOP = 46
-const FIELD_H = 248
-const FIELD_BOTTOM = FIELD_TOP + FIELD_H
-/** The line the ball travels along, a little below the middle so passes have room to arc. */
-const BASE_Y = FIELD_TOP + FIELD_H * 0.64
-const UNITS = 120 // 100 yards plus two 10-yard end zones
 const SPEEDS = [1, 2] as const
 
 type Props = {
@@ -25,8 +16,6 @@ type Props = {
 	teamName: string
 	oppName: string
 }
-
-const ux = (yard: number) => PAD + ((yard + 10) / UNITS) * FIELD_W
 
 function easeOut(p: number) {
 	return 1 - Math.pow(1 - p, 3)
@@ -43,6 +32,36 @@ function usePrefersReducedMotion() {
 		return () => q.removeEventListener?.("change", on)
 	}, [])
 	return reduced
+}
+
+/** Eases a number toward its target, so the camera glides instead of jumping. */
+function useSmooth(target: number, reduced: boolean) {
+	const [value, setValue] = React.useState(target)
+	const current = React.useRef(target)
+	React.useEffect(() => {
+		if (reduced || typeof requestAnimationFrame === "undefined") {
+			current.current = target
+			setValue(target)
+			return
+		}
+		let raf = 0
+		let last = performance.now()
+		const tick = (now: number) => {
+			const dt = Math.min(0.05, (now - last) / 1000)
+			last = now
+			current.current += (target - current.current) * (1 - Math.exp(-dt * 5))
+			if (Math.abs(target - current.current) < 0.02) {
+				current.current = target
+				setValue(target)
+				return
+			}
+			setValue(current.current)
+			raf = requestAnimationFrame(tick)
+		}
+		raf = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(raf)
+	}, [target, reduced])
+	return value
 }
 
 function outcomeTag(f: Frame): string {
@@ -63,40 +82,40 @@ function outcomeTag(f: Frame): string {
 			return "TURNOVER"
 		case "kneel":
 			return "KNEEL"
-		default:
-			return f.yards === 0 ? "NO GAIN" : `${f.yards > 0 ? "+" : "−"}${Math.abs(f.yards)} YDS`
+		default: {
+			const gained = f.yards === 0 ? "NO GAIN" : `${f.yards > 0 ? "+" : "−"}${Math.abs(f.yards)} YDS`
+			return f.lane && (f.type === "run" || f.type === "pass") ? `${gained} · ${LANE_NAME[f.lane]}` : gained
+		}
 	}
 }
 
-/** How high a pass or kick arcs, in field pixels, by how far it travels. */
-function arcHeight(f: Frame) {
-	return Math.min(150, 40 + Math.abs(f.to - f.from) * 2.6)
+const LANE_NAME = { L: "LEFT", M: "MIDDLE", R: "RIGHT" } as const
+
+type Style = { width: number; taper: boolean; dashed: boolean; opacity: number }
+function ribbonStyle(f: Frame): Style {
+	if (f.outcome === "incomplete") return { width: 7, taper: true, dashed: true, opacity: 0.5 }
+	if (f.outcome === "loss" || f.outcome === "penalty") return { width: 13, taper: false, dashed: true, opacity: 0.45 }
+	if (f.arc) return { width: 14, taper: true, dashed: false, opacity: 0.78 }
+	return { width: 18, taper: false, dashed: false, opacity: 0.8 }
 }
 
-/** The path one play draws on the field: a flat bar for runs, an arc for passes and kicks. */
-function playPath(f: Frame): string {
-	const x0 = ux(f.from)
-	if (f.outcome === "incomplete") {
-		const xe = ux(Math.min(100, f.from + 9))
-		return `M${x0},${BASE_Y} Q${(x0 + xe) / 2},${BASE_Y - 46} ${xe},${BASE_Y}`
-	}
-	const x1 = ux(f.to)
-	if (f.arc) return `M${x0},${BASE_Y} Q${(x0 + x1) / 2},${BASE_Y - arcHeight(f)} ${x1},${BASE_Y}`
-	return `M${x0},${BASE_Y} L${x1},${BASE_Y}`
-}
-
-type Style = { width: number; dash?: string; opacity: number }
-function playStyle(f: Frame): Style {
-	if (f.outcome === "incomplete") return { width: 2.5, dash: "2 6", opacity: 0.75 }
-	if (f.outcome === "loss" || f.outcome === "penalty") return { width: 5, dash: "9 7", opacity: 0.95 }
-	if (f.arc) return { width: 3.5, opacity: 0.95 }
-	return { width: 6, opacity: 0.95 }
+function OutcomeTag({ text, x, y }: { text: string; x: number; y: number }) {
+	const w = Math.max(136, text.length * 8.6 + 32)
+	const cx = Math.min(W - w / 2 - 8, Math.max(w / 2 + 8, x))
+	return (
+		<g transform={`translate(${cx} ${y})`} style={{ pointerEvents: "none" }}>
+			<rect x={-w / 2} y={-15} width={w} height={28} rx={14} fill={LAB.ink} />
+			<text x={0} y={4.5} textAnchor="middle" fontSize={12} fontWeight={800} fill={LAB.surface} letterSpacing="0.05em">
+				{text}
+			</text>
+		</g>
+	)
 }
 
 /** The ball: a clean puck in the offense's color with a small football inside. */
-function Ball({ x, y, angle, color }: { x: number; y: number; angle: number; color: string }) {
+function Ball({ x, y, scale, angle, color }: { x: number; y: number; scale: number; angle: number; color: string }) {
 	return (
-		<g transform={`translate(${x} ${y})`} style={{ pointerEvents: "none" }}>
+		<g transform={`translate(${x} ${y}) scale(${scale})`} style={{ pointerEvents: "none" }}>
 			<circle r={16} fill={LAB.surface} stroke={color} strokeWidth={3.5} />
 			<g transform={`rotate(${angle})`} fill="none" stroke={LAB.ink} strokeLinecap="round">
 				<ellipse rx={8.5} ry={5} strokeWidth={1.7} />
@@ -104,6 +123,74 @@ function Ball({ x, y, angle, color }: { x: number; y: number; angle: number; col
 				<line x1={-1.6} y1={-1.7} x2={-1.6} y2={1.7} strokeWidth={1.2} />
 				<line x1={1.6} y1={-1.7} x2={1.6} y2={1.7} strokeWidth={1.2} />
 			</g>
+		</g>
+	)
+}
+
+function EndZoneName({ view, yard, name, color }: { view: ReturnType<typeof viewFrom>; yard: number; name: string; color: string }) {
+	const c = view.pt(yard, 0)
+	return (
+		<text x={c.x} y={c.y + 9 * c.s} textAnchor="middle" fontSize={30 * c.s} fontWeight={800} letterSpacing="0.3em" fill={color} style={{ pointerEvents: "none" }}>
+			{name.toUpperCase()}
+		</text>
+	)
+}
+
+/** A line across the field (line of scrimmage, first down) with its label outside both sidelines. */
+function Line({ view, yard, color, label }: { view: ReturnType<typeof viewFrom>; yard: number; color: string; label: string }) {
+	const a = view.pt(yard, -0.53)
+	const b = view.pt(yard, 0.53)
+	const size = 22 * a.s
+	return (
+		<g style={{ pointerEvents: "none" }}>
+			<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeOpacity={0.25} strokeWidth={12 * a.s} />
+			<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={Math.max(2, 4 * a.s)} />
+			<g fill={color} fontSize={size} fontWeight={800} letterSpacing="0.05em">
+				<text x={view.pt(yard, -0.585).x} y={a.y + size * 0.35} textAnchor="end">{label}</text>
+				<text x={view.pt(yard, 0.585).x} y={a.y + size * 0.35} textAnchor="start">{label}</text>
+			</g>
+		</g>
+	)
+}
+
+/** One play's route: a soft glow under a tapered ribbon, dashed for losses and incompletions. */
+function Ribbon({ samples, view, style, color, uid }: { samples: { yard: number; u: number; lift: number }[]; view: ReturnType<typeof viewFrom>; style: { width: number; taper: boolean; dashed: boolean; opacity: number }; color: string; uid: string }) {
+	const d = ribbon(samples as never, view, style.width, style.taper)
+	if (!d) return null
+	return (
+		<g>
+			<path d={d} fill={color} opacity={style.opacity * 0.7} filter={`url(#${uid}-glow)`} />
+			<path d={d} fill={color} opacity={style.opacity} />
+			{style.dashed && <path d={centerline(samples as never, view)} fill="none" stroke={color} strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round" />}
+		</g>
+	)
+}
+
+function ringAt(view: ReturnType<typeof viewFrom>, spot: { yard: number; u: number }, _f: Frame) {
+	return view.pt(spot.yard, spot.u)
+}
+
+/** The mark where a play ended: a filled ring, a hollow ring for an incompletion, a diamond for a turnover. */
+function EndMarker({ x, y, s, f, color }: { x: number; y: number; s: number; f: Frame; color: string }) {
+	const r = 7 * s + 3
+	if (f.outcome === "incomplete") {
+		return (
+			<g>
+				<circle cx={x} cy={y} r={r} fill="none" stroke={LAB.ink} strokeWidth={2.5} />
+				<g stroke={LAB.ink} strokeWidth={2} strokeLinecap="round">
+					<line x1={x - r * 0.4} y1={y - r * 0.4} x2={x + r * 0.4} y2={y + r * 0.4} />
+					<line x1={x - r * 0.4} y1={y + r * 0.4} x2={x + r * 0.4} y2={y - r * 0.4} />
+				</g>
+			</g>
+		)
+	}
+	if (f.outcome === "turnover") {
+		return <rect x={x - r} y={y - r} width={2 * r} height={2 * r} rx={2} fill={LAB.bad} stroke={LAB.surface} strokeWidth={2} transform={`rotate(45 ${x} ${y})`} />
+	}
+	return (
+		<g>
+			{f.outcome === "touchdown" && <circle cx={x} cy={y} r={r + 6} fill="none" stroke={color} strokeWidth={2} opacity={0.7} />}
+			<circle cx={x} cy={y} r={r} fill={color} stroke={LAB.surface} strokeWidth={2.5} />
 		</g>
 	)
 }
@@ -117,10 +204,10 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 	const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1)
 	// While a play is animating: progress 0..1 of frames[cursor].
 	const [progress, setProgress] = React.useState<number | null>(null)
-	const fieldRef = React.useRef<HTMLDivElement>(null)
 
 	const drive = drives[driveIdx]
 	const frames = React.useMemo(() => (drive ? framesForDrive(drive) : []), [drive])
+	const paths = React.useMemo(() => frames.map(pathFor), [frames])
 	const n = frames.length
 	const isTeam = drive?.team === teamAbbr
 	const driveColor = isTeam ? LAB.team : LAB.opp
@@ -178,18 +265,16 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 		}
 	}, [playing, cursor, n, speed, reduced])
 
-	// On a phone the field is wider than the screen and scrolls sideways; keep the ball in view.
-	React.useEffect(() => {
-		const el = fieldRef.current
-		if (!el || el.scrollWidth <= el.clientWidth + 2 || frames.length === 0) return
-		const done = progress === 1 ? cursor + 1 : cursor
-		const f = frames[cursor]
-		let yard: number
-		if (progress != null && progress < 1 && f) yard = f.from + (f.to - f.from) * progress
-		else if (done > 0) yard = frames[Math.min(done, frames.length) - 1].to
-		else yard = frames[0].from
-		el.scrollLeft = ((yard + 10) / UNITS) * el.scrollWidth - el.clientWidth / 2
-	}, [progress, cursor, frames])
+	// The camera follows the ball down the field.
+	const live = progress != null && progress < 1 && cursor < n
+	const doneNow = progress === 1 ? cursor + 1 : cursor
+	let focus = 0
+	if (n > 0) {
+		if (live && paths[cursor]) focus = pointAlong(paths[cursor], frames[cursor].arc ? progress! : easeOut(progress!)).yard
+		else if (doneNow > 0) focus = paths[Math.min(doneNow, n) - 1].end.yard
+		else focus = paths[0].start.yard
+	}
+	const cam = useSmooth(cameraFor(focus), reduced)
 
 	if (!drive || n === 0) return null
 
@@ -201,29 +286,24 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 	const finished = eff >= n
 	const animating = progress != null && progress < 1 && cursor < n
 
-	// Ball position, how high it is in the air, and which way it points.
-	let ballYard: number
-	let lift = 0
+	// Where the ball is, how high it is in the air, and which way it points.
+	const view = viewFrom(cam)
+	let ballSpot: { yard: number; u: number; lift: number }
 	let angle = 0
 	if (animating) {
 		const f = frames[cursor]
-		const p = progress!
-		const e = f.arc ? p : easeOut(p)
-		ballYard = f.from + (f.to - f.from) * e
-		if (f.arc) {
-			const hc = arcHeight(f)
-			lift = 2 * hc * p * (1 - p)
-			const dx = ((f.to - f.from) / UNITS) * FIELD_W
-			const dy = -2 * hc * (1 - 2 * p)
-			const deg = (Math.atan2(dx >= 0 ? dy : -dy, Math.abs(dx) || 1) * 180) / Math.PI
-			angle = Math.max(-40, Math.min(40, deg))
-		}
-	} else if (last) {
-		ballYard = last.to
+		const at = (p: number) => pointAlong(paths[cursor], f.arc ? p : easeOut(p))
+		ballSpot = at(progress!)
+		const a0 = at(Math.max(0, progress! - 0.04))
+		const p0 = view.pt(a0.yard, a0.u, a0.lift)
+		const p1 = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
+		if (f.arc) angle = Math.max(-40, Math.min(40, (Math.atan2(p1.y - p0.y, Math.max(0.5, p1.x - p0.x) * 3) * 180) / Math.PI))
 	} else {
-		ballYard = frames[0].from
+		const rest = last ? paths[eff - 1].end : paths[0].start
+		ballSpot = { yard: rest.yard, u: rest.u, lift: 0 }
 	}
-	const ballY = BASE_Y - lift
+	const ball = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
+	const ground = view.pt(ballSpot.yard, ballSpot.u)
 
 	const losYard = finished ? frames[n - 1].to : upcoming.from
 	const fdYard = finished ? null : upcoming.firstDownAt
@@ -247,7 +327,35 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 		setPlaying(true)
 	}
 
-	const yardNumbers = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+
+	// What is in view.
+	const lo = Math.floor((cam - 4) / 5) * 5
+	const hi = cam + DEPTH + 10
+	const inView = (a: number, b: number) => b >= cam - 3 && a <= cam + DEPTH + 10
+	const bands: number[] = []
+	for (let k = 0; k < 100; k += 10) if ((k / 10) % 2 === 1 && inView(k, k + 10)) bands.push(k)
+	const lines: number[] = []
+	for (let y = Math.max(0, lo); y <= Math.min(100, hi); y += 5) lines.push(y)
+	const showOwnEnd = inView(MIN_YARD, 0)
+	const showFarEnd = inView(100, MAX_YARD)
+	const poly = (y0: number, y1: number, u0: number, u1: number) =>
+		[view.pt(y0, u0), view.pt(y1, u0), view.pt(y1, u1), view.pt(y0, u1)].map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
+	// Short tick marks every yard along the sidelines and the hash marks.
+	const tickPaths = [-0.5, -HASH, HASH, 0.5].map((u) => {
+		const edge = Math.abs(u) === 0.5
+		const half = edge ? 0.012 : 0.014
+		// Along a sideline the tick points inward; on a hash mark it is centered.
+		const from = edge ? u : u - half
+		const to = edge ? u + (u < 0 ? 2 * half : -2 * half) : u + half
+		let d = ""
+		for (let y = Math.max(0, Math.ceil(cam - 3)); y <= Math.min(100, Math.floor(hi)); y++) {
+			if (y % 5 === 0) continue
+			const a = view.pt(y, from)
+			const b = view.pt(y, to)
+			d += `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`
+		}
+		return { key: u, d }
+	})
 
 	return (
 		<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface text-lab-ink shadow-[var(--lab-shadow)]">
@@ -297,228 +405,152 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</div>
 			</div>
 
-			{/* the field */}
-			<div ref={fieldRef} className="overflow-x-auto px-2 pt-3 sm:px-4">
+			{/* the field, seen from behind the offense and looking down the field */}
+			<div className="mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
 				<svg
 					viewBox={`0 0 ${W} ${H}`}
-					className="block h-auto w-full min-w-[760px]"
+					className="block h-auto w-full"
 					role="img"
-					aria-label={`${driveName} drive ${drive.n}, ${n} plays, ${drive.yards} yards, ending in ${resultLabel(drive.result).toLowerCase()}.`}
+					aria-label={`${driveName} drive ${drive.n}, ${n} plays, ${drive.yards} yards, ending in ${resultLabel(drive.result).toLowerCase()}. The offense moves up the screen toward the ${otherName} end zone.`}
 				>
 					<defs>
-						<clipPath id={`${uid}-field`}>
-							<rect x={PAD} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} rx={12} />
-						</clipPath>
-						<linearGradient id={`${uid}-sheen`} x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" style={{ stopColor: LAB.ink, stopOpacity: 0.05 }} />
-							<stop offset="100%" style={{ stopColor: LAB.ink, stopOpacity: 0 }} />
+						<linearGradient id={`${uid}-fog`} x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" style={{ stopColor: LAB.surface, stopOpacity: 1 }} />
+							<stop offset="100%" style={{ stopColor: LAB.surface, stopOpacity: 0 }} />
 						</linearGradient>
+						<filter id={`${uid}-glow`} x="-20%" y="-20%" width="140%" height="140%">
+							<feGaussianBlur stdDeviation="5" />
+						</filter>
 					</defs>
 
-					<g clipPath={`url(#${uid}-field)`}>
-						{/* surface, with a faint band every ten yards */}
-						<rect x={PAD} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill={LAB.field} />
-						{Array.from({ length: 10 }).map((_, i) => (
-							<rect key={i} x={ux(i * 10)} y={FIELD_TOP} width={(10 / UNITS) * FIELD_W} height={FIELD_H} fill={LAB.fieldBand} opacity={i % 2 ? 1 : 0} />
-						))}
-						<rect x={PAD} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill={`url(#${uid}-sheen)`} />
+					{/* surface, bands every ten yards, end zones in team colors */}
+					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.5, 0.5)} fill={LAB.field} />
+					{bands.map((k) => (
+						<polygon key={k} points={poly(k, k + 10, -0.5, 0.5)} fill={LAB.fieldBand} />
+					))}
+					{showOwnEnd && <polygon points={poly(MIN_YARD, 0, -0.5, 0.5)} fill={driveColor} opacity={0.9} />}
+					{showFarEnd && <polygon points={poly(100, MAX_YARD, -0.5, 0.5)} fill={otherColor} opacity={0.9} />}
+					{showOwnEnd && <EndZoneName view={view} yard={-5} name={driveName} color={onDrive} />}
+					{showFarEnd && <EndZoneName view={view} yard={105} name={otherName} color={onOther} />}
 
-						{/* end zones in team colors: the offense's own on the left, the one it attacks on the right */}
-						<rect x={PAD} y={FIELD_TOP} width={(10 / UNITS) * FIELD_W} height={FIELD_H} fill={driveColor} opacity={0.92} />
-						<rect x={ux(100)} y={FIELD_TOP} width={(10 / UNITS) * FIELD_W} height={FIELD_H} fill={otherColor} opacity={0.92} />
-						<text
-							transform={`translate(${ux(-5)} ${FIELD_TOP + FIELD_H / 2}) rotate(-90)`}
-							textAnchor="middle"
-							dominantBaseline="central"
-							fontSize={21}
-							fontWeight={800}
-							letterSpacing="0.32em"
-							fill={onDrive}
-						>
-							{driveName.toUpperCase()}
-						</text>
-						<text
-							transform={`translate(${ux(105)} ${FIELD_TOP + FIELD_H / 2}) rotate(90)`}
-							textAnchor="middle"
-							dominantBaseline="central"
-							fontSize={21}
-							fontWeight={800}
-							letterSpacing="0.32em"
-							fill={onOther}
-						>
-							{otherName.toUpperCase()}
-						</text>
+					{/* sidelines */}
+					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.56, -0.5)} fill={LAB.fieldLine} opacity={0.55} />
+					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), 0.5, 0.56)} fill={LAB.fieldLine} opacity={0.55} />
 
-						{/* yard lines, hash marks and numbers */}
-						{Array.from({ length: 21 }).map((_, i) => {
-							const yard = i * 5
-							const goal = yard === 0 || yard === 100
+					{/* yard lines and numbers */}
+					{lines.map((y) => {
+						const a = view.pt(y, -0.5)
+						const b = view.pt(y, 0.5)
+						const goal = y === 0 || y === 100
+						return <line key={y} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={LAB.fieldLine} strokeWidth={(goal ? 3.2 : y % 10 === 0 ? 2 : 1.2) * a.s + 0.3} />
+					})}
+					{lines
+						.filter((y) => y % 10 === 0 && y > 0 && y < 100)
+						.map((y) => {
+							const l = view.pt(y, -0.58)
+							const r = view.pt(y, 0.58)
+							const num = y <= 50 ? y : 100 - y
+							const size = 30 * l.s
 							return (
-								<line
-									key={yard}
-									x1={ux(yard)}
-									x2={ux(yard)}
-									y1={FIELD_TOP}
-									y2={FIELD_BOTTOM}
-									stroke={LAB.fieldLine}
-									strokeOpacity={goal ? 1 : yard % 10 === 0 ? 0.9 : 0.45}
-									strokeWidth={goal ? 3 : yard === 50 ? 2 : 1.25}
-								/>
-							)
-						})}
-						{Array.from({ length: 101 }).map((_, i) =>
-							i % 5 === 0 ? null : (
-								<g key={i} stroke={LAB.fieldLine} strokeOpacity={0.55}>
-									<line x1={ux(i)} x2={ux(i)} y1={FIELD_TOP + FIELD_H * 0.4} y2={FIELD_TOP + FIELD_H * 0.4 + 5} />
-									<line x1={ux(i)} x2={ux(i)} y1={FIELD_TOP + FIELD_H * 0.86 - 5} y2={FIELD_TOP + FIELD_H * 0.86} />
-								</g>
-							)
-						)}
-						{yardNumbers.map((yard) => {
-							const num = yard <= 50 ? yard : 100 - yard
-							return (
-								<g key={yard} fill={LAB.fieldNum} fontSize={14} fontWeight={700} textAnchor="middle" className="tabular-nums">
-									<text x={ux(yard)} y={FIELD_TOP + 22}>{num}</text>
-									<text x={ux(yard)} y={FIELD_BOTTOM - 12}>{num}</text>
+								<g key={y} fill={LAB.fieldNum} fontSize={size} fontWeight={700} className="tabular-nums" style={{ pointerEvents: "none" }}>
+									<text x={l.x} y={l.y + size * 0.35} textAnchor="end">{num}</text>
+									<text x={r.x} y={r.y + size * 0.35} textAnchor="start">{num}</text>
 								</g>
 							)
 						})}
+					{tickPaths.map((t) => (
+						<path key={t.key} d={t.d} stroke={LAB.fieldLine} strokeOpacity={0.7} strokeWidth={1} fill="none" />
+					))}
 
-						{/* how far the drive has come */}
-						{trail.length > 0 && (
-							<line
-								x1={ux(frames[0].from)}
-								x2={ux(trail[trail.length - 1].to)}
-								y1={BASE_Y}
-								y2={BASE_Y}
-								stroke={driveColor}
-								strokeOpacity={0.14}
-								strokeWidth={18}
-								strokeLinecap="round"
-							/>
-						)}
+					{/* far end of the field fades into the card */}
+					<rect x={0} y={0} width={W} height={H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
 
-						{/* line of scrimmage and first-down marker, under the ball */}
-						{fdYard != null && fdYard <= 100 && (
-							<g style={{ pointerEvents: "none" }}>
-								<line x1={ux(fdYard)} x2={ux(fdYard)} y1={FIELD_TOP} y2={FIELD_BOTTOM} stroke={LAB.firstDown} strokeOpacity={0.2} strokeWidth={10} />
-								<line x1={ux(fdYard)} x2={ux(fdYard)} y1={FIELD_TOP} y2={FIELD_BOTTOM} stroke={LAB.firstDown} strokeWidth={2.5} />
-							</g>
-						)}
-						{!finished && (
-							<g style={{ pointerEvents: "none" }}>
-								<line x1={ux(losYard)} x2={ux(losYard)} y1={FIELD_TOP} y2={FIELD_BOTTOM} stroke={LAB.scrimmage} strokeOpacity={0.2} strokeWidth={10} />
-								<line x1={ux(losYard)} x2={ux(losYard)} y1={FIELD_TOP} y2={FIELD_BOTTOM} stroke={LAB.scrimmage} strokeWidth={2.5} />
-							</g>
-						)}
+					{/* first-down marker and line of scrimmage */}
+					{fdYard != null && fdYard <= 100 && <Line view={view} yard={fdYard} color={LAB.firstDown} label="1ST" />}
+					{!finished && <Line view={view} yard={losYard} color={LAB.scrimmage} label="LOS" />}
 
-						{/* every play so far, as a bar (run) or arc (pass, punt, kick) */}
-						<g fill="none" style={{ pointerEvents: "none" }}>
-							{trail.map((f) => {
-								const st = playStyle(f)
-								return (
-									<g key={f.n}>
-										<path d={playPath(f)} stroke={driveColor} strokeOpacity={st.opacity} strokeWidth={st.width} strokeDasharray={st.dash} strokeLinecap="round" />
-										<circle cx={ux(f.outcome === "incomplete" ? Math.min(100, f.from + 9) : f.to)} cy={BASE_Y} r={4.5} fill={LAB.surface} stroke={driveColor} strokeWidth={2.5} />
-										{f.outcome === "incomplete" && (
-											<g stroke={LAB.inkMuted} strokeWidth={2} strokeLinecap="round" transform={`translate(${ux(Math.min(100, f.from + 9))} ${BASE_Y - 14})`}>
-												<line x1={-4} y1={-4} x2={4} y2={4} />
-												<line x1={-4} y1={4} x2={4} y2={-4} />
-											</g>
-										)}
-									</g>
-								)
-							})}
-							{/* the play being drawn right now */}
-							{animating &&
-								(() => {
-									const f = frames[cursor]
-									const st = playStyle(f)
-									return (
-										<path
-											d={playPath(f)}
-											pathLength={1}
-											stroke={driveColor}
-											strokeOpacity={st.dash ? progress! * st.opacity : st.opacity}
-											strokeWidth={st.width}
-											strokeDasharray={st.dash ?? "1"}
-											strokeDashoffset={st.dash ? undefined : 1 - progress!}
-											strokeLinecap="round"
-										/>
-									)
-								})()}
-						</g>
-
-						{/* ball, shadow and the burst when a drive ends in points */}
-						<ellipse cx={ux(ballYard)} cy={BASE_Y + 22} rx={Math.max(6, 15 - lift / 10)} ry={3.5} fill={LAB.ink} opacity={0.16} />
-						{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
-							<circle key={`burst-${driveIdx}-${eff}`} className="lab-burst" cx={ux(ballYard)} cy={BASE_Y} r={30} fill="none" stroke={driveColor} strokeWidth={3} />
-						)}
-						<Ball x={ux(ballYard)} y={ballY} angle={angle} color={driveColor} />
-
-						{/* outcome tag once the play is over */}
-						{!animating && last && (
-							<g transform={`translate(${Math.min(W - PAD - 80, Math.max(PAD + 80, ux(ballYard)))} ${FIELD_TOP + 56})`} style={{ pointerEvents: "none" }}>
-								<rect x={-68} y={-15} width={136} height={28} rx={14} fill={LAB.ink} />
-								<text x={0} y={4.5} textAnchor="middle" fontSize={12} fontWeight={800} fill={LAB.surface} letterSpacing="0.05em">
-									{outcomeTag(last)}
-								</text>
-							</g>
-						)}
+					{/* every play so far: a ribbon for the route, a ring where it ended */}
+					<g style={{ pointerEvents: "none" }}>
+						{trail.map((f, i) => {
+							const st = ribbonStyle(f)
+							const path = paths[i]
+							const r = ringAt(view, path.end, f)
+							return (
+								<g key={f.n}>
+									<Ribbon samples={path.samples} view={view} style={st} color={driveColor} uid={uid} />
+									{path.catchSpot && <circle cx={view.pt(path.catchSpot.yard, path.catchSpot.u).x} cy={view.pt(path.catchSpot.yard, path.catchSpot.u).y} r={3.5 * r.s + 1.5} fill={driveColor} />}
+									<EndMarker x={r.x} y={r.y} s={r.s} f={f} color={driveColor} />
+								</g>
+							)
+						})}
+						{/* the play being drawn right now */}
+						{animating && <Ribbon samples={sliceTo(paths[cursor], frames[cursor].arc ? progress! : easeOut(progress!))} view={view} style={ribbonStyle(frames[cursor])} color={driveColor} uid={uid} />}
 					</g>
 
-					{/* sideline frame */}
-					<rect x={PAD} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} rx={12} fill="none" stroke={LAB.fieldLine} strokeWidth={1.5} />
+					{/* ball, shadow and the burst when a drive ends in points */}
+					<ellipse cx={ground.x} cy={ground.y + 6 * ground.s} rx={Math.max(5, 16 * ground.s - ballSpot.lift * 0.05)} ry={4 * ground.s} fill={LAB.ink} opacity={0.18} />
+					{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
+						<circle key={`burst-${driveIdx}-${eff}`} className="lab-burst" cx={ball.x} cy={ball.y} r={30 * ball.s} fill="none" stroke={driveColor} strokeWidth={3} />
+					)}
+					<Ball x={ball.x} y={ball.y} scale={Math.max(0.7, ball.s)} angle={angle} color={driveColor} />
 
-					{/* flags for the two lines, outside the field so nothing covers them */}
-					{fdYard != null && fdYard <= 100 && (
-						<g style={{ pointerEvents: "none" }}>
-							<rect x={ux(fdYard) - 38} y={FIELD_TOP - 28} width={76} height={21} rx={10.5} fill={LAB.firstDown} />
-							<text x={ux(fdYard)} y={FIELD_TOP - 13.5} textAnchor="middle" fontSize={10.5} fontWeight={800} fill="#14171c" letterSpacing="0.05em">
-								1ST DOWN
-							</text>
-						</g>
-					)}
-					{!finished && (
-						<g style={{ pointerEvents: "none" }}>
-							<rect x={Math.min(W - PAD - 62, Math.max(PAD, ux(losYard) - 62))} y={FIELD_BOTTOM + 8} width={124} height={21} rx={10.5} fill={LAB.scrimmage} />
-							<text x={Math.min(W - PAD - 62, Math.max(PAD, ux(losYard) - 62)) + 62} y={FIELD_BOTTOM + 22.5} textAnchor="middle" fontSize={10} fontWeight={800} fill="#ffffff" letterSpacing="0.05em">
-								LINE OF SCRIMMAGE
-							</text>
-						</g>
-					)}
+					{/* outcome tag once the play is over */}
+					{!animating && last && <OutcomeTag text={outcomeTag(last)} x={ball.x} y={ball.y > 120 ? ball.y - 52 * ball.s - 8 : ball.y + 52 * ball.s + 8} />}
+
+					{/* which side is which, from the offense's point of view */}
+					<g fill={LAB.fieldNum} fontSize={11} fontWeight={700} letterSpacing="0.16em" textAnchor="middle" style={{ pointerEvents: "none" }}>
+						<text x={W / 2 - 0.36 * NEAR_W} y={BOTTOM + 18}>LEFT</text>
+						<text x={W / 2} y={BOTTOM + 18}>MIDDLE</text>
+						<text x={W / 2 + 0.36 * NEAR_W} y={BOTTOM + 18}>RIGHT</text>
+					</g>
 				</svg>
 			</div>
 
 			{/* what the marks on the field are */}
 			<ul className="flex flex-wrap gap-x-5 gap-y-2 px-4 pt-2 text-xs text-lab-soft sm:px-6" aria-label="Field legend">
 				<li className="inline-flex items-center gap-2">
-					<span className="h-3.5 w-1 rounded-full" style={{ background: LAB.scrimmage }} aria-hidden />
+					<span className="h-1 w-5 rounded-full" style={{ background: LAB.scrimmage }} aria-hidden />
 					Line of scrimmage
 				</li>
 				<li className="inline-flex items-center gap-2">
-					<span className="h-3.5 w-1 rounded-full" style={{ background: LAB.firstDown }} aria-hidden />
+					<span className="h-1 w-5 rounded-full" style={{ background: LAB.firstDown }} aria-hidden />
 					First-down marker
 				</li>
 				<li className="inline-flex items-center gap-2">
-					<svg width="30" height="14" viewBox="0 0 30 14" aria-hidden>
-						<path d="M2 12 Q15 -4 28 12" fill="none" stroke={LAB.inkSoft} strokeWidth="2.5" strokeLinecap="round" />
+					<svg width="30" height="16" viewBox="0 0 30 16" aria-hidden>
+						<path d="M2 14 Q15 -6 28 14" fill="none" stroke={LAB.inkSoft} strokeWidth="3" strokeLinecap="round" opacity="0.8" />
 					</svg>
 					Pass or kick
 				</li>
 				<li className="inline-flex items-center gap-2">
-					<svg width="30" height="14" viewBox="0 0 30 14" aria-hidden>
-						<line x1="3" y1="7" x2="27" y2="7" stroke={LAB.inkSoft} strokeWidth="5" strokeLinecap="round" />
+					<svg width="30" height="16" viewBox="0 0 30 16" aria-hidden>
+						<line x1="3" y1="8" x2="27" y2="8" stroke={LAB.inkSoft} strokeWidth="7" strokeLinecap="round" opacity="0.7" />
 					</svg>
 					Run
 				</li>
 				<li className="inline-flex items-center gap-2">
-					<svg width="30" height="14" viewBox="0 0 30 14" aria-hidden>
-						<line x1="3" y1="7" x2="27" y2="7" stroke={LAB.inkSoft} strokeWidth="4" strokeLinecap="round" strokeDasharray="7 5" />
+					<svg width="30" height="16" viewBox="0 0 30 16" aria-hidden>
+						<line x1="3" y1="8" x2="27" y2="8" stroke={LAB.inkSoft} strokeWidth="3" strokeLinecap="round" strokeDasharray="6 5" />
 					</svg>
 					Loss or penalty
 				</li>
+				<li className="inline-flex items-center gap-2">
+					<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+						<circle cx="8" cy="8" r="5.5" fill={LAB.inkSoft} stroke={LAB.surface} strokeWidth="2" />
+					</svg>
+					Where the play ended
+				</li>
+				<li className="inline-flex items-center gap-2">
+					<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+						<circle cx="8" cy="8" r="6" fill="none" stroke={LAB.ink} strokeWidth="2" />
+					</svg>
+					Incomplete
+				</li>
 			</ul>
+			<p className="px-4 pt-2 text-[11px] leading-relaxed text-lab-muted sm:px-6">
+				The offense moves up the screen, so left and right are the offense&rsquo;s left and right. Each play is drawn toward the side it went. The official log records left, middle or
+				right (and the gap on runs), not exact positions, so the lane is a good guide and the exact spot is not.
+			</p>
 
 			{/* transport */}
 			<div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-2 sm:px-6">
