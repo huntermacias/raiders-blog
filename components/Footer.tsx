@@ -41,9 +41,6 @@ function Footer() {
 								Tech Blog
 							</a>
 						</li>
-						<li>
-							<Link href="/studio" className="hover:text-foreground">Studio (Admin)</Link>
-						</li>
 					</ul>
 				</div>
 
