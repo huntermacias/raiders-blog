@@ -29,7 +29,8 @@ import { ogFonts } from "../../lib/og/fonts"
 import { client } from "../../lib/sanity.client"
 import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
 import { buildLiveSpec } from "../../lib/og/liveCard"
-import { HANDLE_RE, LEAGUE_QUERY, buildStandings, normalizeLeagueData } from "../../lib/league"
+import { buildLeagueSpec } from "../../lib/og/leagueCard"
+import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
 
 const FALLBACK = "/og-default-v2.png"
 const PHOTO_W = 420
@@ -180,22 +181,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 	if (type === "league") {
 		// League documents have dotted ids (private in Sanity), so this needs the token client.
 		const data = normalizeLeagueData(await client.fetch(LEAGUE_QUERY, { season: SEASON }))
-		const handle = first(query.handle)
-		if (!handle) return { type: "league", season: SEASON, players: data.players.length }
-		if (!HANDLE_RE.test(handle)) return null
-		const rows = buildStandings(data.games, data.players, data.picks)
-		const mine = rows.find((r) => r.lower === handle.toLowerCase())
-		const player = data.players.find((p) => p.lower === handle.toLowerCase())
-		if (!player) return null
-		return {
-			type: "league",
-			season: SEASON,
-			handle: player.handle,
-			rank: mine?.rank ?? null,
-			ranked: rows.length,
-			points: mine?.points ?? null,
-			vs: mine?.vsBlogger ?? null,
-		}
+		return buildLeagueSpec(data, SEASON, first(query.handle))
 	}
 
 	if (type === "live") {

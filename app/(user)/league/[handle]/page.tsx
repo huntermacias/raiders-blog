@@ -25,6 +25,8 @@ export async function generateMetadata({ params }: { params: { handle: string } 
 		alternates: { canonical: `${SITE_URL}/league/${handle}` },
 		openGraph: { type: "profile", title, description, url: `${SITE_URL}/league/${handle}`, siteName: "Raiders Rundown", images: [image, { url: image, width: 1200, height: 630, alt: `${handle} in Beat the Blogger` }] },
 		twitter: { card: "summary_large_image", title, description, images: [image] },
+		// This Next version writes openGraph.images as og:image:url only; a plain og:image is what most link previews read.
+		other: { "og:image": image },
 	}
 }
 
