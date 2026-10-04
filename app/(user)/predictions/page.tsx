@@ -16,6 +16,9 @@ import ScoreboardHero from "../../../components/predictions/ScoreboardHero"
 import PicksFeed from "../../../components/predictions/PicksFeed"
 import SeasonTracker from "../../../components/predictions/SeasonTracker"
 import FlagLedger from "../../../components/predictions/FlagLedger"
+import VegasBoard from "../../../components/predictions/VegasBoard"
+import { getGames } from "../../../lib/lab/data"
+import { buildVegasBoard } from "../../../lib/vegas"
 
 // Same reasoning as the game reports index: render fresh on every request so
 // newly graded picks and reader votes show immediately instead of waiting for
@@ -101,6 +104,8 @@ export default async function PredictionsPage() {
 	const keysSummary = summarizeKeys(picks)
 	const flagSummary = summarizeFlags(flags ?? [])
 	const teamRows = season?.teams ?? []
+	const vegas = buildVegasBoard(Array.isArray(picks) ? picks : [], getGames())
+	const showVegas = vegas.games.length > 0 || vegas.summary.missingLine > 0
 
 	return (
 		<div className="container py-12">
@@ -114,6 +119,11 @@ export default async function PredictionsPage() {
 					<a href="#weekly-picks" className="underline-offset-4 hover:underline">
 						Weekly picks
 					</a>
+					{showVegas && (
+						<a href="#vs-vegas" className="underline-offset-4 hover:underline">
+							Vs. Vegas
+						</a>
+					)}
 					{flags && flags.length > 0 && (
 						<a href="#flags" className="underline-offset-4 hover:underline">
 							Flags planted
@@ -138,6 +148,17 @@ export default async function PredictionsPage() {
 				/>
 				<PicksFeed picks={picks} />
 			</section>
+
+			{showVegas && (
+				<section className="mt-16" aria-labelledby="vs-vegas">
+					<SectionHeading
+						id="vs-vegas"
+						title="Hunter vs. Vegas"
+						subtitle="Every Raiders score pick set against the closing point spread: which side of the line I took, and whose number was closer to the final margin."
+					/>
+					<VegasBoard board={vegas} season={SEASON} />
+				</section>
+			)}
 
 			{flags && flags.length > 0 && (
 				<section className="mt-16" aria-labelledby="flags">
@@ -191,6 +212,11 @@ export default async function PredictionsPage() {
 					<p>
 						<strong className="text-foreground">Keys to the game</strong> are the three or so things I say have to happen for the Raiders to win. After the final I mark each one hit or missed, and
 						the scoreboard keeps a running hit rate. <strong className="text-foreground">Flags planted</strong> are single bold calls, like a specific player making a specific play, graded the same way.
+					</p>
+					<p>
+						<strong className="text-foreground">Versus Vegas</strong> uses the closing spread from nflverse. My predicted score implies a margin; if that margin is better for the Raiders than the line, I&rsquo;m taking the Raiders
+						against the spread, and if it&rsquo;s worse I&rsquo;m taking the other side. A margin exactly on the line takes no side, and a final exactly on the line is a push. I also compare how many points my
+						margin and the line each missed the real margin by. It&rsquo;s a scorekeeping exercise, not betting advice.
 					</p>
 					<p>
 						<strong className="text-foreground">Reader picks</strong> are anonymous and lock at kickoff.
