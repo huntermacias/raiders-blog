@@ -1,7 +1,7 @@
 """Run with: python -m pytest scripts/lab -q"""
 import pandas as pd
 
-from build_lab_data import build_game, clean_desc, elapsed_seconds
+from build_lab_data import build_game, clean_desc, elapsed_seconds, lane_fields
 
 COLS = [
     "game_id", "play_id", "week", "home_team", "away_team", "qtr", "time", "quarter_seconds_remaining",
@@ -9,7 +9,7 @@ COLS = [
     "field_goal_result", "safety", "interception", "fumble_lost", "first_down", "td_team",
     "home_wp", "away_wp", "home_wp_post", "away_wp_post", "total_home_score", "total_away_score",
     "home_score", "away_score", "spread_line", "roof", "game_date", "fixed_drive", "fixed_drive_result",
-    "drive_time_of_possession",
+    "drive_time_of_possession", "run_location", "run_gap", "pass_location", "air_yards", "yards_after_catch",
 ]
 
 
@@ -90,3 +90,26 @@ def test_score_log_includes_extra_points_and_ends_on_the_final_score():
     game = build_game(frame(rows), "LV")
     assert [s[1:] for s in game["scores"]] == [[6, 0], [7, 0]]
     assert game["scores"][-1][1:] == game["score"]
+
+
+def test_lane_fields_for_runs_passes_and_plays_with_no_lane():
+    assert lane_fields({"run_location": "left", "run_gap": "end"}, "run") == {"loc": "L", "gap": "E"}
+    assert lane_fields({"run_location": "middle", "run_gap": float("nan")}, "run") == {"loc": "M"}
+    assert lane_fields({"pass_location": "right", "air_yards": 8.0, "yards_after_catch": 3.0}, "pass") == {"loc": "R", "ay": 8, "yac": 3}
+    # A sack has no pass location: nothing to draw, so the keys are left out.
+    assert lane_fields({"pass_location": float("nan"), "air_yards": float("nan")}, "pass") == {}
+    assert lane_fields({"run_location": "left"}, "punt") == {}
+
+
+def test_drive_plays_carry_their_lane():
+    rows = [
+        base(play_id=1, play_type="run", posteam="LV", down=1, ydstogo=10, yardline_100=75, yards_gained=5, desc="run left end",
+             run_location="left", run_gap="end"),
+        base(play_id=2, play_type="pass", posteam="LV", down=2, ydstogo=5, yardline_100=70, yards_gained=9, desc="pass short right",
+             pass_location="right", air_yards=6.0, yards_after_catch=3.0),
+        base(play_id=3, play_type=None, desc="END GAME", home_score=0, away_score=0),
+    ]
+    game = build_game(frame(rows), "LV")
+    plays = game["drives"][0]["plays"]
+    assert plays[0]["loc"] == "L" and plays[0]["gap"] == "E"
+    assert plays[1]["loc"] == "R" and plays[1]["ay"] == 6 and plays[1]["yac"] == 3

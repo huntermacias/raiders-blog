@@ -33,6 +33,13 @@ export type DrivePlay = {
 	fd: boolean
 	td: boolean
 	text: string
+	/** Third of the field the play went to, from the offense's point of view. Missing when the log has none. */
+	loc?: "L" | "M" | "R"
+	/** Run gap: E end, T tackle, G guard. Runs only. */
+	gap?: "E" | "T" | "G"
+	/** Passes: yards the ball traveled in the air (negative behind the line), and yards after the catch. */
+	ay?: number
+	yac?: number
 }
 
 export type Drive = {

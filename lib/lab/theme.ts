@@ -25,4 +25,5 @@ export const LAB = {
 	fieldNum: "var(--lab-field-num)",
 	firstDown: "var(--lab-first-down)",
 	scrimmage: "var(--lab-scrimmage)",
+	bad: "var(--lab-bad)",
 } as const
