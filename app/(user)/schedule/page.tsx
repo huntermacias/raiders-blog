@@ -129,6 +129,8 @@ export default async function SchedulePage() {
 						</div>
 					</section>
 
+					{rows.some(isScheduled) && <CalendarPanel games={rows.filter(isScheduled).length} />}
+
 					<ScheduleList rows={rows} />
 
 					<p className="mt-6 text-sm text-muted-foreground">
