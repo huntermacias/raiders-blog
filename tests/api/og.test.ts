@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn() }, client: {} }))
+vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn() }, client: { fetch: vi.fn() } }))
 
-import { readClient } from "../../lib/sanity.client"
+import { client, readClient } from "../../lib/sanity.client"
 import handler from "../../pages/api/og"
 import { mockReq, mockRes } from "../helpers/http"
 
 const fetchDoc = readClient.fetch as unknown as ReturnType<typeof vi.fn>
+const tokenFetch = client.fetch as unknown as ReturnType<typeof vi.fn>
 const get = (query: Record<string, string>, method = "GET") => mockReq({ method, query })
 
 const isPng = (b: unknown) => Buffer.isBuffer(b) || b instanceof Uint8Array
 
 beforeEach(() => {
 	fetchDoc.mockReset()
+	tokenFetch.mockReset()
 	vi.spyOn(console, "error").mockImplementation(() => {})
 })
 
@@ -120,5 +122,57 @@ describe("/api/og", () => {
 		const res = mockRes()
 		await handler(get({ type: "pick", id: "p1" }), res)
 		expect(res.headers["Content-Type"]).toBe("image/png")
+	})
+
+	describe("league cards", () => {
+		const leagueData = {
+			games: [{ _id: "g1", week: 1, awayTeam: "Las Vegas Raiders", homeTeam: "Kansas City Chiefs", kickoff: "2026-09-13T20:00:00Z", predictedAwayScore: 24, predictedHomeScore: 20, actualAwayScore: 27, actualHomeScore: 20 }],
+			players: [{ handle: "Ann", lower: "ann", joinedAt: "2026-09-01T00:00:00Z" }],
+			picks: [{ player: "ann", predictionId: "g1", awayScore: 27, homeScore: 20 }],
+		}
+
+		it("renders the league's own card and reads private data with the token client", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league" }), res)
+			expect(res.headers["Content-Type"]).toBe("image/png")
+			expect(tokenFetch).toHaveBeenCalledTimes(1)
+			expect(fetchDoc).not.toHaveBeenCalled() // the public client can't see dotted ids
+		})
+
+		it("renders a player's card", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league", handle: "ANN" }), res)
+			expect(res.headers["Content-Type"]).toBe("image/png")
+		})
+
+		it("renders a card for a player who has no graded game yet", async () => {
+			tokenFetch.mockResolvedValueOnce({ ...leagueData, picks: [] })
+			const res = mockRes()
+			await handler(get({ type: "league", handle: "ann" }), res)
+			expect(res.headers["Content-Type"]).toBe("image/png")
+		})
+
+		it("falls back for a handle that isn't in the league", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league", handle: "ghost" }), res)
+			expect(res.redirectedTo).toBe("/og-default-v2.png")
+		})
+
+		it("falls back for a malformed handle without querying", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league", handle: "../../x" }), res)
+			expect(res.redirectedTo).toBe("/og-default-v2.png")
+		})
+
+		it("falls back when the league can't be read", async () => {
+			tokenFetch.mockRejectedValueOnce(new Error("no token"))
+			const res = mockRes()
+			await handler(get({ type: "league" }), res)
+			expect(res.redirectedTo).toBe("/og-default-v2.png")
+		})
 	})
 })
