@@ -29,8 +29,8 @@ export default function Sparkline({ id, series, label }: { id: string; series: W
 			<g clipPath={`url(#${id}-b)`}>
 				<path d={area} fill={LAB.opp} opacity={0.4} />
 			</g>
-			<line x1={0} x2={W} y1={mid} y2={mid} stroke="rgba(255,255,255,0.25)" strokeDasharray="3 4" />
-			<path d={line} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
+			<line x1={0} x2={W} y1={mid} y2={mid} stroke={LAB.axis} strokeDasharray="3 4" />
+			<path d={line} fill="none" stroke={LAB.ink} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
 		</svg>
 	)
 }

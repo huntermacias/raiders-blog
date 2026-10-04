@@ -48,4 +48,34 @@ describe("the Lab section", () => {
 		expect(yml.indexOf("pytest")).toBeGreaterThan(-1)
 		expect(yml.indexOf("pytest")).toBeLessThan(yml.indexOf("build_lab_data.py --season"))
 	})
+
+	// The Lab has to work in light and dark. Colors come from the .lab custom properties
+	// (styles/globals.css) and Tailwind's lab-* colors, never from hardcoded dark-only values.
+	describe("light and dark themes", () => {
+		const files = ["components/lab/WinProbabilityReplay.tsx", "components/lab/DriveReplay.tsx", "components/lab/Sparkline.tsx", "components/lab/Tip.tsx", "app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"]
+
+		it.each(files)("%s has no dark-only colors", (f) => {
+			const src = read(f)
+			expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+			expect(src).not.toMatch(/\b(text|bg|border|divide)-white\//)
+			expect(src).not.toMatch(/bg-\[#0/)
+			expect(src).not.toMatch(/rgba\(255,\s*255,\s*255/)
+			expect(src).not.toMatch(/["'`]#fff["'`]/)
+		})
+
+		it("defines both themes, and a per-game opponent color", () => {
+			const css = read("styles/globals.css")
+			expect(css).toMatch(/\.lab\s*\{/)
+			expect(css).toMatch(/\.dark \.lab\s*\{/)
+			expect(css).toMatch(/--lab-opp-light/)
+			expect(css).toMatch(/--lab-opp-dark/)
+			expect(read("tailwind.config.js")).toMatch(/lab:\s*\{/)
+		})
+
+		it.each(["app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"])("%s sets the lab theme and the opponent's colors", (f) => {
+			const src = read(f)
+			expect(src).toMatch(/className="lab /)
+			expect(src).toMatch(/labColorVars\(/)
+		})
+	})
 })

@@ -75,20 +75,53 @@ describe("<WinProbabilityReplay />", () => {
 
 	it("jumps to a play from the key plays list and shows its win probability swing", () => {
 		renderReplay()
-		const list = screen.getByRole("list")
+		const list = screen.getByRole("list", { name: "Key plays" })
 		fireEvent.click(within(list).getByRole("button", { name: /INTERCEPTED/ }))
 		expect(screen.getAllByText("+70 pts").length).toBeGreaterThan(0)
 		expect(screen.getByText("20% to 90%")).toBeTruthy()
 		// The scrubber lands just after the play, so the headline win probability matches the marker.
 		expect((screen.getByLabelText("Game time") as HTMLInputElement).value).toBe("3600")
-		expect(screen.getByText(/Interception/)).toBeTruthy()
+		expect(screen.getAllByText(/Interception/).length).toBeGreaterThan(0)
 	})
 
 	it("uses a real minus sign for plays that hurt the Raiders", () => {
 		renderReplay()
-		const list = screen.getByRole("list")
+		const list = screen.getByRole("list", { name: "Key plays" })
 		fireEvent.click(within(list).getByRole("button", { name: /Johnson/ }))
 		expect(screen.getAllByText("−15 pts").length).toBeGreaterThan(0)
+	})
+
+	it("explains the symbols: a legend, and a tooltip when a marker is hovered or focused", () => {
+		renderReplay()
+		const legend = screen.getByRole("list", { name: "Symbol legend" })
+		for (const word of ["Touchdown", "Field goal", "Safety", "Two-point conversion", "Turnover", "Big swing"]) {
+			expect(within(legend).getByText(word)).toBeTruthy()
+		}
+		// Each legend entry carries a tooltip with the plain-English meaning.
+		expect(within(legend).getAllByRole("tooltip").length).toBe(6)
+		expect(within(legend).getByText(/lost the ball/)).toBeTruthy()
+
+		expect(screen.queryByText(/Mayer for 3 yards/, { selector: "p.mt-1\\.5" })).toBeNull()
+		const marker = screen.getAllByRole("button", { name: /^Touchdown/ })[1]
+		fireEvent.focus(marker)
+		expect(screen.getAllByText(/Cousins pass to Mayer/).length).toBeGreaterThan(1)
+		fireEvent.blur(marker)
+	})
+
+	it("gives the key-plays tags a tooltip without making them part of the row's name", () => {
+		renderReplay()
+		const list = screen.getByRole("list", { name: "Key plays" })
+		const row = within(list).getByRole("button", { name: /INTERCEPTED/ })
+		// The accessible name says what kind of play it is, in words.
+		expect(row.textContent).toContain("Interception")
+		expect(within(row).queryByRole("tooltip")).toBeNull()
+	})
+
+	it("describes win probability and swings on hover", () => {
+		renderReplay()
+		expect(screen.getByText(/It is not a prediction/)).toBeTruthy()
+		fireEvent.click(within(screen.getByRole("list", { name: "Key plays" })).getByRole("button", { name: /INTERCEPTED/ }))
+		expect(screen.getByText(/percentage points this play added/)).toBeTruthy()
 	})
 
 	it("pauses and replays from the transport button", () => {
@@ -129,6 +162,21 @@ describe("<DriveReplay />", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Next play" }))
 		expect(screen.getAllByText("TOUCHDOWN").length).toBeGreaterThan(0)
 		expect(screen.getByRole("button", { name: "Replay drive" })).toBeTruthy()
+	})
+
+	it("labels what the marks on the field mean", () => {
+		renderDrives()
+		const legend = screen.getByRole("list", { name: "Field legend" })
+		for (const word of ["Line of scrimmage", "First-down marker", "Pass or kick", "Run", "Loss or penalty"]) {
+			expect(within(legend).getByText(word)).toBeTruthy()
+		}
+	})
+
+	it("names both end zones", () => {
+		const { container } = renderDrives()
+		const text = container.querySelector("svg")!.textContent ?? ""
+		expect(text).toContain("RAIDERS")
+		expect(text).toContain("SAINTS")
 	})
 
 	it("switches drives from the picker and resets to the first play", () => {
