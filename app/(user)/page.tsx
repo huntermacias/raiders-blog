@@ -15,6 +15,8 @@ import { type RankingsDoc, buildBoards, raidersRow } from "../../lib/rankings";
 import { type ScheduleGame, joinSchedule, scheduleRecord } from "../../lib/schedule";
 import { hubState, playedGames, readingMinutes } from "../../lib/home";
 import { loadLeague } from "../../lib/league.data";
+import { getScoreboard } from "../../lib/live/service";
+import type { LiveGameInfo } from "../../lib/live/types";
 import { buildStandings, gradedWeeks, openGames, weekSummary } from "../../lib/league";
 import PreviewSuspense from "../../components/PreviewSuspense"
 import PreviewBlogList from "../../components/PreviewBlogList";
@@ -22,6 +24,7 @@ import BlogList from "../../components/BlogList";
 import GameReportsTeaser from "../../components/GameReportsTeaser";
 import SubscribeBox from "../../components/SubscribeBox";
 import GameDayHub from "../../components/home/GameDayHub";
+import LiveStrip from "../../components/home/LiveStrip";
 import StatStrip, { type HomeRank } from "../../components/home/StatStrip";
 import FeaturedStories, { type FeaturedPost } from "../../components/home/FeaturedStories";
 import FlagCard from "../../components/home/FlagCard";
@@ -130,6 +133,20 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 	}
 }
 
+// This week's scoreboard for the live strip. It is a bonus: a slow or failing feed must never hold the
+// homepage up, so it gets a short deadline and falls back to showing no strip.
+async function liveBoard(): Promise<LiveGameInfo[] | null> {
+	try {
+		const board = await Promise.race([
+			getScoreboard(),
+			new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+		])
+		return board ? board.value : null
+	} catch {
+		return null
+	}
+}
+
 export default async function page() {
 
 	if(previewData()) {
@@ -147,7 +164,7 @@ export default async function page() {
 		)
 	}
 
-	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league]: [
+	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league, board]: [
 		Post[],
 		GameReport[],
 		{ games?: ScheduleGame[] } | null,
@@ -155,6 +172,7 @@ export default async function page() {
 		FlagPlant[],
 		RankingsDoc[],
 		Awaited<ReturnType<typeof loadLeague>>,
+		LiveGameInfo[] | null,
 	] = await Promise.all([
 		client.fetch(query),
 		client.fetch(gameReportsQuery),
@@ -163,6 +181,7 @@ export default async function page() {
 		safe(readClient.fetch(flagsQuery, { season: SEASON }), []),
 		safe(readClient.fetch(rankingsQuery, { season: SEASON }), []),
 		loadLeague(),
+		liveBoard(),
 	]);
 
 	// Season data
@@ -239,6 +258,7 @@ export default async function page() {
 		  <h1 className="sr-only">Raiders Rundown: Las Vegas Raiders news, graded picks and power rankings</h1>
 
 		  <div className="container pt-5 md:pt-7">
+			  <LiveStrip initialBoard={board} serverNow={Date.now()} />
 			  <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
 				  <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-secondary-foreground">{today}</span>
 				  <p className="font-serif text-lg font-bold tracking-tight">All About the Shield</p>
