@@ -50,6 +50,15 @@ export type Frame = {
 	firstDown: boolean
 	/** A pass play that ended in a sack. */
 	sack: boolean
+	/** Expected points added and win probability added (a fraction), when the log has them. */
+	epa: number | null
+	wpa: number | null
+	shotgun: boolean
+	noHuddle: boolean
+	/** Chance the play was a pass before the snap, 0 to 1. */
+	xpass: number | null
+	/** A deep pass, per the log. */
+	deep: boolean
 }
 
 const ORDINAL = ["", "1st", "2nd", "3rd", "4th"]
@@ -165,6 +174,12 @@ export function framesForDrive(drive: Drive): Frame[] {
 			yac: p.yac ?? null,
 			firstDown: p.fd && outcome !== "touchdown",
 			sack: isPass && /\bsacked\b/i.test(p.text),
+			epa: p.epa ?? null,
+			wpa: p.wpa ?? null,
+			shotgun: p.sg === 1,
+			noHuddle: p.nh === 1,
+			xpass: p.xp ?? null,
+			deep: p.pl === "D",
 		}
 	})
 }
@@ -227,7 +242,8 @@ export function playKind(f: Frame): string {
 	}
 	if (f.type === "pass") {
 		const where = f.lane ? ` ${LANE_WORD[f.lane]}` : ""
-		return f.outcome === "incomplete" ? `Incomplete pass${where}` : `Pass${where}`
+		const deep = f.deep ? "deep " : ""
+		return f.outcome === "incomplete" ? `Incomplete ${deep}pass${where}` : f.deep ? `Deep pass${where}` : `Pass${where}`
 	}
 	return "Play"
 }
@@ -243,6 +259,23 @@ export function playFacts(f: Frame): string[] {
 	if (f.outcome === "touchdown") out.push("Touchdown")
 	else if (f.firstDown) out.push("First down")
 	if (f.outcome === "turnover") out.push("Turnover")
+	return out
+}
+
+export const fmtEpa = (n: number) => `${n > 0 ? "+" : n < 0 ? "\u2212" : ""}${Math.abs(n).toFixed(2)}`
+export const fmtWpa = (n: number) => {
+	const pts = n * 100
+	return `${pts > 0 ? "+" : pts < 0 ? "\u2212" : ""}${Math.abs(pts).toFixed(1)}%`
+}
+
+/** What the log says about how the play was set up and valued, for the detail panel. */
+export function playAnalytics(f: Frame): { label: string; value: string }[] {
+	const out: { label: string; value: string }[] = []
+	if (f.epa != null) out.push({ label: "Expected points added", value: fmtEpa(f.epa) })
+	if (f.wpa != null) out.push({ label: "Win probability", value: fmtWpa(f.wpa) })
+	if (f.xpass != null) out.push({ label: "Pass odds before the snap", value: `${Math.round(f.xpass * 100)}%` })
+	const setup = [f.shotgun ? "Shotgun" : f.type === "run" || f.type === "pass" ? "Under center" : "", f.noHuddle ? "No huddle" : ""].filter(Boolean)
+	if (setup.length) out.push({ label: "Setup", value: setup.join(", ") })
 	return out
 }
 
@@ -279,6 +312,14 @@ export type DriveStats = {
 	firstDowns: number
 	thirdDowns: { att: number; conv: number }
 	fourthDowns: { att: number; conv: number }
+	/** Total expected points added by the drive's plays (null when the log has none). */
+	epa: number | null
+	/** Plays with positive EPA out of plays with a value. */
+	success: { good: number; of: number }
+	/** Win probability added over the drive, a fraction. */
+	wpa: number | null
+	/** Runs of 10 or more yards and passes of 20 or more. */
+	explosive: number
 }
 
 /** Totals for a drive, from its plays. Penalties and kicks count as plays but not as runs or passes. */
@@ -291,8 +332,18 @@ export function driveStats(frames: Frame[]): DriveStats {
 		firstDowns: 0,
 		thirdDowns: { att: 0, conv: 0 },
 		fourthDowns: { att: 0, conv: 0 },
+		epa: null,
+		success: { good: 0, of: 0 },
+		wpa: null,
+		explosive: 0,
 	}
 	for (const f of frames) {
+		if (f.epa != null) s.epa = (s.epa ?? 0) + f.epa
+		if (f.wpa != null) s.wpa = (s.wpa ?? 0) + f.wpa
+		if (f.epa != null && (f.type === "run" || f.type === "pass") && f.outcome !== "penalty") {
+			s.success.of++
+			if (f.epa > 0) s.success.good++
+		}
 		const scrimmage = (f.type === "run" || f.type === "pass") && f.outcome !== "penalty"
 		if (f.outcome === "penalty") continue
 		if (f.firstDown) s.firstDowns++
@@ -300,12 +351,14 @@ export function driveStats(frames: Frame[]): DriveStats {
 		if (f.type === "run") {
 			s.runs.n++
 			s.runs.yds += f.yards
+			if (f.yards >= 10) s.explosive++
 		} else if (f.sack) {
 			s.sacks++
 			s.passes.yds += f.yards
 		} else {
 			s.passes.att++
 			s.passes.yds += f.yards
+			if (f.yards >= 20) s.explosive++
 			if (f.outcome !== "incomplete" && !/INTERCEPTED/i.test(f.text)) s.passes.comp++
 		}
 		const converted = f.firstDown || f.outcome === "touchdown"

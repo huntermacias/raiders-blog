@@ -4,13 +4,15 @@ import * as React from "react"
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from "lucide-react"
 
 import { Chip, DriveSummary, FilterRow, PlayFilters, Scrubber } from "@/components/lab/DriveBits"
+import DriveMap from "@/components/lab/DriveMap"
+import { Chain, Turf } from "@/components/lab/FieldTurf"
 import { useTimeline } from "@/components/lab/useTimeline"
 import {
 	framesForDrive,
-	HASH,
 	isFiltering,
 	matchesFilter,
 	NO_FILTER,
+	playAnalytics,
 	playFacts,
 	playKind,
 	resultLabel,
@@ -19,7 +21,7 @@ import {
 	type Frame,
 	type PlayFilter,
 } from "@/lib/lab/drive"
-import { COMPACT, DEPTH, MAX_YARD, MIN_YARD, WIDE, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom, type Geom } from "@/lib/lab/field"
+import { COMPACT, DEPTH, WIDE, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom, type Geom } from "@/lib/lab/field"
 import { LAB } from "@/lib/lab/theme"
 import { stateAt } from "@/lib/lab/timeline"
 import type { Drive } from "@/lib/lab/types"
@@ -44,7 +46,7 @@ function usePrefersReducedMotion() {
 }
 
 /** Eases a number toward its target, so the camera glides instead of jumping. */
-function useSmooth(target: number, reduced: boolean) {
+function useSmooth(target: number, reduced: boolean, rate = 5, eps = 0.02) {
 	const [value, setValue] = React.useState(target)
 	const current = React.useRef(target)
 	React.useEffect(() => {
@@ -58,8 +60,8 @@ function useSmooth(target: number, reduced: boolean) {
 		const tick = (now: number) => {
 			const dt = Math.min(0.05, (now - last) / 1000)
 			last = now
-			current.current += (target - current.current) * (1 - Math.exp(-dt * 5))
-			if (Math.abs(target - current.current) < 0.02) {
+			current.current += (target - current.current) * (1 - Math.exp(-dt * rate))
+			if (Math.abs(target - current.current) < eps) {
 				current.current = target
 				setValue(target)
 				return
@@ -135,16 +137,6 @@ function Ball({ x, y, scale, angle, color }: { x: number; y: number; scale: numb
 				<line x1={1.6} y1={-1.7} x2={1.6} y2={1.7} strokeWidth={1.2} />
 			</g>
 		</g>
-	)
-}
-
-function EndZoneName({ view, yard, name, color, compact }: { view: View; yard: number; name: string; color: string; compact: boolean }) {
-	const c = view.pt(yard, 0)
-	const size = Math.max(compact ? 22 : 0, 30 * c.s)
-	return (
-		<text x={c.x} y={c.y + size * 0.3} textAnchor="middle" fontSize={size} fontWeight={800} letterSpacing="0.3em" fill={color} style={{ pointerEvents: "none" }}>
-			{name.toUpperCase()}
-		</text>
 	)
 }
 
@@ -368,6 +360,11 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 		else focus = paths[0].start.yard
 	}
 	const cam = useSmooth(cameraFor(focus), reduced)
+	// Big plays (a score, a turnover, 20 or more yards) get a slow push-in while the result holds.
+	const lastPlay = eff > 0 ? frames[eff - 1] : null
+	const bigPlay = !!lastPlay && !animating && st.settle < 0.05 && (lastPlay.outcome === "touchdown" || lastPlay.outcome === "turnover" || (lastPlay.outcome === "gain" && lastPlay.yards >= 20))
+	const zoom = useSmooth(bigPlay ? 1.1 : 1, reduced, 2.2, 0.0004)
+	const depth = DEPTH / zoom
 
 	if (n === 0) return null
 
@@ -377,7 +374,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 	const shownFrame = shownIdx != null ? frames[shownIdx] : null
 
 	// Where the ball is, how high it is in the air, and which way it points.
-	const view = viewFrom(cam, g)
+	const view = viewFrom(cam, g, depth)
 	let ballSpot: { yard: number; u: number; lift: number }
 	let angle = 0
 	if (animating) {
@@ -427,35 +424,6 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 	}
 	const toggle = () => (tl.playing ? tl.pause() : tl.play())
 
-	// What is in view.
-	const lo = Math.floor((cam - 4) / 5) * 5
-	const hi = cam + DEPTH + 10
-	const inView = (a: number, b: number) => b >= cam - 3 && a <= cam + DEPTH + 10
-	const bands: number[] = []
-	for (let b = 0; b < 100; b += 10) if ((b / 10) % 2 === 1 && inView(b, b + 10)) bands.push(b)
-	const lines: number[] = []
-	for (let y = Math.max(0, lo); y <= Math.min(100, hi); y += 5) lines.push(y)
-	const showOwnEnd = inView(MIN_YARD, 0)
-	const showFarEnd = inView(100, MAX_YARD)
-	const poly = (y0: number, y1: number, u0: number, u1: number) =>
-		[view.pt(y0, u0), view.pt(y1, u0), view.pt(y1, u1), view.pt(y0, u1)].map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
-	// Short tick marks every yard along the sidelines and the hash marks.
-	const tickPaths = [-0.5, -HASH, HASH, 0.5].map((u) => {
-		const edge = Math.abs(u) === 0.5
-		const half = edge ? 0.012 : 0.014
-		// Along a sideline the tick points inward; on a hash mark it is centered.
-		const from = edge ? u : u - half
-		const to = edge ? u + (u < 0 ? 2 * half : -2 * half) : u + half
-		let d = ""
-		for (let y = Math.max(0, Math.ceil(cam - 3)); y <= Math.min(100, Math.floor(hi)); y++) {
-			if (y % 5 === 0) continue
-			const a = view.pt(y, from)
-			const b = view.pt(y, to)
-			d += `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`
-		}
-		return { key: u, d }
-	})
-
 	// Routes: soft glow under every ribbon, drawn as one blurred layer so it stays cheap.
 	const wk = compact ? 0.85 : 1
 	const routes: { key: string; d: string; dash: string | null; style: Style; dim: number }[] = []
@@ -466,6 +434,18 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 	}
 	trail.forEach((f, i) => addRoute(`t${f.n}`, paths[i].samples, f, dimFor(i)))
 	if (animating) addRoute("live", sliceTo(paths[mi], animP(mi)), frames[mi], filtering ? (matches[mi] ? 1 : 0.14) : 1)
+
+	// Before the snap: what the log says about how the offense set up (no player positions are drawn).
+	const snapParts = finished || animating
+		? []
+		: [
+				upcoming.type === "run" || upcoming.type === "pass" ? (upcoming.shotgun ? "SHOTGUN" : "UNDER CENTER") : "",
+				upcoming.noHuddle ? "NO HUDDLE" : "",
+				upcoming.xpass != null ? `${Math.round(upcoming.xpass * 100)}% PASS` : "",
+			].filter(Boolean)
+	const snapText = snapParts.join(" \u00b7 ")
+	const snapOpacity = eff === 0 ? 1 : Math.min(1, Math.max(0, (st.settle - 0.3) / 0.7))
+	const snapAt = snapText && snapOpacity > 0 ? view.pt(losYard + 4.5, 0) : null
 
 	const hoverFrame = hover != null && hover < eff ? frames[hover] : null
 	const hoverAt = hoverFrame ? view.pt(paths[hover!].end.yard, paths[hover!].end.u) : null
@@ -483,10 +463,29 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 				</div>
 			</div>
 
-			<DriveSummary drive={drive} frames={frames} />
+			{/* the whole field from above: where this drive sits and what it has done */}
+			<div className="px-4 pt-3 sm:px-6">
+				<div className="mb-1 flex flex-col gap-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-lab-muted sm:flex-row sm:items-center sm:justify-between">
+					<span>Drive map</span>
+					<span className="font-normal normal-case tracking-normal">Offense goes left to right. Dashed frame is the view below.</span>
+				</div>
+				<DriveMap
+					frames={frames}
+					done={eff}
+					moving={st.moving}
+					ball={{ yard: ballSpot.yard, u: ballSpot.u }}
+					camFrom={cam}
+					camTo={cam + depth}
+					color={driveColor}
+					otherColor={otherColor}
+					onSeek={tl.seek}
+					dim={dimFor}
+					compact={compact}
+				/>
+			</div>
 
 			{/* the field, seen from behind the offense and looking down the field */}
-			<div ref={fieldRef} className="mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
+			<div ref={fieldRef} className="relative mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
 				<svg
 					viewBox={`0 0 ${g.W} ${g.H}`}
 					className="block h-auto w-full"
@@ -498,55 +497,35 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 							<stop offset="0%" style={{ stopColor: LAB.surface, stopOpacity: 1 }} />
 							<stop offset="100%" style={{ stopColor: LAB.surface, stopOpacity: 0 }} />
 						</linearGradient>
+						<radialGradient id={`${uid}-ballglow`}>
+							<stop offset="0%" style={{ stopColor: driveColor, stopOpacity: 0.55 }} />
+							<stop offset="100%" style={{ stopColor: driveColor, stopOpacity: 0 }} />
+						</radialGradient>
 						<filter id={`${uid}-glow`} x="-20%" y="-20%" width="140%" height="140%">
 							<feGaussianBlur stdDeviation={compact ? 4 : 5} />
 						</filter>
 					</defs>
 
-					{/* surface, bands every ten yards, end zones in team colors */}
-					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.5, 0.5)} fill={LAB.field} />
-					{bands.map((b) => (
-						<polygon key={b} points={poly(b, b + 10, -0.5, 0.5)} fill={LAB.fieldBand} />
-					))}
-					{showOwnEnd && <polygon points={poly(MIN_YARD, 0, -0.5, 0.5)} fill={driveColor} opacity={0.9} />}
-					{showFarEnd && <polygon points={poly(100, MAX_YARD, -0.5, 0.5)} fill={otherColor} opacity={0.9} />}
-					{showOwnEnd && <EndZoneName view={view} yard={-5} name={driveName} color={onDrive} compact={compact} />}
-					{showFarEnd && <EndZoneName view={view} yard={105} name={otherName} color={onOther} compact={compact} />}
-
-					{/* sidelines */}
-					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.56, -0.5)} fill={LAB.fieldLine} opacity={0.55} />
-					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), 0.5, 0.56)} fill={LAB.fieldLine} opacity={0.55} />
-
-					{/* yard lines and numbers */}
-					{lines.map((y) => {
-						const a = view.pt(y, -0.5)
-						const b = view.pt(y, 0.5)
-						const goal = y === 0 || y === 100
-						return <line key={y} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={LAB.fieldLine} strokeWidth={(goal ? 3.2 : y % 10 === 0 ? 2 : 1.2) * a.s + 0.3} />
-					})}
-					{lines
-						.filter((y) => y % 10 === 0 && y > 0 && y < 100)
-						// On a phone, leave the bottom corners to the LEFT / RIGHT labels.
-						.filter((y) => !compact || view.pt(y, 0).y < g.BOTTOM - 30)
-						.map((y) => {
-							// Outside the sidelines on a wide field; painted on the turf on a phone, where there is no room outside.
-							const l = view.pt(y, compact ? -0.46 : -0.58)
-							const r = view.pt(y, compact ? 0.46 : 0.58)
-							const num = y <= 50 ? y : 100 - y
-							const size = Math.max(compact ? 20 : 0, 30 * l.s)
-							return (
-								<g key={y} fill={LAB.fieldNum} fontSize={size} fontWeight={700} className="tabular-nums" style={{ pointerEvents: "none" }}>
-									<text x={l.x} y={l.y + size * 0.35} textAnchor={compact ? "start" : "end"}>{num}</text>
-									<text x={r.x} y={r.y + size * 0.35} textAnchor={compact ? "end" : "start"}>{num}</text>
-								</g>
-							)
-						})}
-					{tickPaths.map((t) => (
-						<path key={t.key} d={t.d} stroke={LAB.fieldLine} strokeOpacity={0.7} strokeWidth={1} fill="none" />
-					))}
+					<Turf
+						view={view}
+						g={g}
+						cam={cam}
+						depth={depth}
+						compact={compact}
+						uid={uid}
+						driveName={driveName}
+						otherName={otherName}
+						driveColor={driveColor}
+						otherColor={otherColor}
+						onDrive={onDrive}
+						onOther={onOther}
+					/>
 
 					{/* far end of the field fades into the card */}
 					<rect x={0} y={0} width={g.W} height={g.H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
+
+					{/* the chain crew: ground to gain, stakes on both sidelines */}
+					{!finished && <Chain view={view} g={g} los={losYard} fd={fdYard} toGo={upcoming.ytg} />}
 
 					{/* first-down marker and line of scrimmage */}
 					{fdYard != null && fdYard <= 100 && <Line view={view} yard={fdYard} color={LAB.firstDown} label="1ST" compact={compact} />}
@@ -561,7 +540,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 						</g>
 						{routes.map((r) => (
 							<g key={r.key} opacity={r.dim}>
-								<path d={r.d} fill={driveColor} opacity={r.style.opacity} />
+								<path d={r.d} fill={driveColor} opacity={r.style.opacity} stroke={LAB.casing} strokeWidth={2.4} strokeLinejoin="round" paintOrder="stroke" />
 								{r.dash && <path d={r.dash} fill="none" stroke={driveColor} strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round" />}
 							</g>
 						))}
@@ -590,6 +569,22 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 								<g className="lab-pop">
 									<EndMarker x={r.x} y={r.y} s={r.s} k={k} f={f} color={driveColor} />
 								</g>
+								{(f.outcome === "gain" || f.outcome === "loss" || f.outcome === "touchdown") && f.yards !== 0 && (
+									<text
+										x={r.x + (10 * r.s + 5) * k}
+										y={r.y + 4.5 * k}
+										fontSize={Math.max(10.5, 13 * r.s) * k}
+										fontWeight={800}
+										fill={LAB.ink}
+										stroke={LAB.casing}
+										strokeWidth={3 * k}
+										paintOrder="stroke"
+										className="tabular-nums"
+										style={{ pointerEvents: "none" }}
+									>
+										{f.yards > 0 ? `+${f.yards}` : `\u2212${Math.abs(f.yards)}`}
+									</text>
+								)}
 							</g>
 						)
 					})}
@@ -599,6 +594,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 					{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
 						<circle key={`burst-${eff}`} className="lab-burst" cx={ball.x} cy={ball.y} r={30 * ball.s * k} fill="none" stroke={driveColor} strokeWidth={3} />
 					)}
+					<circle cx={ball.x} cy={ball.y} r={40 * ball.s * k} fill={`url(#${uid}-ballglow)`} opacity={animating ? 0.9 : 0.5} style={{ pointerEvents: "none" }} />
 					<Ball x={ball.x} y={ball.y} scale={Math.max(0.7, ball.s) * k} angle={angle} color={driveColor} />
 
 					{/* outcome tag once the play is over, fading as the ball is spotted for the next snap */}
@@ -612,6 +608,11 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 								g={g}
 								opacity={1 - st.settle}
 							/>
+						</g>
+					)}
+					{snapText && snapAt && (
+						<g key={`snap-${eff}`} className="lab-fade">
+							<OutcomeTag text={snapText} x={snapAt.x} y={snapAt.y} k={k} g={g} opacity={snapOpacity} />
 						</g>
 					)}
 					{hoverFrame && hoverAt && (
@@ -631,6 +632,16 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 						<text x={g.W / 2 + 0.36 * g.NEAR_W} y={g.BOTTOM + 12 + 6 * k}>RIGHT</text>
 					</g>
 				</svg>
+				{finished && (
+					<div key={`banner-${drive.n}`} className="lab-banner pointer-events-none absolute inset-x-0 top-[40%] flex justify-center">
+						<div className="rounded-2xl bg-lab-ink px-6 py-3 text-center text-lab-surface shadow-[var(--lab-shadow)]">
+							<div className="text-base font-extrabold tracking-[0.22em] sm:text-lg">{resultLabel(drive.result).toUpperCase()}</div>
+							<div className="mt-0.5 text-xs font-medium opacity-80">
+								{n} plays &middot; {drive.yards} yards{drive.top ? ` \u00b7 ${drive.top}` : ""}
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* what the marks on the field are */}
@@ -680,7 +691,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 			</p>
 
 			{/* scrubber */}
-			<Scrubber frames={frames} state={st} matches={matches} color={driveColor} onScrub={tl.scrub} onSeek={tl.seek} onStep={step} />
+			<Scrubber frames={frames} state={st} matches={matches} color={driveColor} current={shownIdx} onScrub={tl.scrub} onSeek={tl.seek} onStep={step} />
 
 			{/* transport */}
 			<div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-3 sm:px-6">
@@ -753,11 +764,26 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 				<p className="min-h-[2.75rem] text-sm leading-relaxed text-lab-ink sm:text-base" aria-live="polite">
 					{shownText ?? " "}
 				</p>
+				{shownFrame && (
+					<dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4" aria-label="Play analytics">
+						{playAnalytics(shownFrame).map((a) => (
+							<div key={a.label}>
+								<dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{a.label}</dt>
+								<dd className="font-mono text-sm font-semibold tabular-nums text-lab-ink">{a.value}</dd>
+							</div>
+						))}
+					</dl>
+				)}
 				{finished && (
 					<p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: tone === "score" ? LAB.ink : LAB.inkMuted }}>
 						{resultLabel(drive.result)}
 					</p>
 				)}
+			</div>
+
+			<div className="border-t border-lab-line pb-3">
+				<h3 className="px-4 pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted sm:px-6">Drive summary</h3>
+				<DriveSummary drive={drive} frames={frames} />
 			</div>
 
 			{/* every play in the drive */}

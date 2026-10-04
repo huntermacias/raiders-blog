@@ -52,7 +52,7 @@ describe("the Lab section", () => {
 	// The Lab has to work in light and dark. Colors come from the .lab custom properties
 	// (styles/globals.css) and Tailwind's lab-* colors, never from hardcoded dark-only values.
 	describe("light and dark themes", () => {
-		const files = ["components/lab/WinProbabilityReplay.tsx", "components/lab/DriveReplay.tsx", "components/lab/Sparkline.tsx", "components/lab/Tip.tsx", "app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"]
+		const files = ["components/lab/WinProbabilityReplay.tsx", "components/lab/DriveReplay.tsx", "components/lab/DriveBits.tsx", "components/lab/DriveMap.tsx", "components/lab/FieldTurf.tsx", "components/lab/Sparkline.tsx", "components/lab/Tip.tsx", "app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"]
 
 		it.each(files)("%s has no dark-only colors", (f) => {
 			const src = read(f)
@@ -70,6 +70,16 @@ describe("the Lab section", () => {
 			expect(css).toMatch(/--lab-opp-light/)
 			expect(css).toMatch(/--lab-opp-dark/)
 			expect(read("tailwind.config.js")).toMatch(/lab:\s*\{/)
+		})
+
+		it("defines the turf colors in both themes, matching the ones the tests check", async () => {
+			const css = read("styles/globals.css")
+			const { FIELD } = await import("../../lib/lab/colors")
+			const light = css.slice(css.indexOf(".lab {"), css.indexOf(".dark .lab {"))
+			const dark = css.slice(css.indexOf(".dark .lab {"))
+			for (const block of [light, dark]) for (const t of ["--lab-field:", "--lab-field-band:", "--lab-field-line:", "--lab-field-num:", "--lab-field-glow:", "--lab-field-shade:", "--lab-casing:"]) expect(block).toContain(t)
+			expect(light).toContain(`--lab-field: ${FIELD.light}`)
+			expect(dark).toContain(`--lab-field: ${FIELD.dark}`)
 		})
 
 		it.each(["app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"])("%s sets the lab theme and the opponent's colors", (f) => {

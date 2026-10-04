@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import { driveStats, isFiltering, kindLetter, type Frame, type PlayFilter } from "@/lib/lab/drive"
+import { driveStats, fmtEpa, fmtWpa, isFiltering, kindLetter, yardLineName, type Frame, type PlayFilter } from "@/lib/lab/drive"
 import { LAB } from "@/lib/lab/theme"
 import { posAtScrub, scrubValue, type TimelineState } from "@/lib/lab/timeline"
 import type { Drive } from "@/lib/lab/types"
@@ -90,21 +90,26 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
 	)
 }
 
-/** Totals for the drive: how it was moved and how it was kept alive. */
+/** Totals for the drive: how it was moved, how it was kept alive, and what the plays were worth. */
 export function DriveSummary({ drive, frames }: { drive: Drive; frames: Frame[] }) {
 	const s = React.useMemo(() => driveStats(frames), [frames])
 	const perPlay = s.plays > 0 ? (drive.yards / s.plays).toFixed(1) : "0.0"
-	const conv = (c: { att: number; conv: number }) => (c.att === 0 ? "–" : `${c.conv} of ${c.att}`)
+	const conv = (c: { att: number; conv: number }) => (c.att === 0 ? "\u2013" : `${c.conv} of ${c.att}`)
+	const success = s.success.of > 0 ? `${Math.round((s.success.good / s.success.of) * 100)}%` : "\u2013"
 	return (
-		<dl className="grid grid-cols-2 gap-2 px-4 pt-3 sm:grid-cols-4 sm:px-6" aria-label="Drive summary">
+		<dl className="grid grid-cols-2 gap-2 px-4 pt-3 sm:grid-cols-3 sm:px-6 lg:grid-cols-4" aria-label="Drive summary">
 			<Stat label="Plays" value={String(s.plays)} note={drive.top ? drive.top : undefined} />
 			<Stat label="Yards" value={String(drive.yards)} note={`${perPlay} per play`} />
+			<Stat label="Starts at" value={yardLineName(drive.start)} />
+			<Stat label="First downs" value={String(s.firstDowns)} />
 			<Stat label="Rushing" value={`${s.runs.n} for ${s.runs.yds}`} note="yds" />
 			<Stat label="Passing" value={`${s.passes.comp}/${s.passes.att} for ${s.passes.yds}`} note={s.sacks ? `${s.sacks} ${s.sacks === 1 ? "sack" : "sacks"}` : "yds"} />
-			<Stat label="First downs" value={String(s.firstDowns)} />
 			<Stat label="3rd down" value={conv(s.thirdDowns)} />
 			<Stat label="4th down" value={conv(s.fourthDowns)} />
-			<Stat label="Starts at" value={drive.start <= 50 ? `own ${drive.start}` : `opp ${100 - drive.start}`} />
+			<Stat label="Drive EPA" value={s.epa == null ? "\u2013" : fmtEpa(s.epa)} note="expected pts" />
+			<Stat label="Success rate" value={success} note={s.success.of ? `${s.success.good} of ${s.success.of}` : undefined} />
+			<Stat label="Win probability" value={s.wpa == null ? "\u2013" : fmtWpa(s.wpa)} />
+			<Stat label="Explosive plays" value={String(s.explosive)} note="10+ run, 20+ pass" />
 		</dl>
 	)
 }
@@ -120,6 +125,7 @@ export function Scrubber({
 	state,
 	matches,
 	color,
+	current,
 	onScrub,
 	onSeek,
 	onStep,
@@ -128,6 +134,8 @@ export function Scrubber({
 	state: TimelineState
 	matches: boolean[]
 	color: string
+	/** Index of the play on screen, or null before the first. */
+	current: number | null
 	onScrub: (pos: number) => void
 	onSeek: (to: number) => void
 	onStep: (delta: number) => void
@@ -212,7 +220,26 @@ export function Scrubber({
 				>
 					<span className="absolute left-0 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] bg-lab-surface shadow-[var(--lab-shadow)]" style={{ borderColor: LAB.ink }} />
 				</div>
-				<div className="mt-1.5 flex" aria-hidden>
+				{/* expected points added by each play: up helped the offense, down hurt it */}
+				<div className="relative mt-2 flex h-11" aria-hidden>
+					<div className="absolute inset-x-0 top-1/2 h-px bg-lab-line-strong" />
+					{frames.map((f, i) => {
+						const e = f.epa
+						const h = e == null ? 0 : Math.min(1, Math.abs(e) / 2) * 50
+						return (
+							<div key={f.n} className="relative flex-1" style={{ opacity: matches[i] ? (current === i ? 1 : 0.7) : 0.25 }}>
+								{e != null && (
+									<div
+										className="absolute left-1/2 w-[58%] max-w-[22px] -translate-x-1/2 rounded-[3px]"
+										style={e >= 0 ? { bottom: "50%", height: `${Math.max(h, 2)}%`, background: LAB.ink } : { top: "50%", height: `${Math.max(h, 2)}%`, background: LAB.bad }}
+									/>
+								)}
+								{current === i && <div className="absolute inset-x-[10%] -bottom-0.5 h-0.5 rounded-full" style={{ background: LAB.ink }} />}
+							</div>
+						)
+					})}
+				</div>
+				<div className="mt-1 flex" aria-hidden>
 					{frames.map((f, i) => (
 						<span key={f.n} className="flex-1 text-center text-[10px] font-semibold text-lab-muted" style={{ opacity: matches[i] ? 1 : 0.35 }}>
 							{kindLetter(f)}
@@ -221,7 +248,7 @@ export function Scrubber({
 				</div>
 			</div>
 			<p className="text-[11px] text-lab-muted">
-				<span className="font-semibold">R</span> run &middot; <span className="font-semibold">P</span> pass &middot; <span className="font-semibold">K</span> kick &middot; <span className="font-semibold">X</span> other. Tap a play or drag to move the ball through the drive.
+				<span className="font-semibold">R</span> run &middot; <span className="font-semibold">P</span> pass &middot; <span className="font-semibold">K</span> kick &middot; <span className="font-semibold">X</span> other. The bars show each play&rsquo;s expected points added: up helped the offense, down hurt it. Tap a play or drag to move the ball through the drive.
 			</p>
 		</div>
 	)

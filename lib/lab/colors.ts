@@ -18,6 +18,8 @@ export type Mode = "dark" | "light"
 
 /** The Raiders: silver on dark, black on light. */
 export const TEAM_COLOR: Record<Mode, string> = { dark: "#dfe3ea", light: "#14171c" }
+/** The turf the drive routes are drawn on (mirrors --lab-field in styles/globals.css). */
+export const FIELD: Record<Mode, string> = { dark: "#12281c", light: "#b4d3ab" }
 /** The chart surfaces the colors sit on. */
 export const SURFACE: Record<Mode, string> = { dark: "#0b0d10", light: "#ffffff" }
 /** Ink for text that sits on a team color. */

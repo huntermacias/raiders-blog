@@ -1,7 +1,7 @@
 """Run with: python -m pytest scripts/lab -q"""
 import pandas as pd
 
-from build_lab_data import build_game, clean_desc, elapsed_seconds, lane_fields
+from build_lab_data import build_game, clean_desc, elapsed_seconds, lane_fields, value_fields
 
 COLS = [
     "game_id", "play_id", "week", "home_team", "away_team", "qtr", "time", "quarter_seconds_remaining",
@@ -10,6 +10,7 @@ COLS = [
     "home_wp", "away_wp", "home_wp_post", "away_wp_post", "total_home_score", "total_away_score",
     "home_score", "away_score", "spread_line", "roof", "game_date", "fixed_drive", "fixed_drive_result",
     "drive_time_of_possession", "run_location", "run_gap", "pass_location", "air_yards", "yards_after_catch",
+    "epa", "wpa", "shotgun", "no_huddle", "xpass", "pass_length",
 ]
 
 
@@ -113,3 +114,22 @@ def test_drive_plays_carry_their_lane():
     plays = game["drives"][0]["plays"]
     assert plays[0]["loc"] == "L" and plays[0]["gap"] == "E"
     assert plays[1]["loc"] == "R" and plays[1]["ay"] == 6 and plays[1]["yac"] == 3
+
+
+def test_value_fields_round_and_skip_what_the_log_leaves_out():
+    row = {"epa": 0.4567, "wpa": 0.02149, "shotgun": 1, "no_huddle": 0, "xpass": 0.6349, "pass_length": "deep"}
+    assert value_fields(row, "pass") == {"epa": 0.46, "wpa": 0.021, "sg": 1, "xp": 0.63, "pl": "D"}
+    assert value_fields({"epa": -1.234, "wpa": float("nan"), "shotgun": 0, "no_huddle": 1}, "run") == {"epa": -1.23, "nh": 1}
+    # Kicks keep their value but not the pass-or-run setup.
+    assert value_fields({"epa": 2.5, "shotgun": 1, "xpass": 0.5}, "field_goal") == {"epa": 2.5}
+
+
+def test_drive_plays_carry_their_value():
+    rows = [
+        base(play_id=1, play_type="pass", posteam="LV", down=1, ydstogo=10, yardline_100=75, yards_gained=9, desc="pass short right",
+             pass_location="right", air_yards=6.0, yards_after_catch=3.0, epa=0.51, wpa=0.012, shotgun=1, xpass=0.7, pass_length="short"),
+        base(play_id=2, play_type=None, desc="END GAME", home_score=0, away_score=0),
+    ]
+    play = build_game(frame(rows), "LV")["drives"][0]["plays"][0]
+    assert play["epa"] == 0.51 and play["wpa"] == 0.012 and play["sg"] == 1 and play["xp"] == 0.7 and play["pl"] == "S"
+    assert "nh" not in play

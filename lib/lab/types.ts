@@ -40,6 +40,17 @@ export type DrivePlay = {
 	/** Passes: yards the ball traveled in the air (negative behind the line), and yards after the catch. */
 	ay?: number
 	yac?: number
+	/** Expected points added by the play. */
+	epa?: number
+	/** Win probability added for the offense, as a fraction (0.021 = 2.1 points). */
+	wpa?: number
+	/** Shotgun and no-huddle, when the log says so. */
+	sg?: 1
+	nh?: 1
+	/** The model's chance, before the snap, that this would be a pass (0 to 1). */
+	xp?: number
+	/** Pass length from the log: S short, D deep. */
+	pl?: "S" | "D"
 }
 
 export type Drive = {
