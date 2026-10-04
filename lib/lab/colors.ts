@@ -159,3 +159,14 @@ export function labColorVars(abbr: string): Record<string, string> {
 		"--lab-on-opp-light": c.onLight,
 	}
 }
+
+/** Like labColorVars, for the second opponent color (--lab-opp2) on pages with two non-Raiders teams. */
+export function labColorVarsB(abbr: string): Record<string, string> {
+	const c = opponentColors(abbr)
+	return {
+		"--lab-opp2-dark": c.dark,
+		"--lab-opp2-light": c.light,
+		"--lab-on-opp2-dark": c.onDark,
+		"--lab-on-opp2-light": c.onLight,
+	}
+}
