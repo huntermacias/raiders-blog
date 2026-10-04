@@ -8,6 +8,8 @@ import { teamInfo } from "../../../lib/nfl"
 import { type GamePrediction, SEASON } from "../../../lib/predictions"
 import { type ScheduleGame, joinSchedule, nextGame, recordText, scheduleRecord } from "../../../lib/schedule"
 import ScheduleList, { kickoffText } from "../../../components/schedule/ScheduleList"
+import CalendarPanel from "../../../components/schedule/CalendarPanel"
+import { isScheduled } from "../../../lib/calendar"
 
 // Rendered on every request, like /predictions: these pages are small, the data
 // changes by hand in Studio, and an edit should show up immediately instead of

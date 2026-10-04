@@ -1,7 +1,8 @@
 import Link from "@/components/SiteLink"
-import { ArrowRight, CalendarOff, Check, Clock, Minus, Tv, X } from "lucide-react"
+import { ArrowRight, CalendarOff, CalendarPlus, Check, Clock, Minus, Tv, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { feedPath, googleEventUrl, isScheduled } from "@/lib/calendar"
 import { teamInfo } from "@/lib/nfl"
 import type { ScheduleRow } from "@/lib/schedule"
 import { PickPill } from "@/components/predictions/StatusPill"
@@ -90,6 +91,30 @@ export default function ScheduleList({ rows }: { rows: ScheduleRow[] }) {
 										</span>
 									)}
 								</p>
+								{!r.outcome && isScheduled(r) && (
+									<p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+										<CalendarPlus aria-hidden className="h-3.5 w-3.5 shrink-0" />
+										<span>Add</span>
+										<a
+											href={googleEventUrl(r) ?? undefined}
+											target="_blank"
+											rel="noopener noreferrer"
+											aria-label={`Add week ${r.week} to Google Calendar`}
+											className="whitespace-nowrap font-semibold text-foreground underline-offset-4 hover:underline"
+										>
+											Google
+										</a>
+										<span aria-hidden>&middot;</span>
+										<a
+											href={feedPath({ week: r.week, alarm: 30, download: true })}
+											download
+											aria-label={`Download week ${r.week} for Apple or Outlook calendar`}
+											className="whitespace-nowrap font-semibold text-foreground underline-offset-4 hover:underline"
+										>
+											Apple / Outlook
+										</a>
+									</p>
+								)}
 							</div>
 
 							<div className="ml-auto shrink-0">
