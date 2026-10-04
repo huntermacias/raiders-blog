@@ -43,6 +43,13 @@ export type Frame = {
 	y0: number
 	yc: number
 	y1: number
+	/** Yards the pass traveled in the air, and yards gained after the catch (null when the log has none). */
+	ay: number | null
+	yac: number | null
+	/** The play earned a first down (not counting a touchdown). */
+	firstDown: boolean
+	/** A pass play that ended in a sack. */
+	sack: boolean
 }
 
 const ORDINAL = ["", "1st", "2nd", "3rd", "4th"]
@@ -154,6 +161,10 @@ export function framesForDrive(drive: Drive): Frame[] {
 			y0,
 			yc,
 			y1,
+			ay: p.ay ?? null,
+			yac: p.yac ?? null,
+			firstDown: p.fd && outcome !== "touchdown",
+			sack: isPass && /\bsacked\b/i.test(p.text),
 		}
 	})
 }
@@ -189,4 +200,123 @@ export function yardLineName(x: number): string {
 	const v = Math.round(x)
 	if (v === 50) return "50"
 	return v < 50 ? `own ${v}` : `opp ${100 - v}`
+}
+
+const LANE_WORD = { L: "left", M: "middle", R: "right" } as const
+const GAP_WORD = { E: "end", T: "tackle", G: "guard" } as const
+
+/** One short label for what kind of play it was, e.g. "Run left end" or "Pass right". */
+export function playKind(f: Frame): string {
+	switch (f.outcome) {
+		case "punt":
+			return "Punt"
+		case "fieldgoal-good":
+		case "fieldgoal-miss":
+			return "Field goal"
+		case "kneel":
+			return "Kneel"
+		case "penalty":
+			return "Penalty"
+		default:
+	}
+	if (f.sack) return "Sack"
+	if (f.type === "run") {
+		if (!f.lane) return "Run"
+		if (f.lane === "M") return "Run up the middle"
+		return f.gap ? `Run ${LANE_WORD[f.lane]} ${GAP_WORD[f.gap]}` : `Run ${LANE_WORD[f.lane]}`
+	}
+	if (f.type === "pass") {
+		const where = f.lane ? ` ${LANE_WORD[f.lane]}` : ""
+		return f.outcome === "incomplete" ? `Incomplete pass${where}` : `Pass${where}`
+	}
+	return "Play"
+}
+
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `\u2212${Math.abs(n)}` : "0")
+
+/** Short facts about a play, for chips under the field. */
+export function playFacts(f: Frame): string[] {
+	const out: string[] = [f.downLabel || "Kick", `${yardLineName(f.from)} \u2192 ${yardLineName(f.to)}`]
+	if (f.outcome === "gain" || f.outcome === "loss" || f.outcome === "touchdown" || f.sack) out.push(`${signed(f.yards)} yds`)
+	if (f.type === "pass" && f.ay != null && f.outcome !== "incomplete" && !f.sack) out.push(`${f.ay} air yds`)
+	if (f.yac != null && f.outcome !== "incomplete" && f.type === "pass") out.push(`${f.yac} after catch`)
+	if (f.outcome === "touchdown") out.push("Touchdown")
+	else if (f.firstDown) out.push("First down")
+	if (f.outcome === "turnover") out.push("Turnover")
+	return out
+}
+
+/** R run, P pass, K kick, X anything else (penalty, kneel). */
+export function kindLetter(f: Frame): "R" | "P" | "K" | "X" {
+	if (f.outcome === "punt" || f.outcome === "fieldgoal-good" || f.outcome === "fieldgoal-miss") return "K"
+	if (f.outcome === "penalty" || f.outcome === "kneel") return "X"
+	if (f.type === "run") return "R"
+	if (f.type === "pass") return "P"
+	return "X"
+}
+
+export type PlayFilter = { kind: "all" | "run" | "pass" | "kick"; down: 0 | 1 | 2 | 3 | 4 }
+export const NO_FILTER: PlayFilter = { kind: "all", down: 0 }
+
+export function isFiltering(flt: PlayFilter): boolean {
+	return flt.kind !== "all" || flt.down !== 0
+}
+
+/** Whether a play passes the filter. Every play passes when nothing is selected. */
+export function matchesFilter(f: Frame, flt: PlayFilter): boolean {
+	if (flt.kind === "run" && kindLetter(f) !== "R") return false
+	if (flt.kind === "pass" && kindLetter(f) !== "P") return false
+	if (flt.kind === "kick" && kindLetter(f) !== "K") return false
+	if (flt.down !== 0 && f.down !== flt.down) return false
+	return true
+}
+
+export type DriveStats = {
+	plays: number
+	runs: { n: number; yds: number }
+	passes: { att: number; comp: number; yds: number }
+	sacks: number
+	firstDowns: number
+	thirdDowns: { att: number; conv: number }
+	fourthDowns: { att: number; conv: number }
+}
+
+/** Totals for a drive, from its plays. Penalties and kicks count as plays but not as runs or passes. */
+export function driveStats(frames: Frame[]): DriveStats {
+	const s: DriveStats = {
+		plays: frames.length,
+		runs: { n: 0, yds: 0 },
+		passes: { att: 0, comp: 0, yds: 0 },
+		sacks: 0,
+		firstDowns: 0,
+		thirdDowns: { att: 0, conv: 0 },
+		fourthDowns: { att: 0, conv: 0 },
+	}
+	for (const f of frames) {
+		const scrimmage = (f.type === "run" || f.type === "pass") && f.outcome !== "penalty"
+		if (f.outcome === "penalty") continue
+		if (f.firstDown) s.firstDowns++
+		if (!scrimmage) continue
+		if (f.type === "run") {
+			s.runs.n++
+			s.runs.yds += f.yards
+		} else if (f.sack) {
+			s.sacks++
+			s.passes.yds += f.yards
+		} else {
+			s.passes.att++
+			s.passes.yds += f.yards
+			if (f.outcome !== "incomplete" && !/INTERCEPTED/i.test(f.text)) s.passes.comp++
+		}
+		const converted = f.firstDown || f.outcome === "touchdown"
+		if (f.down === 3) {
+			s.thirdDowns.att++
+			if (converted) s.thirdDowns.conv++
+		}
+		if (f.down === 4) {
+			s.fourthDowns.att++
+			if (converted) s.fourthDowns.conv++
+		}
+	}
+	return s
 }
