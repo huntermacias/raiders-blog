@@ -2,6 +2,7 @@ import type { GetServerSideProps } from "next"
 import { groq } from "next-sanity"
 
 import { readClient as client } from "../lib/sanity.client"
+import { gameSlug, getGames } from "../lib/lab/data"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -27,6 +28,8 @@ ${url(`${SITE_URL}/rankings`, undefined, "0.9", "weekly")}
 ${url(`${SITE_URL}/schedule`, undefined, "0.8", "weekly")}
 ${url(`${SITE_URL}/live`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/community`, undefined, "0.6", "daily")}
+${url(`${SITE_URL}/lab`, undefined, "0.8", "weekly")}
+${getGames().map((g) => url(`${SITE_URL}/lab/${gameSlug(g)}`, undefined, "0.7", "monthly")).join("\n")}
 ${games.map((g) => url(`${SITE_URL}/games/${g.slug.current}`, g._updatedAt, "0.8")).join("\n")}
 ${posts.map((p) => url(`${SITE_URL}/post/${p.slug.current}`, p._updatedAt, "0.6")).join("\n")}
 ${liveEvents.map((e) => url(`${SITE_URL}/live/${e.slug.current}`, e._updatedAt, "0.5")).join("\n")}
