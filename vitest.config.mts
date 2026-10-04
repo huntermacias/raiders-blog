@@ -21,6 +21,10 @@ export default defineConfig({
 	},
 	esbuild: { jsx: "automatic" },
 	test: {
+		// Vercel runs the build with NODE_ENV=production, and vitest keeps whatever
+		// is already set. React then loads its production build, which has no
+		// act() and fails every component test. Tests always run in "test" mode.
+		env: { NODE_ENV: "test" },
 		environment: "node",
 		include: ["tests/**/*.test.{ts,tsx}"],
 		setupFiles: ["tests/setup.tsx"],

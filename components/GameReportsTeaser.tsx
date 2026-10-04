@@ -1,8 +1,6 @@
-import Image from "next/image"
-
 import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
 import ClientSideRoute from "./ClientSideRoute"
-import { Card } from "@/components/ui/card"
+import StoryCard from "./StoryCard"
 import { Badge } from "@/components/ui/badge"
 
 function formatDate(date: string) {
@@ -37,31 +35,22 @@ function GameReportsTeaser({ games }: Props) {
 					{games.map((game) => {
 						const won = game.raidersScore > game.opponentScore
 						return (
-							<ClientSideRoute key={game._id} route={`/games/${game.slug.current}`}>
-								<article className="group flex cursor-pointer items-center gap-3 rounded-lg border border-border/70 bg-background p-3 transition-shadow hover:shadow-md">
-									<div className="relative h-14 w-20 shrink-0 overflow-hidden rounded">
-										<Image
-											className="object-cover"
-											src={cardImageUrl(game.mainImage)}
-											alt={game.title}
-											fill
-											style={{ objectPosition: hotspotPosition(game.mainImage) }}
-											sizes="80px"
-										/>
-									</div>
-									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-2">
-											<Badge variant={won ? "default" : "destructive"} className="text-[10px]">
-												{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
-											</Badge>
-											<span className="text-xs text-muted-foreground">{formatDate(game.gameDate)}</span>
-										</div>
-										<p className="truncate text-sm font-semibold group-hover:underline">
-											vs {game.opponent}
-										</p>
-									</div>
-								</article>
-							</ClientSideRoute>
+							<StoryCard
+								key={game._id}
+								size="compact"
+								className="min-h-[12rem]"
+								href={`/games/${game.slug.current}`}
+								imageUrl={cardImageUrl(game.mainImage)}
+								imagePosition={hotspotPosition(game.mainImage)}
+								sizes="(min-width: 640px) 33vw, 100vw"
+								corner={
+									<Badge variant={won ? "default" : "destructive"} className="text-[10px]">
+										{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
+									</Badge>
+								}
+								title={`vs ${game.opponent}`}
+								meta={<p>{formatDate(game.gameDate)}</p>}
+							/>
 						)
 					})}
 				</div>
