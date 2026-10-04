@@ -5,8 +5,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build": "vitest run && next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@bradgarropy/next-google-analytics": "^1.0.2",
@@ -43,13 +45,16 @@
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^2.0.1",
+    "@testing-library/react": "^14.3.1",
     "@types/node": "18.11.3",
     "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
     "autoprefixer": "^10.4.12",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.18",
     "tailwindcss": "^3.2.4",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
   },
   "resolutions": {
     "@codemirror/state": "6.7.1"
