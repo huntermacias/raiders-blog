@@ -24,6 +24,7 @@ function Footer() {
 						<li><Link href="/predictions" className="hover:text-foreground">Prediction Scoreboard</Link></li>
 						<li><Link href="/league" className="hover:text-foreground">Beat the Blogger League</Link></li>
 						<li><Link href="/rankings" className="hover:text-foreground">Power Rankings</Link></li>
+						<li><Link href="/lab" className="hover:text-foreground">The Lab</Link></li>
 						<li><Link href="/schedule" className="hover:text-foreground">Raiders Schedule</Link></li>
 						<li><a href="/rss.xml" className="hover:text-foreground">RSS Feed</a></li>
 					</ul>

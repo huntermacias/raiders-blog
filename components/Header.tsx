@@ -23,6 +23,7 @@ const navLinks = [
 	{ href: "/predictions", label: "Predictions" },
 	{ href: "/league", label: "League" },
 	{ href: "/rankings", label: "Rankings" },
+	{ href: "/lab", label: "Lab" },
 	{ href: "/schedule", label: "Schedule" },
 	{ href: "/live", label: "Live" },
 	{ href: "/community", label: "Discussion" },
