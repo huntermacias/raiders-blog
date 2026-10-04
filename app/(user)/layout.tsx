@@ -30,14 +30,24 @@ export const metadata = {
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
+  // Self-hosted icons (public/). Google picks the favicon from the <link rel="icon">
+  // in the page head, so these must point at files on this domain, not a
+  // third-party host. favicon.ico is a real multi-size .ico (16-64px); the
+  // PNGs are for browsers/phones that want a bigger one.
   icons: {
-    icon: 'https://i.imgur.com/q0mNqvS.jpeg',
-    shortcut: 'https://i.imgur.com/q0mNqvS.jpeg',
-    apple: 'https://i.imgur.com/q0mNqvS.jpeg',
-    other: {
-      rel: 'raider-image',
-      url: 'https://i.imgur.com/q0mNqvS.jpeg',
-    },
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  // Allow Google to show large image previews (Discover and image-rich results).
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' as const, 'max-snippet': -1, 'max-video-preview': -1 },
   },
   // Site-wide fallback for pages that don't set their own (e.g. the
   // homepage). Individual posts and game reports override this with
