@@ -50,7 +50,7 @@ function BlogList({ posts, featuredIds = [] }: Props) {
 	}, [posts, category, query, featuredIds])
 
 	return (
-		<div id="latest" className="scroll-mt-20">
+		<div id="latest" className="scroll-mt-28">
 			<div className="container flex flex-col gap-4 py-10 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h2 className="font-serif text-2xl font-bold tracking-tight sm:text-3xl">{featuredIds.length > 0 ? "More stories" : "Latest Stories"}</h2>
