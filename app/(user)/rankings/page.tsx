@@ -6,9 +6,10 @@ import { SEASON } from "../../../lib/predictions"
 import { type RankingsDoc, buildBoards, noLabel, raidersRow } from "../../../lib/rankings"
 import RankingsBoard, { type Records } from "../../../components/rankings/RankingsBoard"
 
-// Same approach as the rest of the read-only pages: token-free client, so
-// this stays a statically cached page that refreshes every minute.
-export const revalidate = 60
+// Rendered on every request, like /predictions: these pages are small, the data
+// changes by hand in Studio, and an edit should show up immediately instead of
+// waiting on (or getting stuck behind) a cached copy.
+export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/rankings`
