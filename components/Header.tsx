@@ -67,8 +67,10 @@ function Header() {
 			{/* eyebrow strip */}
 			<div className="hidden border-b border-border/60 bg-foreground text-background sm:block">
 				<div className="container flex h-8 items-center justify-between text-[11px] font-semibold uppercase tracking-widest">
-					<span>Raider Nation, since 2023</span>
-					<span className="text-background/70">Silver &amp; Black, every day</span>
+					<span>Lifelong Raider &middot; Every pick graded in public</span>
+					<Link href="/league" className="text-background/70 transition-colors hover:text-background">
+						Beat the Blogger &rarr;
+					</Link>
 				</div>
 			</div>
 
@@ -78,7 +80,7 @@ function Header() {
 						className="rounded-full ring-1 ring-border"
 						height={40}
 						width={40}
-						src="https://i.pinimg.com/originals/07/e6/4d/07e64d8088fd0ead3d3f15339008eb29.jpg"
+						src="/logo-rr.png"
 						alt="Raiders Rundown logo"
 						priority
 					/>
