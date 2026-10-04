@@ -91,3 +91,45 @@ describe("/api/og?type=live", () => {
 		expect(res.redirectedTo).toBe("/og-default-v2.png")
 	})
 })
+
+describe("/api/og?debug=1", () => {
+	it("reports a good card with sizes and the board's games, and is never cached", async () => {
+		gameMock.mockResolvedValue(result("in"))
+		const res = mockRes()
+		await handler(get({ type: "live", game: "401872980", debug: "1" }), res)
+		const body = res.body as Record<string, unknown>
+		expect(res.statusCode).toBe(200)
+		expect(res.headers["Cache-Control"]).toBe("no-store")
+		expect(res.redirectedTo).toBeNull()
+		expect(body.stage).toBe("done")
+		expect(body.onScoreboard).toBe(true)
+		expect(body.pngBytes as number).toBeGreaterThan(1000)
+		expect(Array.isArray(body.scoreboardGames)).toBe(true)
+	})
+
+	it("says the game isn't on the board instead of redirecting", async () => {
+		gameMock.mockResolvedValue(null)
+		const res = mockRes()
+		await handler(get({ type: "live", game: "401999999", debug: "1" }), res)
+		const body = res.body as Record<string, unknown>
+		expect(res.redirectedTo).toBeNull()
+		expect(body.onScoreboard).toBe(false)
+		expect(String(body.spec)).toContain("null")
+	})
+
+	it("names the error and where it happened when the feed throws", async () => {
+		gameMock.mockRejectedValue(new Error("ESPN responded 500"))
+		const res = mockRes()
+		await handler(get({ type: "live", game: "401872980", debug: "1" }), res)
+		const body = res.body as Record<string, unknown>
+		expect(body.stage).toBe("spec")
+		expect(String(body.error)).toContain("ESPN responded 500")
+	})
+
+	it("is off unless debug is exactly 1", async () => {
+		gameMock.mockResolvedValue(null)
+		const res = mockRes()
+		await handler(get({ type: "live", game: "401999999", debug: "yes" }), res)
+		expect(res.redirectedTo).toBe("/og-default-v2.png")
+	})
+})
