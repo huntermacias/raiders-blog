@@ -158,6 +158,50 @@ describe("POST /api/subscribe: what is sent to Buttondown", () => {
 		expect(sent().body.utm_medium).toBe("site")
 	})
 
+	it("forwards the campaign a tagged visitor arrived with, keeping the placement as metadata", async () => {
+		await handler(
+			post({ email: "fan@example.com", source: "home", utm: { source: "x", medium: "social", campaign: "week4-league", content: "scoring" } }),
+			mockRes()
+		)
+		const { body } = sent()
+		expect(body.utm_source).toBe("x")
+		expect(body.utm_medium).toBe("social")
+		expect(body.utm_campaign).toBe("week4-league")
+		expect(body.metadata).toEqual({ placement: "home", utm_content: "scoring" })
+	})
+
+	it("fills gaps from the old defaults when only part of a campaign is known", async () => {
+		await handler(post({ email: "fan@example.com", source: "post-footer", utm: { campaign: "recap" } }), mockRes())
+		const { body } = sent()
+		expect(body.utm_source).toBe("raidersrundown.com")
+		expect(body.utm_medium).toBe("post-footer")
+		expect(body.utm_campaign).toBe("recap")
+	})
+
+	it("cleans a hostile utm payload and never sends fields it doesn't know", async () => {
+		await handler(
+			post({ email: "fan@example.com", utm: { source: "<script>X</script>", campaign: "a".repeat(300), admin: true, tags: ["vip"] } }),
+			mockRes()
+		)
+		const { body } = sent()
+		expect(body.utm_source).toBe("scriptxscript")
+		expect(String(body.utm_campaign)).toHaveLength(64)
+		expect(body).not.toHaveProperty("admin")
+		expect(body).not.toHaveProperty("tags")
+	})
+
+	it("sends no campaign fields for an untagged signup and ignores a non-object utm", async () => {
+		for (const utm of [undefined, null, "x", 5, []]) {
+			fetchMock.mockClear()
+			await handler(post({ email: "fan@example.com", source: "home", utm }), mockRes())
+			const { body } = sent()
+			expect(body.utm_source).toBe("raidersrundown.com")
+			expect(body.utm_medium).toBe("home")
+			expect(body).not.toHaveProperty("utm_campaign")
+			expect(body.metadata).toEqual({ placement: "home" })
+		}
+	})
+
 	it("uses the referring page, or the site as a default", async () => {
 		await handler(post({ email: "fan@example.com" }, { referer: "https://www.raidersrundown.com/predictions" }), mockRes())
 		expect(sent().body.referrer_url).toBe("https://www.raidersrundown.com/predictions")

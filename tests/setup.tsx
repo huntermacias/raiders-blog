@@ -18,3 +18,6 @@ vi.mock("next/image", () => ({
 		<img src={String(src)} alt={String(alt ?? "")} {...(rest as object)} />
 	),
 }))
+
+// Web Analytics would try to talk to Vercel; tests only need to see what was tracked.
+vi.mock("@vercel/analytics", () => ({ track: vi.fn() }))

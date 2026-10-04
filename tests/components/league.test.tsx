@@ -90,6 +90,30 @@ describe("<LeagueEntry /> signed out", () => {
 		expect(screen.queryByText(KEY)).toBeNull()
 	})
 
+	it("sends the remembered campaign with the join and records a tagged conversion", async () => {
+		const { track } = await import("@vercel/analytics")
+		vi.mocked(track).mockClear()
+		window.localStorage.setItem("raiders-rundown:utm", JSON.stringify({ utm: { source: "x", campaign: "week4-league" }, at: NOW }))
+		const f = fakeFetch({ "/api/league/join": () => ({ body: { handle: "SilverFan", key: KEY } }) })
+		render(<LeagueEntry games={[GAME]} />)
+		fireEvent.change(await screen.findByLabelText("Handle"), { target: { value: "SilverFan" } })
+		fireEvent.click(screen.getByRole("button", { name: "Claim my handle" }))
+		await screen.findByText(KEY)
+		expect(bodies(f, "/api/league/join")).toEqual([{ handle: "SilverFan", utm: { source: "x", campaign: "week4-league" } }])
+		expect(track).toHaveBeenCalledWith("league_join", { source: "x", campaign: "week4-league" })
+	})
+
+	it("does not track a join that failed", async () => {
+		const { track } = await import("@vercel/analytics")
+		vi.mocked(track).mockClear()
+		fakeFetch({ "/api/league/join": () => ({ status: 409, body: { message: "That handle is taken. Try another." } }) })
+		render(<LeagueEntry games={[GAME]} />)
+		fireEvent.change(await screen.findByLabelText("Handle"), { target: { value: "Taken" } })
+		fireEvent.click(screen.getByRole("button", { name: "Claim my handle" }))
+		await screen.findByText("That handle is taken. Try another.")
+		expect(track).not.toHaveBeenCalled()
+	})
+
 	it("shows the server's message when a handle is taken", async () => {
 		fakeFetch({ "/api/league/join": () => ({ status: 409, body: { message: "That handle is taken. Try another." } }) })
 		render(<LeagueEntry games={[GAME]} />)

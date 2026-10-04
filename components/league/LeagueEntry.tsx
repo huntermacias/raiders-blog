@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { teamInfo } from "@/lib/nfl"
 import { MAX_SCORE, type OpenGame } from "@/lib/league"
+import { trackConversion } from "@/lib/analytics"
+import { loadUtm } from "@/lib/utm"
 import { type LeagueCreds, clearCreds, loadCreds, postJson, saveCreds } from "@/lib/league.client"
 
 type Saved = Record<string, { awayScore: number; homeScore: number }>
@@ -46,9 +48,12 @@ function SignIn({ onDone, notice }: { onDone: (c: LeagueCreds, saved: Saved, fre
 		setBusy(true)
 		setError(null)
 		if (mode === "join") {
-			const r = await postJson<{ handle: string; key: string }>("/api/league/join", { handle })
-			if (r.ok) onDone({ handle: r.data.handle, key: r.data.key }, {}, true)
-			else setError(r.message)
+			const utm = loadUtm()
+			const r = await postJson<{ handle: string; key: string }>("/api/league/join", { handle, utm: utm ?? undefined })
+			if (r.ok) {
+				trackConversion("league_join", utm)
+				onDone({ handle: r.data.handle, key: r.data.key }, {}, true)
+			} else setError(r.message)
 		} else {
 			const r = await postJson<{ handle: string; picks: { predictionId: string; awayScore: number; homeScore: number }[] }>("/api/league/signin", { handle, key })
 			if (r.ok) onDone({ handle: r.data.handle, key }, toMap(r.data.picks), false)

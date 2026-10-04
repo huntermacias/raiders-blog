@@ -5,9 +5,19 @@ import { parseHandle, playerId } from "../../../lib/league"
 import { generateKey, hashKey } from "../../../lib/league.server"
 import { UNAVAILABLE, readBody } from "../../../lib/league.api"
 import { clientIp, createLimiter } from "../../../lib/rateLimit"
+import { sanitizeUtm } from "../../../lib/utm"
 
 // Handles are free, so keep one address from claiming a pile of them.
 const limiter = createLimiter({ max: 5, windowMs: 60 * 60 * 1000 })
+
+function acquisition(utm: ReturnType<typeof sanitizeUtm>) {
+	return {
+		...(utm.source ? { signupSource: utm.source } : {}),
+		...(utm.medium ? { signupMedium: utm.medium } : {}),
+		...(utm.campaign ? { signupCampaign: utm.campaign } : {}),
+		...(utm.content ? { signupContent: utm.content } : {}),
+	}
+}
 
 /**
  * Claim a handle. The player document id is derived from the handle
@@ -24,7 +34,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		return res.status(429).json({ message: "Too many sign-ups from this connection. Try again later." })
 	}
 
-	const parsed = parseHandle(readBody(req).handle)
+	const body = readBody(req)
+	const parsed = parseHandle(body.handle)
 	if (!parsed.ok) return res.status(400).json({ message: parsed.message })
 
 	try {
@@ -37,6 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			handleLower: parsed.lower,
 			keyHash,
 			banned: false,
+			// Which tagged link brought them (empty strings are dropped by Sanity's
+			// own validation, so only set what exists).
+			...acquisition(sanitizeUtm(body.utm)),
 		})
 		// createIfNotExists hands back the existing document when the id was taken.
 		if (doc.keyHash !== keyHash) return res.status(409).json({ message: "That handle is taken. Try another." })

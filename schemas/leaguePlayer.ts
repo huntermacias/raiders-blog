@@ -20,12 +20,16 @@ export default defineType({
 			description: 'Hides this player from every board and blocks their picks. Publish to apply.',
 			initialValue: false,
 		}),
+		defineField({name: 'signupSource', title: 'Came from (utm_source)', type: 'string', readOnly: true}),
+		defineField({name: 'signupMedium', title: 'Medium (utm_medium)', type: 'string', readOnly: true}),
+		defineField({name: 'signupCampaign', title: 'Campaign (utm_campaign)', type: 'string', readOnly: true}),
+		defineField({name: 'signupContent', title: 'Content (utm_content)', type: 'string', readOnly: true}),
 		defineField({name: 'keyHash', title: 'Key hash', type: 'string', readOnly: true, hidden: true}),
 	],
 	preview: {
-		select: {title: 'handle', banned: 'banned'},
-		prepare({title, banned}) {
-			return {title: title ?? '(no handle)', subtitle: banned ? 'Banned' : 'Active'}
+		select: {title: 'handle', banned: 'banned', campaign: 'signupCampaign'},
+		prepare({title, banned, campaign}) {
+			return {title: title ?? '(no handle)', subtitle: banned ? 'Banned' : campaign ? `Active · ${campaign}` : 'Active'}
 		},
 	},
 })
