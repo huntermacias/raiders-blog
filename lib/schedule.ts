@@ -86,7 +86,7 @@ export function scheduleRecord(rows: ScheduleRow[]): { w: number; l: number; t: 
 export function nextGame(rows: ScheduleRow[], nowMs: number): ScheduleRow | null {
 	for (const r of rows) {
 		if (r.bye || r.outcome || !r.opponent) continue
-		if (r.kickoff && new Date(r.kickoff).getTime() < nowMs - 4 * 3600 * 1000) continue
+		if (r.kickoff && new Date(r.kickoff).getTime() <= nowMs - 4 * 3600 * 1000) continue
 		return r
 	}
 	return null
