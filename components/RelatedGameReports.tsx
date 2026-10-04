@@ -1,8 +1,5 @@
-import Image from "next/image"
-
 import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
-import ClientSideRoute from "./ClientSideRoute"
-import { Card } from "@/components/ui/card"
+import StoryCard from "./StoryCard"
 import { Badge } from "@/components/ui/badge"
 
 type RelatedGame = {
@@ -31,36 +28,24 @@ function RelatedGameReports({ games }: { games: RelatedGame[] }) {
 				{games.map((game) => {
 					const won = game.raidersScore > game.opponentScore
 					return (
-						<ClientSideRoute key={game._id} route={`/games/${game.slug.current}`}>
-							<article className="group cursor-pointer">
-								<Card className="h-full overflow-hidden border-border/70 transition-shadow hover:shadow-md">
-									<div className="relative h-32 w-full overflow-hidden">
-										<Image
-											className="object-cover transition-transform duration-300 group-hover:scale-105"
-											src={cardImageUrl(game.mainImage)}
-											alt={game.title}
-											fill
-											style={{ objectPosition: hotspotPosition(game.mainImage) }}
-											sizes="(min-width: 640px) 33vw, 100vw"
-										/>
-										<Badge
-											className="absolute left-2 top-2 text-[10px]"
-											variant={won ? "default" : "destructive"}
-										>
-											{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
-										</Badge>
-									</div>
-									<div className="p-3">
-										<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-											{game.homeAway === "home" ? "vs" : "at"} {game.opponent} &middot; {formatDate(game.gameDate)}
-										</p>
-										<p className="line-clamp-2 text-sm font-semibold leading-snug group-hover:underline">
-											{game.title}
-										</p>
-									</div>
-								</Card>
-							</article>
-						</ClientSideRoute>
+						<StoryCard
+							key={game._id}
+							size="compact"
+							className="min-h-[15rem]"
+							href={`/games/${game.slug.current}`}
+							imageUrl={cardImageUrl(game.mainImage)}
+							imagePosition={hotspotPosition(game.mainImage)}
+							sizes="(min-width: 640px) 33vw, 100vw"
+							corner={
+								<Badge variant={won ? "default" : "destructive"} className="text-[10px]">
+									{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
+								</Badge>
+							}
+							badges={[`${game.homeAway === "home" ? "vs" : "at"} ${game.opponent}`]}
+							title={game.title}
+							meta={<p>{formatDate(game.gameDate)}</p>}
+							cta=""
+						/>
 					)
 				})}
 			</div>

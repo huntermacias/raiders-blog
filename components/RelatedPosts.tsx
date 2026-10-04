@@ -1,9 +1,6 @@
-import Image from "next/image"
-
 import { thumbImageUrl, hotspotPosition } from "../lib/urlFor"
 import { minutesFromWords } from "../lib/home"
-import ClientSideRoute from "./ClientSideRoute"
-import { Card } from "@/components/ui/card"
+import StoryCard, { StoryMeta } from "./StoryCard"
 
 type RelatedPost = {
 	_id: string
@@ -23,30 +20,18 @@ function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
 			<h2 className="mb-6 font-serif text-2xl font-bold tracking-tight">Related Stories</h2>
 			<div className="grid gap-6 sm:grid-cols-3">
 				{posts.map((post) => (
-					<ClientSideRoute key={post._id} route={`/post/${post.slug.current}`}>
-						<article className="group cursor-pointer">
-							<Card className="h-full overflow-hidden border-border/70 transition-shadow hover:shadow-md">
-								<div className="relative h-32 w-full overflow-hidden">
-									<Image
-										className="object-cover transition-transform duration-300 group-hover:scale-105"
-										src={thumbImageUrl(post.mainImage)}
-										alt={post.title}
-										fill
-										style={{ objectPosition: hotspotPosition(post.mainImage) }}
-										sizes="(min-width: 640px) 33vw, 100vw"
-									/>
-								</div>
-								<div className="p-3">
-									<p className="line-clamp-2 text-sm font-semibold leading-snug group-hover:underline">
-										{post.title}
-									</p>
-									{typeof post.words === "number" && (
-										<p className="mt-1.5 text-xs text-muted-foreground">{minutesFromWords(post.words)} min read</p>
-									)}
-								</div>
-							</Card>
-						</article>
-					</ClientSideRoute>
+					<StoryCard
+						key={post._id}
+						size="compact"
+						className="min-h-[15rem]"
+						href={`/post/${post.slug.current}`}
+						imageUrl={thumbImageUrl(post.mainImage)}
+						imagePosition={hotspotPosition(post.mainImage)}
+						sizes="(min-width: 640px) 33vw, 100vw"
+						title={post.title}
+						meta={<StoryMeta date={post._createdAt} minutes={typeof post.words === "number" ? minutesFromWords(post.words) : null} />}
+						cta=""
+					/>
 				))}
 			</div>
 		</section>

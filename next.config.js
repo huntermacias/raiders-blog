@@ -13,4 +13,16 @@ module.exports = {
   images: {
     domains: ["i.pinimg.com", "cdn.sanity.io"],
   },
+  // Permanent (308) redirects for URLs that changed after they were shared.
+  // Add a line here whenever a post's slug is edited in Studio, so the old
+  // link keeps working and search engines carry its ranking to the new one.
+  async redirects() {
+    return [
+      {
+        source: "/post/nfl-power-rankings-after-week-3-raiders-crack-the-top-five-and-chicago-blows-up-the-top-10",
+        destination: "/post/week-3-power-rankings",
+        permanent: true,
+      },
+    ]
+  },
 }

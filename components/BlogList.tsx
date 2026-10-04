@@ -1,29 +1,17 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ArrowUpRight, Clock } from "lucide-react"
-import Image from "next/image"
 
 import { cardImageUrl, hotspotPosition } from "../lib/urlFor"
 import { readingMinutes } from "../lib/home"
-import ClientSideRoute from "./ClientSideRoute"
 import CategoryFilter from "./CategoryFilter"
 import SearchBar from "./SearchBar"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
+import StoryCard, { StoryMeta } from "./StoryCard"
 
 type Props = {
 	posts: Post[]
 	/** Stories already shown in the homepage's "Top stories". Hidden from the default (unfiltered) list so nothing repeats. */
 	featuredIds?: string[]
-}
-
-function formatDate(date: string) {
-	return new Date(date).toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "long",
-		year: "numeric",
-	})
 }
 
 function BlogList({ posts, featuredIds = [] }: Props) {
@@ -75,52 +63,19 @@ function BlogList({ posts, featuredIds = [] }: Props) {
 						No articles match &ldquo;{query}&rdquo;.
 					</div>
 				) : (
-					<div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 						{filteredPosts.map((post) => (
-							<ClientSideRoute key={post._id} route={`/post/${post.slug.current}`}>
-								<article className="group flex cursor-pointer flex-col">
-									<Card className="flex h-full flex-col overflow-hidden border-border/70 transition-shadow hover:shadow-lg">
-										<div className="relative h-52 w-full overflow-hidden">
-											<Image
-												className="object-cover transition-transform duration-300 group-hover:scale-105"
-												src={cardImageUrl(post.mainImage)}
-												alt={post.title}
-												fill
-												style={{ objectPosition: hotspotPosition(post.mainImage) }}
-												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-											/>
-										</div>
-										<div className="flex flex-1 flex-col gap-3 p-5">
-											<div className="flex flex-wrap gap-2">
-												{post.categories?.map((c) => (
-													<Badge key={c._id} variant="outline">
-														{c.title}
-													</Badge>
-												))}
-											</div>
-											<h3 className="font-serif text-xl font-bold leading-snug tracking-tight group-hover:underline">
-												{post.title}
-											</h3>
-											<p className="line-clamp-2 flex-1 text-sm text-muted-foreground">
-												{post.description}
-											</p>
-											<div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-												<span className="flex flex-wrap items-center gap-x-2">
-													{formatDate(post._createdAt)}
-													<span aria-hidden>&middot;</span>
-													<span className="inline-flex items-center gap-1">
-														<Clock aria-hidden className="h-3 w-3" />
-														{post.readMinutes ?? readingMinutes(post.body)} min read
-													</span>
-												</span>
-												<span className="flex items-center gap-1 font-medium text-foreground group-hover:underline">
-													Read <ArrowUpRight className="h-3.5 w-3.5" />
-												</span>
-											</div>
-										</div>
-									</Card>
-								</article>
-							</ClientSideRoute>
+							<StoryCard
+								key={post._id}
+								href={`/post/${post.slug.current}`}
+								imageUrl={cardImageUrl(post.mainImage)}
+								imagePosition={hotspotPosition(post.mainImage)}
+								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+								badges={(post.categories ?? []).slice(0, 2).map((c) => c.title)}
+								title={post.title}
+								description={post.description}
+								meta={<StoryMeta date={post._createdAt} minutes={post.readMinutes ?? readingMinutes(post.body)} />}
+							/>
 						))}
 					</div>
 				)}

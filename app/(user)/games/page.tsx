@@ -2,10 +2,8 @@ import { groq } from "next-sanity"
 
 import { client } from "../../../lib/sanity.client"
 import { cardImageUrl, hotspotPosition } from "../../../lib/urlFor"
-import ClientSideRoute from "../../../components/ClientSideRoute"
-import { Card } from "@/components/ui/card"
+import StoryCard from "../../../components/StoryCard"
 import { Badge } from "@/components/ui/badge"
-import Image from "next/image"
 import type { Metadata } from "next"
 
 // Always render fresh from Sanity. Time-based ISR (revalidate) only refreshes
@@ -63,43 +61,26 @@ export default async function GamesPage() {
 					No game reports yet — check back after the next game.
 				</div>
 			) : (
-				<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{games.map((game) => {
 						const won = game.raidersScore > game.opponentScore
 						return (
-							<ClientSideRoute key={game._id} route={`/games/${game.slug.current}`}>
-								<article className="group cursor-pointer">
-									<Card className="flex h-full flex-col overflow-hidden border-border/70 transition-shadow hover:shadow-lg">
-										<div className="relative h-44 w-full overflow-hidden">
-											<Image
-												className="object-cover transition-transform duration-300 group-hover:scale-105"
-												src={cardImageUrl(game.mainImage)}
-												alt={game.title}
-												fill
-												style={{ objectPosition: hotspotPosition(game.mainImage) }}
-												sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-											/>
-											<Badge
-												className="absolute left-3 top-3"
-												variant={won ? "default" : "destructive"}
-											>
-												{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
-											</Badge>
-										</div>
-										<div className="flex flex-1 flex-col gap-2 p-5">
-											<p className="text-xs uppercase tracking-wide text-muted-foreground">
-												{game.homeAway === "home" ? "vs" : "at"} {game.opponent} &middot; {formatDate(game.gameDate)}
-											</p>
-											<h3 className="font-serif text-lg font-bold leading-snug tracking-tight group-hover:underline">
-												{game.title}
-											</h3>
-											<p className="line-clamp-2 flex-1 text-sm text-muted-foreground">
-												{game.description}
-											</p>
-										</div>
-									</Card>
-								</article>
-							</ClientSideRoute>
+							<StoryCard
+								key={game._id}
+								href={`/games/${game.slug.current}`}
+								imageUrl={cardImageUrl(game.mainImage)}
+								imagePosition={hotspotPosition(game.mainImage)}
+								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+								corner={
+									<Badge variant={won ? "default" : "destructive"}>
+										{won ? "W" : "L"} {game.raidersScore}-{game.opponentScore}
+									</Badge>
+								}
+								badges={[`${game.homeAway === "home" ? "vs" : "at"} ${game.opponent}`]}
+								title={game.title}
+								description={game.description}
+								meta={<p>{formatDate(game.gameDate)}</p>}
+							/>
 						)
 					})}
 				</div>
