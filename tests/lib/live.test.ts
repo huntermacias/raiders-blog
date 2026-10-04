@@ -284,3 +284,22 @@ describe("cached", () => {
 		await expect(cached("fresh", 100, async () => Promise.reject(new Error("down")))).rejects.toThrow("down")
 	})
 })
+
+describe("win probability through a penalty", () => {
+	it("keeps possession through a flag instead of dropping to neutral, so a penalty is not a swing", async () => {
+		const { wpSeries } = await import("../../lib/live/series")
+		const info = parseScoreboard(scoreboard).find((g) => g.home.abbr === "LV" || g.away.abbr === "LV")!
+		// Two snaps by the same offense with a no-play flag between them.
+		const base = { period: 2, home: 7, away: 7, kind: "run", team: info.home.abbr, scoring: false, turnover: false, penalty: false, big: false, firstDown: false, touchdown: false, yards: 5, down: 1, distance: 10, text: "run" }
+		const plays = [
+			{ ...base, id: "1", seq: 1, clock: "10:00", clockSeconds: 600, from: 30, to: 35 },
+			{ ...base, id: "2", seq: 2, kind: "penalty", penalty: true, text: "PENALTY No Play", clock: "9:40", clockSeconds: 580, from: 35, to: 35, yards: 0 },
+			{ ...base, id: "3", seq: 3, clock: "9:20", clockSeconds: 560, from: 35, to: 40 },
+		]
+		const game = { info, stats: [], drives: [{ id: "d", team: info.home.abbr, description: "", result: "", yards: 10, plays }] } as never
+		const s = wpSeries(game)
+		const around = s.slice(1)
+		const step = Math.abs(around[1].home - around[0].home)
+		expect(step).toBeLessThan(0.01) // it was 3 points before the fix
+	})
+})

@@ -8,6 +8,7 @@ import LiveWinChart from "@/components/live/LiveWinChart"
 import PinnedTake, { type Pinned } from "@/components/live/PinnedTake"
 import PlayFeed from "@/components/live/PlayFeed"
 import ScoreBug from "@/components/live/ScoreBug"
+import ShareGame from "@/components/live/ShareGame"
 import TeamStats from "@/components/live/TeamStats"
 import { usePolled } from "@/components/live/hooks"
 import { RAIDERS_ABBR, sideColors } from "@/lib/live/colors"
@@ -75,6 +76,8 @@ function GameView({ initial, boardAt, pinned }: { initial: LiveGameInfo; boardAt
 			<div className="space-y-4 sm:space-y-6">
 				<ScoreBug info={info} away={sides.away} home={sides.home} />
 
+				<ShareGame info={info} />
+
 				<PinnedTake take={pinned} />
 
 				{error && (
@@ -129,11 +132,11 @@ function GameView({ initial, boardAt, pinned }: { initial: LiveGameInfo; boardAt
 }
 
 /** The live page's engine: picks the game, keeps the week's scores fresh, and draws the selected game. */
-export default function LiveCenter({ initialBoard, pinned }: { initialBoard: LiveGameInfo[] | null; pinned: Pinned | null }) {
+export default function LiveCenter({ initialBoard, pinned, initialGame = null }: { initialBoard: LiveGameInfo[] | null; pinned: Pinned | null; initialGame?: string | null }) {
 	const seed: BoardResponse | null = initialBoard ? { games: initialBoard, featured: null, stale: false, at: 0 } : null
 	const board = usePolled<BoardResponse>("/api/live/scoreboard", boardDelay, seed)
 	const games = board.data?.games ?? initialBoard ?? []
-	const [choice, setChoice] = React.useState<string | null>(null)
+	const [choice, setChoice] = React.useState<string | null>(initialGame)
 
 	const featured = React.useMemo(() => {
 		const mine = games.find((g) => g.home.abbr === RAIDERS_ABBR || g.away.abbr === RAIDERS_ABBR)
