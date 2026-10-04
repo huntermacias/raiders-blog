@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowDown, ArrowRight, ArrowUp, Minus, Sparkles } from "lucide-react"
 
 import { cn } from "@/lib/utils"

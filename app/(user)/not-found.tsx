@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowRight } from "lucide-react"
 
 // Shown inside the normal site layout when a page calls notFound() (a post,

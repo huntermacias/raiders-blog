@@ -1,6 +1,6 @@
 import { groq } from "next-sanity"
 import { notFound } from "next/navigation"
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import type { Metadata } from "next"
 import { ArrowLeft } from "lucide-react"
 

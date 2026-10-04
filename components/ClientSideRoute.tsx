@@ -1,5 +1,5 @@
 'use client'
-import Link from 'next/link'
+import Link from "@/components/SiteLink"
 import React from 'react'
 
 function ClientSideRoute( { children, route } : { children: React.ReactNode, route: string }) {

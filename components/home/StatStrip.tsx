@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/SiteLink"
 import { ArrowUpRight, Flame, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"

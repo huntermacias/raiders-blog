@@ -5,7 +5,7 @@ import { vi } from "vitest"
 // loader config). The components under test only need them to render a normal
 // anchor and image.
 vi.mock("next/link", () => ({
-	default: ({ href, children, ...rest }: ComponentProps<"a"> & { href: string; children?: ReactNode }) => (
+	default: ({ href, children, prefetch: _prefetch, ...rest }: ComponentProps<"a"> & { href: string; children?: ReactNode; prefetch?: boolean }) => (
 		<a href={href} {...rest}>
 			{children}
 		</a>
