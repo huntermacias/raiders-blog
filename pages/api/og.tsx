@@ -248,10 +248,49 @@ function fallback(res: NextApiResponse) {
 	res.redirect(302, FALLBACK)
 }
 
+/**
+ * `?debug=1` answers with JSON saying where a card failed instead of redirecting to the default image,
+ * so a card that "doesn't show up" can be diagnosed from a browser. Only public feed facts and the
+ * error message go in it.
+ */
+async function debugReport(query: NextApiRequest["query"]) {
+	const out: Record<string, unknown> = { type: first(query.type) || null, game: first(query.game) || null }
+	try {
+		if (out.type === "live") {
+			const board = await getScoreboard()
+			out.scoreboardGames = board.value.map((g) => `${g.id} ${g.away.abbr}@${g.home.abbr} ${g.state}`)
+			out.scoreboardStale = board.stale
+			const id = (out.game as string | null) || featuredGame(board.value)?.id || null
+			out.resolvedGame = id
+			out.onScoreboard = id ? board.value.some((g) => g.id === id) : false
+		}
+		out.stage = "spec"
+		const spec = await specFor(query)
+		out.spec = spec ? "ok" : "null (the route would redirect to the default image)"
+		if (spec) {
+			out.stage = "render"
+			const svg = await satori(renderCard(spec), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
+			out.svgBytes = svg.length
+			const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+			out.pngBytes = png.length
+			out.stage = "done"
+		}
+	} catch (err) {
+		out.error = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+		out.where = err instanceof Error ? (err.stack ?? "").split("\n").slice(1, 4).map((l) => l.trim()) : []
+	}
+	return out
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	if (req.method !== "GET" && req.method !== "HEAD") {
 		res.setHeader("Allow", "GET, HEAD")
 		return res.status(405).end()
+	}
+
+	if (first(req.query.debug) === "1") {
+		res.setHeader("Cache-Control", "no-store")
+		return res.status(200).json(await debugReport(req.query))
 	}
 
 	try {
