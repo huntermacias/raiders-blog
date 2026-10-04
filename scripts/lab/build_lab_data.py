@@ -118,6 +118,35 @@ def lane_fields(row, ptype: str) -> dict:
 
 
 
+def value_fields(row, ptype: str) -> dict:
+    """How a play was valued and set up, straight from the play log.
+
+    epa: expected points added; wpa: win probability added for the offense (a fraction, so 0.021 is
+    2.1 points of win probability); sg: shotgun; nh: no huddle; xp: the model's chance this was a
+    pass before the snap; pl: pass length, S short or D deep. Keys are left out when the log has no value.
+    """
+    out: dict = {}
+    epa = _num(row.get("epa"))
+    if epa is not None:
+        out["epa"] = round(epa, 2)
+    wpa = _num(row.get("wpa"))
+    if wpa is not None:
+        out["wpa"] = round(wpa, 3)
+    if ptype in ("run", "pass"):
+        if _int(row.get("shotgun")) == 1:
+            out["sg"] = 1
+        if _int(row.get("no_huddle")) == 1:
+            out["nh"] = 1
+        xp = _num(row.get("xpass"))
+        if xp is not None:
+            out["xp"] = round(xp, 2)
+    if ptype == "pass":
+        length = _text(row.get("pass_length"))
+        if length in ("short", "deep"):
+            out["pl"] = "S" if length == "short" else "D"
+    return out
+
+
 def build_game(g: pd.DataFrame, team: str) -> dict | None:
     g = g.sort_values("play_id").reset_index(drop=True)
     last = g.iloc[-1]
@@ -260,6 +289,7 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
                 "text": clean_desc(_text(r["desc"])),
             }
             play.update(lane_fields(r, ptype))
+            play.update(value_fields(r, ptype))
             out_plays.append(play)
         if not out_plays:
             continue

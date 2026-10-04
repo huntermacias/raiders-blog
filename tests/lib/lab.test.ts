@@ -305,7 +305,7 @@ describe("where on the field a play went", () => {
 })
 
 describe("field view and paths", () => {
-	const base = { n: 1, down: 1, ytg: 10, from: 25, to: 40, firstDownAt: 35, outcome: "gain", type: "run", arc: false, downLabel: "1st & 10", text: "", yards: 15, lane: null, gap: null, catchAt: null, incompleteTo: null, y0: 0, yc: 0, y1: 0, ay: null, yac: null, firstDown: false, sack: false } as const
+	const base = { n: 1, down: 1, ytg: 10, from: 25, to: 40, firstDownAt: 35, outcome: "gain", type: "run", arc: false, downLabel: "1st & 10", text: "", yards: 15, lane: null, gap: null, catchAt: null, incompleteTo: null, y0: 0, yc: 0, y1: 0, ay: null, yac: null, firstDown: false, sack: false, epa: null, wpa: null, shotgun: false, noHuddle: false, xpass: null, deep: false } as const
 
 	it("looks down the field: farther yards sit higher on screen, smaller and narrower", () => {
 		const v = viewFrom(20)
@@ -394,5 +394,35 @@ describe("lane data in season.json", () => {
 		}
 		// Not everything went up the middle.
 		expect(new Set(withLane.map((p) => p.loc)).size).toBe(3)
+	})
+})
+
+describe("play value data in season.json", () => {
+	const plays = () => getGames().flatMap((g) => g.drives.flatMap((d) => d.plays))
+
+	it("values almost every play, with sane numbers", () => {
+		const all = plays()
+		expect(all.filter((p) => p.epa != null).length / all.length).toBeGreaterThan(0.95)
+		for (const p of all) {
+			if (p.epa != null) expect(Math.abs(p.epa)).toBeLessThan(10)
+			if (p.wpa != null) expect(Math.abs(p.wpa)).toBeLessThan(1)
+			if (p.xp != null) {
+				expect(p.xp).toBeGreaterThanOrEqual(0)
+				expect(p.xp).toBeLessThanOrEqual(1)
+			}
+			if (p.sg != null) expect(p.sg).toBe(1)
+			if (p.nh != null) expect(p.nh).toBe(1)
+			if (p.pl != null) {
+				expect(["S", "D"]).toContain(p.pl)
+				expect(p.type).toBe("pass")
+			}
+		}
+	})
+
+	it("has both shotgun and under-center plays, and some deep passes", () => {
+		const scrim = plays().filter((p) => p.type === "run" || p.type === "pass")
+		expect(scrim.some((p) => p.sg === 1)).toBe(true)
+		expect(scrim.some((p) => p.sg == null)).toBe(true)
+		expect(scrim.some((p) => p.pl === "D")).toBe(true)
 	})
 })

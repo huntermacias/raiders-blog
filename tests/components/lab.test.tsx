@@ -137,7 +137,7 @@ describe("<WinProbabilityReplay />", () => {
 })
 
 const mkPlay = (n: number, over: Partial<Drive["plays"][number]> = {}): Drive["plays"][number] => ({
-	n, dn: 1, ytg: 10, x: 25 + n * 5, xe: 30 + n * 5, yds: 5, type: "run", fd: false, td: false, text: `play ${n}`, ...over,
+	n, dn: 1, ytg: 10, x: 25 + n * 5, xe: 30 + n * 5, yds: 5, type: "run", fd: false, td: false, text: `play ${n}`, epa: 0.45, wpa: 0.01, sg: 1, ...over,
 })
 
 const drives: Drive[] = [
@@ -240,6 +240,27 @@ describe("<DriveReplay />", () => {
 		expect(within(summary).getByText("3 for 16")).toBeTruthy()
 		expect(within(summary).getByText("6:32")).toBeTruthy()
 		expect(within(summary).getByText("Plays")).toBeTruthy()
+	})
+
+	it("shows the whole field from above, and the stats for the play on screen", async () => {
+		const { container } = renderDrives()
+		expect(screen.getByText("Drive map")).toBeTruthy()
+		expect(container.querySelectorAll("svg[aria-hidden]").length).toBeGreaterThan(0)
+		fireEvent.click(screen.getByRole("button", { name: "Next play" }))
+		await screen.findByText("Play 2 of 3", {}, slow)
+		const analytics = screen.getByLabelText("Play analytics")
+		expect(within(analytics).getByText("Expected points added")).toBeTruthy()
+		expect(within(analytics).getByText("+0.45")).toBeTruthy()
+		expect(within(analytics).getByText("Shotgun")).toBeTruthy()
+	})
+
+	it("totals the expected points for the drive", () => {
+		renderDrives()
+		const summary = screen.getByLabelText("Drive summary")
+		expect(within(summary).getByText("Drive EPA")).toBeTruthy()
+		expect(within(summary).getByText("+1.35")).toBeTruthy()
+		expect(within(summary).getByText("Success rate")).toBeTruthy()
+		expect(within(summary).getByText("Explosive plays")).toBeTruthy()
 	})
 
 	it("describes the play that just ended with its kind and facts", async () => {

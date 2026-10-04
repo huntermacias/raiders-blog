@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { driveStats, framesForDrive, isFiltering, kindLetter, matchesFilter, NO_FILTER, playFacts, playKind } from "../../lib/lab/drive"
+import { driveStats, fmtEpa, fmtWpa, framesForDrive, isFiltering, kindLetter, matchesFilter, NO_FILTER, playAnalytics, playFacts, playKind } from "../../lib/lab/drive"
 import { COMPACT, WIDE, viewFrom } from "../../lib/lab/field"
 import { easeInOut, glideMs, MOVE_FROM, MOVE_TO, posAtScrub, scrubValue, stateAt } from "../../lib/lab/timeline"
 import type { Drive, DrivePlay } from "../../lib/lab/types"
@@ -158,5 +158,60 @@ describe("phone field", () => {
 
 	it("leaves room under the near edge for the lane labels", () => {
 		expect(COMPACT.H - COMPACT.BOTTOM).toBeGreaterThan(24)
+	})
+})
+
+describe("how plays were valued and set up", () => {
+	const frame = (over: Partial<DrivePlay>) => framesForDrive(drive([play(over)]))[0]
+
+	it("formats expected points and win probability with a sign", () => {
+		expect(fmtEpa(0.456)).toBe("+0.46")
+		expect(fmtEpa(-1.2)).toBe("\u22121.20")
+		expect(fmtEpa(0)).toBe("0.00")
+		expect(fmtWpa(0.0214)).toBe("+2.1%")
+		expect(fmtWpa(-0.1)).toBe("\u221210.0%")
+	})
+
+	it("lists what the log says about a play, and only that", () => {
+		const a = playAnalytics(frame({ type: "pass", loc: "L", ay: 8, epa: 0.72, wpa: 0.018, sg: 1, nh: 1, xp: 0.49 }))
+		expect(a).toEqual([
+			{ label: "Expected points added", value: "+0.72" },
+			{ label: "Win probability", value: "+1.8%" },
+			{ label: "Pass odds before the snap", value: "49%" },
+			{ label: "Setup", value: "Shotgun, No huddle" },
+		])
+		expect(playAnalytics(frame({ epa: -0.3 })).map((x) => x.label)).toEqual(["Expected points added", "Setup"])
+		expect(playAnalytics(frame({ epa: -0.3 })).find((x) => x.label === "Setup")?.value).toBe("Under center")
+		// A punt has no setup to describe.
+		expect(playAnalytics(frame({ type: "punt", xe: null, text: "punts 40 yards", epa: 0.1 })).map((x) => x.label)).toEqual(["Expected points added"])
+	})
+
+	it("calls a deep pass deep", () => {
+		expect(playKind(frame({ type: "pass", loc: "R", ay: 25, pl: "D" }))).toBe("Deep pass right")
+		expect(playKind(frame({ type: "pass", loc: "R", ay: 22, pl: "D", yds: 0, text: "pass deep right incomplete" }))).toBe("Incomplete deep pass right")
+	})
+
+	it("totals EPA, success rate, win probability and explosive plays for a drive", () => {
+		const s = driveStats(
+			framesForDrive(
+				drive([
+					play({ n: 1, type: "run", loc: "M", yds: 12, epa: 0.8, wpa: 0.01 }),
+					play({ n: 2, type: "run", loc: "L", yds: 2, epa: -0.4, wpa: -0.004 }),
+					play({ n: 3, dn: 2, type: "pass", loc: "R", ay: 25, yds: 26, epa: 1.4, wpa: 0.03, text: "pass deep right for 26 yards" }),
+					play({ n: 4, dn: 1, type: "no_play", yds: 0, epa: -0.2, text: "PENALTY False Start" }),
+				])
+			)
+		)
+		expect(s.epa).toBeCloseTo(1.6)
+		expect(s.wpa).toBeCloseTo(0.036)
+		expect(s.success).toEqual({ good: 2, of: 3 })
+		expect(s.explosive).toBe(2)
+	})
+
+	it("leaves EPA empty when the log has none", () => {
+		const s = driveStats(framesForDrive(drive([play({})])))
+		expect(s.epa).toBeNull()
+		expect(s.wpa).toBeNull()
+		expect(s.success).toEqual({ good: 0, of: 0 })
 	})
 })

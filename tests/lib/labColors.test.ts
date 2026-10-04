@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { SURFACE, TEAM_COLOR, baseColor, contrast, deltaE, inkOn, labColorVars, opponentColors, teamColorFor } from "../../lib/lab/colors"
+import { FIELD, SURFACE, TEAM_COLOR, baseColor, contrast, deltaE, inkOn, labColorVars, opponentColors, teamColorFor } from "../../lib/lab/colors"
 import { TEAMS } from "../../lib/nfl"
 
 const opponents = TEAMS.filter((t) => t.abbr !== "LV")
@@ -58,3 +58,16 @@ describe("opponent colors", () => {
 function hex(h: string): [number, number, number] {
 	return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number]
 }
+
+describe("opponent colors on the turf", () => {
+	it.each(TEAMS.map((t) => t.abbr))("%s stays clearly visible on the field in both themes", (abbr) => {
+		const c = opponentColors(abbr)
+		expect(contrast(c.dark, FIELD.dark)).toBeGreaterThanOrEqual(3)
+		expect(contrast(c.light, FIELD.light)).toBeGreaterThanOrEqual(2.7)
+	})
+
+	it("keeps the Raiders readable on the turf too", () => {
+		expect(contrast(TEAM_COLOR.dark, FIELD.dark)).toBeGreaterThanOrEqual(4.5)
+		expect(contrast(TEAM_COLOR.light, FIELD.light)).toBeGreaterThanOrEqual(4.5)
+	})
+})

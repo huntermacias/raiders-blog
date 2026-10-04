@@ -43,8 +43,8 @@ export type View = {
 }
 
 /** The view from a camera standing `cam` yards down the field. */
-export function viewFrom(cam: number, g: Geom = WIDE): View {
-	const scale = (yard: number) => 1 / (1 + A * Math.max(-0.2, (yard - cam) / DEPTH))
+export function viewFrom(cam: number, g: Geom = WIDE, depth: number = DEPTH): View {
+	const scale = (yard: number) => 1 / (1 + A * Math.max(-0.2, (yard - cam) / depth))
 	return {
 		scale,
 		pt: (yard, u, lift = 0) => {
