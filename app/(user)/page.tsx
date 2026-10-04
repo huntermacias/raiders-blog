@@ -189,6 +189,14 @@ export default async function page() {
 		imagePosition: hotspotPosition(post.mainImage),
 	}))
 
+	const today = new Date().toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "America/Los_Angeles",
+	})
+
 	const jsonLd = {
 		"@context": "https://schema.org",
 		"@graph": [
@@ -216,7 +224,12 @@ export default async function page() {
 		  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 		  <h1 className="sr-only">Raiders Rundown: Las Vegas Raiders news, graded picks and power rankings</h1>
 
-		  <div className="container pt-6 md:pt-8">
+		  <div className="container pt-5 md:pt-7">
+			  <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+				  <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-secondary-foreground">{today}</span>
+				  <p className="font-serif text-lg font-bold tracking-tight">All About the Shield</p>
+				  <p className="hidden text-sm text-muted-foreground md:block">Independent coverage of the Las Vegas Raiders, with every pick graded in public.</p>
+			  </div>
 			  <GameDayHub
 				  state={state}
 				  picks={picks ?? []}

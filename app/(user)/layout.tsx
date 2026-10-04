@@ -2,7 +2,6 @@ import { Inter, Fraunces } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
-import Banner from "../../components/Banner"
 import Header from "../../components/Header"
 import Footer from "../../components/Footer"
 import { ThemeProvider } from "../../components/theme-provider"
@@ -82,7 +81,6 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="flex min-h-screen flex-col">
             <Header />
-            <Banner />
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
