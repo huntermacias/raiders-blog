@@ -9,6 +9,7 @@ import { MessageCircle } from "lucide-react"
 import { readClient as client } from "../../../../lib/sanity.client"
 import { heroImageUrl, ogImageUrl, hotspotPosition } from "../../../../lib/urlFor"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
+import { readingMinutes } from "../../../../lib/home"
 import BoxScore from "../../../../components/BoxScore"
 import GameLeaders from "../../../../components/GameLeaders"
 import GameTimeline from "../../../../components/GameTimeline"
@@ -223,7 +224,10 @@ async function GameReportPage({ params: { slug } }: Props) {
 				    wrapping mid-icon on phones. From sm: up it goes back to a
 				    single row with the date on the left. */}
 				<div className="mt-6 flex flex-col gap-3 border-y border-border/70 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-					<span>{formatDate(game.gameDate)}</span>
+					<span>
+						{formatDate(game.gameDate)}
+						{game.body ? <> &middot; {readingMinutes(game.body)} min read</> : null}
+					</span>
 					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<SocialShare customurl={pageUrl} />
 						<a
