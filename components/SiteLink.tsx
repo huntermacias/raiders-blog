@@ -1,5 +1,8 @@
+"use client"
+
 import * as React from "react"
 import NextLink from "next/link"
+import { useRouter } from "next/navigation"
 
 /**
  * next/link with prefetching OFF unless a caller asks for it.
@@ -13,9 +16,32 @@ import NextLink from "next/link"
  *
  * Use this instead of importing next/link directly (a test enforces it). Pass
  * `prefetch` explicitly for a link that deserves it.
+ *
+ * Why the click handler: on Next 13.2.1, <Link prefetch={false}> navigates with
+ * "optimistic navigation", which silently does nothing on routes without a
+ * loading.js (the address never changes and the page never switches). So for
+ * ordinary internal clicks this calls router.push itself, which fetches the page
+ * on demand and works. Modified clicks (new tab, etc.), external links and
+ * target="_blank" are left to the browser.
  */
-const SiteLink = React.forwardRef<HTMLAnchorElement, React.ComponentProps<typeof NextLink>>(function SiteLink({ prefetch = false, ...props }, ref) {
-	return <NextLink ref={ref} prefetch={prefetch} {...props} />
+const SiteLink = React.forwardRef<HTMLAnchorElement, React.ComponentProps<typeof NextLink>>(function SiteLink(
+	{ prefetch = false, onClick, href, replace, target, ...props },
+	ref
+) {
+	const router = useRouter()
+
+	const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+		onClick?.(e)
+		if (e.defaultPrevented || prefetch !== false) return
+		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+		if (target && target !== "_self") return
+		if (typeof href !== "string" || !href.startsWith("/") || href.startsWith("//")) return
+		e.preventDefault()
+		if (replace) router.replace(href)
+		else router.push(href)
+	}
+
+	return <NextLink ref={ref} href={href} replace={replace} target={target} prefetch={prefetch} onClick={handleClick} {...props} />
 })
 
 export default SiteLink
