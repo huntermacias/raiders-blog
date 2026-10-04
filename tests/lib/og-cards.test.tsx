@@ -31,6 +31,10 @@ const SPECS: [string, CardSpec][] = [
 	["pick (graded)", { type: "pick", week: 4, awayNick: "Raiders", homeNick: "Chiefs", awayAbbr: "LV", homeAbbr: "KC", predictedAway: 24, predictedHome: 21, final: { away: 27, home: 20, result: "hit" } }],
 	["rankings", { type: "rankings", season: 2026, week: 4, raidersRank: 22, change: 3 }],
 	["rankings, no raiders row", { type: "rankings", season: 2026, week: 1, raidersRank: null, change: null }],
+	["league", { type: "league", season: 2026, players: 87 }],
+	["league (no players yet)", { type: "league", season: 2026 }],
+	["league player", { type: "league", season: 2026, handle: "SilverAndBlack", rank: 14, ranked: 212, points: 143, vs: { w: 5, l: 3, t: 1 } }],
+	["league player with a long handle and no rank", { type: "league", season: 2026, handle: "A_Very_Long_Name1", rank: null, points: null, vs: null }],
 	["scoreboard", { type: "scoreboard", season: 2026, hits: 2, misses: 1, accuracy: 2 / 3, keys: { hit: 5, miss: 4 }, flags: { hit: 1, miss: 1 } }],
 	["empty scoreboard", { type: "scoreboard", season: 2026, hits: 0, misses: 0, accuracy: null }],
 ]

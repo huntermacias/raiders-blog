@@ -21,6 +21,7 @@ const navLinks = [
 	//{ href: "/#latest", label: "Latest" },
 	{ href: "/games", label: "Game Reports" },
 	{ href: "/predictions", label: "Predictions" },
+	{ href: "/league", label: "League" },
 	{ href: "/rankings", label: "Rankings" },
 	{ href: "/schedule", label: "Schedule" },
 	{ href: "/live", label: "Live" },

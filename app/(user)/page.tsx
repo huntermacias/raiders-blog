@@ -14,6 +14,8 @@ import {
 import { type RankingsDoc, buildBoards, raidersRow } from "../../lib/rankings";
 import { type ScheduleGame, joinSchedule, scheduleRecord } from "../../lib/schedule";
 import { hubState, playedGames, readingMinutes } from "../../lib/home";
+import { loadLeague } from "../../lib/league.data";
+import { buildStandings, gradedWeeks, openGames, weekSummary } from "../../lib/league";
 import PreviewSuspense from "../../components/PreviewSuspense"
 import PreviewBlogList from "../../components/PreviewBlogList";
 import BlogList from "../../components/BlogList";
@@ -23,6 +25,7 @@ import GameDayHub from "../../components/home/GameDayHub";
 import StatStrip, { type HomeRank } from "../../components/home/StatStrip";
 import FeaturedStories, { type FeaturedPost } from "../../components/home/FeaturedStories";
 import FlagCard from "../../components/home/FlagCard";
+import LeagueTeaser from "../../components/league/LeagueTeaser";
 
 const query = groq`
 	*[_type=='post' && !(_id in path('drafts.**'))] {
@@ -144,13 +147,14 @@ export default async function page() {
 		)
 	}
 
-	const [posts, games, scheduleDoc, picks, flags, rankingDocs]: [
+	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league]: [
 		Post[],
 		GameReport[],
 		{ games?: ScheduleGame[] } | null,
 		GamePrediction[],
 		FlagPlant[],
 		RankingsDoc[],
+		Awaited<ReturnType<typeof loadLeague>>,
 	] = await Promise.all([
 		client.fetch(query),
 		client.fetch(gameReportsQuery),
@@ -158,6 +162,7 @@ export default async function page() {
 		safe(readClient.fetch(picksQuery, { season: SEASON }), []),
 		safe(readClient.fetch(flagsQuery, { season: SEASON }), []),
 		safe(readClient.fetch(rankingsQuery, { season: SEASON }), []),
+		loadLeague(),
 	]);
 
 	// Season data
@@ -175,6 +180,12 @@ export default async function page() {
 	const mine = latestBoard ? raidersRow(latestBoard.rows) : null
 	const rank: HomeRank | null =
 		latestBoard && mine ? { rank: mine.rank, change: mine.change, week: latestBoard.week, history: mine.history } : null
+
+	// League (loadLeague never throws; on a failure the teaser just shows no data)
+	const leagueRows = buildStandings(league.data.games, league.data.players, league.data.picks)
+	const leagueWeeks = gradedWeeks(league.data.games)
+	const leagueLast = leagueWeeks.length > 0 ? weekSummary(league.data.games, league.data.players, league.data.picks, leagueWeeks[leagueWeeks.length - 1]) : null
+	const leagueOpen = openGames(league.data.games, Date.now()).length
 
 	// Stories
 	const featured: FeaturedPost[] = (posts ?? []).slice(0, 3).map((post, i) => ({
@@ -246,6 +257,8 @@ export default async function page() {
 		  </div>
 
 		  <FeaturedStories posts={featured} />
+
+		  <LeagueTeaser players={league.data.players.length} top={leagueRows} lastWeek={leagueLast} open={leagueOpen} />
 
 		  <div className="pt-14">
 			  <GameReportsTeaser games={games} />

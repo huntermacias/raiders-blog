@@ -5,6 +5,7 @@
 //   /api/og?type=pick&id=<gamePrediction id>
 //   /api/og?type=scoreboard
 //   /api/og?type=rankings
+//   /api/og?type=league[&handle=<league handle>]
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -24,6 +25,8 @@ import { buildBoards, raidersRow, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
 import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
+import { client } from "../../lib/sanity.client"
+import { HANDLE_RE, LEAGUE_QUERY, buildStandings, normalizeLeagueData } from "../../lib/league"
 
 const FALLBACK = "/og-default-v2.png"
 const PHOTO_W = 420
@@ -169,6 +172,27 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		if (!latest) return null
 		const lv = raidersRow(latest.rows)
 		return { type: "rankings", season: SEASON, week: latest.week, raidersRank: lv?.rank ?? null, change: lv?.change ?? null }
+	}
+
+	if (type === "league") {
+		// League documents have dotted ids (private in Sanity), so this needs the token client.
+		const data = normalizeLeagueData(await client.fetch(LEAGUE_QUERY, { season: SEASON }))
+		const handle = first(query.handle)
+		if (!handle) return { type: "league", season: SEASON, players: data.players.length }
+		if (!HANDLE_RE.test(handle)) return null
+		const rows = buildStandings(data.games, data.players, data.picks)
+		const mine = rows.find((r) => r.lower === handle.toLowerCase())
+		const player = data.players.find((p) => p.lower === handle.toLowerCase())
+		if (!player) return null
+		return {
+			type: "league",
+			season: SEASON,
+			handle: player.handle,
+			rank: mine?.rank ?? null,
+			ranked: rows.length,
+			points: mine?.points ?? null,
+			vs: mine?.vsBlogger ?? null,
+		}
 	}
 
 	if (type === "scoreboard") {

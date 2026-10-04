@@ -107,7 +107,7 @@ describe("sitemap.xml", () => {
 		fetchDoc.mockResolvedValueOnce({ posts: [], games: [], liveEvents: [] })
 		const { xml } = await run(sitemap)
 		const locs = Array.from(xml.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1])
-		for (const path of ["", "games", "predictions", "rankings", "schedule", "live", "community"]) {
+		for (const path of ["", "games", "predictions", "league", "rankings", "schedule", "live", "community"]) {
 			expect(locs).toContain(`https://www.raidersrundown.com/${path}`)
 		}
 	})
@@ -136,7 +136,7 @@ describe("sitemap.xml", () => {
 	})
 
 	// Every static URL we hand to crawlers has to be a page that exists.
-	it.each(["games", "predictions", "rankings", "schedule", "live", "community"])("has a real page behind /%s", (section) => {
+	it.each(["games", "predictions", "league", "rankings", "schedule", "live", "community"])("has a real page behind /%s", (section) => {
 		expect(existsSync(join(process.cwd(), "app", "(user)", section, "page.tsx"))).toBe(true)
 	})
 })

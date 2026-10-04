@@ -189,6 +189,9 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 								<Link href="/predictions" className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-zinc-50 hover:underline">
 									Full scoreboard <ArrowRight aria-hidden className="h-3.5 w-3.5" />
 								</Link>
+								<Link href="/league#play" className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-zinc-50 hover:underline">
+									Beat the Blogger <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+								</Link>
 							</div>
 						</>
 					) : (
