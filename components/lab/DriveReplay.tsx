@@ -3,19 +3,28 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from "lucide-react"
 
-import { framesForDrive, HASH, resultLabel, resultTone, type Frame, yardLineName } from "@/lib/lab/drive"
-import { BOTTOM, DEPTH, H, MAX_YARD, MIN_YARD, NEAR_W, TOP, W, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom } from "@/lib/lab/field"
+import { Chip, DriveSummary, FilterRow, PlayFilters, Scrubber } from "@/components/lab/DriveBits"
+import { useTimeline } from "@/components/lab/useTimeline"
+import {
+	framesForDrive,
+	HASH,
+	isFiltering,
+	matchesFilter,
+	NO_FILTER,
+	playFacts,
+	playKind,
+	resultLabel,
+	resultTone,
+	yardLineName,
+	type Frame,
+	type PlayFilter,
+} from "@/lib/lab/drive"
+import { COMPACT, DEPTH, MAX_YARD, MIN_YARD, WIDE, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom, type Geom } from "@/lib/lab/field"
 import { LAB } from "@/lib/lab/theme"
+import { stateAt } from "@/lib/lab/timeline"
 import type { Drive } from "@/lib/lab/types"
 
 const SPEEDS = [1, 2] as const
-
-type Props = {
-	drives: Drive[]
-	teamAbbr: string
-	teamName: string
-	oppName: string
-}
 
 function easeOut(p: number) {
 	return 1 - Math.pow(1 - p, 3)
@@ -99,13 +108,15 @@ function ribbonStyle(f: Frame): Style {
 	return { width: 18, taper: false, dashed: false, opacity: 0.8 }
 }
 
-function OutcomeTag({ text, x, y }: { text: string; x: number; y: number }) {
-	const w = Math.max(136, text.length * 8.6 + 32)
-	const cx = Math.min(W - w / 2 - 8, Math.max(w / 2 + 8, x))
+type View = ReturnType<typeof viewFrom>
+
+function OutcomeTag({ text, x, y, k, g, opacity = 1 }: { text: string; x: number; y: number; k: number; g: Geom; opacity?: number }) {
+	const w = Math.max(136 * k, text.length * 8.6 * k + 32 * k)
+	const cx = Math.min(g.W - w / 2 - 8, Math.max(w / 2 + 8, x))
 	return (
-		<g transform={`translate(${cx} ${y})`} style={{ pointerEvents: "none" }}>
-			<rect x={-w / 2} y={-15} width={w} height={28} rx={14} fill={LAB.ink} />
-			<text x={0} y={4.5} textAnchor="middle" fontSize={12} fontWeight={800} fill={LAB.surface} letterSpacing="0.05em">
+		<g transform={`translate(${cx} ${y})`} style={{ pointerEvents: "none" }} opacity={opacity}>
+			<rect x={-w / 2} y={-15 * k} width={w} height={28 * k} rx={14 * k} fill={LAB.ink} />
+			<text x={0} y={4.5 * k} textAnchor="middle" fontSize={12 * k} fontWeight={800} fill={LAB.surface} letterSpacing="0.05em">
 				{text}
 			</text>
 		</g>
@@ -127,52 +138,44 @@ function Ball({ x, y, scale, angle, color }: { x: number; y: number; scale: numb
 	)
 }
 
-function EndZoneName({ view, yard, name, color }: { view: ReturnType<typeof viewFrom>; yard: number; name: string; color: string }) {
+function EndZoneName({ view, yard, name, color, compact }: { view: View; yard: number; name: string; color: string; compact: boolean }) {
 	const c = view.pt(yard, 0)
+	const size = Math.max(compact ? 22 : 0, 30 * c.s)
 	return (
-		<text x={c.x} y={c.y + 9 * c.s} textAnchor="middle" fontSize={30 * c.s} fontWeight={800} letterSpacing="0.3em" fill={color} style={{ pointerEvents: "none" }}>
+		<text x={c.x} y={c.y + size * 0.3} textAnchor="middle" fontSize={size} fontWeight={800} letterSpacing="0.3em" fill={color} style={{ pointerEvents: "none" }}>
 			{name.toUpperCase()}
 		</text>
 	)
 }
 
-/** A line across the field (line of scrimmage, first down) with its label outside both sidelines. */
-function Line({ view, yard, color, label }: { view: ReturnType<typeof viewFrom>; yard: number; color: string; label: string }) {
+/** A line across the field (line of scrimmage, first down). Its label sits outside the sidelines, or inside on a phone. */
+function Line({ view, yard, color, label, compact }: { view: View; yard: number; color: string; label: string; compact: boolean }) {
 	const a = view.pt(yard, -0.53)
 	const b = view.pt(yard, 0.53)
-	const size = 22 * a.s
+	const size = Math.max(compact ? 17 : 0, 22 * a.s)
 	return (
 		<g style={{ pointerEvents: "none" }}>
 			<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeOpacity={0.25} strokeWidth={12 * a.s} />
 			<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={Math.max(2, 4 * a.s)} />
 			<g fill={color} fontSize={size} fontWeight={800} letterSpacing="0.05em">
-				<text x={view.pt(yard, -0.585).x} y={a.y + size * 0.35} textAnchor="end">{label}</text>
-				<text x={view.pt(yard, 0.585).x} y={a.y + size * 0.35} textAnchor="start">{label}</text>
+				{compact ? (
+					<text x={view.pt(yard, -0.47).x} y={a.y - size * 0.35} textAnchor="start">
+						{label}
+					</text>
+				) : (
+					<>
+						<text x={view.pt(yard, -0.585).x} y={a.y + size * 0.35} textAnchor="end">{label}</text>
+						<text x={view.pt(yard, 0.585).x} y={a.y + size * 0.35} textAnchor="start">{label}</text>
+					</>
+				)}
 			</g>
 		</g>
 	)
 }
 
-/** One play's route: a soft glow under a tapered ribbon, dashed for losses and incompletions. */
-function Ribbon({ samples, view, style, color, uid }: { samples: { yard: number; u: number; lift: number }[]; view: ReturnType<typeof viewFrom>; style: { width: number; taper: boolean; dashed: boolean; opacity: number }; color: string; uid: string }) {
-	const d = ribbon(samples as never, view, style.width, style.taper)
-	if (!d) return null
-	return (
-		<g>
-			<path d={d} fill={color} opacity={style.opacity * 0.7} filter={`url(#${uid}-glow)`} />
-			<path d={d} fill={color} opacity={style.opacity} />
-			{style.dashed && <path d={centerline(samples as never, view)} fill="none" stroke={color} strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round" />}
-		</g>
-	)
-}
-
-function ringAt(view: ReturnType<typeof viewFrom>, spot: { yard: number; u: number }, _f: Frame) {
-	return view.pt(spot.yard, spot.u)
-}
-
 /** The mark where a play ended: a filled ring, a hollow ring for an incompletion, a diamond for a turnover. */
-function EndMarker({ x, y, s, f, color }: { x: number; y: number; s: number; f: Frame; color: string }) {
-	const r = 7 * s + 3
+function EndMarker({ x, y, s, k, f, color }: { x: number; y: number; s: number; k: number; f: Frame; color: string }) {
+	const r = (7 * s + 3) * k
 	if (f.outcome === "incomplete") {
 		return (
 			<g>
@@ -195,174 +198,89 @@ function EndMarker({ x, y, s, f, color }: { x: number; y: number; s: number; f: 
 	)
 }
 
+/** True once the field is narrow enough that the phone layout (taller, bigger labels) reads better. */
+function useCompact() {
+	const ref = React.useRef<HTMLDivElement>(null)
+	const [compact, setCompact] = React.useState(false)
+	const useLayout = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect
+	useLayout(() => {
+		const el = ref.current
+		if (!el) return
+		const measure = () => {
+			const w = el.getBoundingClientRect().width
+			setCompact(w > 0 && w < 640)
+		}
+		measure()
+		if (typeof ResizeObserver === "undefined") return
+		const ro = new ResizeObserver(measure)
+		ro.observe(el)
+		return () => ro.disconnect()
+	}, [])
+	return { ref, compact }
+}
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+type Spot = { yard: number; u: number }
+
+type Props = { drives: Drive[]; teamAbbr: string; teamName: string; oppName: string }
+
 export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Props) {
-	const reduced = usePrefersReducedMotion()
-	const uid = React.useId().replace(/[^a-zA-Z0-9]/g, "")
+	const [who, setWho] = React.useState<"all" | "team" | "opp">("all")
+	const [quarter, setQuarter] = React.useState(0)
+	const [filter, setFilter] = React.useState<PlayFilter>(NO_FILTER)
 	const [driveIdx, setDriveIdx] = React.useState(() => Math.max(0, drives.findIndex((d) => d.team === teamAbbr)))
-	const [cursor, setCursor] = React.useState(0) // plays completed
-	const [playing, setPlaying] = React.useState(false)
-	const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1)
-	// While a play is animating: progress 0..1 of frames[cursor].
-	const [progress, setProgress] = React.useState<number | null>(null)
+
+	const qOf = (d: Drive) => Math.min(5, d.q)
+	const fits = (d: Drive, w: typeof who, q: number) => (w === "all" || (w === "team") === (d.team === teamAbbr)) && (q === 0 || qOf(d) === q)
+	const quarters = React.useMemo(() => Array.from(new Set(drives.map((d) => Math.min(5, d.q)))).sort((a, b) => a - b), [drives])
+	const visible = drives.map((d, i) => ({ d, i })).filter(({ d }) => fits(d, who, quarter))
+
+	const applyFilters = (w: typeof who, q: number) => {
+		// A combination with no drives falls back to all quarters.
+		const qq = drives.some((d) => fits(d, w, q)) ? q : 0
+		setWho(w)
+		setQuarter(qq)
+		const vis = drives.map((d, i) => ({ d, i })).filter(({ d }) => fits(d, w, qq))
+		if (vis.length && !vis.some((v) => v.i === driveIdx)) setDriveIdx(vis[0].i)
+	}
 
 	const drive = drives[driveIdx]
-	const frames = React.useMemo(() => (drive ? framesForDrive(drive) : []), [drive])
-	const paths = React.useMemo(() => frames.map(pathFor), [frames])
-	const n = frames.length
-	const isTeam = drive?.team === teamAbbr
-	const driveColor = isTeam ? LAB.team : LAB.opp
-	const otherColor = isTeam ? LAB.opp : LAB.team
-	const onDrive = isTeam ? LAB.onTeam : LAB.onOpp
-	const onOther = isTeam ? LAB.onOpp : LAB.onTeam
-	const driveName = isTeam ? teamName : oppName
-	const otherName = isTeam ? oppName : teamName
-
-	// New drive: back to the start, not playing.
-	React.useEffect(() => {
-		setCursor(0)
-		setProgress(null)
-		setPlaying(false)
-	}, [driveIdx])
-
-	// Autoplay: set the snap, move the ball, hold, next play.
-	React.useEffect(() => {
-		if (!playing) return
-		if (cursor >= n) {
-			setPlaying(false)
-			return
-		}
-		if (reduced) {
-			const id = window.setTimeout(() => setCursor((c) => c + 1), 1100 / speed)
-			return () => window.clearTimeout(id)
-		}
-		let raf = 0
-		const timers: number[] = []
-		const moveMs = 750 / speed
-		const holdMs = 1150 / speed
-		const setMs = 520 / speed
-		timers.push(
-			window.setTimeout(() => {
-				const start = performance.now()
-				const tick = (now: number) => {
-					const p = Math.min(1, (now - start) / moveMs)
-					setProgress(p)
-					if (p < 1) raf = requestAnimationFrame(tick)
-					else {
-						timers.push(
-							window.setTimeout(() => {
-								setProgress(null)
-								setCursor((c) => c + 1)
-							}, holdMs)
-						)
-					}
-				}
-				raf = requestAnimationFrame(tick)
-			}, setMs)
-		)
-		return () => {
-			cancelAnimationFrame(raf)
-			timers.forEach((t) => window.clearTimeout(t))
-		}
-	}, [playing, cursor, n, speed, reduced])
-
-	// The camera follows the ball down the field.
-	const live = progress != null && progress < 1 && cursor < n
-	const doneNow = progress === 1 ? cursor + 1 : cursor
-	let focus = 0
-	if (n > 0) {
-		if (live && paths[cursor]) focus = pointAlong(paths[cursor], frames[cursor].arc ? progress! : easeOut(progress!)).yard
-		else if (doneNow > 0) focus = paths[Math.min(doneNow, n) - 1].end.yard
-		else focus = paths[0].start.yard
-	}
-	const cam = useSmooth(cameraFor(focus), reduced)
-
-	if (!drive || n === 0) return null
-
-	// When the ball has finished moving but the hold timer has not yet advanced the
-	// cursor, the play counts as done: show its result right away.
-	const eff = progress === 1 ? cursor + 1 : cursor
-	const upcoming = frames[Math.min(eff, n - 1)]
-	const last = eff > 0 ? frames[eff - 1] : null
-	const finished = eff >= n
-	const animating = progress != null && progress < 1 && cursor < n
-
-	// Where the ball is, how high it is in the air, and which way it points.
-	const view = viewFrom(cam)
-	let ballSpot: { yard: number; u: number; lift: number }
-	let angle = 0
-	if (animating) {
-		const f = frames[cursor]
-		const at = (p: number) => pointAlong(paths[cursor], f.arc ? p : easeOut(p))
-		ballSpot = at(progress!)
-		const a0 = at(Math.max(0, progress! - 0.04))
-		const p0 = view.pt(a0.yard, a0.u, a0.lift)
-		const p1 = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
-		if (f.arc) angle = Math.max(-40, Math.min(40, (Math.atan2(p1.y - p0.y, Math.max(0.5, p1.x - p0.x) * 3) * 180) / Math.PI))
-	} else {
-		const rest = last ? paths[eff - 1].end : paths[0].start
-		ballSpot = { yard: rest.yard, u: rest.u, lift: 0 }
-	}
-	const ball = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
-	const ground = view.pt(ballSpot.yard, ballSpot.u)
-
-	const losYard = finished ? frames[n - 1].to : upcoming.from
-	const fdYard = finished ? null : upcoming.firstDownAt
-	const trail = frames.slice(0, eff)
-
-	const status = finished
-		? { head: resultLabel(drive.result).toUpperCase(), sub: `${n} plays, ${drive.yards} yards${drive.top ? `, ${drive.top}` : ""}` }
-		: { head: upcoming.downLabel || "Kick", sub: yardLineName(upcoming.from) }
-
-	const shownText = animating ? null : last?.text ?? `${driveName} start at ${yardLineName(frames[0].from)}.`
-	const tone = resultTone(drive.result)
-
-	const go = (i: number) => {
-		setPlaying(false)
-		setProgress(null)
-		setCursor(Math.max(0, Math.min(n, i)))
-	}
-	const toggle = () => {
-		if (playing) return setPlaying(false)
-		if (eff >= n) setCursor(0)
-		setPlaying(true)
-	}
-
-
-	// What is in view.
-	const lo = Math.floor((cam - 4) / 5) * 5
-	const hi = cam + DEPTH + 10
-	const inView = (a: number, b: number) => b >= cam - 3 && a <= cam + DEPTH + 10
-	const bands: number[] = []
-	for (let k = 0; k < 100; k += 10) if ((k / 10) % 2 === 1 && inView(k, k + 10)) bands.push(k)
-	const lines: number[] = []
-	for (let y = Math.max(0, lo); y <= Math.min(100, hi); y += 5) lines.push(y)
-	const showOwnEnd = inView(MIN_YARD, 0)
-	const showFarEnd = inView(100, MAX_YARD)
-	const poly = (y0: number, y1: number, u0: number, u1: number) =>
-		[view.pt(y0, u0), view.pt(y1, u0), view.pt(y1, u1), view.pt(y0, u1)].map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
-	// Short tick marks every yard along the sidelines and the hash marks.
-	const tickPaths = [-0.5, -HASH, HASH, 0.5].map((u) => {
-		const edge = Math.abs(u) === 0.5
-		const half = edge ? 0.012 : 0.014
-		// Along a sideline the tick points inward; on a hash mark it is centered.
-		const from = edge ? u : u - half
-		const to = edge ? u + (u < 0 ? 2 * half : -2 * half) : u + half
-		let d = ""
-		for (let y = Math.max(0, Math.ceil(cam - 3)); y <= Math.min(100, Math.floor(hi)); y++) {
-			if (y % 5 === 0) continue
-			const a = view.pt(y, from)
-			const b = view.pt(y, to)
-			d += `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`
-		}
-		return { key: u, d }
-	})
+	if (!drive) return null
 
 	return (
 		<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface text-lab-ink shadow-[var(--lab-shadow)]">
 			{/* drive picker */}
-			<div className="border-b border-lab-line px-2 py-3 sm:px-4">
+			<div className="space-y-2 border-b border-lab-line px-2 py-3 sm:px-4">
+				{drives.length > 4 && (
+					<div className="space-y-2 px-2">
+						<FilterRow label="Offense">
+							<Chip active={who === "all"} onClick={() => applyFilters("all", quarter)}>
+								Both
+							</Chip>
+							<Chip active={who === "team"} onClick={() => applyFilters("team", quarter)}>
+								{teamName}
+							</Chip>
+							<Chip active={who === "opp"} onClick={() => applyFilters("opp", quarter)}>
+								{oppName}
+							</Chip>
+						</FilterRow>
+						{quarters.length > 1 && (
+							<FilterRow label="Quarter">
+								<Chip active={quarter === 0} onClick={() => applyFilters(who, 0)}>
+									All
+								</Chip>
+								{quarters.map((q) => (
+									<Chip key={q} active={quarter === q} disabled={!drives.some((d) => fits(d, who, q))} onClick={() => applyFilters(who, q)}>
+										{q === 5 ? "OT" : `Q${q}`}
+									</Chip>
+								))}
+							</FilterRow>
+						)}
+					</div>
+				)}
 				<div className="flex gap-2 overflow-x-auto px-2 pb-1" role="tablist" aria-label="Drives">
-					{drives.map((d, i) => {
+					{visible.map(({ d, i }) => {
 						const mine = d.team === teamAbbr
 						const active = i === driveIdx
 						const t = resultTone(d.result)
@@ -394,6 +312,166 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</div>
 			</div>
 
+			<DriveStage key={driveIdx} drive={drive} teamAbbr={teamAbbr} teamName={teamName} oppName={oppName} filter={filter} onFilter={setFilter} />
+		</div>
+	)
+}
+
+type StageProps = {
+	drive: Drive
+	teamAbbr: string
+	teamName: string
+	oppName: string
+	filter: PlayFilter
+	onFilter: (f: PlayFilter) => void
+}
+
+/** One drive: the field, the scrubber, and everything under it. Remounts for each drive, so it always starts at the snap. */
+function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: StageProps) {
+	const reduced = usePrefersReducedMotion()
+	const uid = React.useId().replace(/[^a-zA-Z0-9]/g, "")
+	const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1)
+	const [hover, setHover] = React.useState<number | null>(null)
+	const { ref: fieldRef, compact } = useCompact()
+	const g = compact ? COMPACT : WIDE
+	const k = compact ? 1.45 : 1
+
+	const frames = React.useMemo(() => framesForDrive(drive), [drive])
+	const paths = React.useMemo(() => frames.map(pathFor), [frames])
+	const n = frames.length
+	const tl = useTimeline(n, reduced, speed)
+	const st = stateAt(tl.pos, n)
+	const eff = st.done
+	const animating = st.moving != null
+	const mi = st.moving ?? 0
+	const finished = eff >= n
+
+	const matches = React.useMemo(() => frames.map((f) => matchesFilter(f, filter)), [frames, filter])
+	const filtering = isFiltering(filter)
+	const shown = matches.filter(Boolean).length
+
+	const isTeam = drive.team === teamAbbr
+	const driveColor = isTeam ? LAB.team : LAB.opp
+	const otherColor = isTeam ? LAB.opp : LAB.team
+	const onDrive = isTeam ? LAB.onTeam : LAB.onOpp
+	const onOther = isTeam ? LAB.onOpp : LAB.onTeam
+	const driveName = isTeam ? teamName : oppName
+	const otherName = isTeam ? oppName : teamName
+
+	// The camera follows the ball down the field.
+	const animP = (i: number) => (frames[i].arc ? st.progress : easeOut(st.progress))
+	let focus = 0
+	if (n > 0) {
+		if (animating) focus = pointAlong(paths[mi], animP(mi)).yard
+		else if (eff >= n) focus = paths[n - 1].end.yard
+		else if (eff > 0) focus = lerp(paths[eff - 1].end.yard, paths[eff].start.yard, st.settle)
+		else focus = paths[0].start.yard
+	}
+	const cam = useSmooth(cameraFor(focus), reduced)
+
+	if (n === 0) return null
+
+	const upcoming = frames[Math.min(eff, n - 1)]
+	const last = eff > 0 ? frames[eff - 1] : null
+	const shownIdx = animating ? mi : eff > 0 ? eff - 1 : null
+	const shownFrame = shownIdx != null ? frames[shownIdx] : null
+
+	// Where the ball is, how high it is in the air, and which way it points.
+	const view = viewFrom(cam, g)
+	let ballSpot: { yard: number; u: number; lift: number }
+	let angle = 0
+	if (animating) {
+		const f = frames[mi]
+		const at = (p: number) => pointAlong(paths[mi], f.arc ? p : easeOut(p))
+		ballSpot = at(st.progress)
+		const a0 = at(Math.max(0, st.progress - 0.04))
+		const p0 = view.pt(a0.yard, a0.u, a0.lift)
+		const p1 = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
+		if (f.arc) angle = Math.max(-40, Math.min(40, (Math.atan2(p1.y - p0.y, Math.max(0.5, p1.x - p0.x) * 3) * 180) / Math.PI))
+	} else {
+		let rest: Spot
+		if (eff <= 0) rest = paths[0].start
+		else if (eff >= n) rest = paths[n - 1].end
+		else {
+			// Spot the ball for the next snap: it eases from where the last play ended to the next line of scrimmage.
+			const a = paths[eff - 1].end
+			const b = paths[eff].start
+			rest = { yard: lerp(a.yard, b.yard, st.settle), u: lerp(a.u, b.u, st.settle) }
+		}
+		ballSpot = { yard: rest.yard, u: rest.u, lift: 0 }
+	}
+	const ball = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
+	const ground = view.pt(ballSpot.yard, ballSpot.u)
+
+	const losYard = finished ? frames[n - 1].to : upcoming.from
+	const fdYard = finished ? null : upcoming.firstDownAt
+	const trail = frames.slice(0, eff)
+
+	const status = finished
+		? { head: resultLabel(drive.result).toUpperCase(), sub: `${n} plays, ${drive.yards} yards${drive.top ? `, ${drive.top}` : ""}` }
+		: { head: upcoming.downLabel || "Kick", sub: yardLineName(upcoming.from) }
+
+	const shownText = animating ? null : last?.text ?? `${driveName} start at ${yardLineName(frames[0].from)}.`
+	const tone = resultTone(drive.result)
+
+	// How strongly each play's route is drawn: the latest in full, the rest softer; a filter or a hover overrides that.
+	const dimFor = (i: number) => {
+		if (filtering) return matches[i] ? 1 : 0.14
+		if (hover != null) return i === hover ? 1 : 0.32
+		return i === shownIdx ? 1 : 0.62
+	}
+
+	const step = (delta: number) => {
+		const base = tl.targetRef.current ?? eff
+		tl.seek(Math.max(0, Math.min(n, Math.round(base) + delta)))
+	}
+	const toggle = () => (tl.playing ? tl.pause() : tl.play())
+
+	// What is in view.
+	const lo = Math.floor((cam - 4) / 5) * 5
+	const hi = cam + DEPTH + 10
+	const inView = (a: number, b: number) => b >= cam - 3 && a <= cam + DEPTH + 10
+	const bands: number[] = []
+	for (let b = 0; b < 100; b += 10) if ((b / 10) % 2 === 1 && inView(b, b + 10)) bands.push(b)
+	const lines: number[] = []
+	for (let y = Math.max(0, lo); y <= Math.min(100, hi); y += 5) lines.push(y)
+	const showOwnEnd = inView(MIN_YARD, 0)
+	const showFarEnd = inView(100, MAX_YARD)
+	const poly = (y0: number, y1: number, u0: number, u1: number) =>
+		[view.pt(y0, u0), view.pt(y1, u0), view.pt(y1, u1), view.pt(y0, u1)].map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
+	// Short tick marks every yard along the sidelines and the hash marks.
+	const tickPaths = [-0.5, -HASH, HASH, 0.5].map((u) => {
+		const edge = Math.abs(u) === 0.5
+		const half = edge ? 0.012 : 0.014
+		// Along a sideline the tick points inward; on a hash mark it is centered.
+		const from = edge ? u : u - half
+		const to = edge ? u + (u < 0 ? 2 * half : -2 * half) : u + half
+		let d = ""
+		for (let y = Math.max(0, Math.ceil(cam - 3)); y <= Math.min(100, Math.floor(hi)); y++) {
+			if (y % 5 === 0) continue
+			const a = view.pt(y, from)
+			const b = view.pt(y, to)
+			d += `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`
+		}
+		return { key: u, d }
+	})
+
+	// Routes: soft glow under every ribbon, drawn as one blurred layer so it stays cheap.
+	const wk = compact ? 0.85 : 1
+	const routes: { key: string; d: string; dash: string | null; style: Style; dim: number }[] = []
+	const addRoute = (key: string, samples: ReturnType<typeof sliceTo>, f: Frame, dim: number) => {
+		const style = ribbonStyle(f)
+		const d = ribbon(samples, view, style.width * wk, style.taper)
+		if (d) routes.push({ key, d, dash: style.dashed ? centerline(samples, view) : null, style, dim })
+	}
+	trail.forEach((f, i) => addRoute(`t${f.n}`, paths[i].samples, f, dimFor(i)))
+	if (animating) addRoute("live", sliceTo(paths[mi], animP(mi)), frames[mi], filtering ? (matches[mi] ? 1 : 0.14) : 1)
+
+	const hoverFrame = hover != null && hover < eff ? frames[hover] : null
+	const hoverAt = hoverFrame ? view.pt(paths[hover!].end.yard, paths[hover!].end.u) : null
+
+	return (
+		<>
 			{/* down and distance bug */}
 			<div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-6">
 				<div className="flex items-center gap-3">
@@ -405,10 +483,12 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</div>
 			</div>
 
+			<DriveSummary drive={drive} frames={frames} />
+
 			{/* the field, seen from behind the offense and looking down the field */}
-			<div className="mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
+			<div ref={fieldRef} className="mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
 				<svg
-					viewBox={`0 0 ${W} ${H}`}
+					viewBox={`0 0 ${g.W} ${g.H}`}
 					className="block h-auto w-full"
 					role="img"
 					aria-label={`${driveName} drive ${drive.n}, ${n} plays, ${drive.yards} yards, ending in ${resultLabel(drive.result).toLowerCase()}. The offense moves up the screen toward the ${otherName} end zone.`}
@@ -419,19 +499,19 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 							<stop offset="100%" style={{ stopColor: LAB.surface, stopOpacity: 0 }} />
 						</linearGradient>
 						<filter id={`${uid}-glow`} x="-20%" y="-20%" width="140%" height="140%">
-							<feGaussianBlur stdDeviation="5" />
+							<feGaussianBlur stdDeviation={compact ? 4 : 5} />
 						</filter>
 					</defs>
 
 					{/* surface, bands every ten yards, end zones in team colors */}
 					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.5, 0.5)} fill={LAB.field} />
-					{bands.map((k) => (
-						<polygon key={k} points={poly(k, k + 10, -0.5, 0.5)} fill={LAB.fieldBand} />
+					{bands.map((b) => (
+						<polygon key={b} points={poly(b, b + 10, -0.5, 0.5)} fill={LAB.fieldBand} />
 					))}
 					{showOwnEnd && <polygon points={poly(MIN_YARD, 0, -0.5, 0.5)} fill={driveColor} opacity={0.9} />}
 					{showFarEnd && <polygon points={poly(100, MAX_YARD, -0.5, 0.5)} fill={otherColor} opacity={0.9} />}
-					{showOwnEnd && <EndZoneName view={view} yard={-5} name={driveName} color={onDrive} />}
-					{showFarEnd && <EndZoneName view={view} yard={105} name={otherName} color={onOther} />}
+					{showOwnEnd && <EndZoneName view={view} yard={-5} name={driveName} color={onDrive} compact={compact} />}
+					{showFarEnd && <EndZoneName view={view} yard={105} name={otherName} color={onOther} compact={compact} />}
 
 					{/* sidelines */}
 					<polygon points={poly(Math.max(MIN_YARD, lo), Math.min(MAX_YARD, hi), -0.56, -0.5)} fill={LAB.fieldLine} opacity={0.55} />
@@ -446,15 +526,18 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 					})}
 					{lines
 						.filter((y) => y % 10 === 0 && y > 0 && y < 100)
+						// On a phone, leave the bottom corners to the LEFT / RIGHT labels.
+						.filter((y) => !compact || view.pt(y, 0).y < g.BOTTOM - 30)
 						.map((y) => {
-							const l = view.pt(y, -0.58)
-							const r = view.pt(y, 0.58)
+							// Outside the sidelines on a wide field; painted on the turf on a phone, where there is no room outside.
+							const l = view.pt(y, compact ? -0.46 : -0.58)
+							const r = view.pt(y, compact ? 0.46 : 0.58)
 							const num = y <= 50 ? y : 100 - y
-							const size = 30 * l.s
+							const size = Math.max(compact ? 20 : 0, 30 * l.s)
 							return (
 								<g key={y} fill={LAB.fieldNum} fontSize={size} fontWeight={700} className="tabular-nums" style={{ pointerEvents: "none" }}>
-									<text x={l.x} y={l.y + size * 0.35} textAnchor="end">{num}</text>
-									<text x={r.x} y={r.y + size * 0.35} textAnchor="start">{num}</text>
+									<text x={l.x} y={l.y + size * 0.35} textAnchor={compact ? "start" : "end"}>{num}</text>
+									<text x={r.x} y={r.y + size * 0.35} textAnchor={compact ? "end" : "start"}>{num}</text>
 								</g>
 							)
 						})}
@@ -463,45 +546,89 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 					))}
 
 					{/* far end of the field fades into the card */}
-					<rect x={0} y={0} width={W} height={H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
+					<rect x={0} y={0} width={g.W} height={g.H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
 
 					{/* first-down marker and line of scrimmage */}
-					{fdYard != null && fdYard <= 100 && <Line view={view} yard={fdYard} color={LAB.firstDown} label="1ST" />}
-					{!finished && <Line view={view} yard={losYard} color={LAB.scrimmage} label="LOS" />}
+					{fdYard != null && fdYard <= 100 && <Line view={view} yard={fdYard} color={LAB.firstDown} label="1ST" compact={compact} />}
+					{!finished && <Line view={view} yard={losYard} color={LAB.scrimmage} label="LOS" compact={compact} />}
 
-					{/* every play so far: a ribbon for the route, a ring where it ended */}
+					{/* every play so far: a glowing ribbon for the route */}
 					<g style={{ pointerEvents: "none" }}>
-						{trail.map((f, i) => {
-							const st = ribbonStyle(f)
-							const path = paths[i]
-							const r = ringAt(view, path.end, f)
-							return (
-								<g key={f.n}>
-									<Ribbon samples={path.samples} view={view} style={st} color={driveColor} uid={uid} />
-									{path.catchSpot && <circle cx={view.pt(path.catchSpot.yard, path.catchSpot.u).x} cy={view.pt(path.catchSpot.yard, path.catchSpot.u).y} r={3.5 * r.s + 1.5} fill={driveColor} />}
-									<EndMarker x={r.x} y={r.y} s={r.s} f={f} color={driveColor} />
-								</g>
-							)
-						})}
-						{/* the play being drawn right now */}
-						{animating && <Ribbon samples={sliceTo(paths[cursor], frames[cursor].arc ? progress! : easeOut(progress!))} view={view} style={ribbonStyle(frames[cursor])} color={driveColor} uid={uid} />}
+						<g filter={`url(#${uid}-glow)`}>
+							{routes.map((r) => (
+								<path key={r.key} d={r.d} fill={driveColor} opacity={r.style.opacity * 0.7 * r.dim} />
+							))}
+						</g>
+						{routes.map((r) => (
+							<g key={r.key} opacity={r.dim}>
+								<path d={r.d} fill={driveColor} opacity={r.style.opacity} />
+								{r.dash && <path d={r.dash} fill="none" stroke={driveColor} strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round" />}
+							</g>
+						))}
 					</g>
 
-					{/* ball, shadow and the burst when a drive ends in points */}
-					<ellipse cx={ground.x} cy={ground.y + 6 * ground.s} rx={Math.max(5, 16 * ground.s - ballSpot.lift * 0.05)} ry={4 * ground.s} fill={LAB.ink} opacity={0.18} />
-					{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
-						<circle key={`burst-${driveIdx}-${eff}`} className="lab-burst" cx={ball.x} cy={ball.y} r={30 * ball.s} fill="none" stroke={driveColor} strokeWidth={3} />
-					)}
-					<Ball x={ball.x} y={ball.y} scale={Math.max(0.7, ball.s)} angle={angle} color={driveColor} />
+					{/* where each play ended. Tap or click one to jump to that play. */}
+					{trail.map((f, i) => {
+						const path = paths[i]
+						const r = view.pt(path.end.yard, path.end.u)
+						const c = path.catchSpot ? view.pt(path.catchSpot.yard, path.catchSpot.u) : null
+						return (
+							<g
+								key={f.n}
+								opacity={dimFor(i)}
+								className="cursor-pointer"
+								aria-hidden
+								onPointerEnter={(e) => e.pointerType === "mouse" && setHover(i)}
+								onPointerLeave={() => setHover((h) => (h === i ? null : h))}
+								onClick={() => {
+									setHover(null)
+									tl.seek(i + 1)
+								}}
+							>
+								{c && <circle cx={c.x} cy={c.y} r={(3.5 * c.s + 1.5) * k} fill={driveColor} />}
+								<circle cx={r.x} cy={r.y} r={(7 * r.s + 3) * k + 10} fill="transparent" />
+								<g className="lab-pop">
+									<EndMarker x={r.x} y={r.y} s={r.s} k={k} f={f} color={driveColor} />
+								</g>
+							</g>
+						)
+					})}
 
-					{/* outcome tag once the play is over */}
-					{!animating && last && <OutcomeTag text={outcomeTag(last)} x={ball.x} y={ball.y > 120 ? ball.y - 52 * ball.s - 8 : ball.y + 52 * ball.s + 8} />}
+					{/* ball, shadow and the burst when a drive ends in points */}
+					<ellipse cx={ground.x} cy={ground.y + 6 * ground.s * k} rx={Math.max(5, 16 * ground.s * k - ballSpot.lift * 0.05)} ry={4 * ground.s * k} fill={LAB.ink} opacity={0.18} />
+					{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
+						<circle key={`burst-${eff}`} className="lab-burst" cx={ball.x} cy={ball.y} r={30 * ball.s * k} fill="none" stroke={driveColor} strokeWidth={3} />
+					)}
+					<Ball x={ball.x} y={ball.y} scale={Math.max(0.7, ball.s) * k} angle={angle} color={driveColor} />
+
+					{/* outcome tag once the play is over, fading as the ball is spotted for the next snap */}
+					{!animating && last && !hoverFrame && (
+						<g key={`tag-${eff}`} className="lab-fade">
+							<OutcomeTag
+								text={outcomeTag(last)}
+								x={ball.x}
+								y={ball.y > 120 * k ? ball.y - (52 * ball.s + 8) * k : ball.y + (52 * ball.s + 8) * k}
+								k={k}
+								g={g}
+								opacity={1 - st.settle}
+							/>
+						</g>
+					)}
+					{hoverFrame && hoverAt && (
+						<OutcomeTag
+							text={`${hoverFrame.downLabel || "Kick"} · ${outcomeTag(hoverFrame)}`}
+							x={hoverAt.x}
+							y={hoverAt.y > 120 * k ? hoverAt.y - (24 * hoverAt.s + 16) * k : hoverAt.y + (24 * hoverAt.s + 16) * k}
+							k={k}
+							g={g}
+						/>
+					)}
 
 					{/* which side is which, from the offense's point of view */}
-					<g fill={LAB.fieldNum} fontSize={11} fontWeight={700} letterSpacing="0.16em" textAnchor="middle" style={{ pointerEvents: "none" }}>
-						<text x={W / 2 - 0.36 * NEAR_W} y={BOTTOM + 18}>LEFT</text>
-						<text x={W / 2} y={BOTTOM + 18}>MIDDLE</text>
-						<text x={W / 2 + 0.36 * NEAR_W} y={BOTTOM + 18}>RIGHT</text>
+					<g fill={LAB.fieldNum} fontSize={11 * k} fontWeight={700} letterSpacing="0.16em" textAnchor="middle" style={{ pointerEvents: "none" }}>
+						<text x={g.W / 2 - 0.36 * g.NEAR_W} y={g.BOTTOM + 12 + 6 * k}>LEFT</text>
+						<text x={g.W / 2} y={g.BOTTOM + 12 + 6 * k}>MIDDLE</text>
+						<text x={g.W / 2 + 0.36 * g.NEAR_W} y={g.BOTTOM + 12 + 6 * k}>RIGHT</text>
 					</g>
 				</svg>
 			</div>
@@ -549,23 +676,26 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 			</ul>
 			<p className="px-4 pt-2 text-[11px] leading-relaxed text-lab-muted sm:px-6">
 				The offense moves up the screen, so left and right are the offense&rsquo;s left and right. Each play is drawn toward the side it went. The official log records left, middle or
-				right (and the gap on runs), not exact positions, so the lane is a good guide and the exact spot is not.
+				right (and the gap on runs), not exact positions, so the lane is a good guide and the exact spot is not. Tap a ring to jump to that play.
 			</p>
 
+			{/* scrubber */}
+			<Scrubber frames={frames} state={st} matches={matches} color={driveColor} onScrub={tl.scrub} onSeek={tl.seek} onStep={step} />
+
 			{/* transport */}
-			<div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-2 sm:px-6">
+			<div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-3 sm:px-6">
 				<button
 					type="button"
 					onClick={toggle}
 					className="inline-flex h-10 items-center gap-2 rounded-full bg-lab-ink px-4 text-sm font-semibold text-lab-surface transition hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lab-ink"
-					aria-label={playing ? "Pause drive" : finished ? "Replay drive" : "Play drive"}
+					aria-label={tl.playing ? "Pause drive" : finished ? "Replay drive" : "Play drive"}
 				>
-					{playing ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
-					{playing ? "Pause" : finished ? "Replay" : "Play drive"}
+					{tl.playing ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
+					{tl.playing ? "Pause" : finished ? "Replay" : "Play drive"}
 				</button>
 				<button
 					type="button"
-					onClick={() => go(eff - 1)}
+					onClick={() => step(-1)}
 					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					aria-label="Previous play"
 				>
@@ -573,7 +703,7 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</button>
 				<button
 					type="button"
-					onClick={() => go(eff + 1)}
+					onClick={() => step(1)}
 					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					aria-label="Next play"
 				>
@@ -581,7 +711,7 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</button>
 				<button
 					type="button"
-					onClick={() => go(0)}
+					onClick={() => tl.seek(0)}
 					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink"
 					aria-label="Restart drive"
 				>
@@ -609,9 +739,19 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 			</div>
 
 			{/* what just happened */}
-			<div className="border-t border-lab-line bg-lab-tint px-4 py-4 sm:px-6" aria-live="polite">
-				<p className="min-h-[2.75rem] text-sm leading-relaxed text-lab-ink sm:text-base">
-					{shownText ?? " "}
+			<div className="border-t border-lab-line bg-lab-tint px-4 py-4 sm:px-6">
+				{shownFrame && shownIdx != null && (
+					<div className="mb-2 flex flex-wrap items-center gap-1.5">
+						<span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">{playKind(shownFrame)}</span>
+						{playFacts(shownFrame).map((fact) => (
+							<span key={fact} className="rounded-full border border-lab-line-strong bg-lab-surface px-2.5 py-0.5 font-mono text-[11px] tabular-nums text-lab-soft">
+								{fact}
+							</span>
+						))}
+					</div>
+				)}
+				<p className="min-h-[2.75rem] text-sm leading-relaxed text-lab-ink sm:text-base" aria-live="polite">
+					{shownText ?? " "}
 				</p>
 				{finished && (
 					<p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: tone === "score" ? LAB.ink : LAB.inkMuted }}>
@@ -623,12 +763,13 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 			{/* every play in the drive */}
 			<div className="border-t border-lab-line px-2 py-2 sm:px-4">
 				<h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">Play by play</h3>
-				<ol className="divide-y divide-lab-line">
+				<PlayFilters filter={filter} onChange={onFilter} shown={shown} total={n} />
+				<ol className="mt-2 divide-y divide-lab-line">
 					{frames.map((f, i) => (
-						<li key={f.n}>
+						<li key={f.n} style={{ opacity: matches[i] ? 1 : 0.4 }} onPointerEnter={(e) => e.pointerType === "mouse" && setHover(i)} onPointerLeave={() => setHover((h) => (h === i ? null : h))}>
 							<button
 								type="button"
-								onClick={() => go(i + 1)}
+								onClick={() => tl.seek(i + 1)}
 								aria-current={eff === i + 1 ? "true" : undefined}
 								className={
 									"flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition hover:bg-lab-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-lab-ink " +
@@ -636,7 +777,10 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 								}
 							>
 								<span className="w-20 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-lab-muted">{f.downLabel || "Kick"}</span>
-								<span className="min-w-0 flex-1 text-sm leading-snug text-lab-ink">{f.text}</span>
+								<span className="min-w-0 flex-1 text-sm leading-snug text-lab-ink">
+									{f.text}
+									<span className="mt-0.5 block text-[11px] text-lab-muted">{playKind(f)}</span>
+								</span>
 								<span className="shrink-0 pt-0.5 font-mono text-xs font-semibold tabular-nums text-lab-soft">
 									{f.outcome === "gain" || f.outcome === "loss" ? `${f.yards > 0 ? "+" : f.yards < 0 ? "−" : ""}${Math.abs(f.yards)}` : ""}
 								</span>
@@ -645,6 +789,6 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 					))}
 				</ol>
 			</div>
-		</div>
+		</>
 	)
 }

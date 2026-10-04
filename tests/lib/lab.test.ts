@@ -305,7 +305,7 @@ describe("where on the field a play went", () => {
 })
 
 describe("field view and paths", () => {
-	const base = { n: 1, down: 1, ytg: 10, from: 25, to: 40, firstDownAt: 35, outcome: "gain", type: "run", arc: false, downLabel: "1st & 10", text: "", yards: 15, lane: null, gap: null, catchAt: null, incompleteTo: null, y0: 0, yc: 0, y1: 0 } as const
+	const base = { n: 1, down: 1, ytg: 10, from: 25, to: 40, firstDownAt: 35, outcome: "gain", type: "run", arc: false, downLabel: "1st & 10", text: "", yards: 15, lane: null, gap: null, catchAt: null, incompleteTo: null, y0: 0, yc: 0, y1: 0, ay: null, yac: null, firstDown: false, sack: false } as const
 
 	it("looks down the field: farther yards sit higher on screen, smaller and narrower", () => {
 		const v = viewFrom(20)

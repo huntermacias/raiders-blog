@@ -7,13 +7,23 @@
 
 import type { Frame } from "./drive"
 
-export const W = 1000
-export const H = 560
-/** Screen y of the far and near edges of the visible stretch of field. */
-export const TOP = 22
-export const BOTTOM = 538
-/** Width of the field in pixels at the near edge. */
-export const NEAR_W = 880
+/** The size of the picture and where the field sits in it. */
+export type Geom = {
+	W: number
+	H: number
+	/** Screen y of the far and near edges of the visible stretch of field. */
+	TOP: number
+	BOTTOM: number
+	/** Width of the field in pixels at the near edge. */
+	NEAR_W: number
+}
+
+/** Wide and short, for desktop and tablet. */
+export const WIDE: Geom = { W: 1000, H: 560, TOP: 22, BOTTOM: 538, NEAR_W: 880 }
+/** Narrower and taller, so the field and its labels stay big enough to read on a phone. */
+export const COMPACT: Geom = { W: 600, H: 680, TOP: 22, BOTTOM: 640, NEAR_W: 556 }
+
+export const { W, H, TOP, BOTTOM, NEAR_W } = WIDE
 /** Yards of field in view at once. */
 export const DEPTH = 60
 /** How hard the field narrows with distance. The far edge is 1 / (1 + A) as wide as the near edge. */
@@ -33,14 +43,14 @@ export type View = {
 }
 
 /** The view from a camera standing `cam` yards down the field. */
-export function viewFrom(cam: number): View {
+export function viewFrom(cam: number, g: Geom = WIDE): View {
 	const scale = (yard: number) => 1 / (1 + A * Math.max(-0.2, (yard - cam) / DEPTH))
 	return {
 		scale,
 		pt: (yard, u, lift = 0) => {
 			const s = scale(yard)
-			const y = BOTTOM - (BOTTOM - TOP) * ((1 - s) / (1 - FAR_SCALE))
-			return { x: W / 2 + u * NEAR_W * s, y: y - lift * s, s }
+			const y = g.BOTTOM - (g.BOTTOM - g.TOP) * ((1 - s) / (1 - FAR_SCALE))
+			return { x: g.W / 2 + u * g.NEAR_W * s, y: y - lift * s, s }
 		},
 	}
 }
