@@ -9,6 +9,12 @@ module.exports = {
     // instead of erroring with "ESM packages need to be imported".
     // See: https://nextjs.org/docs/messages/import-esm-externals
     esmExternals: "loose",
+    // The share-card route (satori + resvg) loads hb.wasm from harfbuzzjs at runtime with fs, which
+    // Vercel's file tracing can't see, so the function shipped without it and every card fell back to
+    // the default image ("ENOENT .../harfbuzzjs/hb.wasm"). List the files it reads so they are bundled.
+    outputFileTracingIncludes: {
+      "/api/og": ["./node_modules/harfbuzzjs/hb.wasm", "./node_modules/@resvg/resvg-js-*/**"],
+    },
   },
   images: {
     domains: ["i.pinimg.com", "cdn.sanity.io"],
