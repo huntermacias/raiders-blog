@@ -6,6 +6,7 @@
 //   /api/og?type=scoreboard
 //   /api/og?type=rankings
 //   /api/og?type=league[&handle=<league handle>]
+//   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -26,6 +27,8 @@ import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagP
 import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
 import { client } from "../../lib/sanity.client"
+import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
+import { buildLiveSpec } from "../../lib/og/liveCard"
 import { HANDLE_RE, LEAGUE_QUERY, buildStandings, normalizeLeagueData } from "../../lib/league"
 
 const FALLBACK = "/og-default-v2.png"
@@ -195,6 +198,20 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		}
 	}
 
+	if (type === "live") {
+		const id = first(query.game)
+		let gameId = id
+		if (id) {
+			if (!/^\d{6,12}$/.test(id)) return null
+		} else {
+			const featured = featuredGame((await getScoreboard()).value)
+			if (!featured) return null
+			gameId = featured.id
+		}
+		const result = await getGame(gameId)
+		return result ? buildLiveSpec(result.game) : null
+	}
+
 	if (type === "scoreboard") {
 		const [picks, flags]: [GamePrediction[], FlagPlant[]] = await Promise.all([
 			readClient.fetch(picksQuery, { season: SEASON }),
@@ -215,6 +232,14 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 	}
 
 	return null
+}
+
+function cacheFor(spec: CardSpec): string {
+	if (spec.type === "live") {
+		if (spec.state === "in") return "public, s-maxage=20, stale-while-revalidate=40"
+		if (spec.state === "pre") return "public, s-maxage=300, stale-while-revalidate=900"
+	}
+	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
 
 function fallback(res: NextApiResponse) {
@@ -239,7 +264,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		res.setHeader("Content-Type", "image/png")
 		// The page URL carries `v=<updatedAt>`, so a long cache is safe: an edit
 		// changes the URL. Reader votes are not on the card, only results.
-		res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800")
+		// A live card changes by the minute, a pre-game one as the line moves, and a final one never.
+		res.setHeader("Cache-Control", cacheFor(spec))
 		res.status(200)
 		res.end(png)
 	} catch (err) {

@@ -37,12 +37,18 @@ export function wpSeries(game: LiveGame): WpSample[] {
 		{ el: 0, home: homeWinProbability({ lead: 0, secondsLeft: GAME_SECONDS, ball: 0, homeSpread: spread }), away: 0, homeScore: 0, text: "Kickoff" },
 	]
 	let lastEl = 0
+	// Who had the ball after the previous play, so a penalty that doesn't say where the ball is
+	// doesn't hand the game a free swing by dropping possession to neutral.
+	let prevBall: 0 | 1 | -1 = 0
 	for (const p of allPlays(game)) {
 		if (p.period <= 0) continue
 		const el = Math.max(lastEl, elapsedSeconds(p.period, p.clockSeconds))
 		lastEl = el
-		const ongoing = (p.kind === "run" || p.kind === "pass" || p.kind === "sack") && !p.scoring && !p.turnover && p.team && p.to != null
-		const ball = ongoing ? (p.team === info.home.abbr ? 1 : -1) : 0
+		const snap = p.kind === "run" || p.kind === "pass" || p.kind === "sack" || p.kind === "penalty" || p.penalty
+		const ongoing = snap && !p.scoring && !p.turnover && p.team && p.to != null
+		const carried = !ongoing && p.penalty && !p.scoring && !p.turnover
+		const ball: 0 | 1 | -1 = ongoing ? (p.team === info.home.abbr ? 1 : -1) : carried ? prevBall : 0
+		prevBall = ball
 		out.push({
 			el,
 			home: homeWinProbability({

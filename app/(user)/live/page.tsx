@@ -15,10 +15,45 @@ export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-export const metadata: Metadata = {
-	title: "Game Day Live: scores, plays and win probability | Raiders Rundown",
-	description: "Follow every NFL game as it happens: live score, the drive on the field, a play-by-play feed and win probability, updated automatically.",
-	alternates: { canonical: `${SITE_URL}/live` },
+const TITLE = "Game Day Live: scores, plays and win probability | Raiders Rundown"
+const DESCRIPTION = "Follow every NFL game as it happens: live score, the drive on the field, a play-by-play feed and win probability, updated automatically."
+
+function gameParam(v: string | string[] | undefined): string {
+	const raw = Array.isArray(v) ? v[0] : v
+	return raw && /^\d{6,12}$/.test(raw) ? raw : ""
+}
+
+// The share card is drawn from the game itself (pages/api/og.tsx, type=live). Platforms keep a card
+// they have already fetched, so the card's address changes by the minute while a game is on, and
+// by the ten minutes otherwise; a shared /live?game=<id> link is tied to that one game.
+export async function generateMetadata({ searchParams }: { searchParams?: { game?: string | string[] } }): Promise<Metadata> {
+	const game = gameParam(searchParams?.game)
+	let live = false
+	try {
+		live = (await getScoreboard()).value.some((g) => g.state === "in")
+	} catch {
+		live = false
+	}
+	const bucket = Math.floor(Date.now() / (live ? 60_000 : 600_000))
+	const image = `${SITE_URL}/api/og?type=live${game ? `&game=${game}` : ""}&v=${bucket}`
+	const url = game ? `${SITE_URL}/live?game=${game}` : `${SITE_URL}/live`
+	return {
+		title: TITLE,
+		description: DESCRIPTION,
+		alternates: { canonical: `${SITE_URL}/live` },
+		openGraph: {
+			type: "website",
+			title: TITLE,
+			description: DESCRIPTION,
+			url,
+			siteName: "Raiders Rundown",
+			images: [image, { url: image, width: 1200, height: 630, alt: "Raiders Rundown game day: score and win probability" }],
+		},
+		twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [image] },
+		// This Next version writes openGraph.images as og:image:url only. A plain og:image is what most
+		// link previews look for first, so it is added here as well.
+		other: { "og:image": image },
+	}
 }
 
 type Thread = { _id: string; title: string; slug: { current: string }; status: "upcoming" | "live" | "final"; startedAt?: string; updateCount: number; latest?: { body: string; postedAt: string } | null }
@@ -46,7 +81,7 @@ async function loadBoard(): Promise<LiveGameInfo[] | null> {
 	}
 }
 
-async function LiveIndexPage() {
+async function LiveIndexPage({ searchParams }: { searchParams?: { game?: string | string[] } }) {
 	const [threads, board] = await Promise.all([loadThreads(), loadBoard()])
 
 	// The note pinned over a Raiders game: the newest update of whichever thread is live right now.
@@ -66,7 +101,7 @@ async function LiveIndexPage() {
 			</section>
 
 			<section className="container py-6 sm:py-10">
-				<LiveCenter initialBoard={board} pinned={pinned} />
+				<LiveCenter initialBoard={board} pinned={pinned} initialGame={gameParam(searchParams?.game) || null} />
 			</section>
 
 			{threads.length > 0 && (

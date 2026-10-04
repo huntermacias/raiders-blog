@@ -9,6 +9,8 @@
 
 import type { ReactElement } from "react"
 
+import { type LiveCardSpec, renderLiveCard } from "./liveCard"
+
 export const OG_WIDTH = 1200
 export const OG_HEIGHT = 630
 
@@ -79,6 +81,7 @@ export type CardSpec =
 			keys?: { hit: number; miss: number } | null
 			flags?: { hit: number; miss: number } | null
 	  }
+	| LiveCardSpec
 
 /** Trim to a word boundary so a title never runs off the card. */
 export function clip(text: string, max: number): string {
@@ -598,6 +601,9 @@ export function renderCard(spec: CardSpec): ReactElement {
 				</Shell>
 			)
 		}
+
+		case "live":
+			return renderLiveCard(spec)
 
 		case "scoreboard": {
 			const graded = spec.hits + spec.misses > 0
