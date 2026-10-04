@@ -23,6 +23,8 @@ import RelatedGameReports from "../../../../components/RelatedGameReports"
 import GameReportNav from "../../../../components/GameReportNav"
 import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
+import LabTake from "../../../../components/games/LabTake"
+import { labGameFor } from "../../../../lib/lab/match"
 import { Badge } from "@/components/ui/badge"
 import type { PickKey } from "../../../../lib/predictions"
 
@@ -126,6 +128,8 @@ async function GameReportPage({ params: { slug } }: Props) {
 	)
 
 	const won = game.raidersScore > game.opponentScore
+	// The Lab's replay of this game, found by opponent and date, if the Lab has it yet.
+	const labGame = labGameFor({ opponent: game.opponent, gameDate: game.gameDate })
 	const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
 	// Sorted newest-first: the entry after this one in the array is the
 	// chronologically earlier ("previous") game, the one before is later ("next").
@@ -248,7 +252,7 @@ async function GameReportPage({ params: { slug } }: Props) {
 				</div>
 			</div>
 
-			<div className="container max-w-3xl space-y-10 py-12">
+			<div className="container max-w-3xl space-y-10 pt-12">
 				<BoxScore
 					opponent={game.opponent}
 					homeAway={game.homeAway}
@@ -260,7 +264,15 @@ async function GameReportPage({ params: { slug } }: Props) {
 				/>
 
 				<GameLeaders playerStats={game.playerStats} />
+			</div>
 
+			{labGame && (
+				<div className="container max-w-5xl py-10">
+					<LabTake game={labGame} />
+				</div>
+			)}
+
+			<div className="container max-w-3xl space-y-10 pb-12">
 				{game.videoEmbeds?.map((embed) => (
 					<VideoEmbed key={embed._key} url={embed.url} caption={embed.caption} />
 				))}

@@ -48,6 +48,8 @@ type Props = {
 	/** Path used when sharing, e.g. "/lab/week-3". */
 	sharePath: string
 	shareText: string
+	/** Tuck the full key-play list behind a "show all" toggle, for places where the replay is one block among many. */
+	collapsePlays?: boolean
 }
 
 function usePrefersReducedMotion() {
@@ -204,6 +206,30 @@ function Glyph({ kind }: { kind: keyof typeof SYMBOLS }) {
 	)
 }
 
+/** The key-play section: always open with a plain heading, or a "show all" disclosure when collapsed. */
+function Plays({ collapse, count, children }: { collapse: boolean; count: number; children: React.ReactNode }) {
+	if (!collapse) {
+		return (
+			<div className="border-t border-lab-line px-2 py-2 sm:px-4">
+				<h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">Key plays</h3>
+				{children}
+			</div>
+		)
+	}
+	return (
+		<details className="group border-t border-lab-line px-2 py-2 sm:px-4">
+			<summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-semibold text-lab-ink hover:bg-lab-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lab-line-strong [&::-webkit-details-marker]:hidden">
+				<span>
+					<span className="group-open:hidden">Show all {count} key plays</span>
+					<span className="hidden group-open:inline">Hide the key plays</span>
+				</span>
+				<span aria-hidden className="text-lab-muted transition-transform group-open:rotate-180">&#9662;</span>
+			</summary>
+			<div className="pt-1">{children}</div>
+		</details>
+	)
+}
+
 export default function WinProbabilityReplay({
 	series,
 	keyPlays,
@@ -213,6 +239,7 @@ export default function WinProbabilityReplay({
 	finalScore,
 	sharePath,
 	shareText,
+	collapsePlays = false,
 }: Props) {
 	const uid = React.useId().replace(/[^a-zA-Z0-9]/g, "")
 	const max = React.useMemo(() => maxTime(series), [series])
@@ -670,8 +697,7 @@ export default function WinProbabilityReplay({
 			</div>
 
 			{/* every key play, as a list people can jump through */}
-			<div className="border-t border-lab-line px-2 py-2 sm:px-4">
-				<h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">Key plays</h3>
+			<Plays collapse={collapsePlays} count={keyPlays.length}>
 				<ol className="divide-y divide-lab-line" aria-label="Key plays">
 					{keyPlays.map((k, i) => {
 						const s = swingPoints(k)
@@ -748,7 +774,7 @@ export default function WinProbabilityReplay({
 						Circles are scores, diamonds are turnovers, outlined circles are big swings that were neither. A marker wears the color of the team the play helped: {teamName} or {oppName}.
 					</p>
 				</div>
-			</div>
+			</Plays>
 		</div>
 	)
 }
