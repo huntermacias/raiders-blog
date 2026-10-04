@@ -9,6 +9,7 @@
 
 import type { ReactElement } from "react"
 
+import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
 
 export const OG_WIDTH = 1200
@@ -59,18 +60,7 @@ export type CardSpec =
 			/** Positive = up. null when there is no previous week */
 			change?: number | null
 	  }
-	| {
-			type: "league"
-			season: number
-			/** Set for a player's card; absent for the league's own card. */
-			handle?: string | null
-			rank?: number | null
-			ranked?: number | null
-			points?: number | null
-			vs?: { w: number; l: number; t: number } | null
-			/** Players in the league, for the generic card. */
-			players?: number | null
-	  }
+	| LeagueCardSpec
 	| {
 			type: "scoreboard"
 			season: number
@@ -520,87 +510,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 			)
 		}
 
-		case "league": {
-			const mine = spec.handle ? clip(spec.handle, 16) : null
-			const handleSize = mine ? (mine.length <= 8 ? 128 : mine.length <= 12 ? 104 : 80) : 0
-			const hasRank = !!mine && typeof spec.rank === "number"
-			const stat = (label: string, value: string) => (
-				<div style={{ display: "flex", flexDirection: "column", marginRight: 52 }}>
-					<div style={{ display: "flex", fontFamily: "Anton", fontSize: 54, lineHeight: 1.05, color: WHITE }}>{value}</div>
-					<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 20, letterSpacing: 4, color: DIM, ...caps }}>
-						{label}
-					</div>
-				</div>
-			)
-			return (
-				<Shell
-					right={
-						<Panel>
-							{hasRank ? (
-								<div
-									style={{
-										display: "flex",
-										flexDirection: "column",
-										alignItems: "center",
-										justifyContent: "center",
-										width: 250,
-										height: 300,
-										border: `4px solid ${SILVER}`,
-									}}
-								>
-									<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: 22, letterSpacing: 5, color: DIM }}>
-										RANK
-									</div>
-									<div style={{ display: "flex", fontFamily: "Anton", fontSize: 150, lineHeight: 1.05, color: WHITE }}>{spec.rank}</div>
-									<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 24, letterSpacing: 4, color: SILVER, ...caps }}>
-										{spec.ranked ? `of ${spec.ranked}` : ""}
-									</div>
-								</div>
-							) : (
-								<RRMark size={210} />
-							)}
-						</Panel>
-					}
-				>
-					<Eyebrow text={`Beat the Blogger  ·  ${spec.season}`} />
-					{mine ? (
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							<div style={{ display: "flex", fontFamily: "Anton", fontSize: handleSize, lineHeight: 1.0, letterSpacing: 0.5, color: WHITE, ...caps }}>
-								{mine}
-							</div>
-							<div style={{ display: "flex", marginTop: 30 }}>
-								{typeof spec.points === "number" ? stat("Points", String(spec.points)) : <div style={{ display: "flex" }} />}
-								{spec.vs ? stat("Vs the blogger", `${spec.vs.w}-${spec.vs.l}${spec.vs.t > 0 ? `-${spec.vs.t}` : ""}`) : <div style={{ display: "flex" }} />}
-							</div>
-						</div>
-					) : (
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							<div style={{ display: "flex", fontFamily: "Anton", fontSize: 128, lineHeight: 1.0, letterSpacing: 0.5, color: WHITE, ...caps }}>
-								Beat the
-							</div>
-							<div style={{ display: "flex", fontFamily: "Anton", fontSize: 128, lineHeight: 1.0, letterSpacing: 0.5, color: SILVER, ...caps }}>
-								Blogger
-							</div>
-							<div
-								style={{
-									display: "flex",
-									marginTop: 24,
-									fontFamily: "Oswald",
-									fontWeight: 600,
-									fontSize: 30,
-									letterSpacing: 4,
-									color: SILVER,
-									...caps,
-								}}
-							>
-								{typeof spec.players === "number" && spec.players > 0 ? `${spec.players} players  ·  free to play` : "Pick the score. Climb the board."}
-							</div>
-						</div>
-					)}
-					<Brand />
-				</Shell>
-			)
-		}
+		case "league":
+			return renderLeagueCard(spec)
 
 		case "live":
 			return renderLiveCard(spec)
