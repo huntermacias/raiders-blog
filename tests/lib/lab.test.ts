@@ -99,6 +99,15 @@ describe("win probability helpers", () => {
 		expect(playAt(plays, 250)?.el).toBe(200)
 		expect(playAt(plays, 50)).toBeUndefined()
 	})
+
+	it("does not call the result of a loss the lowest point of the game", () => {
+		// The last sample is the final whistle (0% in a loss), not a moment in the game.
+		const wp: WpPoint[] = [[0, 0.5], [3000, 0.71], [3500, 0.12], [3600, 0]]
+		expect(gameStory(wp, []).low).toEqual({ p: 0.12, el: 3500 })
+		// A win's last sample is 100%, and a series that never ends in 0 or 1 is read in full.
+		expect(gameStory([[0, 0.5], [100, 0.3], [3600, 1]], []).low).toEqual({ p: 0.3, el: 100 })
+		expect(gameStory([[0, 0.5], [3600, 0.2]], []).low).toEqual({ p: 0.2, el: 3600 })
+	})
 })
 
 describe("drive frames", () => {

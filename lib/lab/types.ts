@@ -44,6 +44,11 @@ export type DrivePlay = {
 	epa?: number
 	/** Win probability added for the offense, as a fraction (0.021 = 2.1 points). */
 	wpa?: number
+	/** Quarter (5 is overtime), the printed game clock, seconds of game time elapsed, and the Raiders' win probability just before the snap. */
+	q?: number
+	clk?: string
+	el?: number
+	w0?: number
 	/** Shotgun and no-huddle, when the log says so. */
 	sg?: 1
 	nh?: 1

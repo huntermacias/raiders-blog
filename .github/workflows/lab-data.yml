@@ -1,8 +1,10 @@
 name: Refresh Lab data
 
-# Pulls the latest nflverse play-by-play, rebuilds data/lab/season.json, and commits it
-# only if a new game has finished. A commit to main triggers the normal Vercel deploy,
-# where the data checks in tests/lib/lab.test.ts run before the site is built.
+# Every Monday (and Tuesday, in case the data was late) this pulls the latest nflverse play-by-play and rebuilds
+# everything the Lab shows: the game replays, the fourth-down grades, the scouting numbers and the win-probability
+# clips. It then adds the Lab's pieces to any postgame draft waiting in Studio. Everything is committed in one
+# push, only if something changed; a commit to main triggers the normal Vercel deploy, where the data checks in
+# tests/ run before the site is built.
 on:
   schedule:
     # Monday 10:00 UTC, after Sunday and Monday night games have been posted.
@@ -10,13 +12,27 @@ on:
     # Tuesday too, in case the data was late.
     - cron: "0 10 * * 2"
   workflow_dispatch:
+    inputs:
+      redraw_clips:
+        description: "Redraw every clip, not just new or changed games"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
+concurrency:
+  group: lab-data
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SEASON: ${{ vars.LAB_SEASON || '2026' }}
+      SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+      NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,23 +40,63 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install
-        run: pip install pandas pytest
+      - name: Install Python packages
+        run: pip install pandas numpy pytest
 
-      - name: Test the script
+      - name: Test the scripts
         run: python -m pytest scripts/lab -q
 
-      - name: Build data
-        run: python scripts/lab/build_lab_data.py --season ${{ vars.LAB_SEASON || '2026' }} --team LV --out data/lab/season.json
+      - name: Build game replays
+        run: python scripts/lab/build_lab_data.py --season "$SEASON" --team LV --out data/lab/season.json
+
+      - name: Build fourth-down grades
+        run: python scripts/lab/build_fourth_down.py --season "$SEASON" --team LV --out data/lab/fourth-down.json
+
+      - name: Build scouting numbers
+        run: python scripts/lab/build_scouting.py --season "$SEASON" --out data/lab/scouting.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install site packages
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Draw clips
+        run: |
+          npx esbuild scripts/clips/render.tsx --bundle --platform=node --format=cjs --jsx=automatic --loader:.tsx=tsx --alias:@=. --external:@resvg/resvg-js --external:satori --log-level=warning --outfile=/tmp/render-clips.cjs
+          if [ "${{ inputs.redraw_clips }}" = "true" ]; then FLAG="--all"; else FLAG=""; fi
+          node /tmp/render-clips.cjs $FLAG
+
+      - name: Add the Lab's pieces to postgame drafts
+        # Skipped quietly when the secret is not set.
+        if: ${{ env.SANITY_WRITE_TOKEN != '' }}
+        run: |
+          npx esbuild scripts/postgame/run.ts --bundle --platform=node --format=cjs --jsx=automatic --alias:@=. --log-level=warning --outfile=/tmp/postgame.cjs
+          node /tmp/postgame.cjs enrich
+
+      - name: Keep the clips for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-clips
+          path: public/lab/clips
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Commit if changed
         run: |
-          if git diff --quiet -- data/lab/season.json; then
-            echo "No new games."
+          git add -A data/lab public/lab/clips
+          if git diff --cached --quiet; then
+            echo "Nothing new."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/lab/season.json
-          git commit -m "data: refresh Lab replays"
+          git commit -m "data: refresh Lab replays, grades, scouting and clips"
           git push

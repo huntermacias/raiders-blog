@@ -9,6 +9,9 @@
 //   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
 //   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
 //   /api/og?type=lab&slug=week-N[&view=drive][&drive=N]   (a game lab: the win-probability story, or the best drive)
+//   /api/og?type=lab&slug=week-N|season&view=play[&rank=N]   (a top play: the play that moved the game or the season most)
+//   /api/og?type=lab&slug=week-N|season&view=fourth   (the fourth-down report)
+//   /api/og?type=scout&opp=XX[&week=N]   (the scouting report for an opponent)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -35,6 +38,7 @@ import { buildLiveSpec } from "../../lib/og/liveCard"
 import { buildLeagueSpec } from "../../lib/og/leagueCard"
 import { buildMathSpec } from "../../lib/og/mathCard"
 import { buildLabSpec } from "../../lib/og/labCard"
+import { insightSpec } from "../../lib/og/insightSpecs"
 import { buildRankingsSpec } from "../../lib/og/rankingsCard"
 import { getGameBySlug, getSeason } from "../../lib/lab/data"
 import { loadMath } from "../../lib/math/server"
@@ -217,6 +221,10 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return page.report ? buildMathSpec(page.report, { team: first(query.team), take: first(query.take) }) : null
 	}
 
+	const insight = insightSpec({ type, slug: first(query.slug), view: first(query.view), rank: first(query.rank), opp: first(query.opp), week: first(query.week) })
+	if (insight) return insight
+	if (type === "scout") return null
+
 	if (type === "lab") {
 		const slug = first(query.slug)
 		if (!slug || !SLUG.test(slug)) return null
@@ -255,7 +263,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "fourth" || spec.type === "scout") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

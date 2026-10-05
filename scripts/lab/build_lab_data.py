@@ -34,6 +34,9 @@ TEAM_NAMES = {
     "TEN": "Titans", "WAS": "Commanders",
 }
 
+# nflverse writes the Rams as LA; the site (and ESPN's feed, once mapped) uses LAR.
+SITE_ABBR = {"LA": "LAR"}
+
 SCRIMMAGE = {"run", "pass", "punt", "field_goal", "qb_kneel", "qb_spike", "no_play"}
 REGULATION_SECONDS = 3600
 OT_SECONDS = 600
@@ -144,6 +147,30 @@ def value_fields(row, ptype: str) -> dict:
         length = _text(row.get("pass_length"))
         if length in ("short", "deep"):
             out["pl"] = "S" if length == "short" else "D"
+    return out
+
+
+def timing_fields(row, team: str) -> dict:
+    """When a play happened and the team's chance to win just before it.
+
+    q: quarter (5 is overtime); clk: the game clock as printed ("9:31"); el: seconds of game time
+    elapsed (the same scale as the win probability series); w0: the team's win probability before
+    the snap, as a fraction. Keys are left out when the log has no value.
+    """
+    out: dict = {}
+    qtr = _int(row.get("qtr"), 0)
+    if qtr:
+        out["q"] = qtr
+        qsr = _num(row.get("quarter_seconds_remaining"))
+        if qsr is not None:
+            out["el"] = elapsed_seconds(qtr, qsr)
+    clk = _text(row.get("time"))
+    if re.fullmatch(r"\d{1,2}:\d{2}", clk):
+        mins, secs = clk.split(":")
+        out["clk"] = f"{int(mins)}:{secs}"
+    w0 = lv_wp(row, team, "pre")
+    if w0 is not None:
+        out["w0"] = round(w0, 3)
     return out
 
 
@@ -290,6 +317,7 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
             }
             play.update(lane_fields(r, ptype))
             play.update(value_fields(r, ptype))
+            play.update(timing_fields(r, team))
             out_plays.append(play)
         if not out_plays:
             continue
@@ -312,7 +340,7 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
         "week": _int(last["week"]),
         "date": _text(last.get("game_date")),
         "home": bool(is_home),
-        "opp": opp,
+        "opp": SITE_ABBR.get(opp, opp),
         "oppName": TEAM_NAMES.get(opp, opp),
         "score": [team_score, opp_score],
         "result": "W" if team_score > opp_score else ("L" if team_score < opp_score else "T"),

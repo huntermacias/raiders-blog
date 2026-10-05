@@ -159,7 +159,11 @@ export type GameStory = {
 export function gameStory(series: WpPoint[], plays: KeyPlay[]): GameStory {
 	let low = { p: 1, el: 0 }
 	let high = { p: 0, el: 0 }
-	for (const [el, p] of series) {
+	// The last sample is the result (100% for a win, 0% for a loss), not a moment in the game, so it is never
+	// "the lowest point": a loss would otherwise always bottom out at 0% when the clock hit zero.
+	const last = series[series.length - 1]
+	const body = series.length > 1 && last && (last[1] === 0 || last[1] === 1) ? series.slice(0, -1) : series
+	for (const [el, p] of body) {
 		if (p < low.p) low = { p, el }
 		if (p > high.p) high = { p, el }
 	}
