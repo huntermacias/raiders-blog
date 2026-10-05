@@ -2,7 +2,7 @@ import { groq } from "next-sanity"
 import type { Metadata } from "next"
 
 import { client } from "../../../lib/sanity.client"
-import { withEspnFinals } from "../../../lib/live/service"
+import { withEspnFinals, withEspnRecords } from "../../../lib/live/service"
 import {
 	SEASON,
 	type FlagPlant,
@@ -104,7 +104,7 @@ export default async function PredictionsPage() {
 	const summary = summarize(picks)
 	const keysSummary = summarizeKeys(picks)
 	const flagSummary = summarizeFlags(flags ?? [])
-	const teamRows = season?.teams ?? []
+	const teamRows = await withEspnRecords(season?.teams)
 	const vegas = buildVegasBoard(Array.isArray(picks) ? picks : [], getGames())
 	const showVegas = vegas.games.length > 0 || vegas.summary.missingLine > 0
 

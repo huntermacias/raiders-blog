@@ -4,8 +4,10 @@
 import { cached } from "./cache"
 import { parseScoreboard, parseSummary } from "./espn"
 import { parseGameStats, type AutoStats } from "./gamestats"
-import { type FinalsGame, candidates, mergeFinals, windowFor } from "./finals"
+import { type RecordsByTeam, overlayRecords, parseStandings } from "./standings"
+import { type FinalsGame, candidates, mergeFinals } from "./finals"
 import { teamInfo } from "@/lib/nfl"
+import { SEASON } from "@/lib/predictions"
 import type { LiveGame, LiveGameInfo } from "./types"
 
 // LIVE_FEED_BASE lets a test or a local stand-in replace ESPN.
@@ -54,16 +56,28 @@ export function featuredGame(games: LiveGameInfo[], team = "LV"): LiveGameInfo |
 }
 
 const DAY = 86_400_000
-const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10).replace(/-/g, "")
+/** ESPN's scoreboard dates are US Eastern days ("20261004"), whatever the UTC date of the kickoff. */
+const etDay = (ms: number) =>
+	new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(ms).replace(/-/g, "")
+
+// ESPN's scoreboard ignores a `dates=from-to` range here (it answers with no games), so every lookup is
+// a single day or a single week, each cached for a minute.
+async function scoreboardQuery(query: string, timeoutMs: number) {
+	const res = await cached(`sb:${query}`, 60_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?${query}`, timeoutMs)))
+	return res.value
+}
 
 /** ESPN's event id for the Raiders game on (or a day either side of) `gameDate`, against `opponent`. */
 export async function findRaidersEvent(opponent: string | null | undefined, gameDate: string | null | undefined): Promise<string | null> {
 	const t = gameDate ? Date.parse(gameDate) : NaN
 	if (!Number.isFinite(t)) return null
 	const abbr = teamInfo(opponent).abbr
-	const res = await cached(`window:${ymd(t - DAY)}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${ymd(t - DAY)}-${ymd(t + DAY)}&limit=100`, 4000)))
-	const hit = res.value.find((g) => [g.home.abbr, g.away.abbr].includes("LV") && [g.home.abbr, g.away.abbr].includes(abbr))
-	return hit?.id ?? null
+	for (const day of [etDay(t), etDay(t - DAY), etDay(t + DAY)]) {
+		const games = await scoreboardQuery(`dates=${day}&limit=100`, 4000)
+		const hit = games.find((g) => [g.home.abbr, g.away.abbr].includes("LV") && [g.home.abbr, g.away.abbr].includes(abbr))
+		if (hit) return hit.id
+	}
+	return null
 }
 
 /**
@@ -91,15 +105,43 @@ let finalsFailedAt = 0
  */
 export async function withEspnFinals<T extends FinalsGame>(games: T[], now: number = Date.now()): Promise<T[]> {
 	const open = candidates(games, now)
-	const win = windowFor(open)
-	if (!win || now - finalsFailedAt < 30_000) return games
-	try {
-		const day = (t: number) => ymd(t)
-		const url = `${BASE}/scoreboard?dates=${day(win.from)}-${day(win.to)}&limit=400`
-		const res = await cached(`finals:${day(win.from)}-${day(win.to)}`, 60_000, async () => parseScoreboard(await getJson(url, 1500)))
-		return mergeFinals(games, res.value, now)
-	} catch {
+	if (open.length === 0 || now - finalsFailedAt < 30_000) return games
+
+	// One request per regular-season week the open games belong to; a game with no week is looked up by its day.
+	const queries = new Set<string>()
+	for (const g of open) {
+		const w = g.week
+		if (typeof w === "number" && Number.isInteger(w) && w >= 1 && w <= 18) queries.add(`dates=${SEASON}&seasontype=2&week=${w}&limit=100`)
+		else queries.add(`dates=${etDay(Date.parse(g.kickoff))}&limit=100`)
+	}
+	const results = await Promise.allSettled(Array.from(queries).map((q) => scoreboardQuery(q, 1500)))
+	const events = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+	if (results.every((r) => r.status === "rejected")) {
 		finalsFailedAt = now
 		return games
 	}
+	return mergeFinals(games, events, now)
+}
+
+// Standings are at /apis/v2, not the /apis/site/v2 base the scoreboard uses. LIVE_FEED_BASE swaps both.
+const STANDINGS_URL = process.env.LIVE_FEED_BASE ? `${process.env.LIVE_FEED_BASE}/standings` : "https://site.api.espn.com/apis/v2/sports/football/nfl/standings"
+let recordsFailedAt = 0
+
+/** Every team's record from ESPN, or {} if the feed is down or slow (callers then keep what was typed). */
+export async function getRecords(now: number = Date.now()): Promise<RecordsByTeam> {
+	if (now - recordsFailedAt < 30_000) return {}
+	try {
+		const res = await cached(`standings:${SEASON}`, 300_000, async () => parseStandings(await getJson(`${STANDINGS_URL}?season=${SEASON}`, 2000)))
+		return res.value
+	} catch {
+		recordsFailedAt = now
+		return {}
+	}
+}
+
+/** `teams` (season-prediction rows) with ESPN's records laid over their typed wins, losses and ties. */
+export async function withEspnRecords<T extends { team: string; wins?: number | null; losses?: number | null; ties?: number | null }>(teams: T[] | null | undefined): Promise<T[]> {
+	const rows = teams ?? []
+	if (rows.length === 0) return rows
+	return overlayRecords(rows, await getRecords())
 }

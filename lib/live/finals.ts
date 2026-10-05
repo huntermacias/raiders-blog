@@ -9,6 +9,8 @@ import { siteAbbr } from "./espn"
 import type { LiveGameInfo } from "./types"
 
 export type FinalsGame = {
+	/** Regular-season week; lets one scoreboard request cover the whole week. */
+	week?: number | null
 	awayTeam: string
 	homeTeam: string
 	kickoff: string
@@ -39,13 +41,6 @@ export function candidates<T extends FinalsGame>(games: T[], now: number): T[] {
 		const t = ms(g.kickoff)
 		return t != null && t >= now - LOOKBACK_MS && t <= now + LOOKAHEAD_MS
 	})
-}
-
-/** The scoreboard window that covers every candidate, as ESPN's yyyymmdd-yyyymmdd, or null for none. */
-export function windowFor(games: FinalsGame[]): { from: number; to: number } | null {
-	const ts = games.map((g) => ms(g.kickoff)).filter((t): t is number => t != null)
-	if (ts.length === 0) return null
-	return { from: Math.min(...ts) - DAY, to: Math.max(...ts) + DAY }
 }
 
 function eventFor(g: FinalsGame, events: LiveGameInfo[]): LiveGameInfo | null {

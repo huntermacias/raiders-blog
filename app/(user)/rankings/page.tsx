@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 
 import { readClient as client } from "../../../lib/sanity.client"
 import { SEASON } from "../../../lib/predictions"
+import { withEspnRecords } from "../../../lib/live/service"
 import { type RankingsDoc, buildBoards, noLabel, raidersRow } from "../../../lib/rankings"
 import RankingsBoard, { type Records } from "../../../components/rankings/RankingsBoard"
 
@@ -64,7 +65,8 @@ export default async function RankingsPage() {
 	const latest = boards[boards.length - 1]
 
 	const records: Records = {}
-	for (const t of season?.teams ?? []) {
+	// ESPN's standings over the typed records, so a finished game moves everyone's record on its own.
+	for (const t of await withEspnRecords(season?.teams)) {
 		if (t.team) records[t.team] = { w: t.wins ?? 0, l: t.losses ?? 0, t: t.ties ?? 0 }
 	}
 
