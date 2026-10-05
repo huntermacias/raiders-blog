@@ -54,6 +54,14 @@ describe("<FourthDownReport />", () => {
 		expect((screen.getByRole("img", { name: /Fourth-down report/ }) as HTMLImageElement).getAttribute("src")).toBe("/api/og?type=lab&slug=week-2&view=fourth&v=9")
 	})
 
+	it("makes clear the counts are the Raiders' own fourth downs, and how many could be judged", () => {
+		const fg = fourthGameFor(3)!
+		render(<FourthDownReport game={fg} scope="week-3" stamp={1} />)
+		expect(screen.getByText("Raiders' 4th downs")).toBeTruthy()
+		expect(screen.getByText(`${fg.summary.graded} of ${fg.summary.decisions}`)).toBeTruthy()
+		expect(screen.queryByText("Fourth downs")).toBeNull()
+	})
+
 	it("shows what each option was worth and which one was chosen", () => {
 		const fg = getFourthDown().games.find((g) => g.decisions.some((d) => d.verdict === "questionable"))!
 		render(<FourthDownReport game={fg} scope="x" stamp={1} />)

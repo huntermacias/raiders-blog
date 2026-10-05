@@ -57,24 +57,37 @@ function Row({ d }: { d: Decision }) {
 	)
 }
 
+/** "2 went for it, 2 punts, 1 field goal": what the Raiders' own fourth downs were, so a count reads as theirs alone. */
+function callMix(ds: Decision[]): string {
+	const n = (c: Choice) => ds.filter((d) => d.chosen === c).length
+	const parts = [
+		[n("go"), "went for it", "went for it"],
+		[n("punt"), "punt", "punts"],
+		[n("fg"), "field goal", "field goals"],
+	] as const
+	const text = parts.filter(([k]) => k > 0).map(([k, one, many]) => `${k} ${k === 1 ? one : many}`)
+	return text.length ? `${text.join(", ")}` : "None this game"
+}
+
 export default function FourthDownReport({ game, scope, stamp }: { game: FourthGame; scope: string; stamp: number }) {
 	const s = game.summary
 	const src = `/api/og?type=lab&slug=${scope}&view=fourth&v=${stamp}`
 	return (
 		<div>
 			<p className="m-0 mb-5 max-w-2xl text-sm leading-relaxed text-lab-muted">
-				Each fourth down is compared with what happened after similar ones from 2019 to last season. <strong className="font-semibold text-lab-soft">{gameLine(game)}.</strong>
+				Every time the Raiders had the ball on fourth down this game, the call is compared with what happened after similar ones from 2019 to last season. <strong className="font-semibold text-lab-soft">{gameLine(game)}.</strong>
 			</p>
-			<dl className="m-0 mb-6 grid grid-cols-3 gap-3">
+			<dl className="m-0 mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
 				{[
-					{ label: "Fourth downs", value: String(s.decisions), note: `${s.graded} graded` },
-					{ label: "Best call or toss-up", value: s.graded ? `${s.bestOrClose} of ${s.graded}` : "None", note: "graded fourth downs" },
+					{ label: "Raiders' 4th downs", value: String(s.decisions), note: callMix(game.decisions) },
+					{ label: "Compared with history", value: `${s.graded} of ${s.decisions}`, note: s.graded === s.decisions ? "had enough similar plays to judge" : "had enough similar plays; the rest are shown as not graded" },
+					{ label: "Best call or toss-up", value: s.graded ? `${s.bestOrClose} of ${s.graded}` : "None", note: "of the calls we could judge" },
 					{ label: "Left on the table", value: s.leftOnTable > 0 ? ptsText(s.leftOnTable) : "0 pts", note: "of win probability" },
 				].map((t) => (
 					<div key={t.label} className="rounded-xl border border-lab-line bg-lab-tint p-3 sm:p-4">
 						<dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{t.label}</dt>
 						<dd className="m-0 mt-1 font-mono text-xl font-bold tabular-nums sm:text-2xl">{t.value}</dd>
-						<dd className="m-0 text-[11px] text-lab-muted">{t.note}</dd>
+						<dd className="m-0 text-[11px] leading-snug text-lab-muted">{t.note}</dd>
 					</div>
 				))}
 			</dl>
