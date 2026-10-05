@@ -6,11 +6,11 @@ import { rateSeason } from "../../lib/math/model"
 import { ABBRS } from "../stubs/seasonSchedule"
 
 describe("carryOver", () => {
-	it("pulls last season's ratings a third of the way back to average", () => {
+	it("pulls last season's ratings halfway back to average", () => {
 		const out = carryOver({ A: 1650, B: 1350, C: 1500 })
-		expect(CARRY_OVER).toBeCloseTo(2 / 3, 9)
-		expect(out.A).toBeCloseTo(1500 + 100, 6)
-		expect(out.B).toBeCloseTo(1500 - 100, 6)
+		expect(CARRY_OVER).toBeCloseTo(0.5, 9)
+		expect(out.A).toBeCloseTo(1500 + 75, 6)
+		expect(out.B).toBeCloseTo(1500 - 75, 6)
 		expect(out.C).toBe(1500)
 		expect(carryOver({ A: 1600 }, 1).A).toBe(1600)
 		expect(carryOver({ A: 1600 }, 0).A).toBe(START_RATING)
