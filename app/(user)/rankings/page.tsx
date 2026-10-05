@@ -1,5 +1,6 @@
 import { groq } from "next-sanity"
 import type { Metadata } from "next"
+import Link from "@/components/SiteLink"
 
 import { readClient as client } from "../../../lib/sanity.client"
 import { SEASON } from "../../../lib/predictions"
@@ -102,6 +103,20 @@ export default async function RankingsPage() {
 							: "All 32 teams, ranked every week, with movement and rank history.")}
 				</p>
 			</div>
+
+			{latest && (
+				<Link
+					href="/rankings/math"
+					className="group mb-8 flex flex-col gap-1 rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-colors hover:bg-muted/60 sm:flex-row sm:items-center sm:justify-between"
+				>
+					<span>
+						<span className="block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">New</span>
+						<span className="block font-serif text-xl font-bold">Blogger vs. the Math</span>
+						<span className="block text-sm text-muted-foreground">My rankings next to an Elo model built from every result. Where we disagree, and who has been right.</span>
+					</span>
+					<span className="text-sm font-semibold underline-offset-4 group-hover:underline">See the comparison &rarr;</span>
+				</Link>
+			)}
 
 			{latest ? (
 				<RankingsBoard boards={boards} records={records} season={SEASON} />

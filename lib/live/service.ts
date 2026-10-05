@@ -5,6 +5,7 @@ import { cached } from "./cache"
 import { parseScoreboard, parseSummary } from "./espn"
 import { parseGameStats, type AutoStats } from "./gamestats"
 import { type RecordsByTeam, overlayRecords, parseStandings } from "./standings"
+import type { FinalGame } from "../math/elo"
 import { type FinalsGame, candidates, mergeFinals } from "./finals"
 import { teamInfo } from "@/lib/nfl"
 import { SEASON } from "@/lib/predictions"
@@ -144,4 +145,27 @@ export async function withEspnRecords<T extends { team: string; wins?: number | 
 	const rows = teams ?? []
 	if (rows.length === 0) return rows
 	return overlayRecords(rows, await getRecords())
+}
+
+/**
+ * Every finished regular-season game from week 1 through `throughWeek`, for the Elo ratings. One scoreboard
+ * request per week, each cached for ten minutes. Returns null if any week can't be read: ratings built on
+ * a partial season would quietly mislead.
+ */
+export async function getSeasonResults(throughWeek: number): Promise<FinalGame[] | null> {
+	const last = Math.min(18, Math.floor(throughWeek))
+	if (!(last >= 1)) return null
+	try {
+		const weeks = await Promise.all(
+			Array.from({ length: last }, (_, i) => i + 1).map(async (week) => {
+				const res = await cached(`results:${SEASON}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}&limit=100`, 3000)))
+				return res.value
+					.filter((g) => g.state === "post")
+					.map((g): FinalGame => ({ week, home: g.home.abbr, away: g.away.abbr, homeScore: g.home.score, awayScore: g.away.score }))
+			})
+		)
+		return weeks.flat()
+	} catch {
+		return null
+	}
 }

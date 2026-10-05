@@ -63,3 +63,44 @@ describe("withEspnRecords", () => {
 		expect(await withEspnRecords(rows)).toEqual(rows)
 	})
 })
+
+describe("getSeasonResults", () => {
+	beforeEach(() => {
+		clearCache()
+		vi.resetModules()
+		vi.unstubAllGlobals()
+	})
+	const event = (id: string, state: string, hs: number, as: number) => ({
+		id,
+		date: "2026-09-13T20:25Z",
+		competitions: [
+			{
+				status: { type: { state } },
+				competitors: [
+					{ homeAway: "home", score: String(hs), team: { id: "13", abbreviation: "LV" } },
+					{ homeAway: "away", score: String(as), team: { id: "12", abbreviation: "KC" } },
+				],
+			},
+		],
+	})
+
+	it("collects finished games for each week, one request per week", async () => {
+		const urls: string[] = []
+		vi.stubGlobal("fetch", async (url: string) => (urls.push(url), { ok: true, json: async () => ({ events: [event("1", "post", 27, 20), event("2", "pre", 0, 0)] }) }))
+		const { getSeasonResults } = await import("../../lib/live/service")
+		const games = await getSeasonResults(3)
+		expect(urls).toHaveLength(3)
+		expect(urls[2]).toContain("dates=2026&seasontype=2&week=3")
+		expect(games?.map((g) => [g.week, g.home, g.homeScore])).toEqual([[1, "LV", 27], [2, "LV", 27], [3, "LV", 27]])
+	})
+
+	it("returns null when any week can't be read", async () => {
+		vi.stubGlobal("fetch", async (url: string) => {
+			if (url.includes("week=2")) throw new Error("down")
+			return { ok: true, json: async () => ({ events: [] }) }
+		})
+		const { getSeasonResults } = await import("../../lib/live/service")
+		expect(await getSeasonResults(3)).toBeNull()
+		expect(await getSeasonResults(0)).toBeNull()
+	})
+})
