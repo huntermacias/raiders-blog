@@ -87,6 +87,27 @@ export default function LabPage() {
 				</section>
 			)}
 
+			<section className="container pb-10 sm:pb-14" aria-labelledby="tools-heading">
+				<h2 id="tools-heading" className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+					More from the Lab
+				</h2>
+				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-3">
+					{[
+						{ href: "/lab/top-plays", title: "Top plays", text: "The snaps that moved the Raiders' chance to win the furthest this season." },
+						{ href: "/lab/fourth-down", title: "Fourth-down report card", text: "Every go, punt and field goal, graded against similar spots from 2019 on." },
+						{ href: "/lab/scouting", title: "Scouting reports", text: "Where the Raiders have the edge on every opponent, and what to watch." },
+					].map((t) => (
+						<li key={t.href}>
+							<Link href={t.href} className="group block h-full rounded-2xl border border-lab-line bg-lab-surface p-5 transition hover:border-lab-line-strong hover:bg-lab-tint">
+								<h3 className="m-0 font-serif text-xl font-bold">{t.title}</h3>
+								<p className="m-0 mt-2 text-sm leading-relaxed text-lab-soft">{t.text}</p>
+								<p className="m-0 mt-3 text-sm font-semibold text-lab-soft transition group-hover:text-lab-ink">Open &rarr;</p>
+							</Link>
+						</li>
+					))}
+				</ul>
+			</section>
+
 			<section className="container pb-14 sm:pb-20">
 				<h2 className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">The season so far</h2>
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

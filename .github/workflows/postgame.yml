@@ -1,0 +1,64 @@
+name: Postgame draft
+
+# Every half hour on the days the Raiders usually play (Thursday, Saturday, Sunday and Monday; times are UTC, so late games are covered by the early
+# hours of the next day), this asks ESPN whether a Raiders game has gone final. If one has, and there is no game
+# report for it yet in Studio, it creates a DRAFT report with the score, the ESPN id and automatic stats turned on,
+# then sends a message to NOTIFY_WEBHOOK_URL. It never publishes. The Lab's pieces (top plays, fourth-down grades,
+# share cards and clips) are added to the draft by the "Refresh Lab data" workflow once the play-by-play posts.
+#
+# Secrets (repository settings > Secrets and variables > Actions):
+#   SANITY_WRITE_TOKEN   a Sanity token with Editor access to the production dataset
+#   NOTIFY_WEBHOOK_URL   optional; a Slack or Discord webhook URL for the "draft is ready" message
+on:
+  schedule:
+    - cron: "*/30 * * * 0,1,4,6"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Log what would happen without creating anything"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postgame
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+      NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+    steps:
+      - name: Say so if the secret is missing
+        if: ${{ env.SANITY_WRITE_TOKEN == '' }}
+        run: echo "::warning::SANITY_WRITE_TOKEN is not set, so no draft can be created. See the comments at the top of this workflow."
+
+      - uses: actions/checkout@v4
+        if: ${{ env.SANITY_WRITE_TOKEN != '' }}
+        with:
+          sparse-checkout: |
+            lib
+            data/lab
+            scripts/postgame
+            package.json
+            tsconfig.json
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        if: ${{ env.SANITY_WRITE_TOKEN != '' }}
+        with:
+          node-version: 24
+
+      - name: Bundle
+        if: ${{ env.SANITY_WRITE_TOKEN != '' }}
+        # esbuild alone is enough: the script only needs the site's own pure TypeScript.
+        run: npx --yes esbuild@0.24.2 scripts/postgame/run.ts --bundle --platform=node --format=cjs --jsx=automatic --alias:@=. --log-level=warning --outfile=/tmp/postgame.cjs
+
+      - name: Create the draft if a game is final
+        if: ${{ env.SANITY_WRITE_TOKEN != '' }}
+        run: node /tmp/postgame.cjs create ${{ inputs.dry_run && '--dry-run' || '' }}

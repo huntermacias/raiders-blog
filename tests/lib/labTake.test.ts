@@ -49,7 +49,7 @@ describe("labGameFor", () => {
 	})
 
 	it("returns null when the Lab does not have that game", () => {
-		expect(labGameFor({ opponent: "Kansas City Chiefs", gameDate: "2026-10-04T20:25:00Z" })).toBeNull()
+		expect(labGameFor({ opponent: "Denver Broncos", gameDate: "2026-10-18T20:25:00Z" })).toBeNull()
 		expect(labGameFor({ opponent: "nobody", gameDate: "2026-09-27T20:05:00Z" })).toBeNull()
 		expect(labGameFor({ opponent: null, gameDate: "2026-09-27T20:05:00Z" })).toBeNull()
 	})

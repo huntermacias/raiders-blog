@@ -1,0 +1,82 @@
+{
+ "version": 1,
+ "generatedAt": "2026-10-05T08:12:17.484Z",
+ "games": {
+  "1": {
+   "week": 1,
+   "hash": "26d83f8c30aae221",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-1-landscape.mp4",
+    "vertical": "/lab/clips/week-1-vertical.mp4",
+    "square": "/lab/clips/week-1-square.mp4",
+    "gif": "/lab/clips/week-1.gif",
+    "poster": "/lab/clips/week-1-poster.jpg"
+   },
+   "bytes": {
+    "landscape": 172136,
+    "vertical": 187105,
+    "square": 133021,
+    "gif": 280574,
+    "poster": 56546
+   }
+  },
+  "2": {
+   "week": 2,
+   "hash": "e81cbf7dedc1a1cd",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-2-landscape.mp4",
+    "vertical": "/lab/clips/week-2-vertical.mp4",
+    "square": "/lab/clips/week-2-square.mp4",
+    "gif": "/lab/clips/week-2.gif",
+    "poster": "/lab/clips/week-2-poster.jpg"
+   },
+   "bytes": {
+    "landscape": 199253,
+    "vertical": 226438,
+    "square": 161843,
+    "gif": 284365,
+    "poster": 61164
+   }
+  },
+  "3": {
+   "week": 3,
+   "hash": "a34c25516576da28",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-3-landscape.mp4",
+    "vertical": "/lab/clips/week-3-vertical.mp4",
+    "square": "/lab/clips/week-3-square.mp4",
+    "gif": "/lab/clips/week-3.gif",
+    "poster": "/lab/clips/week-3-poster.jpg"
+   },
+   "bytes": {
+    "landscape": 190144,
+    "vertical": 214944,
+    "square": 153310,
+    "gif": 303041,
+    "poster": 59121
+   }
+  },
+  "4": {
+   "week": 4,
+   "hash": "7beaf9f663545e38",
+   "seconds": 13.3,
+   "files": {
+    "landscape": "/lab/clips/week-4-landscape.mp4",
+    "vertical": "/lab/clips/week-4-vertical.mp4",
+    "square": "/lab/clips/week-4-square.mp4",
+    "gif": "/lab/clips/week-4.gif",
+    "poster": "/lab/clips/week-4-poster.jpg"
+   },
+   "bytes": {
+    "landscape": 186831,
+    "vertical": 213503,
+    "square": 151390,
+    "gif": 264484,
+    "poster": 62174
+   }
+  }
+ }
+}

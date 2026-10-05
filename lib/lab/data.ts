@@ -1,7 +1,21 @@
 import seasonJson from "@/data/lab/season.json"
+import fourthJson from "@/data/lab/fourth-down.json"
+import scoutingJson from "@/data/lab/scouting.json"
 import type { LabGame, LabSeason } from "./types"
+import type { FourthDownData } from "./fourthDown"
+import type { ScoutingData } from "./scouting"
 
 const season = seasonJson as unknown as LabSeason
+const fourth = fourthJson as unknown as FourthDownData
+const scouting = scoutingJson as unknown as ScoutingData
+
+export function getFourthDown(): FourthDownData {
+	return fourth
+}
+
+export function getScouting(): ScoutingData {
+	return scouting
+}
 
 export function getSeason(): LabSeason {
 	return season

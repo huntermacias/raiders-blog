@@ -3,6 +3,7 @@ import { groq } from "next-sanity"
 
 import { readClient as client } from "../lib/sanity.client"
 import { gameSlug, getGames } from "../lib/lab/data"
+import { TEAMS } from "../lib/nfl"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -31,6 +32,10 @@ ${url(`${SITE_URL}/live`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/community`, undefined, "0.6", "daily")}
 ${url(`${SITE_URL}/lab`, undefined, "0.8", "weekly")}
 ${getGames().map((g) => url(`${SITE_URL}/lab/${gameSlug(g)}`, undefined, "0.7", "monthly")).join("\n")}
+${url(`${SITE_URL}/lab/top-plays`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/fourth-down`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/scouting`, undefined, "0.7", "weekly")}
+${TEAMS.filter((t) => t.abbr !== "LV").map((t) => url(`${SITE_URL}/lab/scouting/${t.abbr.toLowerCase()}`, undefined, "0.5", "weekly")).join("\n")}
 ${games.map((g) => url(`${SITE_URL}/games/${g.slug.current}`, g._updatedAt, "0.8")).join("\n")}
 ${posts.map((p) => url(`${SITE_URL}/post/${p.slug.current}`, p._updatedAt, "0.6")).join("\n")}
 ${liveEvents.map((e) => url(`${SITE_URL}/live/${e.slug.current}`, e._updatedAt, "0.5")).join("\n")}

@@ -2,12 +2,18 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import Link from "@/components/SiteLink"
+import ClipPanel from "@/components/lab/ClipPanel"
 import DriveReplay from "@/components/lab/DriveReplay"
+import FourthDownReport from "@/components/lab/FourthDownReport"
+import TopPlays from "@/components/lab/TopPlays"
 import Tip from "@/components/lab/Tip"
 import WinProbabilityReplay from "@/components/lab/WinProbabilityReplay"
+import { clipFor } from "@/lib/lab/clips"
 import { gameSlug, getGameBySlug, getGames, getSeason, neighbours } from "@/lib/lab/data"
+import { fourthGameFor } from "@/lib/lab/fourthDown"
 import { SWING_HELP, WP_HELP } from "@/lib/lab/glossary"
 import { labColorVars } from "@/lib/lab/colors"
+import { topPlaysFor } from "@/lib/lab/topPlays"
 import type { LabGame } from "@/lib/lab/types"
 import { clockAt, formatSwing, gameStory, kindLabel, pct, swingPoints } from "@/lib/lab/wp"
 
@@ -43,11 +49,12 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 	const stamp = Date.parse(getSeason().generatedAt) || 0
 	const card = `${SITE_URL}/api/og?type=lab&slug=${slug}&v=${stamp}`
 	const drive = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=drive&v=${stamp}`
+	const play = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=play&rank=1&v=${stamp}`
 	return {
 		title: pageTitle,
 		description,
 		alternates: { canonical: url },
-		openGraph: { type: "article", title: pageTitle, description, url, siteName: "Raiders Rundown", images: [{ url: card, width: 1200, height: 630, alt: `${title(g)}: the win probability story` }, { url: drive, width: 1200, height: 630, alt: `${title(g)}: the Raiders' best drive` }] },
+		openGraph: { type: "article", title: pageTitle, description, url, siteName: "Raiders Rundown", images: [{ url: card, width: 1200, height: 630, alt: `${title(g)}: the win probability story` }, { url: drive, width: 1200, height: 630, alt: `${title(g)}: the Raiders' best drive` }, { url: play, width: 1200, height: 630, alt: `${title(g)}: the play that moved the game most` }] },
 		twitter: { card: "summary_large_image", title: pageTitle, description, images: [card] },
 		// Next 13.2 only writes og:image:url from openGraph.images; most scrapers read og:image.
 		other: { "og:image": card },
@@ -65,6 +72,10 @@ export default function LabGamePage({ params }: { params: { slug: string } }) {
 	const swing = story.swing
 	const swingPts = swing ? swingPoints(swing) : null
 	const swingClock = swing ? clockAt(swing.el) : null
+	const plays = topPlaysFor(g, season.team, 5)
+	const fourth = fourthGameFor(g.week)
+	const stamp = Date.parse(season.generatedAt) || 0
+	const clip = clipFor(g.week)
 
 	const tiles = [
 		{
@@ -149,6 +160,55 @@ export default function LabGamePage({ params }: { params: { slug: string } }) {
 					shareText={`${title(g)}: scrub through the win probability, play by play.`}
 				/>
 			</section>
+
+			{clip && (
+				<section className="container pb-10 sm:pb-14" aria-labelledby="clip-heading">
+					<div className="mb-5">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">Clip</p>
+						<h2 id="clip-heading" className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							The game in {Math.round(clip.seconds)} seconds
+						</h2>
+						<p className="mt-2 max-w-2xl text-sm leading-relaxed text-lab-muted">The win probability, drawn as the game was played. Made for sharing, in the size each app likes.</p>
+					</div>
+					<ClipPanel clip={clip} title={title(g)} />
+				</section>
+			)}
+
+			{plays.length > 0 && (
+				<section className="container pb-10 sm:pb-14" aria-labelledby="plays-heading">
+					<div className="mb-5">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">Top plays</p>
+						<h2 id="plays-heading" className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							The five plays that decided it
+						</h2>
+						<p className="mt-2 max-w-2xl text-sm leading-relaxed text-lab-muted">
+							Ranked by how far each snap moved the Raiders&rsquo; chance to win, whoever it helped. See{" "}
+							<Link href="/lab/top-plays" className="underline underline-offset-4 hover:text-lab-ink">
+								the biggest plays of the season
+							</Link>
+							.
+						</p>
+					</div>
+					<TopPlays plays={plays} scope={slug} stamp={stamp} />
+				</section>
+			)}
+
+			{fourth && fourth.decisions.length > 0 && (
+				<section className="container pb-10 sm:pb-14" aria-labelledby="fourth-heading">
+					<div className="mb-5">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">Fourth-down report</p>
+						<h2 id="fourth-heading" className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							Did the Raiders make the right calls on fourth down?
+						</h2>
+					</div>
+					<FourthDownReport game={fourth} scope={slug} stamp={stamp} />
+					<p className="mt-4 text-sm">
+						<Link href="/lab/fourth-down" className="font-semibold text-lab-soft underline-offset-4 hover:text-lab-ink hover:underline">
+							Every fourth down this season &rarr;
+						</Link>
+					</p>
+				</section>
+			)}
 
 			<section className="container pb-10 sm:pb-14" aria-labelledby="drive-heading">
 				<div className="mb-5">
