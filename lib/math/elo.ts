@@ -37,7 +37,12 @@ function marginMultiplier(margin: number, winnerEloEdge: number): number {
 	return Math.pow(Math.abs(margin) + 3, 0.8) / (7.5 + 0.006 * winnerEloEdge)
 }
 
+/** One game's effect on the ratings: the home team's rating moved by `shiftHome`, the away team's by minus that. */
+export type EloShift = { week: number; home: string; away: string; homeScore: number; awayScore: number; shiftHome: number }
+
 export type EloRun = {
+	/** Every game in the order it was played, with how far it moved the ratings. */
+	log: EloShift[]
 	/** Ratings after the last game. */
 	ratings: Ratings
 	/** Ratings after each week's games, keyed by week number. */
@@ -51,6 +56,7 @@ export function runElo(games: FinalGame[]): EloRun {
 	const ratings: Ratings = {}
 	const played: Record<string, number> = {}
 	const byWeek: Record<number, Ratings> = {}
+	const log: EloShift[] = []
 	const get = (t: string) => ratings[t] ?? START_RATING
 
 	const weeks = Array.from(new Set(games.map((g) => g.week))).sort((a, b) => a - b)
@@ -66,10 +72,11 @@ export function runElo(games: FinalGame[]): EloRun {
 			const shift = K * marginMultiplier(margin, winnerEdge) * (actualHome - pHome)
 			ratings[g.home] = home + shift
 			ratings[g.away] = away - shift
+			log.push({ week, home: g.home, away: g.away, homeScore: g.homeScore, awayScore: g.awayScore, shiftHome: shift })
 			played[g.home] = (played[g.home] ?? 0) + 1
 			played[g.away] = (played[g.away] ?? 0) + 1
 		}
 		byWeek[week] = { ...ratings }
 	}
-	return { ratings: { ...ratings }, byWeek, played }
+	return { log, ratings: { ...ratings }, byWeek, played }
 }
