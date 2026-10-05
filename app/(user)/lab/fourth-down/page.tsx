@@ -58,8 +58,8 @@ export default function FourthDownPage() {
 					</p>
 					<dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
 						{[
-							{ label: "Fourth downs", value: String(t.decisions), note: `${t.graded} graded` },
-							{ label: "Best call or toss-up", value: t.graded ? `${t.bestOrClose} of ${t.graded}` : "None", note: "graded calls" },
+							{ label: "Raiders' 4th downs", value: String(t.decisions), note: `${t.graded} had enough similar plays to judge` },
+							{ label: "Best call or toss-up", value: t.graded ? `${t.bestOrClose} of ${t.graded}` : "None", note: "of the calls we could judge" },
 							{ label: "Went for it", value: t.wentFor ? `${t.converted} of ${t.wentFor}` : "0", note: "converted" },
 							{ label: "Left on the table", value: ptsText(t.leftOnTable), note: "of win probability, all games added up" },
 						].map((x) => (
