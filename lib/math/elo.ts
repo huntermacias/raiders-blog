@@ -24,11 +24,13 @@ export type Ratings = Record<string, number>
 
 /**
  * Share of last season's distance from average that carries into the new one. FiveThirtyEight used two thirds.
- * This is 20% by choice, so this season's games dominate quickly. The 2025 back-test slightly preferred
- * more carry-over (log loss 0.6528 at 0.2, 0.6500 at 0.5, 0.6495 at 0.67), so this trades a little early-season
- * accuracy (weeks 2-6 most) for responsiveness.
+ * This is 10% by choice, so this season's games dominate almost at once. The 2025 back-test preferred far more
+ * (log loss 0.6543 at 0.1, 0.6500 at 0.5, 0.6495 at 0.67; regressing end-2025 ratings on end-2024 ones gives a
+ * slope of about 0.32), and a flat start scored 0.6560, so 10% keeps just a trace of last year. Of the ways of
+ * summarizing last season, its final Elo predicted the next one best (correlation 0.34, against 0.30 for the
+ * season's average margin and 0.29 for the first half alone), which is why the carried rating is the final Elo.
  */
-export const CARRY_OVER = 0.2
+export const CARRY_OVER = 0.1
 
 /** Last season's final ratings, pulled back toward the middle: rosters turn over and results are partly luck. */
 export function carryOver(last: Ratings, keep: number = CARRY_OVER): Ratings {
