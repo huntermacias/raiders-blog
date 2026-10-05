@@ -6,6 +6,7 @@ import { parseScoreboard, parseSummary } from "./espn"
 import { parseGameStats, type AutoStats } from "./gamestats"
 import { type RecordsByTeam, overlayRecords, parseStandings } from "./standings"
 import type { FinalGame } from "../math/elo"
+import type { SeasonGame } from "../math/season"
 import { type FinalsGame, candidates, mergeFinals } from "./finals"
 import { teamInfo } from "@/lib/nfl"
 import { SEASON } from "@/lib/predictions"
@@ -147,6 +148,22 @@ export async function withEspnRecords<T extends { team: string; wins?: number | 
 	return overlayRecords(rows, await getRecords())
 }
 
+/** One regular-season week's games from ESPN, cached ten minutes. Scores are null until a game is final. */
+async function weekGames(week: number): Promise<SeasonGame[]> {
+	const res = await cached(`results:${SEASON}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}&limit=100`, 3000)))
+	return res.value.map((g): SeasonGame => {
+		const done = g.state === "post"
+		return { week, home: g.home.abbr, away: g.away.abbr, homeScore: done ? g.home.score : null, awayScore: done ? g.away.score : null }
+	})
+}
+
+/** The finished games among `games`, in the shape the Elo ratings read. */
+export function finishedGames(games: SeasonGame[], throughWeek: number = 18): FinalGame[] {
+	return games
+		.filter((g) => g.week <= throughWeek && g.homeScore != null && g.awayScore != null)
+		.map((g) => ({ week: g.week, home: g.home, away: g.away, homeScore: g.homeScore as number, awayScore: g.awayScore as number }))
+}
+
 /**
  * Every finished regular-season game from week 1 through `throughWeek`, for the Elo ratings. One scoreboard
  * request per week, each cached for ten minutes. Returns null if any week can't be read: ratings built on
@@ -156,16 +173,25 @@ export async function getSeasonResults(throughWeek: number): Promise<FinalGame[]
 	const last = Math.min(18, Math.floor(throughWeek))
 	if (!(last >= 1)) return null
 	try {
-		const weeks = await Promise.all(
-			Array.from({ length: last }, (_, i) => i + 1).map(async (week) => {
-				const res = await cached(`results:${SEASON}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}&limit=100`, 3000)))
-				return res.value
-					.filter((g) => g.state === "post")
-					.map((g): FinalGame => ({ week, home: g.home.abbr, away: g.away.abbr, homeScore: g.home.score, awayScore: g.away.score }))
-			})
-		)
-		return weeks.flat()
+		const weeks = await Promise.all(Array.from({ length: last }, (_, i) => weekGames(i + 1)))
+		return finishedGames(weeks.flat())
 	} catch {
 		return null
+	}
+}
+
+/**
+ * The whole regular season, played and still to play, for the playoff simulation. `games` is null when a
+ * week up to `throughWeek` can't be read (the ratings would be wrong); `complete` is false when a later
+ * week can't be read, in which case odds built on it would be missing games and should not be shown.
+ */
+export async function getSeasonSchedule(throughWeek: number): Promise<{ games: SeasonGame[]; complete: boolean } | null> {
+	const through = Math.min(18, Math.floor(throughWeek))
+	if (!(through >= 1)) return null
+	const weeks = await Promise.allSettled(Array.from({ length: 18 }, (_, i) => weekGames(i + 1)))
+	if (weeks.slice(0, through).some((w) => w.status === "rejected")) return null
+	return {
+		games: weeks.flatMap((w) => (w.status === "fulfilled" ? w.value : [])),
+		complete: weeks.every((w) => w.status === "fulfilled"),
 	}
 }

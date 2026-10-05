@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest"
 
-import { GapTable, HotTakes, Scoreboard } from "../../components/math/BloggerVsMath"
+import { HotTakes, Scoreboard } from "../../components/math/BloggerVsMath"
+import PlayoffOdds from "../../components/math/PlayoffOdds"
+import TeamTable from "../../components/math/TeamTable"
+import { oddsText } from "../../components/math/charts"
 import type { MathRow, Scorecard } from "../../lib/math/compare"
+import { buildBoards } from "../../lib/rankings"
+import { buildOdds, buildReport } from "../../lib/math/report"
+import { TEAMS } from "../../lib/nfl"
+import { schedule } from "../stubs/seasonSchedule"
 
 afterEach(cleanup)
 
@@ -45,19 +52,6 @@ describe("Scoreboard", () => {
 	})
 })
 
-describe("GapTable", () => {
-	const rows = [row("Las Vegas Raiders", "LV", 6, 7), row("Denver Broncos", "DEN", 12, 21), row("Carolina Panthers", "CAR", 23, 14)]
-
-	it("is a real table with one row per team and the gap said in words for screen readers", () => {
-		render(<GapTable rows={rows} hot={6} />)
-		const table = screen.getByRole("table")
-		expect(within(table).getAllByRole("row")).toHaveLength(4)
-		expect(within(table).getByText("I'm 9 higher")).toBeTruthy()
-		expect(within(table).getByText("I'm 9 lower")).toBeTruthy()
-		expect(within(table).getByText("I'm 1 higher")).toBeTruthy()
-	})
-})
-
 describe("HotTakes", () => {
 	it("says which way I disagree, in the team's name", () => {
 		render(<HotTakes takes={[row("Denver Broncos", "DEN", 12, 21), row("Carolina Panthers", "CAR", 23, 14)]} />)
@@ -68,5 +62,76 @@ describe("HotTakes", () => {
 	it("handles a week with no big disagreements", () => {
 		render(<HotTakes takes={[]} />)
 		expect(screen.getByText(/No big disagreements/)).toBeTruthy()
+	})
+})
+
+
+describe("oddsText", () => {
+	it("says <1% and >99% for near misses, and 0% or 100% only when no simulated season disagreed", () => {
+		expect(oddsText(0, 10_000)).toBe("0%")
+		expect(oddsText(1, 10_000)).toBe("100%")
+		expect(oddsText(0.004, 10_000)).toBe("<1%")
+		expect(oddsText(0.0001, 10_000)).toBe("<1%")
+		expect(oddsText(0.996, 10_000)).toBe(">99%")
+		expect(oddsText(0.426, 10_000)).toBe("43%")
+	})
+})
+
+describe("team panels and playoff odds", () => {
+	const games = schedule(4)
+	const names = TEAMS.map((t) => t.name)
+	const boards = buildBoards([2, 3, 4].map((week) => ({ _id: `w${week}`, season: 2026, week, teams: names.map((team, i) => ({ team, note: i === 0 ? "Buffalo note" : null })) })))
+	const report = buildReport(boards, games, 4, buildOdds(games, 4))
+
+	afterEach(() => {
+		window.history.replaceState(null, "", "/")
+	})
+
+	it("lists every team and opens a panel on click, closing it on a second click", () => {
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		const buttons = screen.getAllByRole("button")
+		expect(buttons).toHaveLength(32)
+		const bills = buttons[0]
+		expect(bills.getAttribute("aria-expanded")).toBe("false")
+		fireEvent.click(bills)
+		expect(bills.getAttribute("aria-expanded")).toBe("true")
+		expect(screen.getByText("Rank by week")).toBeTruthy()
+		expect(screen.getByText("Results")).toBeTruthy()
+		expect(screen.getByText("Still to play")).toBeTruthy()
+		expect(screen.getByText("Buffalo note")).toBeTruthy()
+		expect(document.getElementById(bills.getAttribute("aria-controls")!)).toBeTruthy()
+		expect(window.location.hash).toBe("#team-BUF")
+		fireEvent.click(bills)
+		expect(bills.getAttribute("aria-expanded")).toBe("false")
+		expect(screen.queryByText("Rank by week")).toBeNull()
+	})
+
+	it("opens the team named in the address", () => {
+		window.history.replaceState(null, "", "/#team-LV")
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		const open = screen.getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true")
+		expect(open).toHaveLength(1)
+		expect(within(open[0]).getByText("Raiders")).toBeTruthy()
+	})
+
+	it("ignores an address that names no team", () => {
+		window.history.replaceState(null, "", "/#team-ZZZ")
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		expect(screen.getAllByRole("button").every((b) => b.getAttribute("aria-expanded") === "false")).toBe(true)
+	})
+
+	it("says the gap in words for screen readers", () => {
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		const gaps = report.teams.map((t) => (t.gap === 0 ? "Same" : t.gap > 0 ? `I'm ${t.gap} higher` : `I'm ${-t.gap} lower`))
+		for (const g of Array.from(new Set(gaps))) expect(screen.getAllByText(g).length).toBeGreaterThan(0)
+	})
+
+	it("lays out the simulated standings by conference and division, each team linking to its panel", () => {
+		render(<PlayoffOdds teams={report.teams} sims={report.sims} />)
+		expect(screen.getByRole("heading", { name: "AFC" })).toBeTruthy()
+		expect(screen.getByRole("heading", { name: "NFC" })).toBeTruthy()
+		expect(screen.getAllByRole("table")).toHaveLength(8)
+		const link = screen.getByRole("link", { name: /Raiders/ })
+		expect(link.getAttribute("href")).toBe("#team-LV")
 	})
 })

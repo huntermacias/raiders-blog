@@ -1,17 +1,10 @@
-import { RAIDERS, teamInfo } from "@/lib/nfl"
+import { teamInfo } from "@/lib/nfl"
 import { cn } from "@/lib/utils"
 import type { GradedGame, MathRow, Scorecard } from "@/lib/math/compare"
 import { TeamChip } from "@/components/predictions/TeamChip"
 
-const TEAMS_IN_LEAGUE = 32
-
 function pct(right: number, games: number) {
 	return games === 0 ? "n/a" : `${Math.round((right / games) * 100)}%`
-}
-
-/** "+9" / "-4" with a real minus sign. */
-function signed(n: number) {
-	return n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0"
 }
 
 function Tile({ label, value, foot, lead }: { label: string; value: string; foot: string; lead?: boolean }) {
@@ -89,79 +82,6 @@ function Disagreement({ g }: { g: GradedGame }) {
 				{meRight ? "I was right" : "The math was right"}
 			</span>
 		</li>
-	)
-}
-
-function at(rank: number) {
-	return `${((rank - 1) / (TEAMS_IN_LEAGUE - 1)) * 100}%`
-}
-
-function gapWords(r: MathRow) {
-	if (r.gap === 0) return "Same"
-	return r.gap > 0 ? `I'm ${r.gap} higher` : `I'm ${-r.gap} lower`
-}
-
-export function GapTable({ rows, hot }: { rows: MathRow[]; hot: number }) {
-	return (
-		<div>
-			<p className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground" aria-hidden>
-				<span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-foreground" /> My rank</span>
-				<span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border-2 border-foreground bg-card" /> The math&rsquo;s rank</span>
-				<span>Left is No. 1</span>
-				<span>Gap: + means I rank them higher than the math</span>
-			</p>
-			<div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-				<table className="w-full text-left text-sm">
-					<caption className="sr-only">My power rankings next to the math&rsquo;s ranking for all {rows.length} teams, with the gap between them</caption>
-					<thead className="border-b border-border bg-muted/50 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-						<tr>
-							<th scope="col" className="px-3 py-3 text-right">Me</th>
-							<th scope="col" className="px-3 py-3">Team</th>
-							<th scope="col" className="hidden w-[38%] px-3 py-3 md:table-cell">
-								<span className="sr-only">Where each ranks</span>
-							</th>
-							<th scope="col" className="px-3 py-3 text-right">Math</th>
-							<th scope="col" className="px-3 py-3 text-right">Gap</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-border">
-						{rows.map((r) => {
-							const t = teamInfo(r.team)
-							const isLV = r.team === RAIDERS
-							const big = Math.abs(r.gap) >= hot
-							const lo = Math.min(r.blogger, r.math)
-							const hi = Math.max(r.blogger, r.math)
-							return (
-								<tr key={r.team} className={cn(isLV && "bg-muted/60")}>
-									<td className="px-3 py-2.5 text-right font-serif text-lg font-bold tabular-nums">{r.blogger}</td>
-									<td className="px-3 py-2.5">
-										<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-											<TeamChip team={r.team} />
-											<span className={cn("font-semibold", isLV && "font-extrabold")}>{t.nick}</span>
-										</div>
-									</td>
-									<td className="hidden px-3 py-2.5 md:table-cell" aria-hidden>
-										<div className="relative mx-2 h-6">
-											<div className="absolute top-1/2 h-px w-full -translate-y-1/2 bg-border/70" />
-											<div className={cn("absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full", big ? "bg-foreground" : "bg-muted-foreground/50")} style={{ left: at(lo), width: `calc(${at(hi)} - ${at(lo)})` }} />
-											<span className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-card" style={{ left: at(r.math) }} />
-											<span className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground ring-2 ring-card" style={{ left: at(r.blogger) }} />
-										</div>
-									</td>
-									<td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{r.math}</td>
-									<td className="px-3 py-2.5 text-right">
-										<span className={cn("inline-block whitespace-nowrap text-xs tabular-nums", big ? "font-bold text-foreground" : "text-muted-foreground")}>
-											<span aria-hidden>{signed(r.gap)}</span>
-											<span className="sr-only">{gapWords(r)}</span>
-										</span>
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-			</div>
-		</div>
 	)
 }
 
