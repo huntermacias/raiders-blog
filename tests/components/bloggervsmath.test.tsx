@@ -59,6 +59,10 @@ describe("HotTakes", () => {
 		expect(screen.getByText("The math loves the Panthers more than I do.")).toBeTruthy()
 		expect(screen.getByText(/I have them No\. 12\. The math has them No\. 21, 9 spots lower\./)).toBeTruthy()
 	})
+	it("gives each take its own share buttons", () => {
+		render(<HotTakes takes={[row("Kansas City Chiefs", "KC", 3, 14)]} week={4} stamp={1} />)
+		expect((screen.getByRole("link", { name: /Save card/ }) as HTMLAnchorElement).getAttribute("href")).toBe("/api/og?take=KC&week=4&type=math&v=1")
+	})
 	it("handles a week with no big disagreements", () => {
 		render(<HotTakes takes={[]} />)
 		expect(screen.getByText(/No big disagreements/)).toBeTruthy()
@@ -88,7 +92,7 @@ describe("team panels and playoff odds", () => {
 	})
 
 	it("lists every team and opens a panel on click, closing it on a second click", () => {
-		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
 		const buttons = screen.getAllByRole("button")
 		expect(buttons).toHaveLength(32)
 		const bills = buttons[0]
@@ -108,20 +112,54 @@ describe("team panels and playoff odds", () => {
 
 	it("opens the team named in the address", () => {
 		window.history.replaceState(null, "", "/#team-LV")
-		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
 		const open = screen.getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true")
 		expect(open).toHaveLength(1)
 		expect(within(open[0]).getByText("Raiders")).toBeTruthy()
 	})
 
+	it("opens the team named in a shared ?team= or ?take= link", () => {
+		window.history.replaceState(null, "", "/?take=DEN")
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
+		const open = screen.getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true")
+		expect(open).toHaveLength(1)
+		expect(within(open[0]).getByText("Broncos")).toBeTruthy()
+	})
+
+	it("puts share buttons in an open panel, pointing at that team's card", () => {
+		window.history.replaceState(null, "", "/#team-LV")
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} model="season" stamp={3} />)
+		const save = screen.getByRole("link", { name: /Save card/ }) as HTMLAnchorElement
+		expect(save.getAttribute("href")).toBe("/api/og?team=LV&week=4&model=season&type=math&v=3")
+		expect(screen.getByText("Share this card")).toBeTruthy()
+	})
+
+	it("shows what the box scores say, and what it did to the rating, when there are box scores", () => {
+		window.history.replaceState(null, "", "/#team-LV")
+		const teams = report.teams.map((t) => (t.abbr === "LV" ? { ...t, under: { games: 4, margin: 9, netYpp: 0.4, yardageMargin: 3, turnoverMargin: 1.5, adj: -14 } } : t))
+		render(<TeamTable teams={teams} hot={6} sims={report.sims} week={4} />)
+		expect(screen.getByText(/Under the hood · 4 box scores/)).toBeTruthy()
+		expect(screen.getByText("+9.0")).toBeTruthy()
+		expect(screen.getByText("+3.0")).toBeTruthy()
+		expect(screen.getByText("+1.5")).toBeTruthy()
+		expect(screen.getByText(/Results have run ahead of the yardage/)).toBeTruthy()
+		expect(screen.getByText(/moved the rating down 14 points/)).toBeTruthy()
+	})
+
+	it("leaves the box-score tile out when there are none", () => {
+		window.history.replaceState(null, "", "/#team-LV")
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
+		expect(screen.queryByText(/Under the hood/)).toBeNull()
+	})
+
 	it("ignores an address that names no team", () => {
 		window.history.replaceState(null, "", "/#team-ZZZ")
-		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
 		expect(screen.getAllByRole("button").every((b) => b.getAttribute("aria-expanded") === "false")).toBe(true)
 	})
 
 	it("says the gap in words for screen readers", () => {
-		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} />)
+		render(<TeamTable teams={report.teams} hot={6} sims={report.sims} week={4} />)
 		const gaps = report.teams.map((t) => (t.gap === 0 ? "Same" : t.gap > 0 ? `I'm ${t.gap} higher` : `I'm ${-t.gap} lower`))
 		for (const g of Array.from(new Set(gaps))) expect(screen.getAllByText(g).length).toBeGreaterThan(0)
 	})

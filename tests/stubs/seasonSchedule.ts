@@ -14,7 +14,7 @@ export function schedule(played = 0, score = (h: number, a: number) => [20 + (h 
 			const away = r % 2 === 0 ? ring[31 - i] : ring[i]
 			const done = r < played
 			const [hs, as] = done ? score(ABBRS.indexOf(home), ABBRS.indexOf(away)) : [null, null]
-			out.push({ week: r + 1, home, away, homeScore: hs, awayScore: as })
+			out.push({ week: r + 1, id: `g${out.length}`, kickoff: new Date(Date.UTC(2026, 8, 13, 17) + r * 7 * 86_400_000).toISOString(), home, away, homeScore: hs, awayScore: as })
 		}
 	}
 	return out

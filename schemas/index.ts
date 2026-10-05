@@ -12,5 +12,6 @@ import powerRankings from "./powerRankings"
 import raidersSchedule from "./raidersSchedule"
 import leaguePlayer from "./leaguePlayer"
 import leaguePick from "./leaguePick"
+import mathVote from "./mathVote"
 
-export const schemaTypes = [post, gameReport, liveEvent, gamePrediction, seasonPredictions, flagPlant, powerRankings, raidersSchedule, leaguePlayer, leaguePick, author, category, blockContent, comment]
+export const schemaTypes = [post, gameReport, liveEvent, gamePrediction, seasonPredictions, flagPlant, powerRankings, raidersSchedule, leaguePlayer, leaguePick, mathVote, author, category, blockContent, comment]

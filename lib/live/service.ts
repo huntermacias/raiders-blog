@@ -5,8 +5,10 @@ import { cached } from "./cache"
 import { parseScoreboard, parseSummary } from "./espn"
 import { parseGameStats, type AutoStats } from "./gamestats"
 import { type RecordsByTeam, overlayRecords, parseStandings } from "./standings"
-import type { FinalGame } from "../math/elo"
+import { type FinalGame, type Ratings, carryOver, runElo } from "../math/elo"
+import { type GameBox, parseBox } from "../math/efficiency"
 import type { SeasonGame } from "../math/season"
+import { annotate } from "../math/situation"
 import { type FinalsGame, candidates, mergeFinals } from "./finals"
 import { teamInfo } from "@/lib/nfl"
 import { SEASON } from "@/lib/predictions"
@@ -149,11 +151,11 @@ export async function withEspnRecords<T extends { team: string; wins?: number | 
 }
 
 /** One regular-season week's games from ESPN, cached ten minutes. Scores are null until a game is final. */
-async function weekGames(week: number): Promise<SeasonGame[]> {
-	const res = await cached(`results:${SEASON}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}&limit=100`, 3000)))
+export async function weekGames(week: number, season: number = SEASON): Promise<SeasonGame[]> {
+	const res = await cached(`results:${season}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${season}&seasontype=2&week=${week}&limit=100`, 3000)))
 	return res.value.map((g): SeasonGame => {
 		const done = g.state === "post"
-		return { week, home: g.home.abbr, away: g.away.abbr, homeScore: done ? g.home.score : null, awayScore: done ? g.away.score : null }
+		return { week, id: g.id, kickoff: g.kickoff, home: g.home.abbr, away: g.away.abbr, homeScore: done ? g.home.score : null, awayScore: done ? g.away.score : null }
 	})
 }
 
@@ -161,7 +163,7 @@ async function weekGames(week: number): Promise<SeasonGame[]> {
 export function finishedGames(games: SeasonGame[], throughWeek: number = 18): FinalGame[] {
 	return games
 		.filter((g) => g.week <= throughWeek && g.homeScore != null && g.awayScore != null)
-		.map((g) => ({ week: g.week, home: g.home, away: g.away, homeScore: g.homeScore as number, awayScore: g.awayScore as number }))
+		.map((g) => ({ week: g.week, home: g.home, away: g.away, homeScore: g.homeScore as number, awayScore: g.awayScore as number, edge: g.edge }))
 }
 
 /**
@@ -194,4 +196,68 @@ export async function getSeasonSchedule(throughWeek: number): Promise<{ games: S
 		games: weeks.flatMap((w) => (w.status === "fulfilled" ? w.value : [])),
 		complete: weeks.every((w) => w.status === "fulfilled"),
 	}
+}
+
+/**
+ * Last season's final Elo ratings pulled a third of the way back to average, to start this season from.
+ * Null if any of last season's weeks can't be read (the page then starts everyone level). Cached a day: last
+ * season doesn't change.
+ */
+let priorFailedAt = 0
+
+export async function getPriorRatings(now: number = Date.now()): Promise<Ratings | null> {
+	if (now - priorFailedAt < 60_000) return null
+	try {
+		const res = await cached(`prior:${SEASON - 1}`, 86_400_000, async () => {
+			const weeks = await Promise.all(Array.from({ length: 18 }, (_, i) => weekGames(i + 1, SEASON - 1)))
+			const finished = finishedGames(annotate(weeks.flat()))
+			if (finished.length < 200) throw new Error("last season incomplete")
+			return carryOver(runElo(finished).ratings)
+		})
+		return res.value
+	} catch {
+		priorFailedAt = now
+		return null
+	}
+}
+
+// Box scores of finished games never change, so each is kept for the life of the server instance and, where
+// Next's fetch cache is in play, for a week. A game the scoreboard calls final is the only kind asked for.
+const boxMemo = new Map<string, GameBox>()
+const SUMMARY_URL = (id: string) => `${BASE}/summary?event=${encodeURIComponent(id)}`
+
+async function boxFor(g: SeasonGame, timeoutMs: number): Promise<GameBox | null> {
+	const id = g.id as string
+	const known = boxMemo.get(id)
+	if (known) return known
+	const ctl = new AbortController()
+	const timer = setTimeout(() => ctl.abort(), timeoutMs)
+	try {
+		// Not no-store: a finished game's box score is immutable, so letting Next keep it is the point.
+		const res = await fetch(SUMMARY_URL(id), { signal: ctl.signal, next: { revalidate: 604_800 }, headers: { accept: "application/json" } })
+		if (!res.ok) throw new Error(`ESPN responded ${res.status}`)
+		const box = parseBox(await res.json(), { id, week: g.week })
+		if (box) boxMemo.set(id, box) // a not-yet-final summary is asked for again next time
+		return box
+	} finally {
+		clearTimeout(timer)
+	}
+}
+
+/**
+ * Box scores for the finished games among `games` through `throughWeek`. Fetches in small parallel batches and
+ * stops starting new ones once `budgetMs` has passed, so a cold start can't hang the page: whatever is missing
+ * is simply not used this time (and is picked up on a later visit).
+ */
+export async function getBoxes(games: SeasonGame[], throughWeek: number, budgetMs: number = 6000, now: () => number = Date.now): Promise<GameBox[]> {
+	const todo = games.filter((g) => g.id && g.week <= throughWeek && g.homeScore != null && g.awayScore != null)
+	const started = now()
+	const out: GameBox[] = []
+	const BATCH = 16
+	for (let i = 0; i < todo.length; i += BATCH) {
+		if (i > 0 && now() - started > budgetMs) break
+		const results = await Promise.allSettled(todo.slice(i, i + BATCH).map((g) => boxFor(g, Math.max(1500, budgetMs - (now() - started)))))
+		for (const r of results) if (r.status === "fulfilled" && r.value) out.push(r.value)
+	}
+	return out
 }

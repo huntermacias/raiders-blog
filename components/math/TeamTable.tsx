@@ -3,11 +3,12 @@
 import { Fragment, useCallback, useEffect, useState } from "react"
 import { ChevronDown } from "lucide-react"
 
-import { RAIDERS, teamInfo } from "@/lib/nfl"
+import { RAIDERS, teamByAbbr, teamInfo } from "@/lib/nfl"
 import { cn } from "@/lib/utils"
 import type { TeamDetail } from "@/lib/math/report"
 import { TeamChip } from "@/components/predictions/TeamChip"
 import { OddsSpark, RankHistory, oddsText } from "./charts"
+import ShareMenu from "./ShareMenu"
 
 const TEAMS_IN_LEAGUE = 32
 
@@ -31,7 +32,36 @@ function Stat({ label, value, foot }: { label: string; value: string; foot?: str
 	)
 }
 
-function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
+type View = { week: number; model: "full" | "season"; stamp?: number }
+
+function UnderTheHood({ u }: { u: NonNullable<TeamDetail["under"]> }) {
+	const gap = u.yardageMargin - u.margin
+	const verdict = Math.abs(gap) < 2 ? "The box scores back up the results." : gap < 0 ? "Results have run ahead of the yardage, so the math is a little less sure of them." : "Results have run behind the yardage, so the math gives them a little extra credit."
+	return (
+		<div className="mt-4 rounded-lg border border-border bg-background p-3">
+			<p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Under the hood · {u.games} box score{u.games === 1 ? "" : "s"}</p>
+			<dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+				<div>
+					<dd className="font-serif text-xl font-bold tabular-nums">{points(u.margin)}</dd>
+					<dt className="text-[11px] text-muted-foreground">Scoring margin per game</dt>
+				</div>
+				<div>
+					<dd className="font-serif text-xl font-bold tabular-nums">{points(u.yardageMargin)}</dd>
+					<dt className="text-[11px] text-muted-foreground">Margin by yards per play</dt>
+				</div>
+				<div>
+					<dd className="font-serif text-xl font-bold tabular-nums">{points(u.turnoverMargin)}</dd>
+					<dt className="text-[11px] text-muted-foreground">Turnover margin per game</dt>
+				</div>
+			</dl>
+			<p className="mt-2 text-xs text-muted-foreground">
+				{verdict} {u.adj !== 0 && <>That moved the rating {u.adj > 0 ? "up" : "down"} {Math.abs(Math.round(u.adj))} points. </>}Turnovers are shown but not used in the rating: they decide games but rarely repeat.
+			</p>
+		</div>
+	)
+}
+
+function Detail({ t, sims, view }: { t: TeamDetail; sims: number; view: View }) {
 	const o = t.odds
 	return (
 		<div className="grid gap-6 p-4 md:grid-cols-2 md:p-5">
@@ -58,7 +88,7 @@ function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
 					<Stat label="Record" value={recordText(t.record)} foot={o ? `${o.remaining} to play` : undefined} />
 					{o ? (
 						<>
-							<Stat label="Make playoffs" value={oddsText(o.playoffs, sims)} foot={`Division ${oddsText(o.division, sims)}`} />
+							<Stat label="Make playoffs" value={oddsText(o.playoffs, sims)} foot={`Division ${oddsText(o.division, sims)}${o.plain ? ` · results alone ${oddsText(o.plain.playoffs, sims)}` : ""}`} />
 							<Stat label="Projected wins" value={o.projWins.toFixed(1)} />
 							<Stat label="No. 1 seed" value={oddsText(o.topSeed, sims)} />
 							<Stat label="Schedule left" value={o.sosRank ? `No. ${o.sosRank}` : "n/a"} foot={o.sosRank ? "1 is hardest" : "No games left"} />
@@ -71,6 +101,11 @@ function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
 						<OddsSpark history={o.history} sims={sims} />
 					</div>
 				)}
+				{t.under && <UnderTheHood u={t.under} />}
+				<div className="mt-4">
+					<p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Share this card</p>
+					<ShareMenu view={{ team: t.abbr, ...view }} stamp={view.stamp} text={`${t.nick}: I have them No. ${t.blogger}, the math has them No. ${t.math}.`} />
+				</div>
 			</div>
 
 			<div>
@@ -83,7 +118,7 @@ function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
 							<li key={g.week} className="flex items-center gap-3 px-3 py-2">
 								<span className="w-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Wk {g.week}</span>
 								<span className="min-w-0 flex-1 truncate">
-									{g.home ? "vs" : "at"} {teamInfo(g.opp).nick}
+									{g.home ? "vs" : "at"} {teamByAbbr(g.opp).nick}
 								</span>
 								<span className="font-semibold tabular-nums">
 									<span className="mr-1.5 inline-block w-4 text-center text-xs font-bold">{g.result}</span>
@@ -110,7 +145,7 @@ function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
 							<li key={g.week} className="flex items-center gap-3 px-3 py-2">
 								<span className="w-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Wk {g.week}</span>
 								<span className="min-w-0 flex-1 truncate">
-									{g.home ? "vs" : "at"} {teamInfo(g.opp).nick}
+									{g.home ? "vs" : "at"} {teamByAbbr(g.opp).nick}
 								</span>
 								<span className="flex w-28 items-center justify-end gap-2">
 									<span className="h-1.5 w-12 overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -133,12 +168,15 @@ function Detail({ t, sims }: { t: TeamDetail; sims: number }) {
  * All the teams, my rank beside the math's, each row opening into that team's rank history, results, upcoming
  * games and playoff odds. `#team-DEN` in the address opens a team, so a take is easy to link to.
  */
-export default function TeamTable({ teams, hot, sims }: { teams: TeamDetail[]; hot: number; sims: number }) {
+export default function TeamTable({ teams, hot, sims, week, model = "full", stamp }: { teams: TeamDetail[]; hot: number; sims: number; week: number; model?: "full" | "season"; stamp?: number }) {
 	const [open, setOpen] = useState<string | null>(null)
 
 	const fromHash = useCallback(() => {
+		// `#team-DEN` opens a team, and so does a shared `?team=DEN` or `?take=DEN` link.
 		const m = /^#team-([A-Za-z]{2,3})$/.exec(window.location.hash)
-		const abbr = m ? m[1].toUpperCase() : null
+		const q = new URLSearchParams(window.location.search)
+		const asked = m ? m[1] : q.get("team") ?? q.get("take")
+		const abbr = asked && /^[A-Za-z]{2,3}$/.test(asked) ? asked.toUpperCase() : null
 		if (abbr && teams.some((t) => t.abbr === abbr)) {
 			setOpen(abbr)
 			window.setTimeout(() => document.getElementById(`team-${abbr}`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 50)
@@ -227,7 +265,7 @@ export default function TeamTable({ teams, hot, sims }: { teams: TeamDetail[]; h
 									{isOpen && (
 										<tr id={panel} className="bg-muted/20">
 											<td colSpan={5} className="p-0">
-												<Detail t={r} sims={sims} />
+												<Detail t={r} sims={sims} view={{ week, model, stamp }} />
 											</td>
 										</tr>
 									)}

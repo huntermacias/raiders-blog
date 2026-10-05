@@ -91,3 +91,11 @@ export function teamInfo(name?: string | null): TeamInfo {
 		color: "#71717a",
 	}
 }
+
+const BY_ABBR = new Map(TEAMS.map((t) => [t.abbr, t]))
+
+/** Look a team up by its site abbreviation (LV, WAS...), with the same neutral fallback as `teamInfo`. */
+export function teamByAbbr(abbr?: string | null): TeamInfo {
+	const hit = abbr ? BY_ABBR.get(abbr) : undefined
+	return hit ?? teamInfo(abbr ? `${abbr}` : null)
+}

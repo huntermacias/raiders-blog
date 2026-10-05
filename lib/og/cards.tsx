@@ -11,6 +11,7 @@ import type { ReactElement } from "react"
 
 import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
+import { type MathCardSpec, renderMathCard } from "./mathCard"
 
 export const OG_WIDTH = 1200
 export const OG_HEIGHT = 630
@@ -61,6 +62,7 @@ export type CardSpec =
 			change?: number | null
 	  }
 	| LeagueCardSpec
+	| MathCardSpec
 	| {
 			type: "scoreboard"
 			season: number
@@ -515,6 +517,9 @@ export function renderCard(spec: CardSpec): ReactElement {
 
 		case "live":
 			return renderLiveCard(spec)
+
+		case "math":
+			return renderMathCard(spec)
 
 		case "scoreboard": {
 			const graded = spec.hits + spec.misses > 0
