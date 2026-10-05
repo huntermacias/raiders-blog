@@ -158,3 +158,77 @@ describe("renderCard for league specs", () => {
 		expect((await draw(mine)).bytes).toBeGreaterThan(5000)
 	})
 })
+
+// ---- invite and challenge cards -------------------------------------------------------------
+
+describe("the invite card", () => {
+	const future = (id: string, week: number, kickoff: string) => ({ ...game(id, week, 24, 17, null, null), awayTeam: "Las Vegas Raiders", homeTeam: "Indianapolis Colts", kickoff })
+	const now = Date.parse("2026-10-03T12:00:00Z")
+
+	it("is the default look for the league and names the next open game in Pacific time", () => {
+		const spec = buildLeagueSpec({ ...data(), games: [...games, future("g5", 5, "2026-10-11T20:25:00Z")] }, 2026, null, { now })!
+		expect(spec.kind).toBe("invite")
+		expect(spec.next).toEqual({
+			week: 5,
+			away: expect.objectContaining({ abbr: "LV" }),
+			home: expect.objectContaining({ abbr: "IND" }),
+			kickoff: "Sun 1:25 PM PT",
+		})
+	})
+
+	it("picks the soonest open game, skipping games already kicked off or graded", () => {
+		const gs = [future("g6", 6, "2026-10-18T20:25:00Z"), future("g5", 5, "2026-10-11T20:25:00Z"), future("g4", 4, "2026-10-01T20:25:00Z")]
+		expect(buildLeagueSpec({ ...data(), games: gs }, 2026, null, { now })!.next!.week).toBe(5)
+	})
+
+	it("has no next game when none is open", () => {
+		expect(buildLeagueSpec(data(), 2026, null, { now })!.next).toBeNull()
+	})
+
+	it("can still ask for the leaderboard look", () => {
+		expect(buildLeagueSpec(data(), 2026, null, { view: "board" })!.kind).toBe("board")
+		expect(buildLeagueSpec(data(), 2026, null, { view: "nonsense" })!.kind).toBe("invite")
+	})
+
+	it("draws with a game, without one, and for a one-player league", async () => {
+		const withGame = buildLeagueSpec({ ...data(), games: [...games, future("g5", 5, "2026-10-11T20:25:00Z")] }, 2026, null, { now })!
+		const without = buildLeagueSpec({ games: [], players: [], picks: [] }, 2026, null, { now })!
+		const solo = buildLeagueSpec({ games: [future("g5", 5, "2026-10-11T20:25:00Z")], players: [player("Ann", 0)], picks: [] }, 2026, null, { now })!
+		for (const spec of [withGame, without, solo]) {
+			const r = await draw(spec)
+			expect([r.width, r.height]).toEqual([1200, 630])
+			expect(r.bytes).toBeGreaterThan(5000)
+		}
+	})
+
+	it("draws the leaderboard look too", async () => {
+		const r = await draw(buildLeagueSpec(data(), 2026, null, { view: "board" })!)
+		expect([r.width, r.height]).toEqual([1200, 630])
+	})
+})
+
+describe("a challenge card", () => {
+	it("is a player's card marked as a challenge, with the same private-pick rules", () => {
+		const spec = buildLeagueSpec(data(), 2026, "ann", { challenge: true })!
+		expect(spec.challenge).toBe(true)
+		expect(spec.handle).toBe("Ann")
+		expect(spec.rank).toBe(1)
+		expect(buildLeagueSpec(data(), 2026, "ann")!.challenge).toBe(false)
+	})
+
+	it("is null for someone who isn't a player", () => {
+		expect(buildLeagueSpec(data(), 2026, "ghost", { challenge: true })).toBeNull()
+	})
+
+	it("draws for a ranked player, a brand-new player and a very long handle", async () => {
+		for (const [d, h] of [
+			[data(), "Ann"],
+			[{ games: [games[2]], players: [player("Ann", 0)], picks: [] } as LeagueData, "Ann"],
+			[{ ...data(), players: [player("SilverAndBlack16", 0), ...data().players] } as LeagueData, "SilverAndBlack16"],
+		] as [LeagueData, string][]) {
+			const r = await draw(buildLeagueSpec(d, 2026, h, { challenge: true })!)
+			expect([r.width, r.height]).toEqual([1200, 630])
+			expect(r.bytes).toBeGreaterThan(5000)
+		}
+	})
+})

@@ -5,6 +5,7 @@ import Link from "@/components/SiteLink"
 
 import { signed } from "@/lib/league"
 import { loadCreds } from "@/lib/league.client"
+import ChallengeLink from "@/components/league/ChallengeLink"
 
 export type RankLite = { lower: string; handle: string; rank: number; points: number; delta: number }
 
@@ -42,6 +43,7 @@ export default function YourRank({ rows, total }: { rows: RankLite[]; total: num
 					<span className="font-semibold text-foreground">{handle}</span>, you&rsquo;re in. You&rsquo;ll appear here after your first graded game.
 				</p>
 			)}
+			<ChallengeLink handle={me?.handle ?? handle} className="mt-2 block" />
 		</div>
 	)
 }

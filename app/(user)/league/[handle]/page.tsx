@@ -7,6 +7,7 @@ import { teamInfo } from "../../../../lib/nfl"
 import { loadLeague } from "../../../../lib/league.data"
 import { HANDLE_RE, buildProfile, oneDecimal, recordText, signed } from "../../../../lib/league"
 import { cn } from "../../../../lib/utils"
+import ChallengeLink from "../../../../components/league/ChallengeLink"
 
 export const dynamic = "force-dynamic"
 
@@ -83,9 +84,12 @@ export default async function LeagueProfile({ params }: { params: { handle: stri
 						In the league and waiting on a first graded game{pending > 0 ? `. ${pending} pick${pending === 1 ? " is" : "s are"} in.` : "."}
 					</p>
 				)}
-				<a href={shareHref} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
-					Share this profile<span className="sr-only"> (opens in a new tab)</span>
-				</a>
+				<div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+					<a href={shareHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
+						Share this profile<span className="sr-only"> (opens in a new tab)</span>
+					</a>
+					<ChallengeLink handle={player.handle} />
+				</div>
 			</div>
 
 			{row && (

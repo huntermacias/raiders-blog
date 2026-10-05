@@ -389,6 +389,17 @@ export function validatePick(
 
 export const HANDLE_RE = /^[A-Za-z0-9_]{3,16}$/
 
+/**
+ * A player's personal invite link. The page shows who is challenging, the share card is built around
+ * their numbers, and the utm tags credit the sign-up to that player (first touch wins, so a friend who
+ * joins from this link is recorded as coming from it). These links are shared off the site, so tagging
+ * them is right; links inside the site stay untagged.
+ */
+export function challengeUrl(origin: string, handle: string): string {
+	const h = encodeURIComponent(handle)
+	return `${origin}/league?challenge=${h}&utm_source=challenge&utm_medium=player&utm_campaign=${h.toLowerCase()}`
+}
+
 const RESERVED = new Set([
 	"admin",
 	"administrator",

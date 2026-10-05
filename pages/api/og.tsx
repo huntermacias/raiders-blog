@@ -181,7 +181,10 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 	if (type === "league") {
 		// League documents have dotted ids (private in Sanity), so this needs the token client.
 		const data = normalizeLeagueData(await client.fetch(LEAGUE_QUERY, { season: SEASON }))
-		return buildLeagueSpec(data, SEASON, first(query.handle))
+		// A challenge link carries the challenger's handle; an unknown one still gets the plain invite.
+		const challenger = first(query.challenge)
+		if (challenger) return buildLeagueSpec(data, SEASON, challenger, { challenge: true }) ?? buildLeagueSpec(data, SEASON)
+		return buildLeagueSpec(data, SEASON, first(query.handle), { view: first(query.view) })
 	}
 
 	if (type === "live") {
@@ -225,6 +228,8 @@ function cacheFor(spec: CardSpec): string {
 		if (spec.state === "in") return "public, s-maxage=20, stale-while-revalidate=40"
 		if (spec.state === "pre") return "public, s-maxage=300, stale-while-revalidate=900"
 	}
+	// The league cards show standings and the open game, and the pages stamp their links hourly.
+	if (spec.type === "league") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
 

@@ -174,5 +174,29 @@ describe("/api/og", () => {
 			await handler(get({ type: "league" }), res)
 			expect(res.redirectedTo).toBe("/og-default-v2.png")
 		})
+
+		it("renders a challenge card for a player", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league", challenge: "ANN" }), res)
+			expect(res.headers["Content-Type"]).toBe("image/png")
+			expect(res.headers["Cache-Control"]).toContain("s-maxage=3600")
+		})
+
+		it("gives a challenge link for an unknown or malformed challenger the plain invite card, not the default image", async () => {
+			for (const challenge of ["ghost", "../../x"]) {
+				tokenFetch.mockResolvedValueOnce(leagueData)
+				const res = mockRes()
+				await handler(get({ type: "league", challenge }), res)
+				expect(res.headers["Content-Type"]).toBe("image/png")
+			}
+		})
+
+		it("renders the leaderboard look on request", async () => {
+			tokenFetch.mockResolvedValueOnce(leagueData)
+			const res = mockRes()
+			await handler(get({ type: "league", view: "board" }), res)
+			expect(res.headers["Content-Type"]).toBe("image/png")
+		})
 	})
 })

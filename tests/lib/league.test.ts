@@ -355,3 +355,21 @@ describe("ids and data shaping", () => {
 		expect(d.picks).toEqual([])
 	})
 })
+
+describe("challengeUrl", () => {
+	it("builds a tagged link that credits the sign-up to the player", async () => {
+		const { challengeUrl } = await import("../../lib/league")
+		const u = new URL(challengeUrl("https://www.raidersrundown.com", "Silver_Black"))
+		expect(u.pathname).toBe("/league")
+		expect(u.searchParams.get("challenge")).toBe("Silver_Black")
+		expect(u.searchParams.get("utm_source")).toBe("challenge")
+		expect(u.searchParams.get("utm_medium")).toBe("player")
+		expect(u.searchParams.get("utm_campaign")).toBe("silver_black")
+	})
+
+	it("keeps a hostile handle from adding parameters", async () => {
+		const { challengeUrl } = await import("../../lib/league")
+		const u = new URL(challengeUrl("https://x.test", "a&utm_source=evil"))
+		expect(u.searchParams.get("utm_source")).toBe("challenge")
+	})
+})

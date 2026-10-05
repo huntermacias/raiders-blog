@@ -1,10 +1,17 @@
-// The share cards for the Beat the Blogger league (1200x630). Two looks:
+// The share cards for the Beat the Blogger league (1200x630). Four looks:
 //
-//   the league's own card: the big title on the left and, on the right, the leaderboard as it stands
-//   with the blogger sitting in it among the players, so a link to /league shows who is ahead of me.
+//   the invite card (a plain link to /league): the big title and a "Join free" button on the left and,
+//   on the right, this week's game with blank score boxes waiting to be filled, so the card is the
+//   invitation: here is the game, guess the score.
+//
+//   the leaderboard card (`view=board`): the title on the left and, on the right, the leaderboard as it
+//   stands with the blogger sitting in it among the players.
 //
 //   a player's card: their handle, rank and numbers, and a chip for every graded game saying whether
 //   they beat me, lost to me or tied me that week.
+//
+//   a challenge card (a player's own invite link): the same numbers, framed as "think you can out-pick
+//   them?" with a join button instead of the chips.
 //
 // buildLeagueSpec turns the league's data into a small plain spec and renderLeagueCard turns the spec
 // into JSX, so both are testable without Sanity or a network. Satori only understands a flexbox subset
@@ -12,7 +19,8 @@
 
 import type { ReactElement } from "react"
 
-import { HANDLE_RE, type LeagueData, bloggerLine, buildProfile, buildStandings, gradedWeeks } from "../league"
+import { HANDLE_RE, type LeagueData, bloggerLine, buildProfile, buildStandings, gradedWeeks, openGames } from "../league"
+import { teamInfo } from "../nfl"
 
 const W = 1200
 const H = 630
@@ -41,11 +49,26 @@ export type LeagueBoardRow = {
 
 export type LeagueChip = { week: number; vs: "W" | "L" | "T" }
 
+/** The next game open for picks, shown on the invite card. */
+export type LeagueNextGame = {
+	week: number
+	away: { abbr: string; nick: string; color: string }
+	home: { abbr: string; nick: string; color: string }
+	/** "Sun 1:25 PM PT" */
+	kickoff: string
+}
+
 export type LeagueCardSpec = {
 	type: "league"
 	season: number
 	/** Set for a player's card; absent for the league's own card. */
 	handle?: string | null
+	/** League card only: "invite" (the default) or "board" (the leaderboard look). */
+	kind?: "invite" | "board"
+	/** Player card only: frame it as that player's challenge to the viewer. */
+	challenge?: boolean
+	/** League invite card: the next game open for picks, if there is one. */
+	next?: LeagueNextGame | null
 	rank?: number | null
 	ranked?: number | null
 	points?: number | null
@@ -70,8 +93,42 @@ const BOARD_PLAYERS = 5
 const BOARD_ROWS = 6
 const MAX_CHIPS = 8
 
+export type LeagueSpecOptions = {
+	/** Frame a player's card as their challenge to the viewer. */
+	challenge?: boolean
+	/** "board" asks for the leaderboard look instead of the invite. */
+	view?: string | null
+	/** The clock, for which game is next. Defaults to now. */
+	now?: number
+}
+
+const PT = "America/Los_Angeles"
+
+/** "Sun 1:25 PM PT", or "" for a kickoff that isn't a date. */
+export function kickoffLabel(iso: string): string {
+	const d = new Date(iso)
+	if (Number.isNaN(d.getTime())) return ""
+	const day = d.toLocaleDateString("en-US", { weekday: "short", timeZone: PT })
+	const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: PT })
+	return `${day} ${time} PT`
+}
+
+/** The soonest game still open for picks, in the shape the card draws. */
+export function nextGameOf(data: LeagueData, now: number): LeagueNextGame | null {
+	const g = openGames(data.games, now)[0]
+	if (!g) return null
+	const away = teamInfo(g.awayTeam)
+	const home = teamInfo(g.homeTeam)
+	return {
+		week: g.week,
+		away: { abbr: away.abbr, nick: away.nick, color: away.color },
+		home: { abbr: home.abbr, nick: home.nick, color: home.color },
+		kickoff: kickoffLabel(g.kickoff),
+	}
+}
+
 /** The card's spec for the league, or for one player when `handle` is given. Null for a handle that isn't a player. */
-export function buildLeagueSpec(data: LeagueData, season: number, handle?: string | null): LeagueCardSpec | null {
+export function buildLeagueSpec(data: LeagueData, season: number, handle?: string | null, opts: LeagueSpecOptions = {}): LeagueCardSpec | null {
 	const weeks = gradedWeeks(data.games)
 	const week = weeks.length ? weeks[weeks.length - 1] : null
 
@@ -85,7 +142,15 @@ export function buildLeagueSpec(data: LeagueData, season: number, handle?: strin
 			if (at === -1) at = board.length
 			board.splice(at, 0, { rank: null, handle: "The blogger", points: blogger.points, blogger: true })
 		}
-		return { type: "league", season, players: data.players.length, week, board: board.slice(0, BOARD_ROWS) }
+		return {
+			type: "league",
+			season,
+			kind: opts.view === "board" ? "board" : "invite",
+			players: data.players.length,
+			week,
+			board: board.slice(0, BOARD_ROWS),
+			next: nextGameOf(data, opts.now ?? Date.now()),
+		}
 	}
 
 	if (!HANDLE_RE.test(handle)) return null
@@ -101,6 +166,7 @@ export function buildLeagueSpec(data: LeagueData, season: number, handle?: strin
 		type: "league",
 		season,
 		handle: player.handle,
+		challenge: opts.challenge === true,
 		rank: row?.rank ?? null,
 		ranked,
 		points: row?.points ?? null,
@@ -280,6 +346,128 @@ function LeagueOwn({ spec }: { spec: LeagueCardSpec }) {
 	)
 }
 
+// ---- the invite card -------------------------------------------------------------------------
+
+/** A team's colour as an accent bar, unless it would vanish into the dark card. */
+function accent(hex: string): string {
+	const m = /^#([0-9a-f]{6})$/i.exec(hex)
+	if (!m) return SILVER
+	const n = parseInt(m[1], 16)
+	const lum = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255
+	return lum < 0.28 ? SILVER : hex
+}
+
+function Side({ abbr, nick, color }: { abbr: string; nick: string; color: string }) {
+	return (
+		<div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
+			<div style={{ display: "flex", fontFamily: "Anton", fontSize: 84, lineHeight: 1.0, color: WHITE }}>{clip(abbr, 4)}</div>
+			<div style={{ display: "flex", marginTop: 6, fontFamily: "Oswald", fontWeight: 500, fontSize: 19, letterSpacing: 4, color: DIM, ...caps }}>{clip(nick, 12)}</div>
+			<div style={{ display: "flex", width: 64, height: 5, marginTop: 12, borderRadius: 3, backgroundColor: accent(color) }} />
+		</div>
+	)
+}
+
+function Blank() {
+	return (
+		<div
+			style={{
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				width: 132,
+				height: 92,
+				borderRadius: 14,
+				border: `3px solid ${SILVER}`,
+				backgroundColor: BG,
+				fontFamily: "Anton",
+				fontSize: 66,
+				color: DIM,
+			}}
+		>
+			?
+		</div>
+	)
+}
+
+function Worth({ pts, label }: { pts: string; label: string }) {
+	return (
+		<div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
+			<div style={{ display: "flex", fontFamily: "Anton", fontSize: 38, lineHeight: 1.05, color: WHITE }}>{pts}</div>
+			<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 15, letterSpacing: 3, color: DIM, ...caps }}>{label}</div>
+		</div>
+	)
+}
+
+function JoinButton({ text, note }: { text: string; note: string }) {
+	return (
+		<div style={{ display: "flex", alignItems: "center" }}>
+			<div style={{ display: "flex", padding: "13px 32px", backgroundColor: WHITE, color: BG, fontFamily: "Oswald", fontWeight: 700, fontSize: 28, letterSpacing: 4, ...caps }}>{text}</div>
+			<div style={{ display: "flex", marginLeft: 22, fontFamily: "Oswald", fontWeight: 500, fontSize: 20, letterSpacing: 3, color: DIM, ...caps }}>{note}</div>
+		</div>
+	)
+}
+
+function LeagueInvite({ spec }: { spec: LeagueCardSpec }) {
+	const next = spec.next ?? null
+	const players = typeof spec.players === "number" && spec.players > 0 ? spec.players : null
+	const note = players ? `${players} ${players === 1 ? "player" : "players"}  ·  no email` : "Free  ·  no email"
+	return (
+		<Frame>
+			<div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 640, padding: "58px 20px 50px 72px" }}>
+				<Eyebrow text={`Free to play  ·  ${spec.season}`} />
+				<div style={{ display: "flex", flexDirection: "column" }}>
+					<div style={{ display: "flex", fontFamily: "Anton", fontSize: 128, lineHeight: 0.98, color: WHITE, ...caps }}>Beat the</div>
+					<div style={{ display: "flex", fontFamily: "Anton", fontSize: 128, lineHeight: 0.98, color: SILVER, ...caps }}>Blogger</div>
+					<div style={{ display: "flex", marginTop: 20, fontFamily: "Oswald", fontWeight: 600, fontSize: 27, letterSpacing: 3, color: BRIGHT, ...caps }}>Pick the score. Out-pick me.</div>
+					<div style={{ display: "flex", marginTop: 24 }}>
+						<JoinButton text="Join free" note={note} />
+					</div>
+				</div>
+				<Brand />
+			</div>
+
+			<div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, padding: "44px 64px 44px 0" }}>
+				<div style={{ display: "flex", flexDirection: "column", backgroundColor: PANEL, border: `2px solid ${LINE}`, borderRadius: 20, padding: "20px 22px 18px 22px" }}>
+					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 12, borderBottom: `1px solid ${LINE}` }}>
+						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: 20, letterSpacing: 5, color: SILVER, ...caps }}>{next ? "This week" : "Every week"}</div>
+						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 18, letterSpacing: 4, color: DIM, ...caps }}>{next ? `Week ${next.week}` : "New picks"}</div>
+					</div>
+
+					{next ? (
+						<div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 20 }}>
+							<div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+								<Side abbr={next.away.abbr} nick={next.away.nick} color={next.away.color} />
+								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: 22, letterSpacing: 4, color: DIM }}>AT</div>
+								<Side abbr={next.home.abbr} nick={next.home.nick} color={next.home.color} />
+							</div>
+							{next.kickoff ? <div style={{ display: "flex", marginTop: 14, fontFamily: "Oswald", fontWeight: 600, fontSize: 25, letterSpacing: 3, color: BRIGHT, ...caps }}>{next.kickoff}</div> : <div style={{ display: "flex" }} />}
+						</div>
+					) : (
+						<div style={{ display: "flex", justifyContent: "center", padding: "34px 20px 30px 20px", textAlign: "center", fontFamily: "Oswald", fontWeight: 500, fontSize: 24, letterSpacing: 3, color: DIM, ...caps }}>
+							Picks open the moment the next game is set
+						</div>
+					)}
+
+					<div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 16 }}>
+						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 16, letterSpacing: 4, color: DIM, ...caps }}>Your pick</div>
+						<div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+							<Blank />
+							<div style={{ display: "flex", width: 30, height: 6, margin: "0 18px", backgroundColor: SILVER }} />
+							<Blank />
+						</div>
+					</div>
+
+					<div style={{ display: "flex", marginTop: 18, paddingTop: 12, borderTop: `1px solid ${LINE}` }}>
+						<Worth pts="+10" label="Winner" />
+						<Worth pts="+10" label="Margin" />
+						<Worth pts="+5" label="Exact" />
+					</div>
+				</div>
+			</div>
+		</Frame>
+	)
+}
+
 // ---- a player's card -------------------------------------------------------------------------
 
 function Stat({ label, value, tint }: { label: string; value: string; tint?: string }) {
@@ -326,19 +514,30 @@ function LeaguePlayer({ spec }: { spec: LeagueCardSpec }) {
 		delta === null ? "Picks are in. Waiting on the first final." : delta > 0 ? `${delta} ${delta === 1 ? "point" : "points"} ahead of the blogger` : delta < 0 ? `${-delta} ${delta === -1 ? "point" : "points"} behind the blogger` : "Dead even with the blogger"
 	const tagColor = delta === null ? DIM : delta > 0 ? HIT : delta < 0 ? SILVER : BRIGHT
 	const top = graded && (spec.rank as number) <= 3
+	const challenge = spec.challenge === true
 	return (
 		<Frame>
 			<div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1, padding: "58px 20px 50px 72px" }}>
-				<Eyebrow text={`Beat the Blogger  ·  ${spec.season}`} />
+				<Eyebrow text={challenge ? `A challenge  ·  Beat the Blogger` : `Beat the Blogger  ·  ${spec.season}`} />
 				<div style={{ display: "flex", flexDirection: "column" }}>
 					<div style={{ display: "flex", fontFamily: "Anton", fontSize: size, lineHeight: 1.0, letterSpacing: 0.5, color: WHITE, ...caps }}>{handle}</div>
-					<div style={{ display: "flex", marginTop: 12, fontFamily: "Oswald", fontWeight: 600, fontSize: 26, letterSpacing: 3, color: tagColor, ...caps }}>{tag}</div>
+					<div style={{ display: "flex", marginTop: 12, fontFamily: "Oswald", fontWeight: 600, fontSize: 26, letterSpacing: 3, color: challenge ? BRIGHT : tagColor, ...caps }}>
+						{challenge ? "Think you can out-pick them?" : tag}
+					</div>
 					<div style={{ display: "flex", marginTop: 26 }}>
 						{typeof spec.points === "number" ? <Stat label="Points" value={String(spec.points)} /> : <div style={{ display: "flex" }} />}
 						{vs ? <Stat label="Vs the blogger" value={`${vs.w}-${vs.l}${vs.t > 0 ? `-${vs.t}` : ""}`} /> : <div style={{ display: "flex" }} />}
 						{typeof spec.correct === "number" && typeof spec.games === "number" ? <Stat label="Winners right" value={`${spec.correct}/${spec.games}`} /> : <div style={{ display: "flex" }} />}
 					</div>
-					{chips.length > 0 ? <div style={{ display: "flex", marginTop: 22 }}>{chips.map((c, i) => <ChipTile key={`${c.week}-${i}`} chip={c} />)}</div> : <div style={{ display: "flex" }} />}
+					{challenge ? (
+						<div style={{ display: "flex", marginTop: 26 }}>
+							<JoinButton text="Take them on" note="Free  ·  no email" />
+						</div>
+					) : chips.length > 0 ? (
+						<div style={{ display: "flex", marginTop: 22 }}>{chips.map((c, i) => <ChipTile key={`${c.week}-${i}`} chip={c} />)}</div>
+					) : (
+						<div style={{ display: "flex" }} />
+					)}
 				</div>
 				<Brand />
 			</div>
@@ -363,6 +562,23 @@ function LeaguePlayer({ spec }: { spec: LeagueCardSpec }) {
 						<div style={{ display: "flex", fontFamily: "Anton", fontSize: (spec.rank as number) >= 100 ? 150 : 190, lineHeight: 1.05, color: WHITE }}>{spec.rank}</div>
 						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 26, letterSpacing: 4, color: SILVER, ...caps }}>{spec.ranked ? `of ${spec.ranked}` : ""}</div>
 					</div>
+				) : challenge ? (
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							justifyContent: "center",
+							width: 270,
+							height: 360,
+							border: `4px solid ${SILVER}`,
+							borderRadius: 6,
+							backgroundColor: PANEL,
+						}}
+					>
+						<div style={{ display: "flex", fontFamily: "Anton", fontSize: 150, lineHeight: 1.05, color: WHITE }}>VS</div>
+						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 26, letterSpacing: 4, color: SILVER, ...caps }}>Your move</div>
+					</div>
 				) : (
 					<RRMark size={210} />
 				)}
@@ -372,5 +588,6 @@ function LeaguePlayer({ spec }: { spec: LeagueCardSpec }) {
 }
 
 export function renderLeagueCard(spec: LeagueCardSpec): ReactElement {
-	return spec.handle ? <LeaguePlayer spec={spec} /> : <LeagueOwn spec={spec} />
+	if (spec.handle) return <LeaguePlayer spec={spec} />
+	return spec.kind === "board" ? <LeagueOwn spec={spec} /> : <LeagueInvite spec={spec} />
 }
