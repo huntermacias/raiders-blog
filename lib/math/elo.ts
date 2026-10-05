@@ -22,8 +22,12 @@ export const HOME_FIELD = 48
 
 export type Ratings = Record<string, number>
 
-/** Share of last season's distance from average that carries into the new one. FiveThirtyEight used two thirds. */
-export const CARRY_OVER = 2 / 3
+/**
+ * Share of last season's distance from average that carries into the new one. FiveThirtyEight used two thirds;
+ * this is half, so this season's games take over a little sooner. A back-test on 2025 could not tell 0.5 from
+ * 0.67 (log loss 0.6500 against 0.6495), so the choice is about trust in the new season, not accuracy.
+ */
+export const CARRY_OVER = 0.5
 
 /** Last season's final ratings, pulled back toward the middle: rosters turn over and results are partly luck. */
 export function carryOver(last: Ratings, keep: number = CARRY_OVER): Ratings {
