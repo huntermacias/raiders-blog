@@ -2,6 +2,7 @@
 // league documents have dotted ids, which Sanity keeps out of the public API.
 
 import { client } from "./sanity.client"
+import { withEspnFinals } from "./live/service"
 import { SEASON } from "./predictions"
 import { LEAGUE_QUERY, type LeagueData, normalizeLeagueData } from "./league"
 
@@ -11,7 +12,9 @@ export const EMPTY_LEAGUE: LeagueData = { games: [], players: [], picks: [] }
 export async function loadLeague(): Promise<{ data: LeagueData; ok: boolean }> {
 	try {
 		const raw = await client.fetch(LEAGUE_QUERY, { season: SEASON })
-		return { data: normalizeLeagueData(raw), ok: true }
+		const data = normalizeLeagueData(raw)
+		// ESPN fills in a final score or kickoff time that is not in Studio yet, so the standings never wait on typing.
+		return { data: { ...data, games: await withEspnFinals(data.games) }, ok: true }
 	} catch (err) {
 		console.log("league query failed", (err as { message?: string })?.message ?? err)
 		return { data: EMPTY_LEAGUE, ok: false }

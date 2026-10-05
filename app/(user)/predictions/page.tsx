@@ -2,6 +2,7 @@ import { groq } from "next-sanity"
 import type { Metadata } from "next"
 
 import { client } from "../../../lib/sanity.client"
+import { withEspnFinals } from "../../../lib/live/service"
 import {
 	SEASON,
 	type FlagPlant,
@@ -95,7 +96,7 @@ function SectionHeading({ id, title, subtitle }: { id: string; title: string; su
 
 export default async function PredictionsPage() {
 	const [picks, season, flags]: [GamePrediction[], SeasonDoc | null, FlagPlant[]] = await Promise.all([
-		client.fetch(picksQuery, { season: SEASON }),
+		client.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])),
 		client.fetch(seasonQuery, { season: SEASON }),
 		client.fetch(flagsQuery, { season: SEASON }),
 	])

@@ -22,6 +22,7 @@ import { Resvg } from "@resvg/resvg-js"
 import { readClient } from "../../lib/sanity.client"
 import urlFor from "../../lib/urlFor"
 import { teamInfo } from "../../lib/nfl"
+import { withEspnFinals } from "../../lib/live/service"
 import { buildBoards, raidersRow, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
 import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
@@ -148,8 +149,9 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 	if (type === "pick") {
 		const id = first(query.id)
 		if (!DOC_ID.test(id) || id.startsWith("drafts.")) return null
-		const p: GamePrediction | null = await readClient.fetch(pickQuery, { id })
-		if (!p) return null
+		const raw: GamePrediction | null = await readClient.fetch(pickQuery, { id })
+		if (!raw) return null
+		const [p] = await withEspnFinals([raw])
 		const away = teamInfo(p.awayTeam)
 		const home = teamInfo(p.homeTeam)
 		const grade = gradeGame(p)
@@ -180,7 +182,8 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 
 	if (type === "league") {
 		// League documents have dotted ids (private in Sanity), so this needs the token client.
-		const data = normalizeLeagueData(await client.fetch(LEAGUE_QUERY, { season: SEASON }))
+		const raw = normalizeLeagueData(await client.fetch(LEAGUE_QUERY, { season: SEASON }))
+		const data = { ...raw, games: await withEspnFinals(raw.games) }
 		// A challenge link carries the challenger's handle; an unknown one still gets the plain invite.
 		const challenger = first(query.challenge)
 		if (challenger) return buildLeagueSpec(data, SEASON, challenger, { challenge: true }) ?? buildLeagueSpec(data, SEASON)
@@ -203,7 +206,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 
 	if (type === "scoreboard") {
 		const [picks, flags]: [GamePrediction[], FlagPlant[]] = await Promise.all([
-			readClient.fetch(picksQuery, { season: SEASON }),
+			readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])),
 			readClient.fetch(flagsQuery, { season: SEASON }),
 		])
 		const s = summarize(picks ?? [])

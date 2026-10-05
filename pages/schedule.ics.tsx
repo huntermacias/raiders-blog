@@ -3,6 +3,7 @@ import { groq } from "next-sanity"
 
 import { buildCalendar, calendarFilename, parseAlarm, parseWeek } from "../lib/calendar"
 import { type GamePrediction, SEASON } from "../lib/predictions"
+import { withEspnFinals } from "../lib/live/service"
 import { type ScheduleGame, joinSchedule } from "../lib/schedule"
 import { readClient as client } from "../lib/sanity.client"
 
@@ -32,7 +33,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res, query }) => 
 	let doc: { games?: ScheduleGame[] } | null
 	let picks: GamePrediction[] | null
 	try {
-		;[doc, picks] = await Promise.all([client.fetch(scheduleQuery, { season: SEASON }), client.fetch(picksQuery, { season: SEASON })])
+		;[doc, picks] = await Promise.all([client.fetch(scheduleQuery, { season: SEASON }), client.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? []))])
 	} catch {
 		// Better no answer than an empty calendar: a subscribed app keeps the events it already has
 		// when a refresh fails, but it would delete them all on a valid empty feed.
