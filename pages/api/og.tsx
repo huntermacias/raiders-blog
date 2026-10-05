@@ -8,6 +8,7 @@
 //   /api/og?type=league[&handle=<league handle>]
 //   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
 //   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
+//   /api/og?type=lab&slug=week-N[&view=drive][&drive=N]   (a game lab: the win-probability story, or the best drive)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -33,6 +34,8 @@ import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
 import { buildLiveSpec } from "../../lib/og/liveCard"
 import { buildLeagueSpec } from "../../lib/og/leagueCard"
 import { buildMathSpec } from "../../lib/og/mathCard"
+import { buildLabSpec } from "../../lib/og/labCard"
+import { getGameBySlug, getSeason } from "../../lib/lab/data"
 import { loadMath } from "../../lib/math/server"
 import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
 
@@ -214,6 +217,15 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return page.report ? buildMathSpec(page.report, { team: first(query.team), take: first(query.take) }) : null
 	}
 
+	if (type === "lab") {
+		const slug = first(query.slug)
+		if (!slug || !SLUG.test(slug)) return null
+		const game = getGameBySlug(slug)
+		if (!game) return null
+		const drive = Number(first(query.drive))
+		return buildLabSpec(game, getSeason().team, { view: first(query.view), drive: Number.isInteger(drive) && drive > 0 ? drive : null })
+	}
+
 	if (type === "scoreboard") {
 		const [picks, flags]: [GamePrediction[], FlagPlant[]] = await Promise.all([
 			readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])),
@@ -242,6 +254,8 @@ function cacheFor(spec: CardSpec): string {
 		if (spec.state === "pre") return "public, s-maxage=300, stale-while-revalidate=900"
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
+	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
+	if (spec.type === "lab") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

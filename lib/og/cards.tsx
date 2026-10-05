@@ -9,6 +9,7 @@
 
 import type { ReactElement } from "react"
 
+import { type LabCardSpec, renderLabCard } from "./labCard"
 import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
 import { type MathCardSpec, renderMathCard } from "./mathCard"
@@ -63,6 +64,7 @@ export type CardSpec =
 	  }
 	| LeagueCardSpec
 	| MathCardSpec
+	| LabCardSpec
 	| {
 			type: "scoreboard"
 			season: number
@@ -520,6 +522,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 
 		case "math":
 			return renderMathCard(spec)
+		case "lab":
+			return renderLabCard(spec)
 
 		case "scoreboard": {
 			const graded = spec.hits + spec.misses > 0

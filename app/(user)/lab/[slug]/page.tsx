@@ -36,13 +36,21 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 	const low = clockAt(story.low.el)
 	const pageTitle = `${title(g)} | Win probability replay | Raiders Rundown`
 	const description = `Replay the ${g.result === "W" ? "win" : "loss"} ${g.home ? "against" : "at"} the ${g.oppName} play by play. The Raiders' win probability bottomed out at ${pct(story.low.p)} in ${low.q}, ${low.clock}.`
-	const url = `${SITE_URL}/lab/${gameSlug(g)}`
+	const slug = gameSlug(g)
+	const url = `${SITE_URL}/lab/${slug}`
+	// The share card is drawn by /api/og from the same data. The lab is static, so the stamp is the data's own
+	// date: a refreshed data file gives a new URL and the networks re-scrape a fresh card.
+	const stamp = Date.parse(getSeason().generatedAt) || 0
+	const card = `${SITE_URL}/api/og?type=lab&slug=${slug}&v=${stamp}`
+	const drive = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=drive&v=${stamp}`
 	return {
 		title: pageTitle,
 		description,
 		alternates: { canonical: url },
-		openGraph: { type: "article", title: pageTitle, description, url, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] },
-		twitter: { card: "summary_large_image", title: pageTitle, description, images: [`${SITE_URL}/og-default-v2.png`] },
+		openGraph: { type: "article", title: pageTitle, description, url, siteName: "Raiders Rundown", images: [{ url: card, width: 1200, height: 630, alt: `${title(g)}: the win probability story` }, { url: drive, width: 1200, height: 630, alt: `${title(g)}: the Raiders' best drive` }] },
+		twitter: { card: "summary_large_image", title: pageTitle, description, images: [card] },
+		// Next 13.2 only writes og:image:url from openGraph.images; most scrapers read og:image.
+		other: { "og:image": card },
 	}
 }
 
