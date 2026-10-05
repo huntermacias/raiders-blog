@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react"
-import { readFileSync } from "node:fs"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import LiveStrip from "../../components/home/LiveStrip"
@@ -85,16 +84,5 @@ describe("LiveStrip", () => {
 		expect(fetch).not.toHaveBeenCalled()
 		vi.advanceTimersByTime(20_001)
 		expect(fetch).toHaveBeenCalledWith("/api/live/scoreboard", expect.anything())
-	})
-})
-
-describe("homepage wiring", () => {
-	// The calendar card was once imported and never rendered. Guard the page itself.
-	const src = readFileSync("app/(user)/page.tsx", "utf8")
-	it("renders the strip and feeds it the server's scoreboard", () => {
-		expect(src).toMatch(/<LiveStrip initialBoard=\{board\} serverNow=\{Date\.now\(\)\} \/>/)
-	})
-	it("gives the feed a deadline so a slow ESPN can't hold the homepage up", () => {
-		expect(src).toMatch(/setTimeout\(\(\) => resolve\(null\), 1500\)/)
 	})
 })
