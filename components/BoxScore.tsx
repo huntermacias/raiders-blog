@@ -10,6 +10,8 @@ type Props = {
 	teamStats?: TeamStatRow[]
 	quarterScores?: QuarterScoreRow[]
 	playerStats?: PlayerStatRow[]
+	/** True when some of these rows came from ESPN's box score. */
+	fromEspn?: boolean
 }
 
 function QuarterScoreboard({ opponent, quarterScores }: { opponent: string; quarterScores: QuarterScoreRow[] }) {
@@ -85,7 +87,7 @@ function StatBar({ stat, raiders, opponent }: TeamStatRow) {
 	)
 }
 
-function BoxScore({ opponent, homeAway, raidersScore, opponentScore, teamStats, quarterScores, playerStats }: Props) {
+function BoxScore({ opponent, homeAway, raidersScore, opponentScore, teamStats, quarterScores, playerStats, fromEspn }: Props) {
 	const raidersWon = raidersScore > opponentScore
 	const grouped = (playerStats ?? []).reduce<Record<string, PlayerStatRow[]>>((acc, row) => {
 		acc[row.category] = acc[row.category] ?? []
@@ -153,6 +155,7 @@ function BoxScore({ opponent, homeAway, raidersScore, opponentScore, teamStats, 
 					</div>
 				</>
 			)}
+			{fromEspn && <p className="border-t border-border/60 px-6 py-2 text-[11px] text-muted-foreground">Box score data from ESPN.</p>}
 		</Card>
 	)
 }

@@ -68,6 +68,22 @@ export default defineType({
 			of: [{type: 'reference', to: {type: 'category'}}],
 		}),
 		defineField({
+			name: 'autoStats',
+			title: 'Pull stats from ESPN automatically',
+			description:
+				'On (the default): once the game is final, the box score fills itself in - team stats, quarter scores and Raiders player stats - with nothing to type. Anything you add in the three lists below wins over ESPN for the same stat, quarter or player, and extra rows you add are kept. Turn off to show only what you typed.',
+			type: 'boolean',
+			initialValue: true,
+		}),
+		defineField({
+			name: 'espnGameId',
+			title: 'ESPN game id (optional)',
+			description:
+				'Only needed if the automatic match by date and opponent ever picks the wrong game. It is the number at the end of the ESPN game page URL, e.g. 401872976.',
+			type: 'string',
+			hidden: ({document}) => document?.autoStats === false,
+		}),
+		defineField({
 			name: 'teamStats',
 			title: 'Team stats',
 			description: 'Head-to-head team stat lines, e.g. "Total Yards" / 412 / 358',

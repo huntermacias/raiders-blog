@@ -25,6 +25,8 @@ import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import LabTake from "../../../../components/games/LabTake"
 import { labGameFor } from "../../../../lib/lab/match"
+import { getReportStats } from "../../../../lib/live/service"
+import { mergeStats } from "../../../../lib/live/gamestats"
 import { Badge } from "@/components/ui/badge"
 import type { PickKey } from "../../../../lib/predictions"
 
@@ -126,6 +128,10 @@ async function GameReportPage({ params: { slug } }: Props) {
 		groq`*[_type=="gamePrediction" && gameReport._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
 		{ id: game._id }
 	)
+
+	// ESPN's box score once the game is final, with anything typed in Studio laid over it (see lib/live/gamestats.ts).
+	const auto = game.autoStats === false ? null : await getReportStats(game)
+	const stats = mergeStats(game, auto)
 
 	const won = game.raidersScore > game.opponentScore
 	// The Lab's replay of this game, found by opponent and date, if the Lab has it yet.
@@ -258,12 +264,13 @@ async function GameReportPage({ params: { slug } }: Props) {
 					homeAway={game.homeAway}
 					raidersScore={game.raidersScore}
 					opponentScore={game.opponentScore}
-					teamStats={game.teamStats}
-					quarterScores={game.quarterScores}
-					playerStats={game.playerStats}
+					teamStats={stats.teamStats}
+					quarterScores={stats.quarterScores}
+					playerStats={stats.playerStats}
+					fromEspn={stats.fromEspn}
 				/>
 
-				<GameLeaders playerStats={game.playerStats} />
+				<GameLeaders playerStats={stats.playerStats} />
 			</div>
 
 			{labGame && (

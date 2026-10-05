@@ -149,6 +149,8 @@ interface GameReport extends Base {
 	mainImage: Image;
 	author: Author;
 	categories: Category[];
+	autoStats?: boolean;
+	espnGameId?: string;
 	teamStats: TeamStatRow[];
 	quarterScores?: QuarterScoreRow[];
 	playerStats: PlayerStatRow[];
