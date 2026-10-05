@@ -2,6 +2,7 @@ import { teamInfo } from "@/lib/nfl"
 import { cn } from "@/lib/utils"
 import type { GradedGame, MathRow, Scorecard } from "@/lib/math/compare"
 import { TeamChip } from "@/components/predictions/TeamChip"
+import ShareMenu from "./ShareMenu"
 
 function pct(right: number, games: number) {
 	return games === 0 ? "n/a" : `${Math.round((right / games) * 100)}%`
@@ -85,7 +86,7 @@ function Disagreement({ g }: { g: GradedGame }) {
 	)
 }
 
-export function HotTakes({ takes }: { takes: MathRow[] }) {
+export function HotTakes({ takes, week, model, stamp }: { takes: MathRow[]; week?: number; model?: "full" | "season"; stamp?: number }) {
 	if (takes.length === 0) {
 		return <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">No big disagreements this week. The math and I are within a few spots on every team.</p>
 	}
@@ -106,6 +107,12 @@ export function HotTakes({ takes }: { takes: MathRow[] }) {
 						<p className="mt-1 text-sm text-muted-foreground tabular-nums">
 							I have them No. {r.blogger}. The math has them No. {r.math}, {Math.abs(r.gap)} spots {higher ? "lower" : "higher"}.
 						</p>
+						<ShareMenu
+							className="mt-3"
+							view={{ take: r.abbr, week: week ?? null, model }}
+							stamp={stamp}
+							text={higher ? `I have the ${nick} No. ${r.blogger}. The math has them No. ${r.math}. Who's right?` : `The math has the ${nick} at No. ${r.math}. I have them No. ${r.blogger}. Who's right?`}
+						/>
 					</li>
 				)
 			})}

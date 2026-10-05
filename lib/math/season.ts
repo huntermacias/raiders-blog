@@ -2,8 +2,8 @@
 // who ends up where in the standings, who makes the playoffs. Pure and seeded, so the numbers don't jitter
 // on a refresh and every result can be checked.
 //
-// Deliberately simple, and the page says so: ratings don't change during a simulated season, injuries and
-// rest are ignored, and the tiebreaker is win percentage and then point differential (the league's own
+// Deliberately simple, and the page says so: ratings don't change during a simulated season, injuries are
+// ignored (rest and travel are not: see situation.ts), and the tiebreaker is win percentage and then point differential (the league's own
 // order of head-to-head, division and conference records is not reproduced).
 
 import { TEAMS } from "../nfl"
@@ -18,6 +18,12 @@ export type SeasonGame = {
 	/** Null until the game is final. */
 	homeScore: number | null
 	awayScore: number | null
+	/** ESPN's event id, when known (used to look up the box score). */
+	id?: string
+	/** ISO kickoff time, when known. */
+	kickoff?: string | null
+	/** Elo points added to the home side for rest and travel, once `annotate` has worked them out. */
+	edge?: number
 }
 
 /** 25 Elo points are about one point on the scoreboard. */
@@ -25,14 +31,14 @@ export const ELO_PER_POINT = 25
 /** Standard deviation of an NFL game's final margin around its expected margin. */
 export const MARGIN_SD = 13.5
 
-/** Expected home margin in points from the two ratings, home field included. */
-export function expectedMargin(home: number, away: number): number {
-	return (home + HOME_FIELD - away) / ELO_PER_POINT
+/** Expected home margin in points from the two ratings, home field and any rest/travel `edge` (Elo points) included. */
+export function expectedMargin(home: number, away: number, edge: number = 0): number {
+	return (home + HOME_FIELD + edge - away) / ELO_PER_POINT
 }
 
 /** Chance the home team wins, on the same margin model the simulation uses. */
-export function winChance(home: number, away: number): number {
-	return normalCdf(expectedMargin(home, away) / MARGIN_SD)
+export function winChance(home: number, away: number, edge: number = 0): number {
+	return normalCdf(expectedMargin(home, away, edge) / MARGIN_SD)
 }
 
 export type TeamOdds = {
@@ -110,7 +116,7 @@ export function simulateSeason(games: SeasonGame[], ratings: Ratings, opts: SimO
 				t0[h]++
 				t0[a]++
 			}
-		} else open.push({ h, a, edge: expectedMargin(rating[h], rating[a]) })
+		} else open.push({ h, a, edge: expectedMargin(rating[h], rating[a], g.edge ?? 0) })
 	}
 	const base = w0.map((w, i) => w + t0[i] / 2)
 

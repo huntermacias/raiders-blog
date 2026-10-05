@@ -1,6 +1,7 @@
-// "The Math": an Elo rating for every team, built only from this season's final scores. Pure, so it can be
-// tested and re-derived at any time. Every team starts level at 1500, so early in the year the ratings
-// are noisy and mostly reflect who has won and by how much; they settle as games pile up.
+// "The Math": an Elo rating for every team, built from this season's final scores. Pure, so it can be
+// tested and re-derived at any time. Teams start from `start` (last season's ratings pulled back toward
+// the middle, see `carryOver`) or, with none, all level at 1500, so early in the year the ratings are noisy
+// and mostly reflect who has won and by how much; they settle as games pile up.
 
 export type FinalGame = {
 	week: number
@@ -9,6 +10,8 @@ export type FinalGame = {
 	away: string
 	homeScore: number
 	awayScore: number
+	/** Elo points added to the home side for rest and travel (see situation.ts). Left out means none. */
+	edge?: number
 }
 
 export const START_RATING = 1500
@@ -18,6 +21,14 @@ export const K = 20
 export const HOME_FIELD = 48
 
 export type Ratings = Record<string, number>
+
+/** Share of last season's distance from average that carries into the new one. FiveThirtyEight used two thirds. */
+export const CARRY_OVER = 2 / 3
+
+/** Last season's final ratings, pulled back toward the middle: rosters turn over and results are partly luck. */
+export function carryOver(last: Ratings, keep: number = CARRY_OVER): Ratings {
+	return Object.fromEntries(Object.entries(last).map(([team, r]) => [team, START_RATING + keep * (r - START_RATING)]))
+}
 
 /** Chance the side with `diff` more Elo points wins. */
 export function expected(diff: number): number {
@@ -51,9 +62,9 @@ export type EloRun = {
 	played: Record<string, number>
 }
 
-/** Plays the games in week order and returns the ratings after each week. */
-export function runElo(games: FinalGame[]): EloRun {
-	const ratings: Ratings = {}
+/** Plays the games in week order and returns the ratings after each week. Teams not in `start` begin at 1500. */
+export function runElo(games: FinalGame[], start: Ratings = {}): EloRun {
+	const ratings: Ratings = { ...start }
 	const played: Record<string, number> = {}
 	const byWeek: Record<number, Ratings> = {}
 	const log: EloShift[] = []
@@ -64,7 +75,7 @@ export function runElo(games: FinalGame[]): EloRun {
 		for (const g of games.filter((x) => x.week === week)) {
 			const home = get(g.home)
 			const away = get(g.away)
-			const edgeHome = home + HOME_FIELD - away
+			const edgeHome = home + HOME_FIELD + (g.edge ?? 0) - away
 			const pHome = expected(edgeHome)
 			const margin = g.homeScore - g.awayScore
 			const actualHome = margin > 0 ? 1 : margin < 0 ? 0 : 0.5

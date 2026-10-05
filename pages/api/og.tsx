@@ -7,6 +7,7 @@
 //   /api/og?type=rankings
 //   /api/og?type=league[&handle=<league handle>]
 //   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
+//   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -31,6 +32,8 @@ import { client } from "../../lib/sanity.client"
 import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
 import { buildLiveSpec } from "../../lib/og/liveCard"
 import { buildLeagueSpec } from "../../lib/og/leagueCard"
+import { buildMathSpec } from "../../lib/og/mathCard"
+import { loadMath } from "../../lib/math/server"
 import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
 
 const FALLBACK = "/og-default-v2.png"
@@ -204,6 +207,13 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return result ? buildLiveSpec(result.game) : null
 	}
 
+	if (type === "math") {
+		const week = Number(first(query.week))
+		// A smaller box-score budget than the page's: the card should render fast, and falls back to results alone.
+		const page = await loadMath(Number.isInteger(week) && week > 0 ? week : undefined, { boxBudgetMs: 3000, model: first(query.model) === "season" ? "season" : "full" })
+		return page.report ? buildMathSpec(page.report, { team: first(query.team), take: first(query.take) }) : null
+	}
+
 	if (type === "scoreboard") {
 		const [picks, flags]: [GamePrediction[], FlagPlant[]] = await Promise.all([
 			readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])),
@@ -232,7 +242,7 @@ function cacheFor(spec: CardSpec): string {
 		if (spec.state === "pre") return "public, s-maxage=300, stale-while-revalidate=900"
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
-	if (spec.type === "league") return "public, s-maxage=3600, stale-while-revalidate=86400"
+	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
 

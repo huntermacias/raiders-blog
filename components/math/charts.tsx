@@ -1,18 +1,10 @@
 // Small SVG charts for the Blogger vs. the Math page. Server-safe (no hooks), theme-aware through currentColor
 // and the site's own tokens, and each one carries a plain-language label for screen readers.
 
+import { oddsText } from "@/lib/math/format"
 import type { TeamDetail } from "@/lib/math/report"
 
-const pct0 = (p: number) => `${Math.round(p * 100)}%`
-
-/** "<1%" and ">99%" instead of a flat 0 or 100: a simulation can't be certain. */
-export function oddsText(p: number, sims = 10_000) {
-	if (p <= 0) return "0%"
-	if (p >= 1) return "100%"
-	if (p < 0.5 / sims || p * 100 < 1) return "<1%"
-	if (p * 100 > 99) return ">99%"
-	return pct0(p)
-}
+export { oddsText }
 
 const W = 320
 const H = 170
