@@ -93,6 +93,10 @@ export function Turf({
 	const poly = (y0: number, y1: number, u0: number, u1: number) =>
 		[view.pt(y0, u0), view.pt(y1, u0), view.pt(y1, u1), view.pt(y0, u1)].map((q: Pt) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
 
+	// Fine mowing: every other yard a hair lighter, so the turf has grain as it slides by.
+	const fine: number[] = []
+	for (let y = Math.max(0, Math.ceil(cam - 3)); y <= Math.min(99, Math.floor(hi)); y += 2) fine.push(y)
+
 	// Mowing stripes: every other five yards a little lighter.
 	const stripes: number[] = []
 	for (let k = 0; k < 100; k += 10) if (inView(k, k + 5)) stripes.push(k)
@@ -267,4 +271,149 @@ export function Chain({ view, g, los, fd, toGo }: { view: View; g: Geom; los: nu
 			{fd != null && fd <= 100 && stake(fd, 1, LAB.firstDown)}
 		</g>
 	)
+}
+
+/** Corner of a quad in screen coordinates, as an SVG points string. */
+const pts = (list: Array<{ x: number; y: number }>) => list.map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")
+
+/**
+ * The stadium around the turf: stands rising behind both sidelines and the far end zone, the LED boards
+ * along the wall, and floodlights. The lights are fixed to the stadium, so they stay put on screen while the
+ * field slides under them as the camera follows the ball. Pure drawing; nothing here is data.
+ */
+export function Stadium({ view, g, cam, depth = DEPTH, uid, driveColor, otherColor, driveName, otherName, compact }: { view: View; g: Geom; cam: number; depth?: number; uid: string; driveColor: string; otherColor: string; driveName: string; otherName: string; compact: boolean }) {
+	const y0 = Math.floor((cam - 12) / 10) * 10
+	const y1 = cam + depth + 36
+	const endVisible = cam + depth >= 96
+	const wallU = 0.585
+	const boardH = 34
+	const standU1 = 2.1
+	const standH1 = 380
+	const side = (sgn: -1 | 1) => {
+		const surface = [view.pt(y0, sgn * wallU, boardH), view.pt(y1, sgn * wallU, boardH), view.pt(y1, sgn * standU1, standH1), view.pt(y0, sgn * standU1, standH1)]
+		// Tier lines: bands of seating, drawn along the length of the stands.
+		const tiers = [0.2, 0.42, 0.66].map((t) => {
+			const h = boardH + t * (standH1 - boardH)
+			const u = wallU + t * (standU1 - wallU)
+			const a = view.pt(y0, sgn * u, h)
+			const b = view.pt(y1, sgn * u, h)
+			return `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`
+		})
+		// Phone flashes and bright seats: a few fixed bright spots on the stands.
+		const specks: Array<{ x: number; y: number; r: number; d: number }> = []
+		for (let i = 0; i < 22; i++) {
+			const yard = y0 + ((i * 37 + (sgn > 0 ? 11 : 0)) % Math.max(1, y1 - y0))
+			const t = ((i * 53 + 17) % 100) / 100
+			const p = view.pt(yard, sgn * (wallU + t * (standU1 - wallU) * 0.7), boardH + t * (standH1 - boardH) * 0.7)
+			specks.push({ x: p.x, y: p.y, r: Math.max(0.9, 1.7 * p.s), d: (i * 0.37) % 3 })
+		}
+		const panels: Array<{ k: number; a: Array<{ x: number; y: number }>; mine: boolean }> = []
+		for (let k = Math.max(y0, -10); k < Math.min(y1, 110); k += 10) {
+			panels.push({ k, mine: ((k / 10) | 0) % 2 === 0, a: [view.pt(k, sgn * wallU, 0), view.pt(k + 10, sgn * wallU, 0), view.pt(k + 10, sgn * wallU, boardH), view.pt(k, sgn * wallU, boardH)] })
+		}
+		return { surface, tiers, specks, panels }
+	}
+	const sides = [side(-1), side(1)]
+	const back = [view.pt(114, -standU1, 22), view.pt(114, standU1, 22), view.pt(114, standU1, standH1), view.pt(114, -standU1, standH1)]
+	const runoff = [view.pt(110, -wallU, 0), view.pt(110, wallU, 0), view.pt(114, wallU, 0), view.pt(114, -wallU, 0)]
+	return (
+		<g style={{ pointerEvents: "none" }}>
+			<defs>
+				<linearGradient id={`${uid}-standfade`} x1="0" x2="0" y1={-g.HEAD} y2={g.H} gradientUnits="userSpaceOnUse">
+					<stop offset="0%" style={{ stopColor: LAB.surface, stopOpacity: 0.55 }} />
+					<stop offset="45%" style={{ stopColor: LAB.surface, stopOpacity: 0 }} />
+				</linearGradient>
+				<pattern id={`${uid}-crowd`} width="11" height="8" patternUnits="userSpaceOnUse">
+					<circle cx="1.8" cy="1.7" r="1.15" fill={LAB.lace} opacity="0.34" />
+					<circle cx="6.4" cy="3.2" r="1.15" fill={driveColor} opacity="0.5" />
+					<circle cx="9.3" cy="6.3" r="1.1" fill={otherColor} opacity="0.5" />
+					<circle cx="4.2" cy="6.6" r="1" fill={LAB.inkMuted} opacity="0.4" />
+				</pattern>
+				<radialGradient id={`${uid}-bloomL`} cx="0.12" cy="0" r="0.6" gradientUnits="objectBoundingBox">
+					<stop offset="0%" style={{ stopColor: LAB.lightPool, stopOpacity: 1 }} />
+					<stop offset="100%" style={{ stopColor: LAB.lightPool, stopOpacity: 0 }} />
+				</radialGradient>
+				<radialGradient id={`${uid}-bloomR`} cx="0.88" cy="0" r="0.6" gradientUnits="objectBoundingBox">
+					<stop offset="0%" style={{ stopColor: LAB.lightPool, stopOpacity: 1 }} />
+					<stop offset="100%" style={{ stopColor: LAB.lightPool, stopOpacity: 0 }} />
+				</radialGradient>
+			</defs>
+			{/* the sky and the bowl */}
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.H + g.HEAD} fill={LAB.sky} />
+			{/* the far side of the stadium, always on the horizon */}
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.HEAD + 40} fill={LAB.stand} opacity={0.9} />
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.HEAD + 40} fill={`url(#${uid}-crowd)`} />
+			{endVisible && (
+				<g>
+					<polygon points={pts(back)} fill={LAB.stand} />
+					<polygon points={pts(back)} fill={`url(#${uid}-crowd)`} />
+					<polygon points={pts(runoff)} fill={LAB.board} />
+				</g>
+			)}
+			{[-1, 1].map((sg) => (
+				<polygon key={`apron${sg}`} points={pts([view.pt(y0, sg * 0.5, 0), view.pt(y1, sg * 0.5, 0), view.pt(y1, sg * wallU, 0), view.pt(y0, sg * wallU, 0)])} fill={LAB.field} />
+			))}
+			{sides.map((s, i) => (
+				<g key={i}>
+					<polygon points={pts(s.surface)} fill={LAB.stand} />
+					<polygon points={pts(s.surface)} fill={`url(#${uid}-crowd)`} />
+					<path d={s.tiers.join("")} stroke={LAB.board} strokeOpacity={0.7} strokeWidth={2.2} fill="none" />
+					{s.specks.map((q, j) => (
+						<circle key={j} cx={q.x} cy={q.y} r={q.r} fill={LAB.lace} opacity={0.35 + 0.5 * ((q.d / 3) % 1)} />
+					))}
+					{/* the LED ribbon along the wall: panels in the two team colors with a lit top edge */}
+					{s.panels.map((p) => (
+						<g key={p.k}>
+							<polygon points={pts(p.a)} fill={p.mine ? driveColor : otherColor} opacity={0.88} />
+							<polygon points={pts(p.a)} fill={LAB.board} opacity={0.22} />
+						</g>
+					))}
+					{s.panels.length > 0 && (
+						<path
+							d={`M${s.panels[0].a[3].x.toFixed(1)},${s.panels[0].a[3].y.toFixed(1)}` + s.panels.map((p) => `L${p.a[2].x.toFixed(1)},${p.a[2].y.toFixed(1)}`).join("")}
+							stroke={LAB.boardLine}
+							strokeWidth={1.4}
+							fill="none"
+						/>
+					)}
+				</g>
+			))}
+			{/* a haze from the top, so the far end of the stadium recedes */}
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.H + g.HEAD} fill={`url(#${uid}-standfade)`} />
+			{/* the floodlights */}
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.H * 0.8} fill={`url(#${uid}-bloomL)`} />
+			<rect x={0} y={-g.HEAD} width={g.W} height={g.H * 0.8} fill={`url(#${uid}-bloomR)`} />
+			{/* the names of the two teams on the boards, so the stadium says who is playing */}
+			<WallLabels view={view} cam={cam} depth={depth} sides={[-1, 1]} wallU={wallU} boardH={boardH} a={driveName} b={otherName} compact={compact} />
+		</g>
+	)
+}
+
+/** Names painted on the LED boards along the sidelines, skewed into the same perspective as the wall. */
+function WallLabels({ view, cam, depth, sides, wallU, boardH, a, b, compact }: { view: View; cam: number; depth: number; sides: Array<-1 | 1>; wallU: number; boardH: number; a: string; b: string; compact: boolean }) {
+	const out: React.ReactNode[] = []
+	const first = Math.max(0, Math.ceil((cam - 4) / 20) * 20)
+	for (const sgn of sides) {
+		for (let k = first; k <= cam + depth + 6 && k < 100; k += 20) {
+			const label = (k / 20) % 2 === 0 ? a : b
+			const p0 = view.pt(k + 1, sgn * wallU, 0)
+			const p1 = view.pt(k + 9, sgn * wallU, 0)
+			const up = view.pt(k + 5, sgn * wallU, boardH)
+			const mid = view.pt(k + 5, sgn * wallU, 0)
+			const height = mid.y - up.y
+			const lenX = p1.x - p0.x
+			const lenY = p1.y - p0.y
+			if (p0.s < 0.5 || height < 5) continue
+			const units = 100
+			const L = Math.hypot(lenX, lenY)
+			const scaleX = L / (label.length * 62 + (label.length - 1) * 12)
+			const matrix = `matrix(${((lenX / L) * scaleX).toFixed(4)} ${((lenY / L) * scaleX).toFixed(4)} 0 ${((height * 0.55) / units).toFixed(4)} ${p0.x.toFixed(1)} ${(p0.y - height * 0.2).toFixed(1)})`
+			out.push(
+				<text key={`${sgn}-${k}`} transform={matrix} fontSize={units} fontWeight={800} letterSpacing="0.12em" fill={LAB.lace} opacity={compact ? 0.7 : 0.82} dominantBaseline="alphabetic">
+					{label.toUpperCase()}
+				</text>,
+			)
+		}
+	}
+	return <g>{out}</g>
 }

@@ -59,6 +59,16 @@ export type Frame = {
 	xpass: number | null
 	/** A deep pass, per the log. */
 	deep: boolean
+	/** Quarter (5 is overtime), printed clock, seconds elapsed and the Raiders' win probability just before the snap. */
+	q?: number
+	clk?: string
+	el?: number
+	w0?: number
+	/** Kicks: the length the log gives for a field goal, and how a miss missed. */
+	kickYards?: number
+	miss?: "left" | "right" | "short" | "blocked"
+	/** The miss hit an upright. */
+	upright?: boolean
 }
 
 const ORDINAL = ["", "1st", "2nd", "3rd", "4th"]
@@ -108,6 +118,19 @@ export function runOffset(lane: "L" | "M" | "R", gap: "E" | "T" | "G" | null): n
 
 export function passOffset(lane: "L" | "M" | "R"): number {
 	return sign(lane) * 0.28
+}
+
+/** Field goal length, and how a miss missed, from the log text. */
+function kickFacts(p: DrivePlay, outcome: Outcome): { kickYards?: number; miss?: "left" | "right" | "short" | "blocked"; upright?: boolean } {
+	if (outcome !== "fieldgoal-good" && outcome !== "fieldgoal-miss") return {}
+	const m = /(\d+) yard field goal/i.exec(p.text)
+	const out: { kickYards?: number; miss?: "left" | "right" | "short" | "blocked"; upright?: boolean } = m ? { kickYards: Number(m[1]) } : {}
+	if (outcome === "fieldgoal-miss") {
+		const t = p.text
+		out.miss = /blocked/i.test(t) ? "blocked" : /short/i.test(t) ? "short" : /right/i.test(t) ? "right" : "left"
+		if (/upright|post/i.test(t)) out.upright = true
+	}
+	return out
 }
 
 const OUT_OF_BOUNDS = /\b(?:ob|out of bounds)\b/i
@@ -180,6 +203,11 @@ export function framesForDrive(drive: Drive): Frame[] {
 			noHuddle: p.nh === 1,
 			xpass: p.xp ?? null,
 			deep: p.pl === "D",
+			q: p.q,
+			clk: p.clk,
+			el: p.el,
+			w0: p.w0,
+			...kickFacts(p, outcome),
 		}
 	})
 }

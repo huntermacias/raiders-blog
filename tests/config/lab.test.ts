@@ -52,7 +52,7 @@ describe("the Lab section", () => {
 	// The Lab has to work in light and dark. Colors come from the .lab custom properties
 	// (styles/globals.css) and Tailwind's lab-* colors, never from hardcoded dark-only values.
 	describe("light and dark themes", () => {
-		const files = ["components/lab/WinProbabilityReplay.tsx", "components/lab/DriveReplay.tsx", "components/lab/DriveBits.tsx", "components/lab/DriveMap.tsx", "components/lab/FieldTurf.tsx", "components/lab/Sparkline.tsx", "components/lab/Tip.tsx", "app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"]
+		const files = ["components/lab/WinProbabilityReplay.tsx", "components/lab/DriveReplay.tsx", "components/lab/DriveBits.tsx", "components/lab/DriveMap.tsx", "components/lab/FieldTurf.tsx", "components/lab/FieldHud.tsx", "components/lab/PlayFx.tsx", "components/lab/Football.tsx", "components/lab/Sparkline.tsx", "components/lab/Tip.tsx", "app/(user)/lab/page.tsx", "app/(user)/lab/[slug]/page.tsx"]
 
 		it.each(files)("%s has no dark-only colors", (f) => {
 			const src = read(f)

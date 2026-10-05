@@ -5,7 +5,10 @@ import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from "lucide-react"
 
 import { Chip, DriveSummary, FilterRow, PlayFilters, Scrubber } from "@/components/lab/DriveBits"
 import DriveMap from "@/components/lab/DriveMap"
-import { Chain, Turf } from "@/components/lab/FieldTurf"
+import FieldHud from "@/components/lab/FieldHud"
+import { Chain, Stadium, Turf } from "@/components/lab/FieldTurf"
+import { Football } from "@/components/lab/Football"
+import { CatchRing, EndZoneFlash, FirstDownFlash, Goalposts, Impact, Streaks } from "@/components/lab/PlayFx"
 import { useTimeline } from "@/components/lab/useTimeline"
 import {
 	framesForDrive,
@@ -21,7 +24,8 @@ import {
 	type Frame,
 	type PlayFilter,
 } from "@/lib/lab/drive"
-import { COMPACT, DEPTH, WIDE, cameraFor, centerline, pathFor, pointAlong, ribbon, sliceTo, viewFrom, type Geom } from "@/lib/lab/field"
+import { COMPACT, DEPTH, WIDE, cameraFor, centerline, goalZoom, pathFor, pointAlong, ribbon, sliceTo, viewFrom, type Geom } from "@/lib/lab/field"
+import { clockText, scoreAt, wpAround } from "@/lib/lab/hud"
 import { LAB } from "@/lib/lab/theme"
 import { stateAt } from "@/lib/lab/timeline"
 import type { Drive } from "@/lib/lab/types"
@@ -112,32 +116,38 @@ function ribbonStyle(f: Frame): Style {
 
 type View = ReturnType<typeof viewFrom>
 
-function OutcomeTag({ text, x, y, k, g, opacity = 1 }: { text: string; x: number; y: number; k: number; g: Geom; opacity?: number }) {
+function OutcomeTag({ text, x, y, k, g, opacity = 1, chip, chipUp = true }: { text: string; x: number; y: number; k: number; g: Geom; opacity?: number; chip?: string | null; chipUp?: boolean }) {
 	const w = Math.max(136 * k, text.length * 8.6 * k + 32 * k)
 	const cx = Math.min(g.W - w / 2 - 8, Math.max(w / 2 + 8, x))
+	const cw = chip ? Math.max(110 * k, chip.length * 7.4 * k + 28 * k) : 0
+	const ccx = chip ? Math.min(g.W - cw / 2 - 8, Math.max(cw / 2 + 8, x)) - cx : 0
+	const cy = (chipUp ? -31 : 31) * k
 	return (
 		<g transform={`translate(${cx} ${y})`} style={{ pointerEvents: "none" }} opacity={opacity}>
 			<rect x={-w / 2} y={-15 * k} width={w} height={28 * k} rx={14 * k} fill={LAB.ink} />
 			<text x={0} y={4.5 * k} textAnchor="middle" fontSize={12 * k} fontWeight={800} fill={LAB.surface} letterSpacing="0.05em">
 				{text}
 			</text>
+			{chip && (
+				<g transform={`translate(${ccx} ${cy})`}>
+					<rect x={-cw / 2} y={-12 * k} width={cw} height={23 * k} rx={11.5 * k} fill={LAB.firstDown} />
+					<text x={0} y={4 * k} textAnchor="middle" fontSize={10.5 * k} fontWeight={800} fill={LAB.onFirstDown} letterSpacing="0.08em">
+						{chip}
+					</text>
+				</g>
+			)}
 		</g>
 	)
 }
 
-/** The ball: a clean puck in the offense's color with a small football inside. */
-function Ball({ x, y, scale, angle, color }: { x: number; y: number; scale: number; angle: number; color: string }) {
-	return (
-		<g transform={`translate(${x} ${y}) scale(${scale})`} style={{ pointerEvents: "none" }}>
-			<circle r={16} fill={LAB.surface} stroke={color} strokeWidth={3.5} />
-			<g transform={`rotate(${angle})`} fill="none" stroke={LAB.ink} strokeLinecap="round">
-				<ellipse rx={8.5} ry={5} strokeWidth={1.7} />
-				<line x1={-3} y1={0} x2={3} y2={0} strokeWidth={1.5} />
-				<line x1={-1.6} y1={-1.7} x2={-1.6} y2={1.7} strokeWidth={1.2} />
-				<line x1={1.6} y1={-1.7} x2={1.6} y2={1.7} strokeWidth={1.2} />
-			</g>
-		</g>
-	)
+/** The second line under a result: what made the play special. */
+function chipFor(f: Frame): string | null {
+	if ((f.outcome === "fieldgoal-good" || f.outcome === "fieldgoal-miss") && f.kickYards) return `${f.kickYards}-YARD FIELD GOAL`
+	if (f.outcome === "punt") return f.to > f.from ? `${Math.round(f.to - f.from)}-YARD PUNT` : null
+	if (f.firstDown && f.down === 4) return "FOURTH DOWN CONVERTED"
+	if (f.outcome === "gain" && f.yards >= 20) return f.firstDown ? "BIG PLAY \u00b7 FIRST DOWN" : "BIG PLAY"
+	if (f.firstDown) return "FIRST DOWN"
+	return null
 }
 
 /** A line across the field (line of scrimmage, first down). Its label sits outside the sidelines, or inside on a phone. */
@@ -215,9 +225,16 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 type Spot = { yard: number; u: number }
 
-type Props = { drives: Drive[]; teamAbbr: string; teamName: string; oppName: string }
+type Props = {
+	drives: Drive[]
+	teamAbbr: string
+	teamName: string
+	oppName: string
+	/** [seconds elapsed, Raiders score, opponent score] each time the score changes. Leave out to hide the score bug. */
+	scores?: [number, number, number][]
+}
 
-export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Props) {
+export default function DriveReplay({ drives, teamAbbr, teamName, oppName, scores }: Props) {
 	const [who, setWho] = React.useState<"all" | "team" | "opp">("all")
 	const [quarter, setQuarter] = React.useState(0)
 	const [filter, setFilter] = React.useState<PlayFilter>(NO_FILTER)
@@ -304,7 +321,7 @@ export default function DriveReplay({ drives, teamAbbr, teamName, oppName }: Pro
 				</div>
 			</div>
 
-			<DriveStage key={driveIdx} drive={drive} teamAbbr={teamAbbr} teamName={teamName} oppName={oppName} filter={filter} onFilter={setFilter} />
+			<DriveStage key={driveIdx} drive={drive} teamAbbr={teamAbbr} teamName={teamName} oppName={oppName} scores={scores} filter={filter} onFilter={setFilter} />
 		</div>
 	)
 }
@@ -314,12 +331,13 @@ type StageProps = {
 	teamAbbr: string
 	teamName: string
 	oppName: string
+	scores?: [number, number, number][]
 	filter: PlayFilter
 	onFilter: (f: PlayFilter) => void
 }
 
 /** One drive: the field, the scrubber, and everything under it. Remounts for each drive, so it always starts at the snap. */
-function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: StageProps) {
+function DriveStage({ drive, teamAbbr, teamName, oppName, scores, filter, onFilter }: StageProps) {
 	const reduced = usePrefersReducedMotion()
 	const uid = React.useId().replace(/[^a-zA-Z0-9]/g, "")
 	const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1)
@@ -359,12 +377,33 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 		else if (eff > 0) focus = lerp(paths[eff - 1].end.yard, paths[eff].start.yard, st.settle)
 		else focus = paths[0].start.yard
 	}
-	const cam = useSmooth(cameraFor(focus), reduced)
-	// Big plays (a score, a turnover, 20 or more yards) get a slow push-in while the result holds.
+	// Near the goal line the camera pushes in; a big play gets a slow push-in while its result holds.
 	const lastPlay = eff > 0 ? frames[eff - 1] : null
 	const bigPlay = !!lastPlay && !animating && st.settle < 0.05 && (lastPlay.outcome === "touchdown" || lastPlay.outcome === "turnover" || (lastPlay.outcome === "gain" && lastPlay.yards >= 20))
-	const zoom = useSmooth(bigPlay ? 1.1 : 1, reduced, 2.2, 0.0004)
+	const zoomTarget = Math.max(bigPlay ? 1.1 : 1, goalZoom(focus))
+	const cam = useSmooth(cameraFor(focus, DEPTH / zoomTarget), reduced)
+	const zoom = useSmooth(zoomTarget, reduced, 2.2, 0.0004)
 	const depth = DEPTH / zoom
+
+	// A hard hit (a loss, a sack, a turnover) jolts the picture once.
+	const shakeRef = React.useRef<SVGGElement>(null)
+	const hitKey = eff > 0 && !animating && (frames[eff - 1].outcome === "loss" || frames[eff - 1].outcome === "turnover" || frames[eff - 1].sack) ? `${eff}` : ""
+	React.useEffect(() => {
+		const el = shakeRef.current
+		if (!hitKey || reduced || !el || typeof el.animate !== "function") return
+		const a = el.animate(
+			[
+				{ transform: "translate(0px, 0px)" },
+				{ transform: "translate(-5px, 2px)" },
+				{ transform: "translate(4px, -2px)" },
+				{ transform: "translate(-3px, 1px)" },
+				{ transform: "translate(2px, 0px)" },
+				{ transform: "translate(0px, 0px)" },
+			],
+			{ duration: 340, easing: "ease-out" },
+		)
+		return () => a.cancel()
+	}, [hitKey, reduced])
 
 	if (n === 0) return null
 
@@ -377,6 +416,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 	const view = viewFrom(cam, g, depth)
 	let ballSpot: { yard: number; u: number; lift: number }
 	let angle = 0
+	let spin = 0
 	if (animating) {
 		const f = frames[mi]
 		const at = (p: number) => pointAlong(paths[mi], f.arc ? p : easeOut(p))
@@ -384,7 +424,12 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 		const a0 = at(Math.max(0, st.progress - 0.04))
 		const p0 = view.pt(a0.yard, a0.u, a0.lift)
 		const p1 = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
-		if (f.arc) angle = Math.max(-40, Math.min(40, (Math.atan2(p1.y - p0.y, Math.max(0.5, p1.x - p0.x) * 3) * 180) / Math.PI))
+		if (f.arc) {
+			const tilt = Math.max(-40, Math.min(40, (Math.atan2(p1.y - p0.y, Math.max(0.5, p1.x - p0.x) * 3) * 180) / Math.PI))
+			if (f.outcome === "punt" || f.outcome === "fieldgoal-good" || f.outcome === "fieldgoal-miss") angle = tilt + st.progress * (f.outcome === "punt" ? 560 : 380) // end over end
+			else spin = st.progress * 15 // a spiral
+			if (f.outcome !== "punt" && f.outcome !== "fieldgoal-good" && f.outcome !== "fieldgoal-miss") angle = tilt
+		}
 	} else {
 		let rest: Spot
 		if (eff <= 0) rest = paths[0].start
@@ -399,10 +444,29 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 	}
 	const ball = view.pt(ballSpot.yard, ballSpot.u, ballSpot.lift)
 	const ground = view.pt(ballSpot.yard, ballSpot.u)
+	// A kick that went through the uprights ends in the net: nothing left to draw.
+	const inNet = !animating && eff > 0 && frames[eff - 1].outcome === "fieldgoal-good"
+	const postState = !animating && last && (last.outcome === "fieldgoal-good" ? "good" : last.outcome === "fieldgoal-miss" ? "miss" : null)
+	// How far through the play a pass is caught, when there is a run after the catch.
+	const catchFrac = animating && frames[mi].type === "pass" && paths[mi].catchSpot && frames[mi].outcome !== "turnover" ? (paths[mi].samples[30]?.at ?? 0) / paths[mi].total : null
 
 	const losYard = finished ? frames[n - 1].to : upcoming.from
 	const fdYard = finished ? null : upcoming.firstDownAt
 	const trail = frames.slice(0, eff)
+
+	// The overlay: score and clock, and the Raiders' chance to win before and after the last play.
+	const hudFrame = animating ? frames[mi] : finished ? frames[n - 1] : upcoming
+	const hudScore: [number, number] | null = scores
+		? last && last.el != null
+			? scoreAt(scores, last.el, true)
+			: frames[0].el != null
+				? scoreAt(scores, frames[0].el, false)
+				: null
+		: null
+	const lastWp = last ? wpAround(last, isTeam) : null
+	const firstWp = wpAround(frames[0], isTeam)
+	const hudWp = lastWp ? lastWp.after : firstWp ? firstWp.before : null
+	const hudDelta = lastWp && !animating ? lastWp.after - lastWp.before : null
 
 	const status = finished
 		? { head: resultLabel(drive.result).toUpperCase(), sub: `${n} plays, ${drive.yards} yards${drive.top ? `, ${drive.top}` : ""}` }
@@ -426,11 +490,11 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 
 	// Routes: soft glow under every ribbon, drawn as one blurred layer so it stays cheap.
 	const wk = compact ? 0.85 : 1
-	const routes: { key: string; d: string; dash: string | null; style: Style; dim: number }[] = []
+	const routes: { key: string; d: string; dash: string | null; ground: string | null; style: Style; dim: number }[] = []
 	const addRoute = (key: string, samples: ReturnType<typeof sliceTo>, f: Frame, dim: number) => {
 		const style = ribbonStyle(f)
 		const d = ribbon(samples, view, style.width * wk, style.taper)
-		if (d) routes.push({ key, d, dash: style.dashed ? centerline(samples, view) : null, style, dim })
+		if (d) routes.push({ key, d, dash: style.dashed ? centerline(samples, view) : null, ground: f.arc && samples.some((q) => q.lift > 8) ? centerline(samples.map((q) => ({ ...q, lift: 0 })), view) : null, style, dim })
 	}
 	trail.forEach((f, i) => addRoute(`t${f.n}`, paths[i].samples, f, dimFor(i)))
 	if (animating) addRoute("live", sliceTo(paths[mi], animP(mi)), frames[mi], filtering ? (matches[mi] ? 1 : 0.14) : 1)
@@ -445,7 +509,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 			].filter(Boolean)
 	const snapText = snapParts.join(" \u00b7 ")
 	const snapOpacity = eff === 0 ? 1 : Math.min(1, Math.max(0, (st.settle - 0.3) / 0.7))
-	const snapAt = snapText && snapOpacity > 0 ? view.pt(losYard + 4.5, 0) : null
+	const snapAt = snapText && snapOpacity > 0 ? view.pt(losYard - 6, 0) : null
 
 	const hoverFrame = hover != null && hover < eff ? frames[hover] : null
 	const hoverAt = hoverFrame ? view.pt(paths[hover!].end.yard, paths[hover!].end.u) : null
@@ -486,16 +550,27 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 
 			{/* the field, seen from behind the offense and looking down the field */}
 			<div ref={fieldRef} className="relative mx-auto w-full max-w-[920px] px-2 pt-3 sm:px-4">
+				<FieldHud
+						teamName={teamName.toUpperCase()}
+						oppName={oppName.toUpperCase()}
+						score={hudScore}
+						clock={clockText(hudFrame)}
+						wp={hudWp}
+						delta={hudDelta}
+						deltaKey={`${drive.n}-${eff}`}
+						compact={compact}
+						teamHasBall={isTeam}
+					/>
 				<svg
-					viewBox={`0 0 ${g.W} ${g.H}`}
+					viewBox={`0 ${-g.HEAD} ${g.W} ${g.H + g.HEAD}`}
 					className="block h-auto w-full"
 					role="img"
 					aria-label={`${driveName} drive ${drive.n}, ${n} plays, ${drive.yards} yards, ending in ${resultLabel(drive.result).toLowerCase()}. The offense moves up the screen toward the ${otherName} end zone.`}
 				>
 					<defs>
 						<linearGradient id={`${uid}-fog`} x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" style={{ stopColor: LAB.surface, stopOpacity: 1 }} />
-							<stop offset="100%" style={{ stopColor: LAB.surface, stopOpacity: 0 }} />
+							<stop offset="0%" style={{ stopColor: LAB.board, stopOpacity: 0.82 }} />
+							<stop offset="100%" style={{ stopColor: LAB.board, stopOpacity: 0 }} />
 						</linearGradient>
 						<radialGradient id={`${uid}-ballglow`}>
 							<stop offset="0%" style={{ stopColor: driveColor, stopOpacity: 0.55 }} />
@@ -506,6 +581,8 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 						</filter>
 					</defs>
 
+					<g ref={shakeRef}>
+					<Stadium view={view} g={g} cam={cam} depth={depth} uid={uid} driveColor={driveColor} otherColor={otherColor} driveName={driveName} otherName={otherName} compact={compact} />
 					<Turf
 						view={view}
 						g={g}
@@ -522,7 +599,8 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 					/>
 
 					{/* far end of the field fades into the card */}
-					<rect x={0} y={0} width={g.W} height={g.H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
+					<rect x={0} y={-g.HEAD} width={g.W} height={g.HEAD + g.H * 0.42} fill={`url(#${uid}-fog)`} style={{ pointerEvents: "none" }} />
+					<Goalposts view={view} state={postState || null} k={k} />
 
 					{/* the chain crew: ground to gain, stakes on both sidelines */}
 					{!finished && <Chain view={view} g={g} los={losYard} fd={fdYard} toGo={upcoming.ytg} />}
@@ -542,6 +620,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 							<g key={r.key} opacity={r.dim}>
 								<path d={r.d} fill={driveColor} opacity={r.style.opacity} stroke={LAB.casing} strokeWidth={2.4} strokeLinejoin="round" paintOrder="stroke" />
 								{r.dash && <path d={r.dash} fill="none" stroke={driveColor} strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round" />}
+								{r.ground && <path d={r.ground} fill="none" stroke={driveColor} strokeOpacity={0.4} strokeWidth={2} strokeDasharray="1 6" strokeLinecap="round" />}
 							</g>
 						))}
 					</g>
@@ -589,15 +668,23 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 						)
 					})}
 
-					{/* ball, shadow and the burst when a drive ends in points */}
-					<ellipse cx={ground.x} cy={ground.y + 6 * ground.s * k} rx={Math.max(5, 16 * ground.s * k - ballSpot.lift * 0.05)} ry={4 * ground.s * k} fill={LAB.ink} opacity={0.18} />
-					{!animating && last && (last.outcome === "touchdown" || last.outcome === "fieldgoal-good") && (
-						<circle key={`burst-${eff}`} className="lab-burst" cx={ball.x} cy={ball.y} r={30 * ball.s * k} fill="none" stroke={driveColor} strokeWidth={3} />
-					)}
-					<circle cx={ball.x} cy={ball.y} r={40 * ball.s * k} fill={`url(#${uid}-ballglow)`} opacity={animating ? 0.9 : 0.5} style={{ pointerEvents: "none" }} />
-					<Ball x={ball.x} y={ball.y} scale={Math.max(0.7, ball.s) * k} angle={angle} color={driveColor} />
+					{/* effects where the last play ended, then the ball, its shadow and glow */}
+						{!animating && last && eff > 0 && (
+							<g key={`fx-${eff}`}>
+								{last.firstDown && last.firstDownAt != null && <FirstDownFlash view={view} yard={last.firstDownAt} />}
+								{last.outcome === "touchdown" && <EndZoneFlash view={view} color={driveColor} />}
+								<Impact view={view} f={last} yard={paths[eff - 1].end.yard} u={paths[eff - 1].end.u} k={k} color={driveColor} seed={last.n * 7 + drive.n} />
+							</g>
+						)}
+						{animating && mi >= 0 && frames[mi].type === "run" && !frames[mi].arc && <Streaks view={view} path={paths[mi]} p={animP(mi)} color={driveColor} k={k} />}
+						{animating && catchFrac != null && st.progress >= catchFrac && (
+							<CatchRing key={`catch-${mi}`} view={view} yard={paths[mi].catchSpot!.yard} u={paths[mi].catchSpot!.u} k={k} color={driveColor} />
+						)}
+						{!inNet && <ellipse cx={ground.x} cy={ground.y + 6 * ground.s * k} rx={Math.max(5, 16 * ground.s * k - ballSpot.lift * 0.05)} ry={4 * ground.s * k} fill={LAB.ink} opacity={0.18 * Math.max(0.35, 1 - ballSpot.lift / 260)} />}
+						{!inNet && <circle cx={ball.x} cy={ball.y} r={54 * ball.s * k} fill={`url(#${uid}-ballglow)`} opacity={animating ? 0.9 : 0.5} style={{ pointerEvents: "none" }} />}
+						{!inNet && <Football x={ball.x} y={ball.y} scale={Math.max(0.75, ball.s) * k * 1.3} angle={angle} spin={spin} color={driveColor} uid={uid} />}
 
-					{/* outcome tag once the play is over, fading as the ball is spotted for the next snap */}
+						{/* outcome tag once the play is over, fading as the ball is spotted for the next snap */}
 					{!animating && last && !hoverFrame && (
 						<g key={`tag-${eff}`} className="lab-fade">
 							<OutcomeTag
@@ -607,6 +694,8 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 								k={k}
 								g={g}
 								opacity={1 - st.settle}
+								chip={chipFor(last)}
+								chipUp={ball.y > 120 * k}
 							/>
 						</g>
 					)}
@@ -630,6 +719,7 @@ function DriveStage({ drive, teamAbbr, teamName, oppName, filter, onFilter }: St
 						<text x={g.W / 2 - 0.36 * g.NEAR_W} y={g.BOTTOM + 12 + 6 * k}>LEFT</text>
 						<text x={g.W / 2} y={g.BOTTOM + 12 + 6 * k}>MIDDLE</text>
 						<text x={g.W / 2 + 0.36 * g.NEAR_W} y={g.BOTTOM + 12 + 6 * k}>RIGHT</text>
+					</g>
 					</g>
 				</svg>
 				{finished && (

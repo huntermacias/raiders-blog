@@ -16,12 +16,14 @@ export type Geom = {
 	BOTTOM: number
 	/** Width of the field in pixels at the near edge. */
 	NEAR_W: number
+	/** Room above the far edge, for the goalposts and for kicks that climb out of the field. */
+	HEAD: number
 }
 
 /** Wide and short, for desktop and tablet. */
-export const WIDE: Geom = { W: 1000, H: 560, TOP: 22, BOTTOM: 538, NEAR_W: 880 }
+export const WIDE: Geom = { W: 1000, H: 560, TOP: 22, BOTTOM: 538, NEAR_W: 880, HEAD: 84 }
 /** Narrower and taller, so the field and its labels stay big enough to read on a phone. */
-export const COMPACT: Geom = { W: 600, H: 680, TOP: 22, BOTTOM: 640, NEAR_W: 556 }
+export const COMPACT: Geom = { W: 600, H: 680, TOP: 22, BOTTOM: 640, NEAR_W: 556, HEAD: 70 }
 
 export const { W, H, TOP, BOTTOM, NEAR_W } = WIDE
 /** Yards of field in view at once. */
@@ -56,16 +58,36 @@ export function viewFrom(cam: number, g: Geom = WIDE, depth: number = DEPTH): Vi
 }
 
 /** Where the camera stands to show a given yard line: a little behind it, kept inside the field. */
-export function cameraFor(focus: number): number {
-	return Math.min(MAX_YARD - DEPTH, Math.max(MIN_YARD, focus - 16))
+export function cameraFor(focus: number, depth: number = DEPTH): number {
+	return Math.min(MAX_YARD - depth, Math.max(MIN_YARD, focus - 0.27 * depth))
+}
+
+/** Near the goal line the camera pushes in, so the end zone, the goalposts and the finish are big enough to enjoy. */
+export function goalZoom(focus: number): number {
+	const t = Math.min(1, Math.max(0, (focus - 70) / 22))
+	return 1 + 0.4 * t * t * (3 - 2 * t)
 }
 
 type Spot = { yard: number; u: number }
-type Seg = { kind: "arc" | "line"; a: Spot; b: Spot; lift: number }
+type Seg = { kind: "arc" | "line"; a: Spot; b: Spot; lift: number; /** The ball is still this high (near-edge pixels) when the arc ends, as it is over the crossbar. */ endLift?: number }
+
+/** The goalposts stand on the back line of the far end zone. */
+export const POST_YARD = 110
+/** Half the gap between the uprights, as a fraction of the field's width (18 ft 6 in of 160 ft). */
+export const UPRIGHT_U = 0.058
+/** How high the crossbar is drawn, in near-edge pixels. */
+export const BAR_LIFT = 58
+/** How far the uprights rise above the crossbar, in near-edge pixels. */
+export const UPRIGHT_LIFT = 92
 
 /** How high a throw or kick rises, in near-edge pixels, by how far it travels in yards. */
 export function arcLift(yards: number): number {
 	return Math.min(120, 20 + Math.abs(yards) * 2.4)
+}
+
+/** A punt or field goal climbs higher than a throw of the same length. */
+export function kickLift(yards: number): number {
+	return Math.min(200, 56 + Math.abs(yards) * 2.6)
 }
 
 /** The pieces a play is drawn as: a bar for a run, an arc for a throw or kick, an arc then a bar for a catch and run. */
@@ -75,8 +97,23 @@ export function segmentsFor(f: Frame): Seg[] {
 		const to = f.incompleteTo ?? Math.min(100, f.from + 9)
 		return [{ kind: "arc", a: start, b: { yard: to, u: f.yc }, lift: arcLift(to - f.from) }]
 	}
-	if (f.outcome === "punt" || f.outcome === "fieldgoal-good" || f.outcome === "fieldgoal-miss") {
-		return [{ kind: "arc", a: start, b: { yard: f.to, u: f.y1 }, lift: arcLift(f.to - f.from) }]
+	if (f.outcome === "punt") return [{ kind: "arc", a: start, b: { yard: f.to, u: f.y1 }, lift: kickLift(f.to - f.from) }]
+	if (f.outcome === "fieldgoal-good" || f.outcome === "fieldgoal-miss") {
+		// Through, wide of, or short of the uprights at the back of the end zone.
+		const sideSign = f.miss === "right" ? 1 : -1
+		let b: Spot = { yard: POST_YARD, u: 0 }
+		let endLift = BAR_LIFT + 26
+		if (f.outcome === "fieldgoal-miss") {
+			if (f.miss === "short") {
+				b = { yard: Math.max(f.from + 6, Math.min(POST_YARD - 5, f.from + (f.kickYards ?? 40) - 12)), u: 0 }
+				endLift = 0
+			} else if (f.miss === "blocked") {
+				b = { yard: Math.min(100, f.from + 4), u: 0 }
+				endLift = 0
+			} else if (f.upright) b = { yard: POST_YARD, u: sideSign * UPRIGHT_U }
+			else b = { yard: POST_YARD, u: sideSign * (UPRIGHT_U + 0.07) }
+		}
+		return [{ kind: "arc", a: start, b, lift: kickLift(b.yard - f.from), endLift }]
 	}
 	if (f.type === "pass" && f.catchAt != null) {
 		const catchSpot: Spot = { yard: f.catchAt, u: f.yc }
@@ -114,7 +151,7 @@ export function pathFor(f: Frame): FramePath {
 			const cur: Sample = {
 				yard: s.a.yard + (s.b.yard - s.a.yard) * t,
 				u: s.a.u + (s.b.u - s.a.u) * t,
-				lift: s.kind === "arc" ? 4 * s.lift * t * (1 - t) : 0,
+				lift: s.kind === "arc" ? 4 * s.lift * t * (1 - t) + (s.endLift ?? 0) * t : 0,
 				at: total,
 			}
 			if (prev) {
