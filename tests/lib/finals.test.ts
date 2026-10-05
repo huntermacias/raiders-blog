@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { clearCache } from "../../lib/live/cache"
 import { parseEvent } from "../../lib/live/espn"
-import { candidates, mergeFinals, windowFor } from "../../lib/live/finals"
+import { candidates, mergeFinals } from "../../lib/live/finals"
 import { hubState } from "../../lib/home"
 import type { ScheduleRow } from "../../lib/schedule"
 
@@ -25,16 +25,12 @@ const NOW = Date.parse("2026-10-05T03:00:00Z")
 // The real kickoff was 2026-10-04T20:25Z; Studio had it as 06:41Z the next morning, and no score.
 const doc = { _id: "g4", week: 4, awayTeam: "Kansas City Chiefs", homeTeam: "Las Vegas Raiders", kickoff: "2026-10-05T06:41:00Z" }
 
-describe("candidates / windowFor", () => {
+describe("candidates", () => {
 	it("picks ungraded games near now and skips graded, old and far-off ones", () => {
 		const graded = { ...doc, _id: "a", actualAwayScore: 30, actualHomeScore: 27 }
 		const old = { ...doc, _id: "b", kickoff: "2026-08-01T20:00:00Z" }
 		const far = { ...doc, _id: "c", kickoff: "2026-12-01T20:00:00Z" }
 		expect(candidates([graded, old, far, doc], NOW)).toEqual([doc])
-	})
-	it("covers a day either side of the candidates", () => {
-		expect(windowFor([doc])).toEqual({ from: Date.parse(doc.kickoff) - 86_400_000, to: Date.parse(doc.kickoff) + 86_400_000 })
-		expect(windowFor([])).toBeNull()
 	})
 })
 
@@ -98,8 +94,9 @@ describe("withEspnFinals", () => {
 		const { withEspnFinals } = await import("../../lib/live/service")
 		const out = await withEspnFinals([doc], NOW)
 		expect(out[0]).toMatchObject({ actualAwayScore: 30, actualHomeScore: 27 })
+		// One request for the doc's whole week. (ESPN answers a dates=from-to range with no games.)
 		expect(urls).toHaveLength(1)
-		expect(urls[0]).toMatch(/scoreboard\?dates=\d{8}-\d{8}/)
+		expect(urls[0]).toContain("scoreboard?dates=2026&seasontype=2&week=4")
 	})
 
 	it("doesn't call ESPN at all when every game is already graded", async () => {
@@ -123,5 +120,27 @@ describe("withEspnFinals", () => {
 		expect(spy).toHaveBeenCalledTimes(1)
 		await withEspnFinals(games, NOW + 31_000)
 		expect(spy).toHaveBeenCalledTimes(2)
+	})
+})
+
+describe("withEspnFinals, ESPN-shaped behavior", () => {
+	beforeEach(() => {
+		clearCache()
+		vi.resetModules()
+		vi.unstubAllGlobals()
+	})
+
+	it("looks up a game with no week by its Eastern day, and answers empty to a range like ESPN does", async () => {
+		const urls: string[] = []
+		vi.stubGlobal("fetch", async (url: string) => {
+			urls.push(url)
+			const range = /dates=\d{8}-\d{8}/.test(url)
+			return { ok: true, json: async () => ({ events: range ? [] : [ev("1", "2026-10-04T20:25:00Z", "post", 27, 30)] }) }
+		})
+		const { withEspnFinals } = await import("../../lib/live/service")
+		const noWeek = { awayTeam: doc.awayTeam, homeTeam: doc.homeTeam, kickoff: "2026-10-05T00:20:00Z" } // 8:20 PM ET on the 4th
+		const [g] = await withEspnFinals([noWeek], NOW)
+		expect(urls[0]).toContain("scoreboard?dates=20261004")
+		expect(g).toMatchObject({ actualAwayScore: 30, actualHomeScore: 27 })
 	})
 })

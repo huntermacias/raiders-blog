@@ -112,7 +112,8 @@ describe("getReportStats", () => {
 		const auto = await getReportStats({ opponent: "Kansas City Chiefs", gameDate: "2026-10-05T01:25:00Z" })
 		expect(auto?.espnId).toBe("401872976")
 		expect(auto?.teamStats.length).toBeGreaterThan(0)
-		expect(urls[0]).toMatch(/dates=20261004-20261006/)
+		// ESPN scoreboard days are US Eastern days, and a date range returns nothing, so it asks for the one day.
+		expect(urls[0]).toContain("scoreboard?dates=20261004")
 	})
 
 	it("uses an explicit ESPN id without touching the scoreboard", async () => {
