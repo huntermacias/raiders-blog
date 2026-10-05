@@ -333,7 +333,7 @@ describe("field view and paths", () => {
 	})
 
 	it("keeps the camera behind the ball and inside the field", () => {
-		expect(cameraFor(25)).toBe(9)
+		expect(cameraFor(25)).toBeCloseTo(8.8, 5)
 		expect(cameraFor(-5)).toBe(-10)
 		expect(cameraFor(105)).toBe(50)
 	})

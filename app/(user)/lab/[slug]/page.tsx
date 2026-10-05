@@ -220,7 +220,7 @@ export default function LabGamePage({ params }: { params: { slug: string } }) {
 						Pick a drive and press play. Passes and kicks arc through the air, runs slide along the ground. Ball positions come from the official play log.
 					</p>
 				</div>
-				<DriveReplay drives={g.drives} teamAbbr={season.team} teamName="Raiders" oppName={g.oppName} />
+				<DriveReplay drives={g.drives} teamAbbr={season.team} teamName="Raiders" oppName={g.oppName} scores={g.scores} />
 			</section>
 
 			<section className="border-t border-lab-line">
