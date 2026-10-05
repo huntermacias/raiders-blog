@@ -2,8 +2,10 @@
 // plain function of the documents, so the page can always be re-derived from
 // what is entered in Studio.
 
+import { teamInfo } from "./nfl"
 import type { ScheduleRow } from "./schedule"
 import { nextGame } from "./schedule"
+import type { LiveGameInfo } from "./live/types"
 
 /** How long after kickoff a game still counts as "live" before we call it over. */
 export const GAME_WINDOW_MS = 4 * 3600 * 1000
@@ -19,20 +21,37 @@ function kickoffMs(r: ScheduleRow): number | null {
 	return Number.isNaN(t) ? null : t
 }
 
+/** The scoreboard's Raiders game, if this week's board has one. */
+function espnRaidersGame(board: LiveGameInfo[] | null | undefined): LiveGameInfo | null {
+	return (board ?? []).find((g) => g.home.abbr === "LV" || g.away.abbr === "LV") ?? null
+}
+
 /**
  * What the top of the homepage should be about right now: a game that is
  * being played, the next game on the schedule, or nothing (offseason, or a
  * schedule that has not been entered).
+ *
+ * `board` is ESPN's scoreboard when the page has it. ESPN knows whether the Raiders are playing, so it
+ * decides "Game on" for its game: live while ESPN says in progress, never live once it says final or has
+ * not started. Without a board (or for a game ESPN doesn't list) the kickoff time in Studio decides.
  */
-export function hubState(rows: ScheduleRow[], nowMs: number): HubState {
+export function hubState(rows: ScheduleRow[], nowMs: number, board?: LiveGameInfo[] | null): HubState {
+	const espn = espnRaidersGame(board)
+	const espnOpp = espn ? (espn.home.abbr === "LV" ? espn.away.abbr : espn.home.abbr) : null
+	const isEspnGame = (r: ScheduleRow) => espnOpp != null && teamInfo(r.opponent).abbr === espnOpp
+
 	const live = rows.find((r) => {
-		if (r.bye || r.outcome || !r.opponent) return false
+		if (r.bye || !r.opponent) return false
+		if (espn && isEspnGame(r)) return espn.state === "in"
+		if (r.outcome) return false
 		const t = kickoffMs(r)
 		return t !== null && t <= nowMs && nowMs < t + GAME_WINDOW_MS
 	})
 	if (live) return { kind: "live", game: live }
 
-	const next = nextGame(rows, nowMs)
+	// A game ESPN has finished must not come back as "next", even if the score isn't in Studio yet.
+	const upcoming = espn?.state === "post" ? rows.filter((r) => !isEspnGame(r)) : rows
+	const next = nextGame(upcoming, nowMs)
 	if (next) return { kind: "next", game: next }
 
 	return { kind: "idle" }

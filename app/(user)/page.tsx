@@ -15,7 +15,7 @@ import { type RankingsDoc, buildBoards, raidersRow } from "../../lib/rankings";
 import { type ScheduleGame, joinSchedule, scheduleRecord } from "../../lib/schedule";
 import { hubState, playedGames, readingMinutes } from "../../lib/home";
 import { loadLeague } from "../../lib/league.data";
-import { getScoreboard } from "../../lib/live/service";
+import { getScoreboard, withEspnFinals } from "../../lib/live/service";
 import type { LiveGameInfo } from "../../lib/live/types";
 import { buildStandings, gradedWeeks, openGames, weekSummary } from "../../lib/league";
 import PreviewSuspense from "../../components/PreviewSuspense"
@@ -177,7 +177,7 @@ export default async function page() {
 		client.fetch(query),
 		client.fetch(gameReportsQuery),
 		safe(readClient.fetch(scheduleQuery, { season: SEASON }), null),
-		safe(readClient.fetch(picksQuery, { season: SEASON }), []),
+		safe(readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])), []),
 		safe(readClient.fetch(flagsQuery, { season: SEASON }), []),
 		safe(readClient.fetch(rankingsQuery, { season: SEASON }), []),
 		loadLeague(),
@@ -188,7 +188,7 @@ export default async function page() {
 	const rows = joinSchedule(scheduleDoc?.games ?? [], picks ?? [])
 	const record = scheduleRecord(rows)
 	const played = playedGames(rows)
-	const state = hubState(rows, Date.now())
+	const state = hubState(rows, Date.now(), board)
 	const summary = summarize(picks ?? [])
 	const keysSummary = summarizeKeys(picks ?? [])
 	const flagSummary = summarizeFlags(flags ?? [])

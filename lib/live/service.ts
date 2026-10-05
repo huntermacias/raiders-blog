@@ -4,6 +4,7 @@
 import { cached } from "./cache"
 import { parseScoreboard, parseSummary } from "./espn"
 import { parseGameStats, type AutoStats } from "./gamestats"
+import { type FinalsGame, candidates, mergeFinals, windowFor } from "./finals"
 import { teamInfo } from "@/lib/nfl"
 import type { LiveGame, LiveGameInfo } from "./types"
 
@@ -78,5 +79,27 @@ export async function getReportStats(game: { opponent?: string | null; gameDate?
 		return res.value ? { ...res.value, espnId: id } : null
 	} catch {
 		return null
+	}
+}
+
+let finalsFailedAt = 0
+
+/**
+ * `games` with ESPN's final scores and kickoff times laid over any the writer hasn't entered (see
+ * finals.ts). Never throws and never waits long: if ESPN is slow or down the games come back exactly as
+ * they were, and it won't be asked again for 30 seconds.
+ */
+export async function withEspnFinals<T extends FinalsGame>(games: T[], now: number = Date.now()): Promise<T[]> {
+	const open = candidates(games, now)
+	const win = windowFor(open)
+	if (!win || now - finalsFailedAt < 30_000) return games
+	try {
+		const day = (t: number) => ymd(t)
+		const url = `${BASE}/scoreboard?dates=${day(win.from)}-${day(win.to)}&limit=400`
+		const res = await cached(`finals:${day(win.from)}-${day(win.to)}`, 60_000, async () => parseScoreboard(await getJson(url, 1500)))
+		return mergeFinals(games, res.value, now)
+	} catch {
+		finalsFailedAt = now
+		return games
 	}
 }

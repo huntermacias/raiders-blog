@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react"
 import { readClient as client } from "../../../lib/sanity.client"
 import { teamInfo } from "../../../lib/nfl"
 import { type GamePrediction, SEASON } from "../../../lib/predictions"
+import { withEspnFinals } from "../../../lib/live/service"
 import { type ScheduleGame, joinSchedule, nextGame, recordText, scheduleRecord } from "../../../lib/schedule"
 import ScheduleList, { kickoffText } from "../../../components/schedule/ScheduleList"
 import CalendarPanel from "../../../components/schedule/CalendarPanel"
@@ -56,7 +57,7 @@ const picksQuery = groq`
 export default async function SchedulePage() {
 	const [doc, picks]: [{ games?: ScheduleGame[] } | null, GamePrediction[]] = await Promise.all([
 		client.fetch(scheduleQuery, { season: SEASON }),
-		client.fetch(picksQuery, { season: SEASON }),
+		client.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])),
 	])
 
 	const rows = joinSchedule(doc?.games ?? [], picks ?? [])

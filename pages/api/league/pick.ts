@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 
 import { client } from "../../../lib/sanity.client"
 import { pickId, validatePick } from "../../../lib/league"
+import { withEspnFinals } from "../../../lib/live/service"
 import { authenticate } from "../../../lib/league.server"
 import { UNAVAILABLE, readBody } from "../../../lib/league.api"
 import { clientIp, createLimiter } from "../../../lib/rateLimit"
@@ -37,10 +38,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		if (!auth.ok) return res.status(auth.status).json({ message: auth.message })
 
 		const game = await client.fetch(
-			`*[_type == "gamePrediction" && _id == $id && !(_id in path('drafts.**'))][0]{ _id, season, week, kickoff, actualAwayScore, actualHomeScore }`,
+			`*[_type == "gamePrediction" && _id == $id && !(_id in path('drafts.**'))][0]{ _id, season, week, awayTeam, homeTeam, kickoff, actualAwayScore, actualHomeScore }`,
 			{ id: predictionId }
 		)
-		const v = validatePick(body, game ?? null, Date.now())
+		// ESPN's kickoff and final stand in for a time or score not typed in Studio, so picks lock when the game really starts.
+		const checked = game ? (await withEspnFinals([game]))[0] : null
+		const v = validatePick(body, checked, Date.now())
 		if (!v.ok) return res.status(v.status).json({ message: v.message })
 
 		await client.createOrReplace({

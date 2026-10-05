@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import { readClient as client } from "../../../../../lib/sanity.client"
 import { teamInfo } from "../../../../../lib/nfl"
 import { type GamePrediction, gradeGame } from "../../../../../lib/predictions"
+import { withEspnFinals } from "../../../../../lib/live/service"
 import GamePickCard from "../../../../../components/predictions/GamePickCard"
 
 // Same reasoning as the main scoreboard: reader votes and results should show
@@ -35,7 +36,10 @@ function validId(id: string) {
 
 async function getPick(id: string): Promise<(GamePrediction & { _updatedAt?: string }) | null> {
 	if (!validId(id)) return null
-	return client.fetch(pickQuery, { id })
+	const pick: (GamePrediction & { _updatedAt?: string }) | null = await client.fetch(pickQuery, { id })
+	if (!pick) return null
+	const [filled] = await withEspnFinals([pick])
+	return filled
 }
 
 export async function generateMetadata({ params: { id } }: Props): Promise<Metadata> {
