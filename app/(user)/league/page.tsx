@@ -8,9 +8,12 @@ import {
 	POINTS,
 	aheadOfBlogger,
 	bloggerLine,
+	HANDLE_RE,
+	buildProfile,
 	buildStandings,
 	gradedWeeks,
 	openGames,
+	recordText,
 	weekSummary,
 } from "../../../lib/league"
 import { cn } from "../../../lib/utils"
@@ -27,22 +30,40 @@ const TITLE = "Beat the Blogger: Free Raiders Score-Pick League | Raiders Rundow
 const DESCRIPTION =
 	"Pick the exact score of every Raiders game before kickoff, get graded with the same rules I use, and climb the public leaderboard. Free, no email needed."
 
-export function generateMetadata(): Metadata {
+type SearchParams = { week?: string; challenge?: string }
+
+/** The player behind a ?challenge= link, or null when the handle is malformed or isn't in the league. */
+async function challengerOf(handle: string | undefined, loaded?: Awaited<ReturnType<typeof loadLeague>>) {
+	if (!handle || !HANDLE_RE.test(handle)) return null
+	const { data } = loaded ?? (await loadLeague())
+	return buildProfile(data.games, data.players, data.picks, handle)
+}
+
+export async function generateMetadata({ searchParams }: { searchParams?: SearchParams }): Promise<Metadata> {
 	const hour = Math.floor(Date.now() / 3_600_000)
-	const image = `https://www.raidersrundown.com/api/og?type=league&v=${hour}`
+	const challenger = await challengerOf(searchParams?.challenge)
+	const who = challenger?.player.handle ?? null
+	// A challenge link gets a card about the challenger; the page still canonicalises to /league.
+	const image = who
+		? `https://www.raidersrundown.com/api/og?type=league&challenge=${encodeURIComponent(who)}&v=${hour}`
+		: `https://www.raidersrundown.com/api/og?type=league&v=${hour}`
+	const title = who ? `${who} challenged you: Beat the Blogger | Raiders Rundown` : TITLE
+	const description = who
+		? `${who} is playing Beat the Blogger, the free Raiders score-pick league. Pick the exact score of every game before kickoff and see if you can out-pick them.`
+		: DESCRIPTION
 	return {
-		title: TITLE,
-		description: DESCRIPTION,
+		title,
+		description,
 		alternates: { canonical: PAGE_URL },
 		openGraph: {
 			type: "website",
-			title: TITLE,
-			description: DESCRIPTION,
+			title,
+			description,
 			url: PAGE_URL,
 			siteName: "Raiders Rundown",
 			images: [image, { url: image, width: 1200, height: 630, alt: "Beat the Blogger, the Raiders Rundown score-pick league" }],
 		},
-		twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [image] },
+		twitter: { card: "summary_large_image", title, description, images: [image] },
 		// This Next version writes openGraph.images as og:image:url only; a plain og:image is what most link previews read.
 		other: { "og:image": image },
 	}
@@ -60,8 +81,10 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
 	)
 }
 
-export default async function LeaguePage({ searchParams }: { searchParams?: { week?: string } }) {
-	const { data, ok } = await loadLeague()
+export default async function LeaguePage({ searchParams }: { searchParams?: SearchParams }) {
+	const loaded = await loadLeague()
+	const { data, ok } = loaded
+	const challenger = await challengerOf(searchParams?.challenge, loaded)
 
 	const open = openGames(data.games, Date.now())
 	const weeks = gradedWeeks(data.games)
@@ -82,6 +105,30 @@ export default async function LeaguePage({ searchParams }: { searchParams?: { we
 
 	return (
 		<div className="container py-12">
+			{challenger && (
+				<section aria-label="Challenge" className="mb-6 rounded-xl border border-border bg-card px-5 py-4 shadow-sm">
+					<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">A challenge</p>
+					<p className="mt-1 font-serif text-2xl font-bold tracking-tight">
+						<Link href={`/league/${challenger.player.handle}`} className="underline-offset-4 hover:underline">
+							{challenger.player.handle}
+						</Link>{" "}
+						challenged you
+					</p>
+					<p className="mt-1 text-sm text-muted-foreground">
+						{challenger.row
+							? `Ranked #${challenger.row.rank} of ${challenger.ranked} with ${challenger.row.points} points, ${recordText(challenger.row.vsBlogger)} against me.`
+							: "In the league and waiting on a first graded game."}{" "}
+						Pick the scores below and see if you can out-pick them.
+					</p>
+					<a
+						href="#play"
+						className="mt-3 inline-flex items-center rounded-lg bg-foreground px-4 py-2 text-sm font-bold text-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+					>
+						Take the challenge
+					</a>
+				</section>
+			)}
+
 			<section className="relative overflow-hidden rounded-2xl border border-[#27272a] bg-[#09090b] text-zinc-50 shadow-xl">
 				<div
 					aria-hidden
