@@ -25,6 +25,7 @@ ${url(`${SITE_URL}/games`, undefined, "0.9", "daily")}
 ${url(`${SITE_URL}/predictions`, undefined, "0.9", "daily")}
 ${url(`${SITE_URL}/league`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/rankings`, undefined, "0.9", "weekly")}
+${url(`${SITE_URL}/rankings/math`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/schedule`, undefined, "0.8", "weekly")}
 ${url(`${SITE_URL}/live`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/community`, undefined, "0.6", "daily")}
