@@ -26,3 +26,23 @@ export const readClient = createClient({
 	apiVersion,
 	useCdn: false,
 });
+
+// Never serve a Studio edit from Next's data cache.
+//
+// Next 13.2.1 caches every server `fetch` that carries no Authorization header
+// for a year (until the next deploy), and `dynamic = "force-dynamic"` does not
+// change that for the data. The token-free client above sends no Authorization
+// header, so on Vercel a published Studio change (new power rankings, graded
+// keys...) kept rendering the old data. Passing `cache: "no-store"` opts each
+// query out. Pages that want ISR can still pass their own `cache`/`next`
+// options, which win over this default.
+const readFetch = readClient.fetch?.bind(readClient) as
+	| ((query: string, params?: unknown, options?: Record<string, unknown>) => Promise<unknown>)
+	| undefined
+if (readFetch) {
+	;(readClient as unknown as { fetch: unknown }).fetch = (
+		query: string,
+		params: unknown = {},
+		options: Record<string, unknown> = {}
+	) => readFetch(query, params, { cache: "no-store", ...options })
+}
