@@ -232,3 +232,20 @@ describe("a challenge card", () => {
 		}
 	})
 })
+
+describe("the new league card numbers", () => {
+	it("counts the players ahead of the blogger and carries the blogger's points", () => {
+		const spec = buildLeagueSpec(data(), 2026)!
+		const b = spec.board!.find((r) => r.blogger)!
+		expect(spec.bloggerPoints).toBe(b.points)
+		expect(spec.ahead).toBe(spec.board!.filter((r) => !r.blogger && r.points > b.points).length)
+		expect(buildLeagueSpec({ games: [], players: [], picks: [] }, 2026)!.ahead).toBeNull()
+	})
+
+	it("gives a player's card the blogger's points on their games and an opponent on each chip", () => {
+		const spec = buildLeagueSpec(data(), 2026, "Ann")!
+		expect(spec.bloggerPoints).toBe((spec.points as number) - (spec.delta as number))
+		expect(spec.chips!.every((c) => typeof c.opp === "string" && typeof c.you === "number" && typeof c.blogger === "number")).toBe(true)
+		expect(spec.chips![0].opp).toBe("OPP")
+	})
+})

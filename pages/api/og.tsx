@@ -4,7 +4,7 @@
 //   /api/og?type=game&slug=<game report slug>
 //   /api/og?type=pick&id=<gamePrediction id>
 //   /api/og?type=scoreboard
-//   /api/og?type=rankings
+//   /api/og?type=rankings   (the top of the ladder, the Raiders' spot and all 32 teams)
 //   /api/og?type=league[&handle=<league handle>]
 //   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
 //   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
@@ -25,7 +25,7 @@ import { readClient } from "../../lib/sanity.client"
 import urlFor from "../../lib/urlFor"
 import { teamInfo } from "../../lib/nfl"
 import { withEspnFinals } from "../../lib/live/service"
-import { buildBoards, raidersRow, type RankingsDoc } from "../../lib/rankings"
+import { buildBoards, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
 import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
@@ -35,6 +35,7 @@ import { buildLiveSpec } from "../../lib/og/liveCard"
 import { buildLeagueSpec } from "../../lib/og/leagueCard"
 import { buildMathSpec } from "../../lib/og/mathCard"
 import { buildLabSpec } from "../../lib/og/labCard"
+import { buildRankingsSpec } from "../../lib/og/rankingsCard"
 import { getGameBySlug, getSeason } from "../../lib/lab/data"
 import { loadMath } from "../../lib/math/server"
 import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
@@ -182,8 +183,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		const boards = buildBoards(docs)
 		const latest = boards[boards.length - 1]
 		if (!latest) return null
-		const lv = raidersRow(latest.rows)
-		return { type: "rankings", season: SEASON, week: latest.week, raidersRank: lv?.rank ?? null, change: lv?.change ?? null }
+		return buildRankingsSpec(latest, SEASON)
 	}
 
 	if (type === "league") {
