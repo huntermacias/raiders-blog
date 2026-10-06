@@ -4,7 +4,7 @@ import Image from "next/image"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
-import { readClient as client } from "../../../../lib/sanity.client"
+import { isrFetch } from "../../../../lib/sanity.client"
 import urlFor, { heroImageUrl, hotspotPosition, ogImageUrl } from "../../../../lib/urlFor"
 import { PortableText } from "@portabletext/react"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
@@ -25,13 +25,16 @@ type Props = {
 	}>
 }
 
-// Rendered on every request, not through ISR. On Next 13.2.1, `revalidate` plus
-// `generateStaticParams` makes the server throw "invariant: Expected pageData to
-// be a string for app data request" whenever a client navigation or link
-// prefetch (an RSC request) reaches a page that was not pre-rendered at build,
-// which is every one published after the last deploy. Move back to ISR after
-// upgrading Next.
-export const dynamic = "force-dynamic"
+// Served through ISR: Next keeps the rendered page and refreshes it in the background every minute, so most
+// visits are answered from the CDN instead of waiting on Sanity. Slugs are rendered on first request rather
+// than at build (the empty generateStaticParams below is what lets Next cache them on demand;
+// without it Next 15 renders every request fresh), so a post published after a deploy just works. The old
+// "Expected pageData to be a string" error was a Next 13.2.1 bug and is gone on Next 15.
+export const revalidate = 60
+
+export async function generateStaticParams() {
+	return []
+}
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -46,7 +49,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
 		title, description, _createdAt, _updatedAt, author->{name}
 	}`
-    const post = await client.fetch(query, { slug })
+    const post = await isrFetch(query, { slug })
     if (!post) return {}
 
     const title = `${post.title} | Raiders Rundown`
@@ -116,13 +119,13 @@ async function Post(props: Props) {
 	}
 	`
 
-    const post: Post = await client.fetch(query, { slug })
+    const post: Post = await isrFetch(query, { slug })
 
     if (!post) return notFound()
 
     // If this post is a game preview linked in Studio (Game Prediction ->
     // previewPost), show its keys to the game with live grading.
-    const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+    const keysDoc: { keys?: PickKey[] | null } | null = await isrFetch(
 		groq`*[_type=="gamePrediction" && previewPost._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
 		{ id: post._id }
 	)
@@ -136,7 +139,7 @@ async function Post(props: Props) {
 	}
 	`
     const related = categoryIds.length
-		? await client.fetch(relatedQuery, { slug, categoryIds })
+		? await isrFetch(relatedQuery, { slug, categoryIds })
 		: []
 
     const pageUrl = `${SITE_URL}/post/${post.slug.current}`
