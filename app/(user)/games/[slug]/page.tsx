@@ -6,7 +6,7 @@ import { PortableText } from "@portabletext/react"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
-import { readClient as client } from "../../../../lib/sanity.client"
+import { isrFetch } from "../../../../lib/sanity.client"
 import { heroImageUrl, ogImageUrl, hotspotPosition } from "../../../../lib/urlFor"
 import { RichTextComponents } from "../../../../components/RichTextComponents"
 import { readingMinutes } from "../../../../lib/home"
@@ -36,13 +36,17 @@ type Props = {
 	params: Promise<{ slug: string }>
 }
 
-// Rendered on every request, not through ISR. On Next 13.2.1, `revalidate` plus
-// `generateStaticParams` makes the server throw "invariant: Expected pageData to
-// be a string for app data request" whenever a client navigation or link
-// prefetch (an RSC request) reaches a page that was not pre-rendered at build,
-// which is every one published after the last deploy. Move back to ISR after
-// upgrading Next.
-export const dynamic = "force-dynamic"
+// Served through ISR: Next keeps the rendered page and refreshes it in the background every minute, so most
+// visits are answered from the CDN instead of waiting on Sanity and ESPN. Slugs are rendered on first request
+// rather than at build (the empty generateStaticParams below is what lets Next cache them on demand;
+// without it Next 15 renders every request fresh). Everything this page fetches must be cacheable: one no-store
+// fetch would make the whole page dynamic again (the ESPN box score read in getReportStats opts into a
+// two-minute cache for that reason).
+export const revalidate = 60
+
+export async function generateStaticParams() {
+	return []
+}
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
     const params = await props.params;
@@ -55,7 +59,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	*[_type=='gameReport' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
 		title, description, opponent, gameDate, raidersScore, opponentScore, _updatedAt
 	}`
-    const game = await client.fetch(query, { slug })
+    const game = await isrFetch(query, { slug })
     if (!game) return {}
 
     const won = game.raidersScore > game.opponentScore
@@ -128,15 +132,15 @@ async function GameReportPage(props: Props) {
 	`
 
     const [game, allGames]: [GameReport, any[]] = await Promise.all([
-		client.fetch(query, { slug }),
-		client.fetch(allGamesQuery),
+		isrFetch(query, { slug }),
+		isrFetch(allGamesQuery),
 	])
 
     if (!game) return notFound()
 
     // The pre-game "keys to the game", if a preview was linked to this
     // recap in Studio (Game Prediction -> keys), graded hit/miss.
-    const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+    const keysDoc: { keys?: PickKey[] | null } | null = await isrFetch(
 		groq`*[_type=="gamePrediction" && gameReport._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
 		{ id: game._id }
 	)

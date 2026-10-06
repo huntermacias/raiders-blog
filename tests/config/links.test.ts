@@ -29,15 +29,34 @@ describe("link prefetching", () => {
 })
 
 describe("detail pages", () => {
-	// On Next 13.2.1, revalidate + generateStaticParams makes the server throw
-	// "invariant: Expected pageData to be a string for app data request" when a
-	// client navigation or prefetch (an RSC request) reaches a post that was
-	// not pre-rendered at build, i.e. anything published after the last deploy.
-	// Render these on request until Next is upgraded.
-	it.each(["app/(user)/post/[slug]/page.tsx", "app/(user)/games/[slug]/page.tsx"])("%s renders on request, not through ISR", (file) => {
+	// Posts and game reports are served through ISR. The old force-dynamic setup worked around a Next 13.2.1 bug
+	// ("Expected pageData to be a string for app data request"), which Next 15 does not have. These guards keep
+	// the pages cacheable: a no-store fetch (the default on `readClient`, and on ESPN reads) makes a page dynamic.
+	it.each(["app/(user)/post/[slug]/page.tsx", "app/(user)/games/[slug]/page.tsx"])("%s is served through ISR", (file) => {
 		const src = read(file)
-		expect(src).toMatch(/export const dynamic = "force-dynamic"/)
-		expect(src).not.toMatch(/export const revalidate/)
-		expect(src).not.toMatch(/export (async )?function generateStaticParams/)
+		expect(src).toMatch(/export const revalidate = \d+/)
+		expect(src).not.toMatch(/force-dynamic/)
+		// Empty on purpose: it prerenders nothing at build, but without it Next 15 treats a dynamic-segment page as
+		// fully dynamic and never caches it (verified: x-nextjs-cache MISS then HIT with it, no-store without).
+		expect(src).toMatch(/export async function generateStaticParams\(\)\s*\{\s*return \[\]\s*\}/)
+	})
+
+	it.each(["app/(user)/post/[slug]/page.tsx", "app/(user)/games/[slug]/page.tsx"])("%s reads Sanity through the cacheable client", (file) => {
+		const src = read(file)
+		expect(src).toMatch(/isrFetch\(/)
+		expect(src).not.toMatch(/readClient/)
+		expect(src).not.toMatch(/\bclient\.fetch\(/)
+	})
+
+	it("the cacheable client does not send no-store", () => {
+		const src = read("lib/sanity.client.ts")
+		expect(src).toMatch(/export const isrFetch/)
+		expect(src).toMatch(/next:\s*\{\s*revalidate:\s*ISR_REVALIDATE_SECONDS/)
+	})
+
+	it("the ESPN box score read for a game report is cacheable, the live feed still is not", () => {
+		const src = read("lib/live/service.ts")
+		expect(src).toMatch(/revalidateSeconds \? \{ next: \{ revalidate: revalidateSeconds \} \} : \{ cache: "no-store"/)
+		expect(src).toMatch(/getJson\(`\$\{BASE\}\/summary\?event=\$\{id\}`, 4000, REPORT_REVALIDATE_SECONDS\)/)
 	})
 })
