@@ -1,5 +1,6 @@
 import { Inter, Fraunces } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import UtmCapture from "../../components/UtmCapture"
 import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
@@ -97,6 +98,7 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
         <UtmCapture />
         {/* Moved here from the homepage's page.tsx: this component (per its
             own docs) is meant to be mounted once at the app root so it
