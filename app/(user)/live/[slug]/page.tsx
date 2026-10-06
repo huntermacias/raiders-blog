@@ -11,7 +11,7 @@ import VideoEmbed from "../../../../components/VideoEmbed"
 const SITE_URL = "https://www.raidersrundown.com"
 
 type Props = {
-	params: { slug: string }
+	params: Promise<{ slug: string }>
 }
 
 // A live thread is, definitionally, always changing while it's live --
@@ -19,11 +19,17 @@ type Props = {
 // rather than using time-based ISR.
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
-	const query = groq`*[_type=='liveEvent' && slug.current == $slug][0]{title, status}`
-	const event = await client.fetch(query, { slug })
-	if (!event) return {}
-	return {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`*[_type=='liveEvent' && slug.current == $slug][0]{title, status}`
+    const event = await client.fetch(query, { slug })
+    if (!event) return {}
+    return {
 		title: `${event.title} | Raiders Rundown`,
 		description: `Live updates: ${event.title}.`,
 	}
@@ -37,21 +43,27 @@ function formatTime(iso: string) {
 	})
 }
 
-async function LiveEventPage({ params: { slug } }: Props) {
-	const query = groq`
+async function LiveEventPage(props: Props) {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`
 	*[_type=='liveEvent' && slug.current == $slug][0]{
 		...,
 		relatedGame->{title, slug}
 	}
 	`
-	const event: LiveEvent & { _id: string } = await client.fetch(query, { slug })
-	if (!event) return notFound()
+    const event: LiveEvent & { _id: string } = await client.fetch(query, { slug })
+    if (!event) return notFound()
 
-	const updates = [...(event.updates ?? [])].sort(
+    const updates = [...(event.updates ?? [])].sort(
 		(a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
 	)
 
-	return (
+    return (
 		<article className="container max-w-2xl py-12">
 			{event.status === "live" && <LiveAutoRefresh />}
 

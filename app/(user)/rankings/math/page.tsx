@@ -33,7 +33,7 @@ const DESCRIPTION =
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
 
-type Props = { searchParams?: { week?: string | string[]; model?: string | string[]; team?: string | string[]; take?: string | string[] } }
+type Props = { searchParams?: Promise<{ week?: string | string[]; model?: string | string[]; team?: string | string[]; take?: string | string[] }> }
 
 const modelOf = (v: string | string[] | undefined): ModelChoice => (first(v) === "season" ? "season" : "full")
 
@@ -44,20 +44,21 @@ function weekOf(v: string | string[] | undefined): number | undefined {
 
 const teamOf = (v: string | string[] | undefined) => {
 	const s = (first(v) ?? "").toUpperCase()
-	return /^[A-Z]{2,3}$/.test(s) ? s : null
+	return /^[A-Z]{2,3}$/.test(s) ? s : null;
 }
 
 // The link preview shows the card for whatever view was shared: the Raiders by default, or the team asked for.
-export function generateMetadata({ searchParams }: Props): Metadata {
-	const team = teamOf(searchParams?.team)
-	const take = team ? null : teamOf(searchParams?.take)
-	const abbr = team ?? take
-	const known = abbr && TEAMS.some((t) => t.abbr === abbr) ? teamByAbbr(abbr) : null
-	const valid = known != null
-	const view = { team: valid ? team : null, take: valid ? take : null, week: weekOf(searchParams?.week), model: modelOf(searchParams?.model) }
-	const image = absolute(cardPath(view, hourStamp()))
-	const title = valid && known ? `${known.nick}: Blogger vs. the Math | Raiders Rundown` : TITLE
-	return {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const searchParams = await props.searchParams;
+    const team = teamOf(searchParams?.team)
+    const take = team ? null : teamOf(searchParams?.take)
+    const abbr = team ?? take
+    const known = abbr && TEAMS.some((t) => t.abbr === abbr) ? teamByAbbr(abbr) : null
+    const valid = known != null
+    const view = { team: valid ? team : null, take: valid ? take : null, week: weekOf(searchParams?.week), model: modelOf(searchParams?.model) }
+    const image = absolute(cardPath(view, hourStamp()))
+    const title = valid && known ? `${known.nick}: Blogger vs. the Math | Raiders Rundown` : TITLE
+    return {
 		title,
 		description: DESCRIPTION,
 		alternates: { canonical: PAGE_URL },
@@ -85,12 +86,13 @@ async function loadTallies(): Promise<Record<string, Tally>> {
 	}
 }
 
-export default async function MathPage({ searchParams }: Props) {
-	const model = modelOf(searchParams?.model)
-	const [page, tallies] = await Promise.all([loadMath(weekOf(searchParams?.week), { model }), loadTallies()])
-	const { weeks, newest, week, report } = page
+export default async function MathPage(props: Props) {
+    const searchParams = await props.searchParams;
+    const model = modelOf(searchParams?.model)
+    const [page, tallies] = await Promise.all([loadMath(weekOf(searchParams?.week), { model }), loadTallies()])
+    const { weeks, newest, week, report } = page
 
-	return (
+    return (
 		<div className="container py-12">
 			<Link href="/rankings" className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 				&larr; Power Rankings
