@@ -1,5 +1,6 @@
 import { Inter, Fraunces } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import UtmCapture from "../../components/UtmCapture"
 import GoogleAnalytics from "@bradgarropy/next-google-analytics"
 
@@ -23,11 +24,12 @@ const fontSerif = Fraunces({
 	display: "swap",
 })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export const metadata = {
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-  },
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',
@@ -97,6 +99,7 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
         <UtmCapture />
         {/* Moved here from the homepage's page.tsx: this component (per its
             own docs) is meant to be mounted once at the app root so it

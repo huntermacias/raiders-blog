@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-type Props = { params: { id: string } }
+type Props = { params: Promise<{ id: string }> }
 
 const pickQuery = groq`
 	*[_type == 'gamePrediction' && _id == $id && !(_id in path('drafts.**'))][0] {
@@ -31,7 +31,7 @@ const pickQuery = groq`
 `
 
 function validId(id: string) {
-	return /^[A-Za-z0-9._-]{1,80}$/.test(id) && !id.startsWith("drafts.")
+	return /^[A-Za-z0-9._-]{1,80}$/.test(id) && !id.startsWith("drafts.");
 }
 
 async function getPick(id: string): Promise<(GamePrediction & { _updatedAt?: string }) | null> {
@@ -42,22 +42,28 @@ async function getPick(id: string): Promise<(GamePrediction & { _updatedAt?: str
 	return filled
 }
 
-export async function generateMetadata({ params: { id } }: Props): Promise<Metadata> {
-	const pick = await getPick(id)
-	if (!pick) return {}
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const params = await props.params;
 
-	const away = teamInfo(pick.awayTeam)
-	const home = teamInfo(pick.homeTeam)
-	const grade = gradeGame(pick)
-	const title = `Week ${pick.week} pick: ${away.nick} at ${home.nick} | Raiders Rundown`
-	const description = grade.final
+    const {
+        id
+    } = params;
+
+    const pick = await getPick(id)
+    if (!pick) return {}
+
+    const away = teamInfo(pick.awayTeam)
+    const home = teamInfo(pick.homeTeam)
+    const grade = gradeGame(pick)
+    const title = `Week ${pick.week} pick: ${away.nick} at ${home.nick} | Raiders Rundown`
+    const description = grade.final
 		? `My pick was ${away.nick} ${pick.predictedAwayScore}, ${home.nick} ${pick.predictedHomeScore}. Final: ${pick.actualAwayScore}-${pick.actualHomeScore}.`
 		: `My pick: ${away.nick} ${pick.predictedAwayScore}, ${home.nick} ${pick.predictedHomeScore}. Make yours before kickoff and see how readers are leaning.`
-	const url = `${SITE_URL}/predictions/pick/${pick._id}`
-	const stamp = pick._updatedAt ? new Date(pick._updatedAt).getTime() : 0
-	const image = `${SITE_URL}/api/og?type=pick&id=${encodeURIComponent(pick._id)}&v=${stamp}`
+    const url = `${SITE_URL}/predictions/pick/${pick._id}`
+    const stamp = pick._updatedAt ? new Date(pick._updatedAt).getTime() : 0
+    const image = `${SITE_URL}/api/og?type=pick&id=${encodeURIComponent(pick._id)}&v=${stamp}`
 
-	return {
+    return {
 		title,
 		description,
 		alternates: { canonical: url },
@@ -73,11 +79,17 @@ export async function generateMetadata({ params: { id } }: Props): Promise<Metad
 	}
 }
 
-export default async function PickPage({ params: { id } }: Props) {
-	const pick = await getPick(id)
-	if (!pick) return notFound()
+export default async function PickPage(props: Props) {
+    const params = await props.params;
 
-	return (
+    const {
+        id
+    } = params;
+
+    const pick = await getPick(id)
+    if (!pick) return notFound()
+
+    return (
 		<div className="container max-w-xl py-12">
 			<Link href="/predictions" className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:underline">
 				<ArrowLeft aria-hidden className="h-4 w-4" /> Prediction Scoreboard

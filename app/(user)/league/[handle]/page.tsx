@@ -13,14 +13,15 @@ export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-export async function generateMetadata({ params }: { params: { handle: string } }): Promise<Metadata> {
-	const handle = HANDLE_RE.test(params.handle) ? params.handle : null
-	if (!handle) return { title: "Beat the Blogger | Raiders Rundown" }
-	const hour = Math.floor(Date.now() / 3_600_000)
-	const image = `${SITE_URL}/api/og?type=league&handle=${encodeURIComponent(handle)}&v=${hour}`
-	const title = `${handle} in Beat the Blogger | Raiders Rundown`
-	const description = `${handle}'s season in the Raiders Rundown score-pick league: points, picks, and record against the blogger.`
-	return {
+export async function generateMetadata(props: { params: Promise<{ handle: string }> }): Promise<Metadata> {
+    const params = await props.params;
+    const handle = HANDLE_RE.test(params.handle) ? params.handle : null
+    if (!handle) return { title: "Beat the Blogger | Raiders Rundown" }
+    const hour = Math.floor(Date.now() / 3_600_000)
+    const image = `${SITE_URL}/api/og?type=league&handle=${encodeURIComponent(handle)}&v=${hour}`
+    const title = `${handle} in Beat the Blogger | Raiders Rundown`
+    const description = `${handle}'s season in the Raiders Rundown score-pick league: points, picks, and record against the blogger.`
+    return {
 		title,
 		description,
 		alternates: { canonical: `${SITE_URL}/league/${handle}` },
@@ -41,12 +42,13 @@ function Tile({ label, value, foot }: { label: string; value: string; foot?: str
 	)
 }
 
-export default async function LeagueProfile({ params }: { params: { handle: string } }) {
-	if (!HANDLE_RE.test(params.handle)) notFound()
+export default async function LeagueProfile(props: { params: Promise<{ handle: string }> }) {
+    const params = await props.params;
+    if (!HANDLE_RE.test(params.handle)) notFound()
 
-	const { data, ok } = await loadLeague()
-	const profile = buildProfile(data.games, data.players, data.picks, params.handle)
-	if (!profile) {
+    const { data, ok } = await loadLeague()
+    const profile = buildProfile(data.games, data.players, data.picks, params.handle)
+    if (!profile) {
 		// A failed load shouldn't masquerade as "no such player".
 		if (!ok) {
 			return (
@@ -60,13 +62,13 @@ export default async function LeagueProfile({ params }: { params: { handle: stri
 		notFound()
 	}
 
-	const { player, row, ranked, history, pending } = profile
-	const shareText = row
+    const { player, row, ranked, history, pending } = profile
+    const shareText = row
 		? `I'm #${row.rank} in Beat the Blogger at Raiders Rundown with ${row.points} points. Think you can beat the blogger?`
 		: `I'm playing Beat the Blogger at Raiders Rundown. Think you can beat the blogger?`
-	const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: shareText, url: `${SITE_URL}/league/${player.handle}` }).toString()}`
+    const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: shareText, url: `${SITE_URL}/league/${player.handle}` }).toString()}`
 
-	return (
+    return (
 		<div className="container py-12">
 			<Link href="/league" className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 				&larr; Beat the Blogger

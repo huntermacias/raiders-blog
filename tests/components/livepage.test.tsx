@@ -33,7 +33,7 @@ describe("/live metadata", () => {
 
 	it("ties the card and the address to the game in a shared link, but keeps the canonical page", async () => {
 		scoreboardMock.mockResolvedValue({ value: board, stale: false, at: 0 })
-		const m = await generateMetadata({ searchParams: { game: "401872980" } })
+		const m = await generateMetadata({ searchParams: Promise.resolve({ game: "401872980" }) })
 		expect(images(m).og).toContain("&game=401872980&v=")
 		expect((m.openGraph as { url: string }).url).toBe("https://www.raidersrundown.com/live?game=401872980")
 		expect(m.alternates?.canonical).toBe("https://www.raidersrundown.com/live")
@@ -42,7 +42,7 @@ describe("/live metadata", () => {
 	it("ignores a game id that isn't an id", async () => {
 		scoreboardMock.mockResolvedValue({ value: board, stale: false, at: 0 })
 		for (const bad of ["abc", "../../x", "12", "1&v=2", ["x"]]) {
-			const m = await generateMetadata({ searchParams: { game: bad as string } })
+			const m = await generateMetadata({ searchParams: Promise.resolve({ game: bad as string }) })
 			expect(images(m).og).not.toContain("game=")
 		}
 	})

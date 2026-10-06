@@ -14,11 +14,11 @@ import LabHub from "../../app/(user)/lab/page"
 afterEach(cleanup)
 
 describe("the Lab pages render", () => {
-	it("a game page has its top plays and fourth-down report, and cards in the link preview", () => {
-		render(<GamePage params={{ slug: "week-3" }} />)
+	it("a game page has its top plays and fourth-down report, and cards in the link preview", async () => {
+		render(await GamePage({ params: Promise.resolve({ slug: "week-3" }) }))
 		expect(screen.getByRole("heading", { name: /The five plays that decided it/ })).toBeTruthy()
 		expect(screen.getByRole("heading", { name: /right calls on fourth down/ })).toBeTruthy()
-		const meta = gameMeta({ params: { slug: "week-3" } })
+		const meta = await gameMeta({ params: Promise.resolve({ slug: "week-3" }) })
 		const images = (meta.openGraph as { images: { url: string }[] }).images.map((i) => i.url)
 		expect(images).toHaveLength(3)
 		expect(images.some((u) => u.includes("view=play&rank=1"))).toBe(true)
@@ -34,14 +34,14 @@ describe("the Lab pages render", () => {
 		expect(String((fourthMeta().other as Record<string, string>)["og:image"])).toContain("slug=season&view=fourth")
 	})
 
-	it("a scouting page is built for every opponent but the Raiders, and 404s on anything else", () => {
+	it("a scouting page is built for every opponent but the Raiders, and 404s on anything else", async () => {
 		const abbrs = scoutParams().map((p) => p.abbr)
 		expect(abbrs).toHaveLength(31)
 		expect(abbrs).not.toContain("lv")
-		render(<ScoutPage params={{ abbr: "kc" }} />)
+		render(await ScoutPage({ params: Promise.resolve({ abbr: "kc" }) }))
 		expect(screen.getByRole("heading", { level: 1, name: /Raiders vs Chiefs/ })).toBeTruthy()
-		expect(String((scoutMeta({ params: { abbr: "kc" } }).other as Record<string, string>)["og:image"])).toContain("type=scout&opp=KC")
-		expect(() => render(<ScoutPage params={{ abbr: "zzz" }} />)).toThrow()
+		expect(String(((await scoutMeta({ params: Promise.resolve({ abbr: "kc" }) })).other as Record<string, string>)["og:image"])).toContain("type=scout&opp=KC")
+		await expect(ScoutPage({ params: Promise.resolve({ abbr: "zzz" }) })).rejects.toThrow()
 	})
 
 	it("the scouting hub lists every team even when the schedule cannot be read", async () => {

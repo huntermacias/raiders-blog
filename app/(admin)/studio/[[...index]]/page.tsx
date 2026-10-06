@@ -1,9 +1,9 @@
-'use client'
+import Studio from "./Studio"
 
-import {NextStudio} from "next-sanity/studio"
-import config  from "../../../../sanity.config"
+// Page metadata and viewport for the Studio (replaces the old head.tsx, which Next no longer reads).
+export {metadata, viewport} from "next-sanity/studio"
 
+// The Studio is a client component, so this page stays a server component to be able to export metadata.
 export default function StudioPage() {
-	// Supports the same props as import {Studio} from 'sanity', 'config'
-	return <NextStudio config={config} />
+	return <Studio />
 }

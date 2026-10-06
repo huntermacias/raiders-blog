@@ -33,7 +33,7 @@ import type { PickKey } from "../../../../lib/predictions"
 const SITE_URL = "https://www.raidersrundown.com"
 
 type Props = {
-	params: { slug: string }
+	params: Promise<{ slug: string }>
 }
 
 // Rendered on every request, not through ISR. On Next 13.2.1, `revalidate` plus
@@ -44,27 +44,33 @@ type Props = {
 // upgrading Next.
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
-	const query = groq`
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`
 	*[_type=='gameReport' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
 		title, description, opponent, gameDate, raidersScore, opponentScore, _updatedAt
 	}`
-	const game = await client.fetch(query, { slug })
-	if (!game) return {}
+    const game = await client.fetch(query, { slug })
+    if (!game) return {}
 
-	const won = game.raidersScore > game.opponentScore
-	const title = `${game.title} | Raiders Rundown`
-	const description =
+    const won = game.raidersScore > game.opponentScore
+    const title = `${game.title} | Raiders Rundown`
+    const description =
 		game.description ||
 		`Raiders ${won ? "beat" : "fell to"} the ${game.opponent} ${game.raidersScore}-${game.opponentScore}.`
-	const url = `${SITE_URL}/games/${slug}`
-	// Designed share card (see pages/api/og.tsx). `v` changes when the report
-	// is edited so social networks re-fetch instead of serving a stale image.
-	// Absolute URL because this Next version (13.2.1) has no `metadataBase`.
-	const stamp = game._updatedAt ? new Date(game._updatedAt).getTime() : 0
-	const image = `${SITE_URL}/api/og?type=game&slug=${encodeURIComponent(slug)}&v=${stamp}`
+    const url = `${SITE_URL}/games/${slug}`
+    // Designed share card (see pages/api/og.tsx). `v` changes when the report
+    // is edited so social networks re-fetch instead of serving a stale image.
+    // Absolute URL because this Next version (13.2.1) has no `metadataBase`.
+    const stamp = game._updatedAt ? new Date(game._updatedAt).getTime() : 0
+    const image = `${SITE_URL}/api/og?type=game&slug=${encodeURIComponent(slug)}&v=${stamp}`
 
-	return {
+    return {
 		title,
 		description,
 		alternates: { canonical: url },
@@ -96,8 +102,14 @@ function formatDate(date: string) {
 	return new Date(date).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 }
 
-async function GameReportPage({ params: { slug } }: Props) {
-	const query = groq`
+async function GameReportPage(props: Props) {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`
 	*[_type=='gameReport' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
 		...,
 		author->,
@@ -109,45 +121,45 @@ async function GameReportPage({ params: { slug } }: Props) {
 		],
 	}
 	`
-	const allGamesQuery = groq`
+    const allGamesQuery = groq`
 	*[_type=='gameReport' && !(_id in path('drafts.**'))] | order(gameDate desc) {
 		_id, title, slug, opponent, homeAway, gameDate, raidersScore, opponentScore, mainImage
 	}
 	`
 
-	const [game, allGames]: [GameReport, any[]] = await Promise.all([
+    const [game, allGames]: [GameReport, any[]] = await Promise.all([
 		client.fetch(query, { slug }),
 		client.fetch(allGamesQuery),
 	])
 
-	if (!game) return notFound()
+    if (!game) return notFound()
 
-	// The pre-game "keys to the game", if a preview was linked to this
-	// recap in Studio (Game Prediction -> keys), graded hit/miss.
-	const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+    // The pre-game "keys to the game", if a preview was linked to this
+    // recap in Studio (Game Prediction -> keys), graded hit/miss.
+    const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
 		groq`*[_type=="gamePrediction" && gameReport._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
 		{ id: game._id }
 	)
 
-	// ESPN's box score once the game is final, with anything typed in Studio laid over it (see lib/live/gamestats.ts).
-	const auto = game.autoStats === false ? null : await getReportStats(game)
-	const stats = mergeStats(game, auto)
+    // ESPN's box score once the game is final, with anything typed in Studio laid over it (see lib/live/gamestats.ts).
+    const auto = game.autoStats === false ? null : await getReportStats(game)
+    const stats = mergeStats(game, auto)
 
-	const won = game.raidersScore > game.opponentScore
-	// The Lab's replay of this game, found by opponent and date, if the Lab has it yet.
-	const labGame = labGameFor({ opponent: game.opponent, gameDate: game.gameDate })
-	const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
-	// Sorted newest-first: the entry after this one in the array is the
-	// chronologically earlier ("previous") game, the one before is later ("next").
-	const prevGame = currentIndex >= 0 ? allGames[currentIndex + 1] ?? null : null
-	const nextGame = currentIndex > 0 ? allGames[currentIndex - 1] ?? null : null
-	const moreGames = allGames.filter((g) => g.slug.current !== slug).slice(0, 3)
+    const won = game.raidersScore > game.opponentScore
+    // The Lab's replay of this game, found by opponent and date, if the Lab has it yet.
+    const labGame = labGameFor({ opponent: game.opponent, gameDate: game.gameDate })
+    const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
+    // Sorted newest-first: the entry after this one in the array is the
+    // chronologically earlier ("previous") game, the one before is later ("next").
+    const prevGame = currentIndex >= 0 ? allGames[currentIndex + 1] ?? null : null
+    const nextGame = currentIndex > 0 ? allGames[currentIndex - 1] ?? null : null
+    const moreGames = allGames.filter((g) => g.slug.current !== slug).slice(0, 3)
 
-	const pageUrl = `${SITE_URL}/games/${slug}`
-	const homeTeam = game.homeAway === "home" ? "Las Vegas Raiders" : game.opponent
-	const awayTeam = game.homeAway === "home" ? game.opponent : "Las Vegas Raiders"
+    const pageUrl = `${SITE_URL}/games/${slug}`
+    const homeTeam = game.homeAway === "home" ? "Las Vegas Raiders" : game.opponent
+    const awayTeam = game.homeAway === "home" ? game.opponent : "Las Vegas Raiders"
 
-	const jsonLd = [
+    const jsonLd = [
 		{
 			"@context": "https://schema.org",
 			"@type": "NewsArticle",
@@ -184,7 +196,7 @@ async function GameReportPage({ params: { slug } }: Props) {
 		},
 	]
 
-	return (
+    return (
 		<article>
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
