@@ -100,6 +100,30 @@ describe("win probability helpers", () => {
 		expect(playAt(plays, 50)).toBeUndefined()
 	})
 
+	it("reads the lead and deficit from the running score, which includes extra points", () => {
+		// A scoring play's own score is taken before the extra point: this touchdown shows 19-29, but the score
+		// the moment after was 19-30, so the deficit was 11 and the lead before it was 7, not 6.
+		const plays = [
+			play(100, "TD", 0.5, 0.6, [6, 0]),
+			play(300, "TD", 0.3, 0.1, [19, 29]),
+		]
+		const scores: [number, number, number][] = [[100, 6, 0], [110, 7, 0], [300, 19, 29], [310, 19, 30]]
+		const wp: WpPoint[] = [[0, 0.5], [3600, 0]]
+		const withScores = gameStory(wp, plays, scores)
+		expect(withScores.maxDeficit).toBe(11)
+		expect(withScores.maxLead).toBe(7)
+		// Without the running score it can only see the plays.
+		expect(gameStory(wp, plays).maxDeficit).toBe(10)
+	})
+
+	it("counts a lead change only when the lead passes from one team to the other", () => {
+		// Raiders go up first, tie it twice and retake each time (no change), then the Chiefs and the Raiders trade the lead.
+		const scores: [number, number, number][] = [
+			[1, 7, 0], [2, 7, 7], [3, 10, 7], [4, 10, 10], [5, 13, 10], [6, 13, 16], [7, 19, 17], [8, 19, 23],
+		]
+		expect(gameStory([[0, 0.5], [3600, 0]], [], scores).leadChanges).toBe(3)
+	})
+
 	it("does not call the result of a loss the lowest point of the game", () => {
 		// The last sample is the final whistle (0% in a loss), not a moment in the game.
 		const wp: WpPoint[] = [[0, 0.5], [3000, 0.71], [3500, 0.12], [3600, 0]]

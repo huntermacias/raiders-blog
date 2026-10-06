@@ -15,7 +15,7 @@ import { clockAt, formatSwing, gameStory, kindLabel, pct, swingPoints } from "@/
  */
 export default function LabTake({ game }: { game: LabGame }) {
 	const slug = gameSlug(game)
-	const s = gameStory(game.wp, game.keyPlays)
+	const s = gameStory(game.wp, game.keyPlays, game.scores)
 	const low = clockAt(s.low.el)
 	const swing = s.swing
 	const swingPts = swing ? swingPoints(swing) : null

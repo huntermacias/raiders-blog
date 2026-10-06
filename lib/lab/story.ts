@@ -12,7 +12,7 @@ export type LabStory = {
 }
 
 export function labStory(g: LabGame): LabStory {
-	const s = gameStory(g.wp, g.keyPlays)
+	const s = gameStory(g.wp, g.keyPlays, g.scores)
 	const low = clockAt(s.low.el)
 	const high = clockAt(s.high.el)
 	const swing = s.swing

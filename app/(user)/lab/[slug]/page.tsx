@@ -38,7 +38,7 @@ function dateLabel(g: LabGame) {
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
 	const g = getGameBySlug(params.slug)
 	if (!g) return { title: "The Lab | Raiders Rundown" }
-	const story = gameStory(g.wp, g.keyPlays)
+	const story = gameStory(g.wp, g.keyPlays, g.scores)
 	const low = clockAt(story.low.el)
 	const pageTitle = `${title(g)} | Win probability replay | Raiders Rundown`
 	const description = `Replay the ${g.result === "W" ? "win" : "loss"} ${g.home ? "against" : "at"} the ${g.oppName} play by play. The Raiders' win probability bottomed out at ${pct(story.low.p)} in ${low.q}, ${low.clock}.`
@@ -67,7 +67,7 @@ export default function LabGamePage({ params }: { params: { slug: string } }) {
 	const season = getSeason()
 	const slug = gameSlug(g)
 	const { prev, next } = neighbours(slug)
-	const story = gameStory(g.wp, g.keyPlays)
+	const story = gameStory(g.wp, g.keyPlays, g.scores)
 	const low = clockAt(story.low.el)
 	const swing = story.swing
 	const swingPts = swing ? swingPoints(swing) : null
