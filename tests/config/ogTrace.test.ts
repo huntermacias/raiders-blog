@@ -8,7 +8,7 @@ const config = require("../../next.config.js")
 // The card route reads hb.wasm from harfbuzzjs with fs at runtime. Vercel's tracer can't see that, so the
 // deployed function lacked the file and every share card silently fell back to the default image.
 describe("share-card route file tracing", () => {
-	const includes: string[] = config.experimental?.outputFileTracingIncludes?.["/api/og"] ?? []
+	const includes: string[] = config.outputFileTracingIncludes?.["/api/og"] ?? []
 
 	it("ships harfbuzz's wasm with /api/og", () => {
 		expect(includes).toContain("./node_modules/harfbuzzjs/hb.wasm")

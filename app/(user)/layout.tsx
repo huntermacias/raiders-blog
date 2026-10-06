@@ -24,11 +24,12 @@ const fontSerif = Fraunces({
 	display: "swap",
 })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export const metadata = {
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-  },
   title: "Las Vegas Raiders News | Latest Updates, Rumors, and Analysis",
   description: "Stay up-to-date on the latest Las Vegas Raiders news with our comprehensive coverage. From rumors and analysis to breaking updates, we've got you covered.",
   creator: 'Hunter Macias',

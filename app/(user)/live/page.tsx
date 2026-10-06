@@ -20,24 +20,25 @@ const DESCRIPTION = "Follow every NFL game as it happens: live score, the drive 
 
 function gameParam(v: string | string[] | undefined): string {
 	const raw = Array.isArray(v) ? v[0] : v
-	return raw && /^\d{6,12}$/.test(raw) ? raw : ""
+	return raw && /^\d{6,12}$/.test(raw) ? raw : "";
 }
 
 // The share card is drawn from the game itself (pages/api/og.tsx, type=live). Platforms keep a card
 // they have already fetched, so the card's address changes by the minute while a game is on, and
 // by the ten minutes otherwise; a shared /live?game=<id> link is tied to that one game.
-export async function generateMetadata({ searchParams }: { searchParams?: { game?: string | string[] } }): Promise<Metadata> {
-	const game = gameParam(searchParams?.game)
-	let live = false
-	try {
+export async function generateMetadata(props: { searchParams?: Promise<{ game?: string | string[] }> }): Promise<Metadata> {
+    const searchParams = await props.searchParams;
+    const game = gameParam(searchParams?.game)
+    let live = false
+    try {
 		live = (await getScoreboard()).value.some((g) => g.state === "in")
 	} catch {
 		live = false
 	}
-	const bucket = Math.floor(Date.now() / (live ? 60_000 : 600_000))
-	const image = `${SITE_URL}/api/og?type=live${game ? `&game=${game}` : ""}&v=${bucket}`
-	const url = game ? `${SITE_URL}/live?game=${game}` : `${SITE_URL}/live`
-	return {
+    const bucket = Math.floor(Date.now() / (live ? 60_000 : 600_000))
+    const image = `${SITE_URL}/api/og?type=live${game ? `&game=${game}` : ""}&v=${bucket}`
+    const url = game ? `${SITE_URL}/live?game=${game}` : `${SITE_URL}/live`
+    return {
 		title: TITLE,
 		description: DESCRIPTION,
 		alternates: { canonical: `${SITE_URL}/live` },
@@ -81,14 +82,15 @@ async function loadBoard(): Promise<LiveGameInfo[] | null> {
 	}
 }
 
-async function LiveIndexPage({ searchParams }: { searchParams?: { game?: string | string[] } }) {
-	const [threads, board] = await Promise.all([loadThreads(), loadBoard()])
+async function LiveIndexPage(props: { searchParams?: Promise<{ game?: string | string[] }> }) {
+    const searchParams = await props.searchParams;
+    const [threads, board] = await Promise.all([loadThreads(), loadBoard()])
 
-	// The note pinned over a Raiders game: the newest update of whichever thread is live right now.
-	const liveThread = threads.find((t) => t.status === "live" && t.latest?.body)
-	const pinned: Pinned | null = liveThread?.latest ? { title: liveThread.title, slug: liveThread.slug.current, body: liveThread.latest.body, postedAt: liveThread.latest.postedAt } : null
+    // The note pinned over a Raiders game: the newest update of whichever thread is live right now.
+    const liveThread = threads.find((t) => t.status === "live" && t.latest?.body)
+    const pinned: Pinned | null = liveThread?.latest ? { title: liveThread.title, slug: liveThread.slug.current, body: liveThread.latest.body, postedAt: liveThread.latest.postedAt } : null
 
-	return (
+    return (
 		<div className="lab min-h-screen bg-lab-page text-lab-ink">
 			<section className="border-b border-lab-line">
 				<div className="container py-8 sm:py-12">

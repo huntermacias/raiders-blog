@@ -20,9 +20,9 @@ import type { PickKey } from "../../../../lib/predictions"
 import { readingMinutes } from "../../../../lib/home"
 
 type Props = {
-	params: {
+	params: Promise<{
 		slug: string
-	}
+	}>
 }
 
 // Rendered on every request, not through ISR. On Next 13.2.1, `revalidate` plus
@@ -35,24 +35,30 @@ export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-export async function generateMetadata({ params: { slug } }: Props): Promise<Metadata> {
-	const query = groq`
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`
 	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]{
 		title, description, _createdAt, _updatedAt, author->{name}
 	}`
-	const post = await client.fetch(query, { slug })
-	if (!post) return {}
+    const post = await client.fetch(query, { slug })
+    if (!post) return {}
 
-	const title = `${post.title} | Raiders Rundown`
-	const description = post.description || "Las Vegas Raiders news, analysis and commentary from Raiders Rundown."
-	const url = `${SITE_URL}/post/${slug}`
-	// Designed share card (see pages/api/og.tsx). `v` changes when the post
-	// is edited so social networks re-fetch instead of serving a stale image.
-	// Absolute URL because this Next version (13.2.1) has no `metadataBase`.
-	const stamp = post._updatedAt ? new Date(post._updatedAt).getTime() : 0
-	const image = `${SITE_URL}/api/og?type=post&slug=${encodeURIComponent(slug)}&v=${stamp}`
+    const title = `${post.title} | Raiders Rundown`
+    const description = post.description || "Las Vegas Raiders news, analysis and commentary from Raiders Rundown."
+    const url = `${SITE_URL}/post/${slug}`
+    // Designed share card (see pages/api/og.tsx). `v` changes when the post
+    // is edited so social networks re-fetch instead of serving a stale image.
+    // Absolute URL because this Next version (13.2.1) has no `metadataBase`.
+    const stamp = post._updatedAt ? new Date(post._updatedAt).getTime() : 0
+    const image = `${SITE_URL}/api/og?type=post&slug=${encodeURIComponent(slug)}&v=${stamp}`
 
-	return {
+    return {
 		title,
 		description,
 		alternates: { canonical: url },
@@ -89,8 +95,14 @@ function formatDate(date: string) {
 	})
 }
 
-async function Post({ params: { slug } }: Props) {
-	const query = groq`
+async function Post(props: Props) {
+    const params = await props.params;
+
+    const {
+        slug
+    } = params;
+
+    const query = groq`
 	*[_type=='post' && slug.current == $slug && !(_id in path('drafts.**'))][0]
 	{
 		...,
@@ -104,31 +116,31 @@ async function Post({ params: { slug } }: Props) {
 	}
 	`
 
-	const post: Post = await client.fetch(query, { slug })
+    const post: Post = await client.fetch(query, { slug })
 
-	if (!post) return notFound()
+    if (!post) return notFound()
 
-	// If this post is a game preview linked in Studio (Game Prediction ->
-	// previewPost), show its keys to the game with live grading.
-	const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
+    // If this post is a game preview linked in Studio (Game Prediction ->
+    // previewPost), show its keys to the game with live grading.
+    const keysDoc: { keys?: PickKey[] | null } | null = await client.fetch(
 		groq`*[_type=="gamePrediction" && previewPost._ref == $id && !(_id in path("drafts.**"))][0]{ keys[]{_key, text, result} }`,
 		{ id: post._id }
 	)
 
-	const categoryIds = post.categories?.map((c) => c._id) ?? []
-	const relatedQuery = groq`
+    const categoryIds = post.categories?.map((c) => c._id) ?? []
+    const relatedQuery = groq`
 	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
 	| order(_createdAt desc) [0...3] {
 		_id, title, slug, mainImage, _createdAt,
 		"words": length(string::split(pt::text(body), " "))
 	}
 	`
-	const related = categoryIds.length
+    const related = categoryIds.length
 		? await client.fetch(relatedQuery, { slug, categoryIds })
 		: []
 
-	const pageUrl = `${SITE_URL}/post/${post.slug.current}`
-	const jsonLd = [
+    const pageUrl = `${SITE_URL}/post/${post.slug.current}`
+    const jsonLd = [
 		{
 			"@context": "https://schema.org",
 			"@type": "NewsArticle",
@@ -155,7 +167,7 @@ async function Post({ params: { slug } }: Props) {
 		},
 	]
 
-	return (
+    return (
 		<article>
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />

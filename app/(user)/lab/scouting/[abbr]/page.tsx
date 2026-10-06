@@ -24,15 +24,16 @@ function teamFor(abbr: string) {
 	return opponents().find((t) => t.abbr.toLowerCase() === abbr.toLowerCase())
 }
 
-export function generateMetadata({ params }: { params: { abbr: string } }): Metadata {
-	const t = teamFor(params.abbr)
-	if (!t) return { title: "The Lab | Raiders Rundown" }
-	const season = getSeason()
-	const title = `Raiders vs ${t.nick}: scouting report | Raiders Rundown`
-	const description = `${scoutLine(t.abbr, t.nick)} How the Raiders match up with the ${t.name} on offense and defense, from ${season.season} play-by-play.`
-	const url = `${SITE_URL}/lab/scouting/${t.abbr.toLowerCase()}`
-	const card = `${SITE_URL}/api/og?type=scout&opp=${t.abbr}&v=${Date.parse(getScouting().generatedAt) || 0}`
-	return {
+export async function generateMetadata(props: { params: Promise<{ abbr: string }> }): Promise<Metadata> {
+    const params = await props.params;
+    const t = teamFor(params.abbr)
+    if (!t) return { title: "The Lab | Raiders Rundown" }
+    const season = getSeason()
+    const title = `Raiders vs ${t.nick}: scouting report | Raiders Rundown`
+    const description = `${scoutLine(t.abbr, t.nick)} How the Raiders match up with the ${t.name} on offense and defense, from ${season.season} play-by-play.`
+    const url = `${SITE_URL}/lab/scouting/${t.abbr.toLowerCase()}`
+    const card = `${SITE_URL}/api/og?type=scout&opp=${t.abbr}&v=${Date.parse(getScouting().generatedAt) || 0}`
+    return {
 		title,
 		description,
 		alternates: { canonical: url },
@@ -42,11 +43,12 @@ export function generateMetadata({ params }: { params: { abbr: string } }): Meta
 	}
 }
 
-export default function ScoutPage({ params }: { params: { abbr: string } }) {
-	const t = teamFor(params.abbr)
-	if (!t) notFound()
-	const data = getScouting()
-	return (
+export default async function ScoutPage(props: { params: Promise<{ abbr: string }> }) {
+    const params = await props.params;
+    const t = teamFor(params.abbr)
+    if (!t) notFound()
+    const data = getScouting()
+    return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink" style={labColorVars(t.abbr)}>
 			<section className="border-b border-lab-line">
 				<div className="container py-10 sm:py-14">

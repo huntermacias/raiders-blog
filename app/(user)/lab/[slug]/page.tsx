@@ -35,22 +35,23 @@ function dateLabel(g: LabGame) {
 	return new Date(`${g.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-	const g = getGameBySlug(params.slug)
-	if (!g) return { title: "The Lab | Raiders Rundown" }
-	const story = gameStory(g.wp, g.keyPlays, g.scores)
-	const low = clockAt(story.low.el)
-	const pageTitle = `${title(g)} | Win probability replay | Raiders Rundown`
-	const description = `Replay the ${g.result === "W" ? "win" : "loss"} ${g.home ? "against" : "at"} the ${g.oppName} play by play. The Raiders' win probability bottomed out at ${pct(story.low.p)} in ${low.q}, ${low.clock}.`
-	const slug = gameSlug(g)
-	const url = `${SITE_URL}/lab/${slug}`
-	// The share card is drawn by /api/og from the same data. The lab is static, so the stamp is the data's own
-	// date: a refreshed data file gives a new URL and the networks re-scrape a fresh card.
-	const stamp = Date.parse(getSeason().generatedAt) || 0
-	const card = `${SITE_URL}/api/og?type=lab&slug=${slug}&v=${stamp}`
-	const drive = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=drive&v=${stamp}`
-	const play = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=play&rank=1&v=${stamp}`
-	return {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const params = await props.params;
+    const g = getGameBySlug(params.slug)
+    if (!g) return { title: "The Lab | Raiders Rundown" }
+    const story = gameStory(g.wp, g.keyPlays, g.scores)
+    const low = clockAt(story.low.el)
+    const pageTitle = `${title(g)} | Win probability replay | Raiders Rundown`
+    const description = `Replay the ${g.result === "W" ? "win" : "loss"} ${g.home ? "against" : "at"} the ${g.oppName} play by play. The Raiders' win probability bottomed out at ${pct(story.low.p)} in ${low.q}, ${low.clock}.`
+    const slug = gameSlug(g)
+    const url = `${SITE_URL}/lab/${slug}`
+    // The share card is drawn by /api/og from the same data. The lab is static, so the stamp is the data's own
+    // date: a refreshed data file gives a new URL and the networks re-scrape a fresh card.
+    const stamp = Date.parse(getSeason().generatedAt) || 0
+    const card = `${SITE_URL}/api/og?type=lab&slug=${slug}&v=${stamp}`
+    const drive = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=drive&v=${stamp}`
+    const play = `${SITE_URL}/api/og?type=lab&slug=${slug}&view=play&rank=1&v=${stamp}`
+    return {
 		title: pageTitle,
 		description,
 		alternates: { canonical: url },
@@ -61,23 +62,24 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 	}
 }
 
-export default function LabGamePage({ params }: { params: { slug: string } }) {
-	const g = getGameBySlug(params.slug)
-	if (!g) notFound()
-	const season = getSeason()
-	const slug = gameSlug(g)
-	const { prev, next } = neighbours(slug)
-	const story = gameStory(g.wp, g.keyPlays, g.scores)
-	const low = clockAt(story.low.el)
-	const swing = story.swing
-	const swingPts = swing ? swingPoints(swing) : null
-	const swingClock = swing ? clockAt(swing.el) : null
-	const plays = topPlaysFor(g, season.team, 5)
-	const fourth = fourthGameFor(g.week)
-	const stamp = Date.parse(season.generatedAt) || 0
-	const clip = clipFor(g.week)
+export default async function LabGamePage(props: { params: Promise<{ slug: string }> }) {
+    const params = await props.params;
+    const g = getGameBySlug(params.slug)
+    if (!g) notFound()
+    const season = getSeason()
+    const slug = gameSlug(g)
+    const { prev, next } = neighbours(slug)
+    const story = gameStory(g.wp, g.keyPlays, g.scores)
+    const low = clockAt(story.low.el)
+    const swing = story.swing
+    const swingPts = swing ? swingPoints(swing) : null
+    const swingClock = swing ? clockAt(swing.el) : null
+    const plays = topPlaysFor(g, season.team, 5)
+    const fourth = fourthGameFor(g.week)
+    const stamp = Date.parse(season.generatedAt) || 0
+    const clip = clipFor(g.week)
 
-	const tiles = [
+    const tiles = [
 		{
 			label: "Lowest point",
 			help: WP_HELP,
@@ -102,7 +104,7 @@ export default function LabGamePage({ params }: { params: { slug: string } }) {
 		},
 	]
 
-	return (
+    return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink" style={labColorVars(g.opp)}>
 			<section className="border-b border-lab-line">
 				<div className="container py-10 sm:py-14">
