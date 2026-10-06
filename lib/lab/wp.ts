@@ -155,8 +155,14 @@ export type GameStory = {
 	swing: KeyPlay | undefined
 }
 
-/** Headline numbers for a game, from its win probability series and scoring plays. */
-export function gameStory(series: WpPoint[], plays: KeyPlay[]): GameStory {
+/**
+ * Headline numbers for a game, from its win probability series and scoring plays.
+ *
+ * Pass the game's `scores` (the running [elapsed, Raiders, opponent] score) when you have it. A scoring play's own
+ * `score` is the score when the play happened, before the extra point, so reading the lead and deficit from the plays
+ * alone undercounts both by a point after every touchdown that gets one. Without `scores` it falls back to the plays.
+ */
+export function gameStory(series: WpPoint[], plays: KeyPlay[], scores?: [number, number, number][]): GameStory {
 	let low = { p: 1, el: 0 }
 	let high = { p: 0, el: 0 }
 	// The last sample is the result (100% for a win, 0% for a loss), not a moment in the game, so it is never
@@ -171,9 +177,12 @@ export function gameStory(series: WpPoint[], plays: KeyPlay[]): GameStory {
 	let leadChanges = 0
 	let maxDeficit = 0
 	let maxLead = 0
-	for (const k of plays) {
-		if (!SCORING.includes(k.kind)) continue
-		const diff = k.score[0] - k.score[1]
+	const snapshots: [number, number][] =
+		scores && scores.length
+			? scores.map(([, a, b]) => [a, b] as [number, number])
+			: plays.filter((k) => SCORING.includes(k.kind)).map((k) => k.score)
+	for (const score of snapshots) {
+		const diff = score[0] - score[1]
 		const side = Math.sign(diff)
 		if (side !== 0 && leader !== 0 && side !== leader) leadChanges++
 		if (side !== 0) leader = side

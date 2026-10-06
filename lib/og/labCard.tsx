@@ -144,7 +144,7 @@ function driveSpec(d: Drive): LabDriveSpec {
 /** The card's numbers for one game, or null when the game has no win probability series. */
 export function buildLabSpec(game: LabGame, team: string, opts: { view?: string | null; drive?: number | null } = {}): LabCardSpec | null {
 	if (!game.wp.length) return null
-	const story = gameStory(game.wp, game.keyPlays)
+	const story = gameStory(game.wp, game.keyPlays, game.scores)
 	const low = clockAt(story.low.el)
 	const sw = story.swing
 	const swPts = sw ? swingPoints(sw) : null

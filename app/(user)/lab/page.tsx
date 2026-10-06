@@ -115,7 +115,7 @@ export default function LabPage() {
 						.slice()
 						.reverse()
 						.map((g) => {
-							const story = gameStory(g.wp, g.keyPlays)
+							const story = gameStory(g.wp, g.keyPlays, g.scores)
 							const swing = story.swing
 							const swingPts = swing ? swingPoints(swing) : null
 							const lowAt = clockAt(story.low.el)
