@@ -127,8 +127,38 @@ async function Post({ params: { slug } }: Props) {
 		? await client.fetch(relatedQuery, { slug, categoryIds })
 		: []
 
+	const pageUrl = `${SITE_URL}/post/${post.slug.current}`
+	const jsonLd = [
+		{
+			"@context": "https://schema.org",
+			"@type": "NewsArticle",
+			headline: post.title,
+			description: post.description || undefined,
+			image: [`${SITE_URL}/api/og?type=post&slug=${encodeURIComponent(post.slug.current)}`],
+			datePublished: post._createdAt,
+			dateModified: (post as { _updatedAt?: string })._updatedAt ?? post._createdAt,
+			author: [{ "@type": "Person", name: post.author?.name || "Raiders Rundown" }],
+			publisher: {
+				"@type": "Organization",
+				name: "Raiders Rundown",
+				logo: { "@type": "ImageObject", url: `${SITE_URL}/og-default-v2.png` },
+			},
+			mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl },
+		},
+		{
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			itemListElement: [
+				{ "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+				{ "@type": "ListItem", position: 2, name: post.title, item: pageUrl },
+			],
+		},
+	]
+
 	return (
 		<article>
+			{/* eslint-disable-next-line react/no-danger */}
+			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 			{/* header */}
 			<div className="container max-w-3xl py-12">
 				<div className="mb-4 flex flex-wrap gap-2">
