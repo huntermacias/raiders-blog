@@ -1,4 +1,3 @@
-import { previewData } from "next/headers";
 import { groq } from "next-sanity";
 import type { Metadata } from "next";
 import { client, readClient } from "../../lib/sanity.client";
@@ -18,8 +17,6 @@ import { loadLeague } from "../../lib/league.data";
 import { getScoreboard, withEspnFinals } from "../../lib/live/service";
 import type { LiveGameInfo } from "../../lib/live/types";
 import { buildStandings, gradedWeeks, openGames, weekSummary } from "../../lib/league";
-import PreviewSuspense from "../../components/PreviewSuspense"
-import PreviewBlogList from "../../components/PreviewBlogList";
 import BlogList from "../../components/BlogList";
 import GameReportsTeaser from "../../components/GameReportsTeaser";
 import SubscribeBox from "../../components/SubscribeBox";
@@ -148,21 +145,6 @@ async function liveBoard(): Promise<LiveGameInfo[] | null> {
 }
 
 export default async function page() {
-
-	if(previewData()) {
-		return (
-			<PreviewSuspense
-				fallback={(
-					<div role="status">
-						<p className="text-center text-lg animate-pulse text-[#51e665]">Loading preview Data...</p>
-					</div>
-				)}
-
-			>
-			<PreviewBlogList query={query} />
-			</PreviewSuspense>
-		)
-	}
 
 	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league, board]: [
 		Post[],

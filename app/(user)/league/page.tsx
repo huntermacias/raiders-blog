@@ -39,19 +39,20 @@ async function challengerOf(handle: string | undefined, loaded?: Awaited<ReturnT
 	return buildProfile(data.games, data.players, data.picks, handle)
 }
 
-export async function generateMetadata({ searchParams }: { searchParams?: SearchParams }): Promise<Metadata> {
-	const hour = Math.floor(Date.now() / 3_600_000)
-	const challenger = await challengerOf(searchParams?.challenge)
-	const who = challenger?.player.handle ?? null
-	// A challenge link gets a card about the challenger; the page still canonicalises to /league.
-	const image = who
+export async function generateMetadata(props: { searchParams?: Promise<SearchParams> }): Promise<Metadata> {
+    const searchParams = await props.searchParams;
+    const hour = Math.floor(Date.now() / 3_600_000)
+    const challenger = await challengerOf(searchParams?.challenge)
+    const who = challenger?.player.handle ?? null
+    // A challenge link gets a card about the challenger; the page still canonicalises to /league.
+    const image = who
 		? `https://www.raidersrundown.com/api/og?type=league&challenge=${encodeURIComponent(who)}&v=${hour}`
 		: `https://www.raidersrundown.com/api/og?type=league&v=${hour}`
-	const title = who ? `${who} challenged you: Beat the Blogger | Raiders Rundown` : TITLE
-	const description = who
+    const title = who ? `${who} challenged you: Beat the Blogger | Raiders Rundown` : TITLE
+    const description = who
 		? `${who} is playing Beat the Blogger, the free Raiders score-pick league. Pick the exact score of every game before kickoff and see if you can out-pick them.`
 		: DESCRIPTION
-	return {
+    return {
 		title,
 		description,
 		alternates: { canonical: PAGE_URL },
@@ -81,29 +82,30 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
 	)
 }
 
-export default async function LeaguePage({ searchParams }: { searchParams?: SearchParams }) {
-	const loaded = await loadLeague()
-	const { data, ok } = loaded
-	const challenger = await challengerOf(searchParams?.challenge, loaded)
+export default async function LeaguePage(props: { searchParams?: Promise<SearchParams> }) {
+    const searchParams = await props.searchParams;
+    const loaded = await loadLeague()
+    const { data, ok } = loaded
+    const challenger = await challengerOf(searchParams?.challenge, loaded)
 
-	const open = openGames(data.games, Date.now())
-	const weeks = gradedWeeks(data.games)
-	const asked = Number(searchParams?.week)
-	const week = Number.isInteger(asked) && weeks.includes(asked) ? asked : null
+    const open = openGames(data.games, Date.now())
+    const weeks = gradedWeeks(data.games)
+    const asked = Number(searchParams?.week)
+    const week = Number.isInteger(asked) && weeks.includes(asked) ? asked : null
 
-	const seasonRows = buildStandings(data.games, data.players, data.picks)
-	const rows = week === null ? seasonRows : buildStandings(data.games, data.players, data.picks, { week })
-	const blogger = bloggerLine(data.games, week ?? undefined)
-	const latest = weeks.length > 0 ? weeks[weeks.length - 1] : null
-	const last = latest === null ? null : weekSummary(data.games, data.players, data.picks, latest)
+    const seasonRows = buildStandings(data.games, data.players, data.picks)
+    const rows = week === null ? seasonRows : buildStandings(data.games, data.players, data.picks, { week })
+    const blogger = bloggerLine(data.games, week ?? undefined)
+    const latest = weeks.length > 0 ? weeks[weeks.length - 1] : null
+    const last = latest === null ? null : weekSummary(data.games, data.players, data.picks, latest)
 
-	const scope = week === null ? "Season" : `Week ${week}`
-	const tabs: { label: string; href: string; active: boolean }[] = [
+    const scope = week === null ? "Season" : `Week ${week}`
+    const tabs: { label: string; href: string; active: boolean }[] = [
 		{ label: "Season", href: "/league#board", active: week === null },
 		...weeks.map((w) => ({ label: `Week ${w}`, href: `/league?week=${w}#board`, active: week === w })),
 	]
 
-	return (
+    return (
 		<div className="container py-12">
 			{challenger && (
 				<section aria-label="Challenge" className="mb-6 rounded-xl border border-border bg-card px-5 py-4 shadow-sm">

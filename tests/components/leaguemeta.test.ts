@@ -34,7 +34,7 @@ describe("league share metadata", () => {
 	})
 
 	it("points a challenge link at that player's challenge card, with their name in the title", async () => {
-		const m = await leagueMeta({ searchParams: { challenge: "ann_1" } })
+		const m = await leagueMeta({ searchParams: Promise.resolve({ challenge: "ann_1" }) })
 		expect(og(m)).toMatch(/^https:\/\/www\.raidersrundown\.com\/api\/og\?type=league&challenge=Ann_1&v=\d+$/)
 		expect(tw(m)).toBe(og(m))
 		expect(plain(m)).toBe(og(m))
@@ -43,21 +43,21 @@ describe("league share metadata", () => {
 
 	it("falls back to the plain invite for a challenger who isn't a player or isn't a handle", async () => {
 		for (const challenge of ["ghost", "../../x", "a b"]) {
-			const m = await leagueMeta({ searchParams: { challenge } })
+			const m = await leagueMeta({ searchParams: Promise.resolve({ challenge }) })
 			expect(og(m)).toMatch(/type=league&v=\d+$/)
 			expect(String(m.title)).not.toContain("challenged you")
 		}
 	})
 
 	it("points a player's page at that player's card, with the handle encoded", async () => {
-		const m = await profileMeta({ params: { handle: "Ann_1" } })
+		const m = await profileMeta({ params: Promise.resolve({ handle: "Ann_1" }) })
 		expect(og(m)).toMatch(/^https:\/\/www\.raidersrundown\.com\/api\/og\?type=league&handle=Ann_1&v=\d+$/)
 		expect(tw(m)).toBe(og(m))
 		expect(plain(m)).toBe(og(m))
 	})
 
 	it("doesn't put a bad handle into an image address", async () => {
-		const m = await profileMeta({ params: { handle: "../../x" } })
+		const m = await profileMeta({ params: Promise.resolve({ handle: "../../x" }) })
 		expect(JSON.stringify(m)).not.toContain("api/og")
 	})
 })

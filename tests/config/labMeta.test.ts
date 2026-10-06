@@ -4,9 +4,9 @@ import { generateMetadata } from "../../app/(user)/lab/[slug]/page"
 import { getGames } from "../../lib/lab/data"
 
 describe("lab game page metadata", () => {
-	it("shares the generated cards, story first, with the og:image tag Next 13.2 leaves out", () => {
+	it("shares the generated cards, story first, with the og:image tag Next 13.2 leaves out", async () => {
 		for (const g of getGames()) {
-			const meta = generateMetadata({ params: { slug: `week-${g.week}` } })
+			const meta = await generateMetadata({ params: Promise.resolve({ slug: `week-${g.week}` }) })
 			const images = meta.openGraph!.images as { url: string }[]
 			expect(images[0].url).toMatch(new RegExp(`^https://www\\.raidersrundown\\.com/api/og\\?type=lab&slug=week-${g.week}&v=\\d+$`))
 			expect(images[1].url).toContain("view=drive")
@@ -15,7 +15,7 @@ describe("lab game page metadata", () => {
 		}
 	})
 
-	it("still has the default title for an unknown game", () => {
-		expect(generateMetadata({ params: { slug: "week-99" } }).title).toMatch(/Lab/)
+	it("still has the default title for an unknown game", async () => {
+		expect((await generateMetadata({ params: Promise.resolve({ slug: "week-99" }) })).title).toMatch(/Lab/)
 	})
 })

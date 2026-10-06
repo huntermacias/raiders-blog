@@ -2,7 +2,6 @@
 module.exports = {
   reactStrictMode: true,
   experimental: {
-    appDir: true,
     // Sanity Studio (via next-sanity) bundles the Mux video input plugin,
     // whose dependency chain (@mux/mux-player -> custom-media-element) ships
     // as ESM-only. Next's webpack build needs this loosened to bundle it
@@ -12,9 +11,10 @@ module.exports = {
     // The share-card route (satori + resvg) loads hb.wasm from harfbuzzjs at runtime with fs, which
     // Vercel's file tracing can't see, so the function shipped without it and every card fell back to
     // the default image ("ENOENT .../harfbuzzjs/hb.wasm"). List the files it reads so they are bundled.
-    outputFileTracingIncludes: {
-      "/api/og": ["./node_modules/harfbuzzjs/hb.wasm", "./node_modules/@resvg/resvg-js-*/**"],
-    },
+  },
+  // Moved out of `experimental` in Next 15.
+  outputFileTracingIncludes: {
+    "/api/og": ["./node_modules/harfbuzzjs/hb.wasm", "./node_modules/@resvg/resvg-js-*/**"],
   },
   images: {
     domains: ["i.pinimg.com", "cdn.sanity.io"],
