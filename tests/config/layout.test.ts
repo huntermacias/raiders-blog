@@ -16,4 +16,11 @@ describe("root layout", () => {
 		expect(layout).toContain("<Analytics />")
 		expect(layout).toContain("<GoogleAnalytics")
 	})
+
+	// Real-user speed data (Core Web Vitals) in Vercel's Speed Insights tab. It must be mounted once, in the body.
+	it("mounts Speed Insights once, in the body", () => {
+		expect(layout).toContain('import { SpeedInsights } from "@vercel/speed-insights/next"')
+		expect(layout.match(/<SpeedInsights \/>/g)).toHaveLength(1)
+		expect(layout.indexOf("<SpeedInsights />")).toBeGreaterThan(layout.indexOf("<body"))
+	})
 })
