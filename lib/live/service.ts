@@ -17,12 +17,17 @@ import type { LiveGame, LiveGameInfo } from "./types"
 // LIVE_FEED_BASE lets a test or a local stand-in replace ESPN.
 const BASE = process.env.LIVE_FEED_BASE || "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
 
-async function getJson(url: string, timeoutMs = 6000): Promise<unknown> {
+async function getJson(url: string, timeoutMs = 6000, revalidateSeconds?: number): Promise<unknown> {
 	const ctl = new AbortController()
 	const timer = setTimeout(() => ctl.abort(), timeoutMs)
 	try {
-		// no-store: Next 13.2.1 would otherwise keep a token-free server fetch for a year.
-		const res = await fetch(url, { signal: ctl.signal, cache: "no-store", headers: { accept: "application/json" } })
+		// no-store by default: live data must be fresh. A caller that is part of a cached (ISR) page passes
+		// `revalidateSeconds` instead, because one no-store fetch makes the whole page uncacheable.
+		const res = await fetch(url, {
+			signal: ctl.signal,
+			...(revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : { cache: "no-store" as const }),
+			headers: { accept: "application/json" },
+		})
 		if (!res.ok) throw new Error(`ESPN responded ${res.status}`)
 		return await res.json()
 	} finally {
@@ -66,18 +71,18 @@ const etDay = (ms: number) =>
 
 // ESPN's scoreboard ignores a `dates=from-to` range here (it answers with no games), so every lookup is
 // a single day or a single week, each cached for a minute.
-async function scoreboardQuery(query: string, timeoutMs: number) {
-	const res = await cached(`sb:${query}`, 60_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?${query}`, timeoutMs)))
+async function scoreboardQuery(query: string, timeoutMs: number, revalidateSeconds?: number) {
+	const res = await cached(`sb:${query}`, 60_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?${query}`, timeoutMs, revalidateSeconds)))
 	return res.value
 }
 
 /** ESPN's event id for the Raiders game on (or a day either side of) `gameDate`, against `opponent`. */
-export async function findRaidersEvent(opponent: string | null | undefined, gameDate: string | null | undefined): Promise<string | null> {
+export async function findRaidersEvent(opponent: string | null | undefined, gameDate: string | null | undefined, revalidateSeconds?: number): Promise<string | null> {
 	const t = gameDate ? Date.parse(gameDate) : NaN
 	if (!Number.isFinite(t)) return null
 	const abbr = teamInfo(opponent).abbr
 	for (const day of [etDay(t), etDay(t - DAY), etDay(t + DAY)]) {
-		const games = await scoreboardQuery(`dates=${day}&limit=100`, 4000)
+		const games = await scoreboardQuery(`dates=${day}&limit=100`, 4000, revalidateSeconds)
 		const hit = games.find((g) => [g.home.abbr, g.away.abbr].includes("LV") && [g.home.abbr, g.away.abbr].includes(abbr))
 		if (hit) return hit.id
 	}
@@ -91,14 +96,17 @@ export async function findRaidersEvent(opponent: string | null | undefined, game
  */
 export async function getReportStats(game: { opponent?: string | null; gameDate?: string | null; espnGameId?: string | null }): Promise<AutoStats | null> {
 	try {
-		const id = game.espnGameId?.trim() || (await findRaidersEvent(game.opponent, game.gameDate))
+		// Game reports are served through ISR, so these two ESPN reads are cacheable for two minutes instead of no-store.
+		const id = game.espnGameId?.trim() || (await findRaidersEvent(game.opponent, game.gameDate, REPORT_REVALIDATE_SECONDS))
 		if (!id || !/^\d{6,12}$/.test(id)) return null
-		const res = await cached(`reportstats:${id}`, 120_000, async () => parseGameStats(await getJson(`${BASE}/summary?event=${id}`, 4000)))
+		const res = await cached(`reportstats:${id}`, 120_000, async () => parseGameStats(await getJson(`${BASE}/summary?event=${id}`, 4000, REPORT_REVALIDATE_SECONDS)))
 		return res.value ? { ...res.value, espnId: id } : null
 	} catch {
 		return null
 	}
 }
+
+const REPORT_REVALIDATE_SECONDS = 120
 
 let finalsFailedAt = 0
 
