@@ -27,6 +27,22 @@ export const readClient = createClient({
 	useCdn: false,
 });
 
+// Client for pages served through ISR (posts and game reports).
+//
+// `readClient` below is wrapped to send `cache: "no-store"` on every query, which opts a page out of static
+// caching. These pages want the opposite: Next keeps the rendered page and the query results for
+// ISR_REVALIDATE_SECONDS, then refreshes them in the background, so most visits are served from the CDN instead
+// of waiting on Sanity. A Studio edit shows up within about two minutes (one window to expire, one to refresh).
+export const ISR_REVALIDATE_SECONDS = 60
+export const isrClient = createClient({
+	projectId,
+	dataset,
+	apiVersion,
+	useCdn: false,
+});
+export const isrFetch = (query: string, params: Record<string, unknown> = {}): Promise<any> =>
+	isrClient.fetch(query, params, { next: { revalidate: ISR_REVALIDATE_SECONDS } })
+
 // Never serve a Studio edit from Next's data cache.
 //
 // Next 13.2.1 caches every server `fetch` that carries no Authorization header
