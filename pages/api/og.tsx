@@ -12,7 +12,9 @@
 //   /api/og?type=lab&slug=week-N|season&view=play[&rank=N]   (a top play: the play that moved the game or the season most)
 //   /api/og?type=lab&slug=week-N|season&view=fourth   (the fourth-down report)
 //   /api/og?type=scout&opp=XX[&week=N]   (the scouting report for an opponent)
-//   /api/og?type=last&stat=def.turnovers[&n=N]   (will it last?: one stat against every team that started the same way)
+//   /api/og?type=last[&kind=chart|wins|fifths|checklist|season|bottom][&size=wide|tall][&stat=def.turnovers]
+//           [&scope=all][&team=KC][&po=made|missed][&years=2016,2021][&pin=2016-LV][&y=wins]
+//           (will it last?: a card for each part of the page; wide 1200x630 or tall 1080x1350)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -31,7 +33,7 @@ import { teamInfo } from "../../lib/nfl"
 import { withEspnFinals } from "../../lib/live/service"
 import { buildBoards, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
-import { OG_HEIGHT, OG_WIDTH, renderCard, type CardSpec } from "../../lib/og/cards"
+import { OG_HEIGHT, cardSize, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
 import { client } from "../../lib/sanity.client"
 import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
@@ -222,7 +224,23 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return page.report ? buildMathSpec(page.report, { team: first(query.team), take: first(query.take) }) : null
 	}
 
-	const insight = insightSpec({ type, slug: first(query.slug), view: first(query.view), rank: first(query.rank), opp: first(query.opp), week: first(query.week), stat: first(query.stat) })
+	const insight = insightSpec({
+		type,
+		slug: first(query.slug),
+		view: first(query.view),
+		rank: first(query.rank),
+		opp: first(query.opp),
+		week: first(query.week),
+		kind: first(query.kind),
+		size: first(query.size),
+		stat: first(query.stat),
+		scope: first(query.scope),
+		team: first(query.team),
+		po: first(query.po),
+		years: first(query.years),
+		pin: first(query.pin),
+		y: first(query.y),
+	})
 	if (insight) return insight
 	if (type === "scout" || type === "last") return null
 
@@ -296,9 +314,10 @@ async function debugReport(query: NextApiRequest["query"]) {
 		out.spec = spec ? "ok" : "null (the route would redirect to the default image)"
 		if (spec) {
 			out.stage = "render"
-			const svg = await satori(renderCard(spec), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
+			const { width, height } = cardSize(spec)
+			const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
 			out.svgBytes = svg.length
-			const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+			const png = new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng()
 			out.pngBytes = png.length
 			out.stage = "done"
 		}
@@ -324,8 +343,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const spec = await specFor(req.query)
 		if (!spec) return fallback(res)
 
-		const svg = await satori(renderCard(spec), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
-		const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+		const { width, height } = cardSize(spec)
+		const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
+		const png = new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng()
 
 		res.setHeader("Content-Type", "image/png")
 		// The page URL carries `v=<updatedAt>`, so a long cache is safe: an edit
