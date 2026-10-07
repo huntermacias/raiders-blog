@@ -18,7 +18,8 @@ File layout, to keep it small (it is read on the server only):
   teams[i]            "2007 NE": the row every list below is indexed by
   po[i], wins[i]      made the playoffs (0/1), final regular-season wins
   stats               the stat keys, "off.epaPass" ...
-  n["4"].w[i]         wins after 4 games
+  losses[i]           final regular-season losses (a season with ties has wins + losses below the games played)
+  n["4"].w[i], .l[i]  wins and losses after 4 games
   n["4"].s[key][i]    the stat over the first 4 games, times 1000, rounded; null when it could not be measured
   n["4"].r[key][i]    the same stat over the rest of the season
 """
@@ -44,8 +45,8 @@ LICENSE = "nflverse play-by-play data, CC BY 4.0. Calculations by Raiders Rundow
 # The stats worth asking "will it last?" about. Each is a stat build_scouting already ranks; whether higher is
 # better for it comes from there too.
 STATS = [
-    ("off", "epaPass"), ("off", "epaRush"), ("off", "third"), ("off", "redZone"), ("off", "turnovers"), ("off", "sackRate"),
-    ("def", "epaPass"), ("def", "epaRush"), ("def", "third"), ("def", "redZone"), ("def", "turnovers"), ("def", "sackRate"),
+    ("off", "epa"), ("off", "epaPass"), ("off", "epaRush"), ("off", "third"), ("off", "redZone"), ("off", "turnovers"), ("off", "sackRate"), ("off", "explosive"), ("off", "points"),
+    ("def", "epa"), ("def", "epaPass"), ("def", "epaRush"), ("def", "third"), ("def", "redZone"), ("def", "turnovers"), ("def", "sackRate"), ("def", "explosive"), ("def", "points"),
 ]
 KEYS = [f"{side}.{k}" for side, k in STATS]
 # Early-season checkpoints: games played. The rest of the season is at least four games after the last one.
@@ -102,13 +103,15 @@ def team_rows(season_df: pd.DataFrame) -> list[dict]:
             continue
         mine = reg[(reg["posteam"] == team) | (reg["defteam"] == team)]
         won = (tg["for"] > tg["against"]).astype(int)
-        row = {"team": team, "po": int(team in post_teams), "wins": int(won.sum()), "n": {}}
+        lost = (tg["for"] < tg["against"]).astype(int)
+        row = {"team": team, "po": int(team in post_teams), "wins": int(won.sum()), "losses": int(lost.sum()), "n": {}}
         for n in CHECKPOINTS:
             first, rest = tg.iloc[:n], tg.iloc[n:]
             start = {s: bs.team_side(mine[mine["game_id"].isin(set(first["game"]))], n, first, s, team) for s in ("off", "def")}
             end = {s: bs.team_side(mine[mine["game_id"].isin(set(rest["game"]))], len(rest), rest, s, team) for s in ("off", "def")}
             row["n"][n] = {
                 "w": int(won.iloc[:n].sum()),
+                "l": int(lost.iloc[:n].sum()),
                 "s": {f"{s}.{k}": _scaled(start[s][k]) for s, k in STATS},
                 "r": {f"{s}.{k}": _scaled(end[s][k]) for s, k in STATS},
             }
@@ -120,15 +123,18 @@ def assemble(seasons: dict[int, list[dict]]) -> dict:
     labels: list[str] = []
     po: list[int] = []
     wins: list[int] = []
-    n_block: dict[str, dict] = {str(n): {"w": [], "s": {k: [] for k in KEYS}, "r": {k: [] for k in KEYS}} for n in CHECKPOINTS}
+    losses: list[int] = []
+    n_block: dict[str, dict] = {str(n): {"w": [], "l": [], "s": {k: [] for k in KEYS}, "r": {k: [] for k in KEYS}} for n in CHECKPOINTS}
     for season in sorted(seasons):
         for r in seasons[season]:
             labels.append(f"{season} {r['team']}")
             po.append(r["po"])
             wins.append(r["wins"])
+            losses.append(r["losses"])
             for n in CHECKPOINTS:
                 b, src = n_block[str(n)], r["n"][n]
                 b["w"].append(src["w"])
+                b["l"].append(src["l"])
                 for k in KEYS:
                     b["s"][k].append(src["s"][k])
                     b["r"][k].append(src["r"][k])
@@ -141,6 +147,7 @@ def assemble(seasons: dict[int, list[dict]]) -> dict:
         "teams": labels,
         "po": po,
         "wins": wins,
+        "losses": losses,
         "stats": KEYS,
         "n": n_block,
     }

@@ -71,6 +71,11 @@ describe("insightSpec", () => {
 				expect(d.x).toBeGreaterThanOrEqual(0)
 				expect(d.x).toBeLessThanOrEqual(1)
 			}
+			// Teams that made the playoffs and teams that missed are both on the card, and so are earlier Raiders teams.
+			expect(a.start.some((d) => d.po)).toBe(true)
+			expect(a.start.some((d) => !d.po)).toBe(true)
+			expect(a.start.some((d) => d.raiders)).toBe(true)
+			expect(a.start.map((d) => d.po)).toEqual(a.end.map((d) => d.po))
 			expect(a.raiders).toBeGreaterThan(0)
 			expect(a.raiders).toBeLessThan(1)
 			expect(a.band[0]).toBeLessThan(a.band[1])
@@ -78,6 +83,7 @@ describe("insightSpec", () => {
 			expect(a.wins).toMatch(/^Won \d+% of games early, \d+% after · \d+% made the playoffs$/)
 		}
 		expect(insightSpec(q({ type: "last", stat: "off.epaRush" }))?.type).toBe("last")
+		expect(insightSpec(q({ type: "last", stat: "net.points" }))?.type).toBe("last")
 		expect(insightSpec(q({ type: "last", stat: "off.nope" }))).toBeNull()
 		expect(insightSpec(q({ type: "last", stat: "../x" }))).toBeNull()
 		expect(insightSpec(q({ type: "last" }))).toBeNull()
