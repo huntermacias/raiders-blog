@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { existsSync } from "node:fs"
-import { resolve } from "node:path"
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+// The shield check reads the disk, which a browser-like test environment cannot do; lib/lab/shield has its own test.
+vi.mock("../../lib/lab/shield", () => ({ raidersLogo: null, RAIDERS_LOGO: "/raiders-shield.png", hasRaidersLogo: () => false }))
 vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn(async () => null) }, client: { fetch: vi.fn() } }))
 
 import WillItLast from "../../components/lab/WillItLast"
@@ -561,10 +561,9 @@ describe("the Will it last? page", () => {
 		expect(meta.alternates?.canonical).toBe("https://www.raidersrundown.com/lab/will-it-last")
 	})
 
-	it("shows the Raiders shield only when /public has it", () => {
+	it("shows no Raiders shield on the page when the file is missing", () => {
 		render(<WillItLastPage />)
-		const has = existsSync(resolve(__dirname, "../../public/raiders-shield.png"))
-		expect(!!document.querySelector("[data-raiders-logo]")).toBe(has)
+		expect(document.querySelector("[data-raiders-logo]")).toBeNull()
 	})
 
 	it("is linked from the Lab", () => {
