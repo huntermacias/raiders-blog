@@ -5,7 +5,7 @@ import { Check, Link2, Minus, Pause, Play, RotateCcw, TrendingDown, TrendingUp }
 
 import CardFigure from "@/components/lab/CardFigure"
 import { LAB } from "@/lib/lab/theme"
-import { type Story, formatStat, ordinalOf, teamLabel } from "@/lib/lab/historyKit"
+import { type Story, formatStat, ordinalOf, pctText, teamLabel } from "@/lib/lab/historyKit"
 
 /** How long the dots take to travel from the first games to the rest of the season. */
 const DURATION_MS = 4200
@@ -50,9 +50,11 @@ type Props = {
 	last: number
 	/** Changes when the data does, so share images are not served stale. */
 	stamp: number
+	/** The Raiders' record through `n` games, when none of them was a tie. */
+	start: { wins: number; losses: number } | null
 }
 
-export default function WillItLast({ stories, season, n, first, last, stamp }: Props) {
+export default function WillItLast({ stories, season, n, first, last, stamp, start }: Props) {
 	const [idx, setIdx] = React.useState(0)
 	const [p, setP] = React.useState(0)
 	const [playing, setPlaying] = React.useState(false)
@@ -169,12 +171,13 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 
 	const ticks = [0, 1, 2, 3, 4].map((k) => {
 		const v = d0 + ((d1 - d0) * k) / 4
-		return { x: X(v), label: formatStat(story, v) }
+		const shown = story.fmt === "pct" || story.fmt === "pct1" ? Math.min(1, Math.max(0, v)) : v
+		return { x: X(v), label: formatStat(story, shown) }
 	})
 	const rvX = X(story.value)
 	const flip = rvX > width * 0.66
 	const chip = `${season} Raiders ${story.valueText}`
-	const chipW = chip.length * 7.4 + 22
+	const chipW = chip.length * 8.4 + 24
 	const hv = hover !== null ? story.dots[hover] : null
 	const vColor = verdictColor(story.verdict.id)
 
@@ -197,6 +200,16 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 		window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}
 
+	const o = story.outcomes
+	const phase = p < 0.03 ? 0 : p > 0.97 ? 2 : 1
+	const sameSide = story.kind === "atLeast" ? `started at least as ${story.good ? "well" : "poorly"} as the Raiders` : "started closest to where the Raiders are"
+	const caption = [
+		`Where each team stood after its first ${n} games. Every one of them ${sameSide}.`,
+		"Now the rest of their seasons play out. Watch where the dots head.",
+		`Where they finished. ${towardPct}% slid back toward the dashed line, the league average.`,
+	][phase]
+	const remaining = 17 - n
+	const raidersWin = start ? start.wins / n : null
 	const progressText = p <= 0 ? `First ${n} games` : p >= 1 ? "Rest of the season" : `${Math.round(p * 100)}% of the way`
 
 	return (
@@ -218,7 +231,21 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 				})}
 			</div>
 
-			<div className="mt-5 rounded-2xl border border-lab-line bg-lab-surface p-4 shadow-[var(--lab-shadow)] sm:p-7">
+			<div className="mt-5 overflow-hidden rounded-2xl border border-lab-line bg-lab-surface shadow-[var(--lab-shadow)]">
+				<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-lab-line bg-lab-tint px-4 py-3 sm:px-7">
+					<div className="flex items-center gap-3">
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img src="/logo-rr.png" alt="" width={36} height={36} className="h-9 w-9 rounded-full ring-1 ring-lab-line-strong" />
+						<div className="leading-tight">
+							<p className="m-0 font-serif text-base font-bold">Raiders Rundown</p>
+							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">The Lab &middot; Will it last?</p>
+						</div>
+					</div>
+					<p className="m-0 font-mono text-sm tabular-nums text-lab-soft">
+						{season} Raiders &middot; {start ? `${start.wins}-${start.losses} after ${n} games` : `${n} games played`}
+					</p>
+				</div>
+				<div className="p-4 sm:p-7">
 				<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
 					<div className="min-w-0 flex-1 basis-[28rem]">
 						<h2 className="m-0 font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{story.headline}</h2>
@@ -230,7 +257,41 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 					</p>
 				</div>
 
-				<div ref={stripRef} className="mt-6 w-full">
+				<ol className="m-0 mt-5 grid list-none gap-3 p-0 text-sm leading-snug text-lab-soft sm:grid-cols-3" aria-label="How to read this chart">
+					{[
+						{ t: "One dot is one team", d: `Each dot is a real team from one season since ${first} that ${sameSide.replace("the Raiders", `the ${season} Raiders`)} through ${n} games.` },
+						{ t: story.higherIsBetter ? "Further right is better" : "Further left is better", d: `Left to right is ${story.unit}. ${story.higherIsBetter ? "More is better" : "Less is better"} for a team, so ${story.higherIsBetter ? "the right" : "the left"} side is where you want to be.` },
+						{ t: `Press play to see the next games`, d: `Each dot slides from where its team stood after ${n} games to where it stood over the rest of its season. The Raiders have ${remaining} games left.` },
+					].map((c, i) => (
+						<li key={c.t} className="flex items-center gap-3 rounded-xl border border-lab-line bg-lab-tint px-4 py-2.5 sm:items-start sm:py-3">
+							<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-lab-ink text-xs font-bold text-lab-page" aria-hidden>
+								{i + 1}
+							</span>
+							<span>
+								<span className="block font-semibold text-lab-ink">{c.t}</span>
+								<span className="hidden sm:inline">{c.d}</span>
+							</span>
+						</li>
+					))}
+				</ol>
+
+				<div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-hidden>
+					{[`First ${n} games`, "Rest of the season"].map((label, i) => {
+						const on = i === 0 ? phase === 0 : phase > 0
+						return (
+							<span key={label} className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: on ? LAB.ink : LAB.inkMuted }}>
+								<span className="flex h-5 w-5 items-center justify-center rounded-full border text-[11px]" style={{ borderColor: on ? LAB.ink : LAB.line, background: on ? LAB.ink : "transparent", color: on ? LAB.page : LAB.inkMuted }}>
+									{i + 1}
+								</span>
+								{label}
+								{i === 0 ? <span className="px-1 text-lab-muted">&rarr;</span> : null}
+							</span>
+						)
+					})}
+				</div>
+				<p className="m-0 mt-1 min-h-[2.5rem] text-sm leading-snug text-lab-soft">{caption}</p>
+
+				<div ref={stripRef} className="mt-2 w-full">
 					<svg width={width} height={H} role="img" aria-label={`${story.headline} ${story.verdict.text}. The table below the chart lists every team.`} className="block max-w-full select-none overflow-visible" style={{ touchAction: "pan-y" }}>
 						<rect x={0} y={0} width={width} height={H - M.bottom + 12} rx={12} fill={LAB.page} stroke={LAB.line} />
 						<rect x={X(story.band[0])} y={M.top - 8} width={Math.max(2, X(story.band[1]) - X(story.band[0]))} height={H - M.top - M.bottom + 16} fill={LAB.firstDown} fillOpacity={0.14 * ease(p)} stroke={LAB.firstDown} strokeOpacity={0.7 * ease(p)} strokeDasharray="4 4" />
@@ -276,6 +337,10 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 							</text>
 						))}
 					</svg>
+					<div className="mt-1 flex justify-between text-xs font-semibold text-lab-muted" aria-hidden>
+						<span>&larr; {story.higherIsBetter ? "Worse" : "Better"}</span>
+						<span>{story.higherIsBetter ? "Better" : "Worse"} &rarr;</span>
+					</div>
 				</div>
 
 				<div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -336,6 +401,36 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 				<p className="m-0 mt-3 text-xs leading-relaxed text-lab-muted">
 					Across every team since {first}, about {keptPct}% of a team&rsquo;s distance from average over its first {n} games was still there over the rest of its season.
 				</p>
+
+				<section className="mt-7 rounded-xl border border-lab-line bg-lab-tint p-4 sm:p-5" aria-labelledby="wins-heading">
+					<h3 id="wins-heading" className="m-0 font-serif text-lg font-bold">
+						What that meant in wins and playoffs
+					</h3>
+					<p className="m-0 mt-1 text-sm leading-relaxed text-lab-soft">{story.winsLine}</p>
+					<ul className="m-0 mt-4 grid list-none gap-4 p-0 md:grid-cols-3">
+						{[
+							{ label: `Won in their first ${n} games`, v: o.startWin, all: raidersWin, text: pctText(o.startWin), note: raidersWin !== null && start ? `Yellow tick, the Raiders now: ${start.wins}-${start.losses}, ${pctText(raidersWin)}.` : "" },
+							{ label: "Won over the rest of the season", v: o.restWin, all: o.allRestWin, text: pctText(o.restWin), note: `About ${o.restWins.toFixed(1)} wins in ${Math.round(o.restGames)} games. Every team: ${pctText(o.allRestWin)}.` },
+							{ label: "Made the playoffs", v: o.playoffs, all: o.allPlayoffs, text: pctText(o.playoffs), note: `Every team: ${pctText(o.allPlayoffs)}.` },
+						].map((r) => (
+							<li key={r.label}>
+								<div className="flex items-baseline justify-between gap-3 text-sm">
+									<span className="font-semibold">{r.label}</span>
+									<span className="font-mono text-lg font-bold tabular-nums">{r.text}</span>
+								</div>
+								<div className="relative mt-2 h-3 rounded-full bg-lab-hover" aria-hidden>
+									<div className="h-3 rounded-full" style={{ width: `${Math.round(r.v * 100)}%`, background: LAB.team }} />
+									{r.all !== null ? <div className="absolute -top-1 h-5 w-0.5" style={{ left: `${Math.round(r.all * 100)}%`, background: LAB.firstDown }} /> : null}
+								</div>
+								<p className="m-0 mt-1.5 text-xs leading-snug text-lab-muted">{r.note}</p>
+							</li>
+						))}
+					</ul>
+					<p className="m-0 mt-4 text-xs leading-relaxed text-lab-muted">
+						For scale: at {pctText(o.restWin)}, a team wins about {(remaining * o.restWin).toFixed(1)} of {remaining} games, and at {pctText(o.allRestWin)} about {(remaining * o.allRestWin).toFixed(1)}. In the second and third bars the yellow tick marks the average team. These are
+						results, not a forecast: one stat does not decide a season, and these teams differed in other ways too.
+					</p>
+				</section>
 
 				<ul className="m-0 mt-5 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-xs text-lab-soft" aria-label="Legend">
 					<li className="flex items-center gap-2">
@@ -417,6 +512,7 @@ export default function WillItLast({ stories, season, n, first, last, stamp }: P
 					<button type="button" onClick={postOnX} className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-lab-line-strong px-4 py-2 text-sm font-semibold text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
 						Post on X
 					</button>
+				</div>
 				</div>
 			</div>
 

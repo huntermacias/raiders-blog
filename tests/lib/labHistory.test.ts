@@ -3,8 +3,8 @@ import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { getHistory, getScouting } from "../../lib/lab/data"
-import { type HistoryData, MAX_GAMES, MIN_GAMES, MIN_SIMILAR, STAT_DEFS, buildStory, getHistoryView, getStory, pickStats, recordStory, statDef } from "../../lib/lab/history"
-import { formatStat, isRaiders, ordinalOf, teamLabel } from "../../lib/lab/historyKit"
+import { type HistoryData, MAX_GAMES, MIN_GAMES, MIN_SIMILAR, STAT_DEFS, buildStory, getHistoryView, getStory, outcomesFor, pickStats, recordStory, statDef, winsLine } from "../../lib/lab/history"
+import { formatStat, isRaiders, ordinalOf, seasonGames, teamLabel } from "../../lib/lab/historyKit"
 
 const root = resolve(__dirname, "../..")
 const read = (p: string) => readFileSync(resolve(root, p), "utf8")
@@ -136,6 +136,45 @@ describe("buildStory", () => {
 	})
 })
 
+describe("outcomes in wins and playoffs", () => {
+	// Three team-seasons: 3-1 start then 9-1 (12-4 in 2019), 1-3 then 3-9 (4-12 in 2019), and 2-2 then 6-6 (8-9 in 2021).
+	const h: HistoryData = { source: "x", generatedAt: "", first: 2019, last: 2021, scale: 1000, teams: ["2019 AAA", "2019 BBB", "2021 CCC"], po: [1, 0, 0], wins: [12, 4, 8], stats: [], n: { "4": { w: [3, 1, 2], s: {}, r: {} } } }
+
+	it("counts games from the right season length", () => {
+		expect(seasonGames(2019)).toBe(16)
+		expect(seasonGames(2021)).toBe(17)
+	})
+
+	it("works out win rates before and after the cut, and playoff rates", () => {
+		const o = outcomesFor(h, 4, [0, 1], [0, 1, 2])
+		expect(o.startWin).toBeCloseTo(4 / 8)
+		expect(o.restWin).toBeCloseTo((9 + 3) / 24)
+		expect(o.restWins).toBeCloseTo(6)
+		expect(o.restGames).toBeCloseTo(12)
+		expect(o.playoffs).toBeCloseTo(0.5)
+		expect(o.allRestWin).toBeCloseTo((9 + 3 + 6) / (12 + 12 + 13))
+		expect(o.allPlayoffs).toBeCloseTo(1 / 3)
+		expect(o.avgWins).toBeCloseTo(8)
+	})
+
+	it("says in words whether the win rate fell, rose or held, and how it compares", () => {
+		const base = { startWin: 0.7, restWin: 0.55, restWins: 7, restGames: 13, playoffs: 0.5, allRestWin: 0.5, allPlayoffs: 0.39, avgWins: 9 }
+		expect(winsLine(base, 4)).toBe("Their win rate fell from 70% in the first 4 games to 55% after, still above the average team's 50%. 50% made the playoffs, against 39% of all teams.")
+		expect(winsLine({ ...base, startWin: 0.35, restWin: 0.44 }, 4)).toMatch(/rose from 35% in the first 4 games to 44% after, still below/)
+		expect(winsLine({ ...base, startWin: 0.5, restWin: 0.5 }, 4)).toMatch(/stayed near 50%, about what the average team does/)
+	})
+
+	it("is attached to every story, in sentences a reader can use", () => {
+		for (const s of getHistoryView()!.stories) {
+			expect(s.outcomes.restWin).toBeGreaterThan(0.2)
+			expect(s.outcomes.restWin).toBeLessThan(0.8)
+			expect(s.outcomes.allRestWin).toBeGreaterThan(0.45)
+			expect(s.outcomes.allRestWin).toBeLessThan(0.55)
+			expect(s.winsLine).toMatch(/made the playoffs, against \d+% of all teams\.$/)
+		}
+	})
+})
+
 describe("pickStats", () => {
 	it("takes the Raiders' best two and worst two, only if they stand out", () => {
 		const picks = pickStats(getScouting())
@@ -197,6 +236,8 @@ describe("the view the page and cards use", () => {
 			expect(s.rank).toBeGreaterThanOrEqual(1)
 			expect(s.rank).toBeLessThanOrEqual(32)
 		}
+		expect(view!.start).toEqual({ wins: expect.any(Number), losses: expect.any(Number) })
+		expect(view!.start!.wins + view!.start!.losses).toBe(g)
 		expect(view!.bottomLine.title.length).toBeGreaterThan(10)
 		expect(view!.bottomLine.body).toMatch(/None of this is a prediction/)
 	})

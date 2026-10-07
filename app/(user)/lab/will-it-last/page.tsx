@@ -54,7 +54,7 @@ export default function WillItLastPage() {
 			{view ? (
 				<>
 					<section className="container py-10 sm:py-14" aria-label="The chart">
-						<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} />
+						<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} start={view.start} />
 					</section>
 
 					<section className="container pb-10 sm:pb-14" aria-labelledby="bottom-heading">
