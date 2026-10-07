@@ -75,6 +75,8 @@ def test_start_and_rest_are_measured_over_different_games():
     assert n4["r"]["off.epaPass"] < 100
     # The early games are the same ones the win count is taken from.
     assert n4["w"] == 4
+    assert n4["l"] == 0
+    assert rows["AAA"]["losses"] == 0
     # By checkpoint 8 the start window includes two of the weak weeks, so it is lower than at checkpoint 4.
     assert rows["AAA"]["n"][8]["s"]["off.epaPass"] < n4["s"]["off.epaPass"]
 
@@ -109,9 +111,9 @@ def test_assemble_lines_every_list_up_and_scales_to_whole_numbers():
     out = h.assemble({2001: rows, 2002: rows})
     assert out["first"] == 2001 and out["last"] == 2002
     assert out["teams"][0] == "2001 AAA"
-    assert len(out["teams"]) == len(out["po"]) == len(out["wins"]) == 2 * len(rows)
+    assert len(out["teams"]) == len(out["po"]) == len(out["wins"]) == len(out["losses"]) == 2 * len(rows)
     b = out["n"]["4"]
-    assert len(b["w"]) == len(out["teams"])
+    assert len(b["w"]) == len(b["l"]) == len(out["teams"])
     for k in out["stats"]:
         assert len(b["s"][k]) == len(b["r"][k]) == len(out["teams"])
     assert all(v is None or isinstance(v, int) for v in b["s"]["off.epaPass"])

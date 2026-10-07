@@ -11,7 +11,7 @@ import { MAX_GAMES, MIN_GAMES, getHistoryView } from "@/lib/lab/history"
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/will-it-last`
 const TITLE = "Will it last? The Raiders' hot and cold stats, tested against every team since 1999 | Raiders Rundown"
-const DESCRIPTION = "The Raiders' best and worst numbers so far, lined up against every team since 1999 that started the same way. Press play and watch what happened to them."
+const DESCRIPTION = "The Raiders' best and worst numbers so far, lined up against every NFL team since 1999 that started the same way, with who made the playoffs. Filter by team and compare any Raiders season."
 
 export function generateMetadata(): Metadata {
 	const view = getHistoryView()
@@ -45,7 +45,7 @@ export default function WillItLastPage() {
 					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">Will it last?</h1>
 					<p className="mt-5 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
 						{view
-							? `The Raiders' loudest numbers after ${view.n} games, tested against every team since ${view.first} that started the same way. Press play and watch what happened to all of them.`
+							? `The Raiders' loudest numbers after ${view.n} games, tested against every team since ${view.first} that started the same way. Press play to see what happened to them, then filter by team or playoff result, or compare with any Raiders season.`
 							: "The Raiders' loudest numbers, tested against every team since 1999 that started the same way."}
 					</p>
 				</div>
@@ -54,7 +54,7 @@ export default function WillItLastPage() {
 			{view ? (
 				<>
 					<section className="container py-10 sm:py-14" aria-label="The chart">
-						<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} start={view.start} />
+						<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} start={view.start} />
 					</section>
 
 					<section className="container pb-10 sm:pb-14" aria-labelledby="bottom-heading">
@@ -79,8 +79,8 @@ export default function WillItLastPage() {
 							</p>
 							<p className="m-0">
 								The &ldquo;typical finish&rdquo; uses every team since {view.first}, not only the extreme ones: it takes the share of an early gap from average that usually
-								carried over and applies it to the Raiders&rsquo; number. The league average moves a little each year, so a few dots can sit on the wrong side of it. A few
-								early seasons are missing games in the open data, and teams with an incomplete season are left out. Stats are defined exactly as they are on the scouting reports.
+								carried over and applies it to the Raiders&rsquo; number. The league average moves a little each year, so a few dots can sit on the wrong side of it. Every
+								regular season from {view.first} to {view.last} is here, {view.meta.teams.length} team-seasons in all, including all {view.last - view.first + 1} Raiders teams. Six teams from 1999 and 2000 are left out because the open data is missing some of their games. Stats are defined exactly as they are on the scouting reports.
 							</p>
 						</div>
 					</section>

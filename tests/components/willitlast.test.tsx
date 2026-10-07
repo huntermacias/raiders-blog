@@ -8,11 +8,37 @@ import WillItLast from "../../components/lab/WillItLast"
 import WillItLastPage, { generateMetadata } from "../../app/(user)/lab/will-it-last/page"
 import LabHub from "../../app/(user)/lab/page"
 import { getHistoryView } from "../../lib/lab/history"
+import { analyze, checklist as buildChecklist, recordText, seasonGames, seasonOf, teamLabel } from "../../lib/lab/historyKit"
+import { fakeLeague } from "../helpers/historyFake"
 
 const view = getHistoryView()!
 
 function mount() {
-	return render(<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} />)
+	return render(<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} />)
+}
+
+/** The same chart on a small made-up league, for things that must not depend on this week's real numbers. */
+function mountFake(edit?: (meta: ReturnType<typeof fakeLeague>["meta"]) => void) {
+	const { meta, table } = fakeLeague(400, 0.3)
+	edit?.(meta)
+	return render(<WillItLast meta={meta} tables={[table]} standouts={[table.key]} checklist={buildChecklist(meta, [table])} season={2026} n={4} first={2000} last={2024} stamp={1} start={{ wins: 3, losses: 1 }} />)
+}
+
+const svg = () => document.querySelector("svg[role=img]")!
+/** How many circles a dots path draws. */
+const dotsIn = (fill: string) => (svg().querySelector(`path[fill="${fill}"]`)!.getAttribute("d")!.match(/M/g) ?? []).length
+const pathD = (fill: string) => svg().querySelector(`path[fill="${fill}"]`)!.getAttribute("d")
+const MADE = "var(--lab-scrimmage)"
+const MISSED = "var(--lab-opp)"
+const FAINT = "var(--lab-ink-muted)"
+
+// jsdom has no PointerEvent, and the chart reads the pointer's position.
+if (typeof window !== "undefined" && !("PointerEvent" in window)) Object.defineProperty(window, "PointerEvent", { configurable: true, writable: true, value: class extends MouseEvent {} })
+
+/** Point at the middle of the nth Raiders ring. */
+function pointAt(el: Element) {
+	const r = svg().getBoundingClientRect()
+	return { clientX: r.left + Number(el.getAttribute("cx")), clientY: r.top + Number(el.getAttribute("cy")) }
 }
 
 function reducedMotion(on: boolean) {
@@ -33,7 +59,7 @@ describe("<WillItLast />", () => {
 	it("has a tab for each of the Raiders' standout stats and starts on the first", () => {
 		mount()
 		const tabs = within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")
-		expect(tabs).toHaveLength(view.stories.length)
+		expect(tabs).toHaveLength(view.standouts.length)
 		expect(tabs[0].getAttribute("aria-pressed")).toBe("true")
 		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(view.stories[0].headline)
 		expect(screen.getByText(view.stories[0].verdict.text)).toBeTruthy()
@@ -46,33 +72,58 @@ describe("<WillItLast />", () => {
 		expect(tabs[1].getAttribute("aria-pressed")).toBe("true")
 		expect(tabs[0].getAttribute("aria-pressed")).toBe("false")
 		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(view.stories[1].headline)
-		const img = document.querySelector("img[src^=\"/api/og\"]") as HTMLImageElement
+		const img = document.querySelector('img[src^="/api/og"]') as HTMLImageElement
 		expect(img.getAttribute("src")).toBe(`/api/og?type=last&stat=${encodeURIComponent(view.stories[1].key)}&n=${view.n}&v=123`)
 	})
 
-	it("draws a dot per team, a ring for each team that moved away, and marks the Raiders", () => {
+	it("offers every other stat under 'More stats', grouped, and a pick from there joins the tabs", () => {
 		mount()
-		const svg = document.querySelector("svg[role=img]")!
+		const more = screen.getByText(/^More stats \(/).closest("details")!
+		expect(more.textContent).toContain("Offense")
+		expect(more.textContent).toContain("Defense")
+		expect(more.textContent).toContain("Overall")
+		expect(within(more).getAllByRole("button")).toHaveLength(view.tables.length)
+		const other = view.tables.find((t) => !view.standouts.includes(t.key) && t.key === "net.points")!
+		fireEvent.click(within(more).getByRole("button", { name: new RegExp(`^${other.label}`) }))
+		const tabs = within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")
+		expect(tabs).toHaveLength(view.standouts.length + 1)
+		expect(tabs[tabs.length - 1].getAttribute("aria-pressed")).toBe("true")
+		const a = analyze(view.meta, other, view.season)!
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(a.headline)
+	})
+
+	it("draws playoff teams filled, teams that missed hollow, everyone else faint, and a ring for every Raiders team", () => {
+		mount()
 		const s = view.stories[0]
-		const visual = Array.from(svg.querySelectorAll("circle")).filter((c) => c.getAttribute("fill") !== "transparent")
-		expect(visual).toHaveLength(s.dots.length)
-		expect(svg.querySelectorAll("circle[fill=transparent]")).toHaveLength(s.dots.length)
-		expect(svg.textContent).toContain(`${view.season} Raiders ${s.valueText}`)
-		expect(svg.textContent).toContain("league average")
+		const members = s.rows.filter((r) => r.inGroup && !r.raiders)
+		expect(dotsIn(MADE)).toBe(members.filter((r) => r.po).length)
+		expect(dotsIn(MISSED)).toBe(members.filter((r) => !r.po).length)
+		expect(dotsIn(FAINT)).toBe(s.rows.filter((r) => !r.inGroup && !r.raiders).length)
+		expect(svg().querySelectorAll("g > circle")).toHaveLength(view.last - view.first + 1)
+		expect(svg().textContent).toContain(`${view.season} Raiders ${s.valueText}`)
+		expect(svg().textContent).toContain("league average")
+	})
+
+	it("explains the dots in a legend that does not lean on color alone", () => {
+		mount()
+		const legend = screen.getByRole("list", { name: "Legend" })
+		expect(legend.textContent).toContain("Made the playoffs")
+		expect(legend.textContent).toContain("Missed the playoffs")
+		expect(legend.textContent).toContain("An earlier Raiders team")
+		expect(legend.textContent).toContain("Not in the group you picked")
 	})
 
 	it("jumps to the end with reduced motion, and the scrubber moves the dots", () => {
 		reducedMotion(true)
 		mount()
 		const slider = screen.getByRole("slider") as HTMLInputElement
-		const x0 = Array.from(document.querySelectorAll("svg[role=img] circle[fill=transparent]")).map((c) => c.getAttribute("cx"))
+		const x0 = pathD(MADE)
 		fireEvent.click(screen.getByRole("button", { name: "Play" }))
 		expect(slider.value).toBe("100")
 		expect(screen.getByRole("button", { name: "Replay" })).toBeTruthy()
-		const x1 = Array.from(document.querySelectorAll("svg[role=img] circle[fill=transparent]")).map((c) => c.getAttribute("cx"))
-		expect(x1).not.toEqual(x0)
+		expect(pathD(MADE)).not.toEqual(x0)
 		fireEvent.change(slider, { target: { value: "0" } })
-		expect(Array.from(document.querySelectorAll("svg[role=img] circle[fill=transparent]")).map((c) => c.getAttribute("cx"))).toEqual(x0)
+		expect(pathD(MADE)).toEqual(x0)
 		expect(slider.getAttribute("aria-valuetext")).toBe(`First ${view.n} games`)
 		fireEvent.change(slider, { target: { value: "100" } })
 		expect(slider.getAttribute("aria-valuetext")).toBe("Rest of the season")
@@ -103,20 +154,121 @@ describe("<WillItLast />", () => {
 		expect(screen.getByRole("button", { name: "Replay" })).toBeTruthy()
 	})
 
-	it("names a team when its dot is hovered", () => {
-		mount()
-		const hit = document.querySelectorAll("svg[role=img] circle[fill=transparent]")[0]
+	it("shows a team's record, number and playoff result when its dot is hovered", () => {
+		mountFake()
 		expect(screen.getByText(/Hover or tap a dot/)).toBeTruthy()
-		fireEvent.pointerEnter(hit)
-		const first = view.stories[0].dots[0]
-		expect(document.querySelector("[aria-live=polite]")!.textContent).toMatch(new RegExp(`^${first.team.split(" ")[0]} `))
+		const ring = svg().querySelector("g > circle")!
+		fireEvent.pointerMove(svg(), pointAt(ring))
+		const line = document.querySelector("[aria-live=polite]")!.textContent!
+		expect(line).toMatch(/^\d{4} Raiders: /)
+		expect(line).toMatch(/through 4 games \(\d-\d\)/)
+		expect(line).toMatch(/Finished \d+-\d+, (made|missed) the playoffs\./)
+		const tip = document.querySelector('[role="presentation"]')!
+		expect(tip.textContent).toMatch(/Started \d-\d/)
+		expect(tip.textContent).toMatch(/Finished \d+-\d+, (made|missed) the playoffs/)
+		fireEvent.pointerLeave(svg())
+		expect(screen.getByText(/Hover or tap a dot/)).toBeTruthy()
+		expect(document.querySelector('[role="presentation"]')).toBeNull()
 	})
 
-	it("lists every team in a table for anyone who cannot use the chart", () => {
+	it("lists a chip for every Raiders season, and picking one spotlights it with its start and finish", () => {
+		mount()
+		const chips = within(screen.getByRole("group", { name: "Raiders seasons" })).getAllByRole("button")
+		expect(chips).toHaveLength(view.last - view.first + 1)
+		expect(chips[0].textContent).toContain(String(view.first))
+		const c2016 = chips.find((c) => c.textContent!.startsWith("2016"))!
+		expect(c2016.getAttribute("aria-label")).toMatch(/^2016 Raiders: started \d-\d, finished 12-4, made the playoffs$/)
+		fireEvent.click(c2016)
+		expect(c2016.getAttribute("aria-pressed")).toBe("true")
+		const note = document.body.textContent!
+		expect(note).toMatch(/2016 Raiders: .* through \d+ games \(\d-\d\), .* after\. Finished 12-4, made the playoffs\./)
+		expect(svg().textContent).toContain("2016")
+		fireEvent.click(c2016)
+		expect(c2016.getAttribute("aria-pressed")).toBe("false")
+		const c2021 = chips.find((c) => c.textContent!.startsWith("2021"))!
+		expect(c2021.getAttribute("aria-label")).toMatch(/finished 10-7, made the playoffs$/)
+	})
+
+	it("filters by who the teams are, which team, and whether they made the playoffs", () => {
+		mount()
+		const s0 = view.stories[0]
+		fireEvent.click(screen.getByRole("button", { name: "Made playoffs" }))
+		const a = analyze(view.meta, view.tables.find((t) => t.key === s0.key)!, view.season, { scope: "like", team: null, playoffs: "made" })!
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(a.headline)
+		expect(dotsIn(MISSED) + dotsIn(MADE)).toBe(a.groupSize - a.rows.filter((r) => r.inGroup && r.raiders).length)
+		expect(dotsIn(MISSED)).toBe(0)
+		fireEvent.click(screen.getByRole("button", { name: `Every team since ${view.first}` }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("made the playoffs")
+		fireEvent.change(screen.getByRole("combobox"), { target: { value: "LV" } })
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("Raiders team-seasons that made the playoffs")
+		expect(document.body.textContent).toMatch(/Raiders seasons in this group/)
+		fireEvent.click(screen.getByRole("button", { name: "Reset filters" }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(s0.headline)
+		expect(screen.queryByRole("button", { name: "Reset filters" })).toBeNull()
+	})
+
+	it("lets a fan pick any of the 32 teams", () => {
+		mount()
+		const options = within(screen.getByRole("combobox")).getAllByRole("option")
+		expect(options).toHaveLength(33)
+		expect(options[1].textContent).toBe("Raiders")
+		expect(options.map((o) => o.textContent)).toContain("Patriots")
+	})
+
+	it("says so, and drops the numbers, when no team matches", () => {
+		// A league where no Raiders team ever made the playoffs.
+		mountFake((m) => m.teams.forEach((t, i) => t.endsWith(" LV") && (m.po[i] = 0)))
+		fireEvent.change(screen.getByRole("combobox"), { target: { value: "LV" } })
+		fireEvent.click(screen.getByRole("button", { name: "Made playoffs" }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/^No Raiders team-seasons that made the playoffs match these filters/)
+		expect(document.body.textContent).toContain("No team-seasons match these filters.")
+		expect(document.querySelector("dl")).toBeNull()
+		expect(screen.queryByText("What that meant in wins and playoffs")).toBeNull()
+		expect(dotsIn(MADE) + dotsIn(MISSED)).toBe(0)
+		// The fifths and the checklist do not depend on the filters, so they are still there.
+		expect(screen.getByRole("heading", { name: /How often teams made the playoffs, by / })).toBeTruthy()
+		fireEvent.click(screen.getByRole("button", { name: "Reset filters" }))
+		expect(document.querySelector("dl")).toBeTruthy()
+	})
+
+	it("shows how often teams made the playoffs by fifth, with the Raiders' fifth marked", () => {
+		mount()
+		const section = screen.getByRole("heading", { name: /How often teams made the playoffs, by / }).closest("section")!
+		const items = within(section).getAllByRole("listitem")
+		expect(items).toHaveLength(5)
+		const s = view.stories[0]
+		expect(items[s.raidersFifth].textContent).toContain("The Raiders are here")
+		expect(items.filter((i) => i.textContent!.includes("The Raiders are here"))).toHaveLength(1)
+		expect(section.textContent).toContain(`${Math.round(s.fifths[0].rate * 100)}%`)
+		expect(section.textContent).toMatch(/a pattern, not a cause/)
+	})
+
+	it("ranks every stat by how much it has mattered for the playoffs, and selecting one charts it", () => {
+		mount()
+		const section = screen.getByRole("heading", { name: /playoff checklist/ }).closest("section")!
+		const items = within(section).getAllByRole("button", { pressed: false }).filter((b) => b.closest("li"))
+		expect(items.length).toBeGreaterThanOrEqual(7)
+		const labels = items.map((b) => b.textContent!)
+		expect(labels[0]).toContain(view.checklist[0].label)
+		const show = within(section).getByRole("button", { name: /Show every stat \(\d+\)/ })
+		fireEvent.click(show)
+		expect(within(section).getAllByRole("listitem")).toHaveLength(view.checklist.length)
+		const last = view.checklist[view.checklist.length - 1]
+		fireEvent.click(within(section).getByText(last.label).closest("button")!)
+		const t = view.tables.find((x) => x.key === last.key)!
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(analyze(view.meta, t, view.season)!.headline)
+		expect(within(section).getByRole("button", { name: /Show fewer stats/ })).toBeTruthy()
+	})
+
+	it("lists the highlighted teams in a table for anyone who cannot use the chart, with records and playoffs", () => {
 		mount()
 		const rows = document.querySelectorAll("details tbody tr")
-		expect(rows).toHaveLength(view.stories[0].dots.length)
-		expect(document.querySelector("details caption")!.textContent).toMatch(/Teams since 1999/)
+		expect(rows).toHaveLength(Math.min(300, view.stories[0].groupSize))
+		expect(document.querySelector("details caption")!.textContent).toMatch(/Highlighted teams/)
+		const heads = Array.from(document.querySelectorAll("details thead th")).map((h) => h.textContent)
+		expect(heads).toEqual(expect.arrayContaining(["Started", "Finished", "Playoffs"]))
+		expect(rows[0].textContent).toMatch(/\d+-\d+/)
+		expect(rows[0].textContent).toMatch(/Made it|Missed/)
 	})
 
 	it("shows the numbers that sum it up", () => {
@@ -143,16 +295,17 @@ describe("<WillItLast />", () => {
 		expect(steps).toHaveLength(3)
 		const s = view.stories[0]
 		expect(steps[0].textContent).toMatch(/One dot is one team/)
+		expect(steps[0].textContent).toMatch(/Filled blue dots made the playoffs, hollow orange rings did not/)
 		expect(steps[1].textContent).toContain(s.higherIsBetter ? "Further right is better" : "Further left is better")
 		expect(steps[2].textContent).toContain(`after ${view.n} games`)
-		expect(steps[2].textContent).toContain(`${17 - view.n} games left`)
+		expect(steps[2].textContent).toContain(`${seasonGames(view.season) - view.n} games left`)
 		expect(document.body.textContent).toContain(s.higherIsBetter ? "Worse" : "Better")
 	})
 
 	it("narrates the replay: first games at the start, the finish at the end", () => {
 		reducedMotion(true)
 		mount()
-		expect(document.body.textContent).toContain(`Where each team stood after its first ${view.n} games`)
+		expect(document.body.textContent).toContain(`highlighted teams stood after their first ${view.n} games`)
 		fireEvent.click(screen.getByRole("button", { name: "Play" }))
 		expect(document.body.textContent).toContain("Where they finished.")
 		expect(document.body.textContent).toContain("the league average")

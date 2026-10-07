@@ -17,7 +17,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { type Decision, type FourthGame, VERDICTS, boldest, choiceText, costliest, ptsText, spotText } from "../lab/fourthDown"
-import type { Story } from "../lab/historyKit"
+import type { Analysis } from "../lab/historyKit"
 import { ordinal, sampleNote, teamScout, watchList, type Watch } from "../lab/scouting"
 import { type TopPlay, playWord, swingText, whenText } from "../lab/topPlays"
 import type { LabGame } from "../lab/types"
@@ -362,7 +362,8 @@ export function renderScoutCard(spec: ScoutCardSpec): ReactElement {
 const FADE = "#fb923c"
 const IMPROVE = "#60a5fa"
 
-export type LastDot = { x: number; y: number; toward: boolean; raiders: boolean }
+/** One team-season on the card: where it sits, whether it made the playoffs, whether it was a Raiders team. */
+export type LastDot = { x: number; y: number; po: boolean; raiders: boolean }
 
 export type LastCardSpec = {
 	type: "last"
@@ -389,12 +390,14 @@ export type LastCardSpec = {
 
 const MAX_CARD_DOTS = 110
 
-export function buildLastSpec(story: Story, n: number, first: number): LastCardSpec {
+export function buildLastSpec(story: Analysis, n: number, first: number): LastCardSpec {
 	const [d0, d1] = story.domain
 	const at = (v: number) => Math.min(1, Math.max(0, (v - d0) / (d1 - d0)))
-	const step = Math.max(1, Math.ceil(story.dots.length / MAX_CARD_DOTS))
-	const kept = story.dots.map((d, i) => ({ d, i })).filter(({ d, i }) => d.raiders || i % step === 0)
-	const y = (i: number) => ((i * 53) % 100) / 100
+	const members = story.rows.filter((r) => r.inGroup)
+	const step = Math.max(1, Math.ceil(members.length / MAX_CARD_DOTS))
+	// Every Raiders team in the group, and an even sample of the rest, so the card stays readable.
+	const kept = members.filter((r, k) => r.raiders || k % step === 0)
+	const y = (i: number) => (((i + 1) * 0.6180339887) % 1)
 	return {
 		type: "last",
 		title: story.label,
@@ -404,9 +407,9 @@ export function buildLastSpec(story: Story, n: number, first: number): LastCardS
 		value: story.valueText,
 		verdict: story.verdict.text,
 		verdictTone: story.verdict.id === "fade" ? "fade" : story.verdict.id === "improve" ? "improve" : "even",
-		line: `${story.dots.length} teams since ${first} ${story.kind === "atLeast" ? `started at least this ${story.good ? "well" : "poorly"}` : "started closest to this"}. ${Math.round(story.toward * 100)}% finished closer to average.`,
-		start: kept.map(({ d, i }) => ({ x: at(d.start), y: y(i), toward: d.toward, raiders: d.raiders })),
-		end: kept.map(({ d, i }) => ({ x: at(d.rest), y: y(i), toward: d.toward, raiders: d.raiders })),
+		line: `${story.groupSize} teams since ${first} ${story.kind === "atLeast" ? `started at least this ${story.good ? "well" : "poorly"}` : "started closest to this"}. ${Math.round(story.toward * 100)}% finished closer to average.`,
+		start: kept.map((r) => ({ x: at(r.start), y: y(r.i), po: r.po, raiders: r.raiders })),
+		end: kept.map((r) => ({ x: at(r.rest), y: y(r.i), po: r.po, raiders: r.raiders })),
 		raiders: at(story.value),
 		base: at(story.base),
 		band: [at(story.band[0]), at(story.band[1])],
@@ -427,9 +430,9 @@ function LastStrip({ title, dots, spec, band }: { title: string; dots: LastDot[]
 				<div style={{ display: "flex", position: "absolute", left: Math.round(spec.base * W_), top: 0, width: 2, height: H_, backgroundColor: DIM }} />
 				{dots.map((d, i) =>
 					d.raiders ? (
-						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 8, top: 12 + Math.round(d.y * (H_ - 40)) - 2, width: 16, height: 16, borderRadius: 8, backgroundColor: WHITE, border: `3px solid ${GOLD}` }} />
+						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 8, top: 12 + Math.round(d.y * (H_ - 40)) - 2, width: 16, height: 16, borderRadius: 8, backgroundColor: d.po ? IMPROVE : "#0d0e10", border: `3px ${d.po ? "solid" : "dashed"} ${GOLD}` }} />
 					) : (
-						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 5, top: 12 + Math.round(d.y * (H_ - 40)), width: 11, height: 11, borderRadius: 6, backgroundColor: d.toward ? SILVER : "transparent", border: d.toward ? "none" : `2px solid ${IMPROVE}` }} />
+						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 5, top: 12 + Math.round(d.y * (H_ - 40)), width: 11, height: 11, borderRadius: 6, backgroundColor: d.po ? IMPROVE : "transparent", border: d.po ? "none" : `2px solid ${FADE}` }} />
 					),
 				)}
 				<div style={{ display: "flex", position: "absolute", left: Math.round(spec.raiders * W_) - 2, top: 0, width: 4, height: H_, backgroundColor: GOLD }} />
@@ -457,7 +460,7 @@ export function renderLastCard(spec: LastCardSpec): ReactElement {
 				<LastStrip title={`First ${spec.n} games`} dots={spec.start} spec={spec} band={false} />
 				<LastStrip title="Rest of the season" dots={spec.end} spec={spec} band />
 				<div style={{ display: "flex", marginBottom: 10, fontFamily: "Oswald", fontWeight: 600, fontSize: 21, letterSpacing: 1, color: BRIGHT }}>{spec.wins}</div>
-				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 16, letterSpacing: 1, color: DIM }}>{`Gold line: the Raiders now. Gold band: where the middle half finished. Data: nflverse, CC BY 4.0.`}</div>
+				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 16, letterSpacing: 1, color: DIM }}>{`Blue: made the playoffs. Orange ring: missed. Gold line: the Raiders now. Data: nflverse, CC BY 4.0.`}</div>
 			</div>
 		</Frame>
 	)

@@ -14,7 +14,7 @@ const ABBR = /^[A-Z]{2,3}$/
 
 export type InsightQuery = { type: string; slug: string; view: string; rank: string; opp: string; week: string; stat?: string }
 
-const STAT = /^(off|def)\.[A-Za-z]{2,20}$/
+const STAT = /^(off|def|net)\.[A-Za-z]{2,20}$/
 
 /** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {

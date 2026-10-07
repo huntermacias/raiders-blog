@@ -115,6 +115,13 @@ describe("the Lab section", () => {
 			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/will-it-last")
 		})
 
+		it("keeps the chart's team names and filters in code that does not import the data files", () => {
+			const kit = read("lib/lab/historyKit.ts")
+			expect(kit).toMatch(/TEAM_NAMES/)
+			expect(kit).toMatch(/export function analyze/)
+			expect(read("components/lab/WillItLast.tsx")).toMatch(/from "@\/lib\/lab\/historyKit"/)
+		})
+
 		it("keeps the history script's wording clear of the tracking data that may not be published", () => {
 			for (const f of ["lib/lab/history.ts", "lib/lab/historyKit.ts", "scripts/lab/build_history.py"]) expect(read(f)).not.toMatch(/big.?data.?bowl|tracking/i)
 		})
