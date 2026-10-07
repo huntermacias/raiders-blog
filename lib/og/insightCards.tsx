@@ -5,6 +5,8 @@
 //   the fourth-down  (`type: "fourth"`): how the Raiders' fourth-down calls graded out, with the decisions
 //                                        worth a look.
 //   the scouting     (`type: "scout"`):  the Raiders against an opponent, unit by unit, and what to watch.
+//   will it last     (`type: "last"`):   one of the Raiders' stats against every team that started the same way:
+//                                        the dots in their first games and then in the rest of the season.
 //
 // Each build*Spec turns real data into a small plain spec (no network, so it can be tested and looked at from
 // fixed data), and each render*Card turns a spec into JSX. See lib/og/kit.tsx for the shared stage and the
@@ -15,6 +17,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { type Decision, type FourthGame, VERDICTS, boldest, choiceText, costliest, ptsText, spotText } from "../lab/fourthDown"
+import type { Story } from "../lab/historyKit"
 import { ordinal, sampleNote, teamScout, watchList, type Watch } from "../lab/scouting"
 import { type TopPlay, playWord, swingText, whenText } from "../lab/topPlays"
 import type { LabGame } from "../lab/types"
@@ -349,6 +352,108 @@ export function renderScoutCard(spec: ScoutCardSpec): ReactElement {
 					))
 				)}
 				<div style={{ display: "flex", marginTop: 2, fontFamily: "Oswald", fontWeight: 400, fontSize: 17, color: DIM }}>{`${spec.note} Ranks are of 32 teams, 1st is best.`}</div>
+			</div>
+		</Frame>
+	)
+}
+
+// ---- the "will it last?" card -------------------------------------------------------------------------------
+
+const FADE = "#fb923c"
+const IMPROVE = "#60a5fa"
+
+export type LastDot = { x: number; y: number; toward: boolean; raiders: boolean }
+
+export type LastCardSpec = {
+	type: "last"
+	title: string
+	n: number
+	first: number
+	rank: string
+	value: string
+	verdict: string
+	verdictTone: "fade" | "improve" | "even"
+	/** "117 teams since 1999 started this well. 83% finished closer to average." */
+	line: string
+	/** Where each team stood after the first games and after the rest of the season, 0 to 1 across the same axis. */
+	start: LastDot[]
+	end: LastDot[]
+	raiders: number
+	base: number
+	band: [number, number]
+	startAvg: string
+	endAvg: string
+}
+
+const MAX_CARD_DOTS = 110
+
+export function buildLastSpec(story: Story, n: number, first: number): LastCardSpec {
+	const [d0, d1] = story.domain
+	const at = (v: number) => Math.min(1, Math.max(0, (v - d0) / (d1 - d0)))
+	const step = Math.max(1, Math.ceil(story.dots.length / MAX_CARD_DOTS))
+	const kept = story.dots.map((d, i) => ({ d, i })).filter(({ d, i }) => d.raiders || i % step === 0)
+	const y = (i: number) => ((i * 53) % 100) / 100
+	return {
+		type: "last",
+		title: story.label,
+		n,
+		first,
+		rank: ordinal(story.rank),
+		value: story.valueText,
+		verdict: story.verdict.text,
+		verdictTone: story.verdict.id === "fade" ? "fade" : story.verdict.id === "improve" ? "improve" : "even",
+		line: `${story.dots.length} teams since ${first} ${story.kind === "atLeast" ? `started at least this ${story.good ? "well" : "poorly"}` : "started closest to this"}. ${Math.round(story.toward * 100)}% finished closer to average.`,
+		start: kept.map(({ d, i }) => ({ x: at(d.start), y: y(i), toward: d.toward, raiders: d.raiders })),
+		end: kept.map(({ d, i }) => ({ x: at(d.rest), y: y(i), toward: d.toward, raiders: d.raiders })),
+		raiders: at(story.value),
+		base: at(story.base),
+		band: [at(story.band[0]), at(story.band[1])],
+		startAvg: story.startText,
+		endAvg: story.restText,
+	}
+}
+
+function LastStrip({ title, dots, spec, band }: { title: string; dots: LastDot[]; spec: LastCardSpec; band: boolean }) {
+	const W_ = 430
+	const H_ = 150
+	return (
+		<div style={{ display: "flex", flexDirection: "column", marginBottom: 14 }}>
+			<div style={label({ fontSize: 17, letterSpacing: 3, marginBottom: 8 })}>{title}</div>
+			<div style={{ display: "flex", position: "relative", width: W_, height: H_, backgroundColor: "#0d0e10", border: `2px solid ${LINE}` }}>
+				{band ? <div style={{ display: "flex", position: "absolute", left: Math.round(spec.band[0] * W_), top: 0, width: Math.max(3, Math.round((spec.band[1] - spec.band[0]) * W_)), height: H_, backgroundColor: rgba(GOLD, 0.16), borderLeft: `2px dashed ${rgba(GOLD, 0.7)}`, borderRight: `2px dashed ${rgba(GOLD, 0.7)}` }} /> : null}
+				<div style={{ display: "flex", position: "absolute", left: Math.round(spec.base * W_), top: 0, width: 2, height: H_, backgroundColor: DIM }} />
+				{dots.map((d, i) =>
+					d.raiders ? (
+						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 8, top: 12 + Math.round(d.y * (H_ - 40)) - 2, width: 16, height: 16, borderRadius: 8, backgroundColor: WHITE, border: `3px solid ${GOLD}` }} />
+					) : (
+						<div key={i} style={{ display: "flex", position: "absolute", left: Math.round(d.x * W_) - 5, top: 12 + Math.round(d.y * (H_ - 40)), width: 11, height: 11, borderRadius: 6, backgroundColor: d.toward ? SILVER : "transparent", border: d.toward ? "none" : `2px solid ${IMPROVE}` }} />
+					),
+				)}
+				<div style={{ display: "flex", position: "absolute", left: Math.round(spec.raiders * W_) - 2, top: 0, width: 4, height: H_, backgroundColor: GOLD }} />
+			</div>
+		</div>
+	)
+}
+
+export function renderLastCard(spec: LastCardSpec): ReactElement {
+	const tone = spec.verdictTone === "fade" ? FADE : spec.verdictTone === "improve" ? IMPROVE : SILVER
+	const titleSize = spec.title.length <= 11 ? 112 : spec.title.length <= 16 ? 76 : 64
+	return (
+		<Frame glow={tone}>
+			<div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 640, height: H, padding: "58px 20px 50px 64px" }}>
+				<Eyebrow text={`Will it last? · after ${spec.n} games`} color={tone} />
+				<div style={{ display: "flex", flexDirection: "column" }}>
+					<div style={{ display: "flex", fontFamily: "Anton", fontSize: titleSize, lineHeight: 1.02, color: WHITE, ...caps }}>{spec.title}</div>
+					<div style={{ display: "flex", marginTop: 8, fontFamily: "Oswald", fontWeight: 600, fontSize: 30, letterSpacing: 3, color: SILVER, ...caps }}>{`Raiders ${spec.rank} of 32 · ${spec.value}`}</div>
+					<div style={{ display: "flex", alignSelf: "flex-start", marginTop: 22, padding: "7px 18px", border: `3px solid ${tone}`, color: tone, fontFamily: "Oswald", fontWeight: 700, fontSize: 30, letterSpacing: 4, ...caps }}>{spec.verdict}</div>
+					<div style={{ display: "flex", marginTop: 20, fontFamily: "Oswald", fontWeight: 400, fontSize: 27, lineHeight: 1.3, color: BRIGHT, maxWidth: 540 }}>{spec.line}</div>
+				</div>
+				<Brand />
+			</div>
+			<div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, padding: "26px 40px 0 0" }}>
+				<LastStrip title={`First ${spec.n} games`} dots={spec.start} spec={spec} band={false} />
+				<LastStrip title="Rest of the season" dots={spec.end} spec={spec} band />
+				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 16, letterSpacing: 1, color: DIM }}>{`Gold line: the Raiders now. Gold band: where the middle half finished. Data: nflverse, CC BY 4.0.`}</div>
 			</div>
 		</Frame>
 	)

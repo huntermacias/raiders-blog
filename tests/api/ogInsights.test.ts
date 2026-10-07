@@ -12,7 +12,7 @@ vi.setConfig({ testTimeout: 60_000 })
 
 const get = (query: Record<string, string>) => mockReq({ method: "GET", query })
 const isPng = (b: unknown) => (Buffer.isBuffer(b) || b instanceof Uint8Array) && Buffer.from(b as Uint8Array).subarray(1, 4).toString() === "PNG"
-const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
+const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
 
 beforeEach(() => {
 	vi.spyOn(console, "error").mockImplementation(() => {})
@@ -59,6 +59,29 @@ describe("insightSpec", () => {
 		expect(insightSpec(q({ type: "scout", opp: "kc" }))).toBeNull()
 	})
 
+	it("builds a will-it-last card for any stat in the catalog, and nothing for a made-up one", () => {
+		const a = insightSpec(q({ type: "last", stat: "def.turnovers" }))
+		expect(a?.type).toBe("last")
+		if (a?.type === "last") {
+			expect(a.title).toBe("Takeaways")
+			expect(a.start.length).toBe(a.end.length)
+			expect(a.start.length).toBeGreaterThan(20)
+			expect(a.start.length).toBeLessThanOrEqual(120)
+			for (const d of [...a.start, ...a.end]) {
+				expect(d.x).toBeGreaterThanOrEqual(0)
+				expect(d.x).toBeLessThanOrEqual(1)
+			}
+			expect(a.raiders).toBeGreaterThan(0)
+			expect(a.raiders).toBeLessThan(1)
+			expect(a.band[0]).toBeLessThan(a.band[1])
+			expect(a.line).toMatch(/teams since 1999/)
+		}
+		expect(insightSpec(q({ type: "last", stat: "off.epaRush" }))?.type).toBe("last")
+		expect(insightSpec(q({ type: "last", stat: "off.nope" }))).toBeNull()
+		expect(insightSpec(q({ type: "last", stat: "../x" }))).toBeNull()
+		expect(insightSpec(q({ type: "last" }))).toBeNull()
+	})
+
 	it("returns null for anything else so the route can fall through", () => {
 		expect(insightSpec(q({ type: "lab", slug: "week-3" }))).toBeNull()
 		expect(insightSpec(q({ type: "lab", slug: "week-99", view: "play" }))).toBeNull()
@@ -88,6 +111,8 @@ describe("/api/og insight cards", () => {
 		["fourth down, season", { type: "lab", slug: "season", view: "fourth" }],
 		["scouting report", { type: "scout", opp: "KC", week: "5" }],
 		["scouting report without a week", { type: "scout", opp: "JAX" }],
+		["will it last, takeaways", { type: "last", stat: "def.turnovers", n: "4" }],
+		["will it last, a stat that stands out the other way", { type: "last", stat: "def.redZone", n: "4" }],
 	]
 	it.each(cases)("renders %s as a cached PNG", async (_n, query) => {
 		const res = mockRes()
@@ -99,7 +124,7 @@ describe("/api/og insight cards", () => {
 	})
 
 	it("falls back to the default card when there is nothing to show", async () => {
-		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "fourth" }]
+		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "fourth" }, { type: "last", stat: "nope" }, { type: "last" }]
 		for (const query of misses) {
 			const res = mockRes()
 			await handler(get(query), res)

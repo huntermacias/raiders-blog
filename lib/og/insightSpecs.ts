@@ -6,14 +6,17 @@ import { fourthGameFor } from "../lab/fourthDown"
 import { TEAMS } from "../nfl"
 import { seasonTopPlays, topPlaysFor } from "../lab/topPlays"
 import type { CardSpec } from "./cards"
-import { buildFourthSeasonSpec, buildFourthSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { getStory } from "../lab/history"
+import { buildFourthSeasonSpec, buildFourthSpec, buildLastSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/
 const ABBR = /^[A-Z]{2,3}$/
 
-export type InsightQuery = { type: string; slug: string; view: string; rank: string; opp: string; week: string }
+export type InsightQuery = { type: string; slug: string; view: string; rank: string; opp: string; week: string; stat?: string }
 
-/** A card for `view=play`, `view=fourth` or `type=scout`; null when the request is not one of those or has no data. */
+const STAT = /^(off|def)\.[A-Za-z]{2,20}$/
+
+/** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
 	const team = getSeason().team
 
@@ -23,6 +26,12 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 		if (!info) return null
 		const week = Number(q.week)
 		return buildScoutSpec({ abbr: info.abbr, name: info.name, nick: info.nick }, Number.isInteger(week) && week > 0 ? week : null)
+	}
+
+	if (q.type === "last") {
+		if (!q.stat || !STAT.test(q.stat)) return null
+		const found = getStory(q.stat)
+		return found ? buildLastSpec(found.story, found.n, found.first) : null
 	}
 
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null
