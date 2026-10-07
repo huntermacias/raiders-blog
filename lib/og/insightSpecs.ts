@@ -6,15 +6,23 @@ import { fourthGameFor } from "../lab/fourthDown"
 import { TEAMS } from "../nfl"
 import { seasonTopPlays, topPlaysFor } from "../lab/topPlays"
 import type { CardSpec } from "./cards"
-import { getStory } from "../lab/history"
-import { buildFourthSeasonSpec, buildFourthSpec, buildLastSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { getHistoryView } from "../lab/history"
+import { analyze, abbrOf } from "../lab/historyKit"
+import { type RawView, readView } from "../lab/lastShare"
+import { buildFourthSeasonSpec, buildFourthSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/
 const ABBR = /^[A-Z]{2,3}$/
 
-export type InsightQuery = { type: string; slug: string; view: string; rank: string; opp: string; week: string; stat?: string }
-
-const STAT = /^(off|def|net)\.[A-Za-z]{2,20}$/
+export type InsightQuery = {
+	type: string
+	slug: string
+	view: string
+	rank: string
+	opp: string
+	week: string
+} & RawView
 
 /** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -29,9 +37,7 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	}
 
 	if (q.type === "last") {
-		if (!q.stat || !STAT.test(q.stat)) return null
-		const found = getStory(q.stat)
-		return found ? buildLastSpec(found.story, found.n, found.first) : null
+		return lastSpec(q)
 	}
 
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null
@@ -62,3 +68,37 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	return null
 }
 
+/** A "will it last?" card for the part of the page, the stat, the filters and the pinned team the request names; null when there is nothing to show. */
+function lastSpec(q: RawView): CardSpec | null {
+	const data = getHistoryView()
+	if (!data) return null
+	const { meta, tables } = data
+	const view = readView(q, {
+		first: data.first,
+		last: data.last,
+		teams: new Set(meta.teams.map(abbrOf)),
+		rows: new Set(meta.teams),
+	})
+	const ctx = {
+		size: view.size,
+		n: data.n,
+		first: data.first,
+		last: data.last,
+		season: data.season,
+	}
+
+	if (view.kind === "checklist") return buildChecklistSpec(data.checklist, ctx)
+	if (view.kind === "bottom") return buildBottomSpec(data.stories, data.bottomLine.title, data.record, ctx)
+
+	const key = view.stat ?? data.stories[0]?.key
+	const table = tables.find((t) => t.key === key)
+	if (!table) return null
+	// The fifths and the bottom line are about every team, so the filters only apply to the cards that show a group.
+	const story = analyze(meta, table, data.season, view.kind === "fifths" ? undefined : view.filter)
+	if (!story || (view.kind !== "fifths" && story.groupSize === 0)) return null
+
+	if (view.kind === "wins") return buildWinsSpec(story, ctx, data.start)
+	if (view.kind === "fifths") return buildFifthsSpec(story, ctx)
+	if (view.kind === "season") return view.pin ? buildSeasonSpec(story, meta, ctx, view.pin, view.y) : null
+	return buildChartSpec(story, meta, ctx, { pin: view.pin, y: view.y })
+}

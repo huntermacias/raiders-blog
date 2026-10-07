@@ -155,7 +155,7 @@ describe("the Lab section", () => {
 			const credit = read("components/lab/Credit.tsx")
 			expect(credit).toMatch(/nflverse/)
 			expect(credit).toMatch(/CC BY 4\.0/)
-			for (const f of [...pages, "components/lab/Credit.tsx", "components/lab/TopPlays.tsx", "components/lab/FourthDownReport.tsx", "components/lab/ScoutReport.tsx", "components/lab/CardFigure.tsx"]) {
+			for (const f of [...pages, "components/lab/Credit.tsx", "components/lab/TopPlays.tsx", "components/lab/FourthDownReport.tsx", "components/lab/ScoutReport.tsx", "components/lab/CardFigure.tsx", "components/lab/ShareCard.tsx", "components/lab/ShareRedirect.tsx"]) {
 				const src = read(f)
 				expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
 				expect(src).not.toMatch(/bg-\[#0/)

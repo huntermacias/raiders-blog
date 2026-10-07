@@ -8,6 +8,7 @@ vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn(async () 
 
 import WillItLast from "../../components/lab/WillItLast"
 import WillItLastPage, { generateMetadata } from "../../app/(user)/lab/will-it-last/page"
+import ShareLanding, { generateMetadata as shareMetadata } from "../../app/(user)/lab/will-it-last/share/page"
 import LabHub from "../../app/(user)/lab/page"
 import { getHistoryView } from "../../lib/lab/history"
 import { DEFAULT_FILTER, analyze, checklist as buildChecklist, recordText, seasonGames, seasonOf, teamLabel } from "../../lib/lab/historyKit"
@@ -67,16 +68,18 @@ describe("<WillItLast />", () => {
 		expect(screen.getByText(view.stories[0].verdict.text)).toBeTruthy()
 	})
 
-	it("switches stat from the tabs, and the share card follows", () => {
+	it("switches stat from the tabs, and the share link follows", () => {
 		mount()
 		const tabs = within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")
 		fireEvent.click(tabs[1])
 		expect(tabs[1].getAttribute("aria-pressed")).toBe("true")
 		expect(tabs[0].getAttribute("aria-pressed")).toBe("false")
 		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(view.stories[1].headline)
+		fireEvent.click(screen.getByRole("button", { name: /Share: The chart/ }))
 		const img = document.querySelector('img[src^="/api/og"]') as HTMLImageElement
-		expect(img.getAttribute("src")).toBe(`/api/og?type=last&stat=${encodeURIComponent(view.stories[1].key)}&n=${view.n}&v=123`)
+		expect(img.getAttribute("src")).toBe(`/api/og?type=last&kind=chart&stat=${encodeURIComponent(view.stories[1].key)}&size=wide&v=123`)
 	})
+
 
 	it("offers every other stat under 'More stats', grouped, and a pick from there joins the tabs", () => {
 		mount()
@@ -327,15 +330,54 @@ describe("<WillItLast />", () => {
 		expect(panel.textContent).toContain(view.stories[1].winsLine)
 	})
 
-	it("copies the page link", async () => {
+	it("has a share window for every part of the page, and the card follows the filters and the pinned team", () => {
+		mount()
+		for (const name of ["The chart", "Wins and playoffs", "Playoff odds by fifth", "The playoff checklist"]) expect(screen.getByRole("button", { name: `Share: ${name}` })).toBeTruthy()
+		fireEvent.click(screen.getByRole("button", { name: "Made playoffs" }))
+		fireEvent.click(screen.getByRole("button", { name: /Share: Wins and playoffs/ }))
+		const dialog = screen.getByRole("dialog")
+		const img = dialog.querySelector("img") as HTMLImageElement
+		expect(img.getAttribute("src")).toMatch(/^\/api\/og\?type=last&kind=wins&stat=[^&]+&po=made&size=wide&v=123$/)
+		fireEvent.click(within(dialog).getByRole("button", { name: /Tall/ }))
+		expect((dialog.querySelector("img") as HTMLImageElement).getAttribute("src")).toContain("&size=tall")
+		expect(within(dialog).getByRole("link", { name: /Save image/ }).getAttribute("download")).toMatch(/^raiders-will-it-last-wins-.*-tall\.png$/)
+		fireEvent.keyDown(document, { key: "Escape" })
+		expect(screen.queryByRole("dialog")).toBeNull()
+	})
+
+	it("shares a pinned team's season with the pin in the link", () => {
+		mount()
+		fireEvent.click(within(screen.getByRole("group", { name: "Raiders seasons" })).getAllByRole("button")[0])
+		const section = screen.getByRole("region", { name: "Pinned team" })
+		fireEvent.click(within(section).getByRole("button", { name: /Share: A team's season/ }))
+		const src = (screen.getByRole("dialog").querySelector("img") as HTMLImageElement).getAttribute("src")!
+		expect(src).toMatch(/kind=season/)
+		expect(src).toMatch(/pin=\d{4}-(LV|OAK)/)
+	})
+
+	it("copies a link that carries the view", async () => {
 		const writeText = vi.fn(async () => {})
 		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } })
 		mount()
+		fireEvent.click(screen.getByRole("button", { name: /Share: The chart/ }))
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: /Copy link/ }))
+			fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /Copy link/ }))
 		})
-		expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lab\/will-it-last$/))
-		expect(screen.getByRole("button", { name: /Link copied/ })).toBeTruthy()
+		expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lab\/will-it-last\/share\?kind=chart&stat=/))
+		expect(screen.getByText("Link copied")).toBeTruthy()
+	})
+
+	it("reopens a shared view: the stat, the filters and the pinned season", () => {
+		const q = `kind=wins&stat=${encodeURIComponent(view.stories[1].key)}&po=made&scope=all&years=2016,2021`
+		window.history.replaceState(null, "", `/lab/will-it-last?${q}`)
+		try {
+			mount()
+			expect(within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")[1].getAttribute("aria-pressed")).toBe("true")
+			expect(screen.getByRole("button", { name: "Made playoffs" }).getAttribute("aria-pressed")).toBe("true")
+			expect(screen.getByRole("button", { name: /Every team since/ }).getAttribute("aria-pressed")).toBe("true")
+		} finally {
+			window.history.replaceState(null, "", "/")
+		}
 	})
 })
 
@@ -528,5 +570,30 @@ describe("the Will it last? page", () => {
 	it("is linked from the Lab", () => {
 		render(<LabHub />)
 		expect(document.querySelector('a[href="/lab/will-it-last"]')).toBeTruthy()
+	})
+})
+
+describe("the share landing page", () => {
+	it("puts the card for the shared part in the link preview and sends the reader on to the same chart", async () => {
+		const props = { searchParams: Promise.resolve({ kind: "wins", stat: view.stories[1].key, po: "made", size: "tall" }) }
+		const meta = await shareMetadata(props)
+		const image = (meta.openGraph?.images as string[])[0]
+		const url = new URL(image)
+		expect(url.pathname).toBe("/api/og")
+		expect(Object.fromEntries(url.searchParams)).toMatchObject({ type: "last", kind: "wins", stat: view.stories[1].key, po: "made", size: "wide" })
+		expect((meta.twitter as { card: string }).card).toBe("summary_large_image")
+		expect(meta.robots).toEqual({ index: false, follow: true })
+		expect(String(meta.title)).toContain("Wins and playoffs")
+		const replace = vi.fn()
+		Object.defineProperty(window, "location", { configurable: true, value: { ...window.location, replace } })
+		render(await ShareLanding(props))
+		expect(replace).toHaveBeenCalledWith(`/lab/will-it-last?kind=wins&stat=${encodeURIComponent(view.stories[1].key)}&po=made#wins-heading`)
+		expect(screen.getAllByRole("link", { name: /Open the interactive chart/ })[0].getAttribute("href")).toContain("#wins-heading")
+	})
+
+	it("ignores a made-up view and still gives a card", async () => {
+		const meta = await shareMetadata({ searchParams: Promise.resolve({ kind: "x", stat: "../y", team: "ZZZ" }) })
+		const url = new URL((meta.openGraph?.images as string[])[0])
+		expect(Object.fromEntries(url.searchParams)).toMatchObject({ type: "last", kind: "chart", size: "wide", stat: view.stories[0].key })
 	})
 })

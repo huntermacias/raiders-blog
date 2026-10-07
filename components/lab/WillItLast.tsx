@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { ArrowLeft, ArrowRight, Check, Link2, Minus, Pause, Play, RotateCcw, TrendingDown, TrendingUp, X as CloseIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, Minus, Pause, Play, RotateCcw, TrendingDown, TrendingUp, X as CloseIcon } from "lucide-react"
 
-import CardFigure from "@/components/lab/CardFigure"
+import ShareCard from "@/components/lab/ShareCard"
 import { GameRuler, Leaderboard, MoveLine, PlayoffMark, RaidersMark, YearPicker } from "@/components/lab/WillItLastParts"
+import { SECTION_IDS, readView } from "@/lib/lab/lastShare"
 import { LAB } from "@/lib/lab/theme"
 import {
 	type Analysis,
@@ -28,13 +29,18 @@ import {
 
 /** How long the dots take to travel from the first games to the rest of the season. */
 const DURATION_MS = 4200
-const SITE_URL = "https://www.raidersrundown.com"
-const PAGE_PATH = "/lab/will-it-last"
 /** The most teams listed in the table under the chart. */
 const TABLE_LIMIT = 300
 /** The checklist shows this many stats before "Show every stat". */
 const CHECK_LIMIT = 8
 const RIDGE_BINS = 44
+
+/** `text` cut at a word boundary to at most `max` characters, for a post. */
+function clipText(text: string, max: number): string {
+	if (text.length <= max) return text
+	const cut = text.slice(0, max - 1)
+	return `${cut.slice(0, cut.lastIndexOf(" ") > 40 ? cut.lastIndexOf(" ") : cut.length)}…`
+}
 
 function usePrefersReducedMotion() {
 	const [reduced, setReduced] = React.useState(false)
@@ -114,7 +120,6 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 	const [p, setP] = React.useState(0)
 	const [playing, setPlaying] = React.useState(false)
 	const [hover, setHover] = React.useState<number | null>(null)
-	const [copied, setCopied] = React.useState(false)
 	const [showAllChecks, setShowAllChecks] = React.useState(false)
 	const [width, setWidth] = React.useState(960)
 	const reduced = usePrefersReducedMotion()
@@ -152,6 +157,24 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		ro.observe(el)
 		return () => ro.disconnect()
 	}, [])
+
+	// A shared link carries the stat, the filters and the pinned team: open on the same chart, and scroll to the part that was shared.
+	React.useEffect(() => {
+		const sp = new URLSearchParams(window.location.search)
+		if (!sp.get("kind") && !sp.get("stat")) return
+		const v = readView(Object.fromEntries(sp.entries()), { first, last, teams: new Set(meta.teams.map(abbrOf)), rows: new Set(meta.teams) })
+		if (v.stat && tables.some((t) => t.key === v.stat)) setStatKey(v.stat)
+		setFilter(v.filter)
+		setYMode(v.y)
+		if (v.pin) {
+			const i = meta.teams.indexOf(v.pin)
+			if (i >= 0) setPin(i)
+		}
+		if (sp.get("kind")) {
+			const t = window.setTimeout(() => document.getElementById(SECTION_IDS[v.kind])?.scrollIntoView?.({ block: "start", behavior: reducedRef.current ? "auto" : "smooth" }), 400)
+			return () => window.clearTimeout(t)
+		}
+	}, [meta, tables, first, last])
 
 	// Slide the dots between "spread out" and "by final wins".
 	React.useEffect(() => {
@@ -357,21 +380,14 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 
 	const keptPct = Math.round(story.kept * 100)
 	const towardPct = Number.isFinite(story.toward) ? Math.round(story.toward * 100) : 0
-	const src = `/api/og?type=last&stat=${encodeURIComponent(story.key)}&n=${n}&v=${stamp}`
-	const shareText = `${story.headline} ${story.verdict.text}.`
-	const copyLink = async () => {
-		const url = `${window.location.origin}${PAGE_PATH}`
-		try {
-			await navigator.clipboard.writeText(url)
-			setCopied(true)
-			window.setTimeout(() => setCopied(false), 1800)
-		} catch {
-			window.prompt("Copy this link", url)
-		}
-	}
-	const postOnX = () => {
-		const url = `${SITE_URL}${PAGE_PATH}?utm_source=x&utm_medium=social&utm_campaign=lab_share`
-		window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
+	const shareStat = story.key
+	const pinRow = pinned ? meta.teams[pinned.i] : null
+	const shareText = {
+		chart: `${story.headline} ${story.verdict.text}.`,
+		wins: clipText(story.winsLine, 200),
+		fifths: `${story.label}: the Raiders are ${ordinalOf(story.rank)} of 32 (${story.valueText}), in the ${fifthName(story.raidersFifth)} of teams, where ${pctText(story.fifths[story.raidersFifth].rate)} made the playoffs.`,
+		checklist: checklist[0] ? `The Raiders' playoff checklist after ${n} games. ${checklist[0].label} has separated playoff teams best: ${pctText(checklist[0].best)} of the best fifth made it, ${pctText(checklist[0].worst)} of the worst.` : "The Raiders' playoff checklist.",
+		season: pinned ? `${teamLabel(meta.teams[pinned.i])} started ${recordText(meta.startWins[pinned.i], meta.startLosses[pinned.i], n)} and finished ${recordText(meta.wins[pinned.i], meta.losses[pinned.i], seasonGames(seasonOf(meta.teams[pinned.i])))}${pinned.po ? ", making the playoffs" : ", missing the playoffs"}.` : "",
 	}
 
 	const o = story.outcomes
@@ -485,13 +501,18 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 				<div className="p-4 sm:p-7">
 					<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
 						<div className="min-w-0 flex-1 basis-[28rem]">
-							<h2 className="m-0 font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{story.headline}</h2>
+							<h2 id="chart-heading" className="m-0 scroll-mt-6 font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+								{story.headline}
+							</h2>
 							<p className="m-0 mt-3 text-sm leading-relaxed text-lab-soft sm:text-base">{story.sub}</p>
 						</div>
-						<p className="m-0 inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.12em]" style={{ borderColor: vColor, color: vColor }}>
-							<VerdictIcon id={story.verdict.id} />
-							{story.verdict.text}
-						</p>
+						<div className="flex shrink-0 flex-wrap items-center gap-2">
+							<p className="m-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.12em]" style={{ borderColor: vColor, color: vColor }}>
+								<VerdictIcon id={story.verdict.id} />
+								{story.verdict.text}
+							</p>
+							<ShareCard kind="chart" view={{ stat: shareStat, filter, pin: pinRow, y: yMode }} stamp={stamp} text={shareText.chart} alt={`${story.label}: ${story.headline} ${story.verdict.text}.`} />
+						</div>
 					</div>
 
 					<ol className="m-0 mt-5 grid list-none gap-3 p-0 text-sm leading-snug text-lab-soft sm:grid-cols-3" aria-label="How to read this chart">
@@ -809,7 +830,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 					</p>
 
 					{pinned ? (
-						<section className="mt-3 rounded-xl border-2 p-4" style={{ borderColor: pinned.raiders ? LAB.firstDown : LAB.ink }} aria-label="Pinned team">
+						<section id="pinned-team" className="mt-3 scroll-mt-6 rounded-xl border-2 p-4" style={{ borderColor: pinned.raiders ? LAB.firstDown : LAB.ink }} aria-label="Pinned team">
 							<div className="flex flex-wrap items-start justify-between gap-3">
 								<div className="min-w-0">
 									<p className="m-0 flex items-center gap-2 font-serif text-xl font-bold">
@@ -819,7 +840,8 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 									</p>
 									<p className="m-0 mt-1 text-sm text-lab-soft">{lineFor(pinned.i)}</p>
 								</div>
-								<div className="flex items-center gap-2">
+								<div className="flex flex-wrap items-center gap-2">
+									<ShareCard kind="season" view={{ stat: shareStat, filter, pin: pinRow, y: yMode }} stamp={stamp} text={shareText.season} alt={`${teamLabel(meta.teams[pinned.i])}: ${lineFor(pinned.i)}`} />
 									<button type="button" onClick={() => step(-1)} aria-label="Previous team" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
 										<ArrowLeft className="h-4 w-4" aria-hidden />
 									</button>
@@ -935,9 +957,12 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							</p>
 
 							<section className="mt-7 rounded-xl border border-lab-line bg-lab-tint p-4 sm:p-5" aria-labelledby="wins-heading">
-								<h3 id="wins-heading" className="m-0 font-serif text-lg font-bold">
-									What that meant in wins and playoffs
-								</h3>
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<h3 id="wins-heading" className="m-0 scroll-mt-6 font-serif text-lg font-bold">
+										What that meant in wins and playoffs
+									</h3>
+									<ShareCard kind="wins" view={{ stat: shareStat, filter }} stamp={stamp} text={shareText.wins} alt={`${story.label}: ${story.winsLine}`} />
+								</div>
 								<p className="m-0 mt-1 text-sm leading-relaxed text-lab-soft">{story.winsLine}</p>
 								<ul className="m-0 mt-4 grid list-none gap-4 p-0 md:grid-cols-3">
 									{[
@@ -969,9 +994,12 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 					)}
 
 					<section className="mt-5 rounded-xl border border-lab-line bg-lab-tint p-4 sm:p-5" aria-labelledby="fifths-heading">
-						<h3 id="fifths-heading" className="m-0 font-serif text-lg font-bold">
-							How often teams made the playoffs, by {story.short}
-						</h3>
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<h3 id="fifths-heading" className="m-0 scroll-mt-6 font-serif text-lg font-bold">
+								How often teams made the playoffs, by {story.short}
+							</h3>
+							<ShareCard kind="fifths" view={{ stat: shareStat }} stamp={stamp} text={shareText.fifths} alt={`How often teams made the playoffs, by ${story.short}, with the Raiders in the ${fifthName(story.raidersFifth)}.`} />
+						</div>
 						<p className="m-0 mt-1 text-sm leading-relaxed text-lab-soft">
 							Every team since {first}, split into five equal groups by their {story.short} through {n} games. The Raiders ({story.valueText}, {ordinalOf(story.rank)} of 32 now) are in the {fifthName(story.raidersFifth)}, where {pctText(story.fifths[story.raidersFifth].rate)} of teams made the playoffs.
 						</p>
@@ -997,9 +1025,12 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 					</section>
 
 					<section className="mt-5" aria-labelledby="check-heading">
-						<h3 id="check-heading" className="m-0 font-serif text-lg font-bold">
-							The Raiders&rsquo; playoff checklist
-						</h3>
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<h3 id="check-heading" className="m-0 scroll-mt-6 font-serif text-lg font-bold">
+								The Raiders&rsquo; playoff checklist
+							</h3>
+							<ShareCard kind="checklist" view={{}} stamp={stamp} text={shareText.checklist} alt="The Raiders' playoff checklist: each stat's playoff rate for teams that stood where the Raiders stand." />
+						</div>
 						<p className="m-0 mt-1 max-w-3xl text-sm leading-relaxed text-lab-soft">
 							Every stat, ranked by how much it has separated playoff teams from the rest after {n} games (best fifth of teams against worst fifth). The big number and bar are how often teams that stood where the {season} Raiders stand made the playoffs. Select one to see it in the chart.
 						</p>
@@ -1055,20 +1086,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 						</div>
 					</details>
 
-					<div className="mt-5 flex flex-wrap items-center gap-3">
-						<button type="button" onClick={copyLink} className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-lab-line-strong px-4 py-2 text-sm font-semibold text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
-							{copied ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
-							{copied ? "Link copied" : "Copy link"}
-						</button>
-						<button type="button" onClick={postOnX} className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-lab-line-strong px-4 py-2 text-sm font-semibold text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
-							Post on X
-						</button>
-					</div>
 				</div>
-			</div>
-
-			<div className="mt-6 max-w-xl">
-				<CardFigure src={src} alt={`${story.label}: ${story.headline} ${story.verdict.text}.`} filename={`raiders-will-it-last-${story.key.replace(".", "-")}.png`} caption={`Share card, ${first} to ${last} history`} />
 			</div>
 		</div>
 	)

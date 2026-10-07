@@ -68,14 +68,16 @@ export function Eyebrow({ text, color = SILVER }: { text: string; color?: string
 }
 
 /** Slanted speed lines, brightest toward the right, behind everything. */
-export function Speed() {
+export function Speed({ w = W, h = H }: { w?: number; h?: number } = {}) {
 	const lines: ReactElement[] = []
-	for (let i = -8; i < 24; i++) {
+	// A taller card gets more lines so the slant still reaches the right edge.
+	const count = Math.ceil((w + h * 0.62) / 64) + 4
+	for (let i = -8; i < count; i++) {
 		const op = Math.max(0.015, Math.min(0.09, 0.012 + (i + 8) * 0.0028))
-		lines.push(<line key={i} x1={i * 64 + 220} y1={H} x2={i * 64 + 220 + H * 0.62} y2={0} stroke="#ffffff" strokeOpacity={op} strokeWidth={i % 4 === 0 ? 4 : 2} />)
+		lines.push(<line key={i} x1={i * 64 + 220} y1={h} x2={i * 64 + 220 + h * 0.62} y2={0} stroke="#ffffff" strokeOpacity={op} strokeWidth={i % 4 === 0 ? 4 : 2} />)
 	}
 	return (
-		<svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", left: 0, top: 0 }}>
+		<svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", left: 0, top: 0 }}>
 			{lines}
 		</svg>
 	)
@@ -86,12 +88,12 @@ export function Speed() {
  * side), a glow in `glow` from the bottom right (the player's side, or this week's opponent), the speed
  * lines, and a bar across the top that fades from silver into the glow color.
  */
-export function Frame({ glow = SILVER, ghost, children }: { glow?: string; ghost?: string; children: (ReactElement | null)[] | ReactElement }) {
+export function Frame({ glow = SILVER, ghost, w = W, h = H, children }: { glow?: string; ghost?: string; w?: number; h?: number; children: (ReactElement | null)[] | ReactElement }) {
 	return (
-		<div style={{ display: "flex", position: "relative", width: W, height: H, overflow: "hidden", backgroundColor: BG, backgroundImage: `radial-gradient(circle at 92% 108%, ${rgba(glow, 0.34)} 0%, ${rgba(glow, 0)} 52%), radial-gradient(circle at 6% -8%, rgba(207,211,214,0.2) 0%, rgba(207,211,214,0) 46%)`, color: WHITE }}>
-			<Speed />
+		<div style={{ display: "flex", position: "relative", width: w, height: h, overflow: "hidden", backgroundColor: BG, backgroundImage: `radial-gradient(circle at 92% 108%, ${rgba(glow, 0.34)} 0%, ${rgba(glow, 0)} 52%), radial-gradient(circle at 6% -8%, rgba(207,211,214,0.2) 0%, rgba(207,211,214,0) 46%)`, color: WHITE }}>
+			<Speed w={w} h={h} />
 			{ghost ? <div style={{ display: "flex", position: "absolute", right: -30, top: 70, fontFamily: "Anton", fontSize: 560, lineHeight: 1, color: "rgba(255,255,255,0.035)" }}>{ghost}</div> : null}
-			<div style={{ display: "flex", position: "absolute", left: 0, top: 0, width: W, height: 7, backgroundImage: `linear-gradient(90deg, #e6e7e9 0%, #a7aeb3 35%, ${glow} 100%)` }} />
+			<div style={{ display: "flex", position: "absolute", left: 0, top: 0, width: w, height: 7, backgroundImage: `linear-gradient(90deg, #e6e7e9 0%, #a7aeb3 35%, ${glow} 100%)` }} />
 			{children}
 		</div>
 	)

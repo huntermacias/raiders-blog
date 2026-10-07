@@ -5,6 +5,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import Credit from "@/components/lab/Credit"
+import ShareCard from "@/components/lab/ShareCard"
 import WillItLast from "@/components/lab/WillItLast"
 import { getScouting } from "@/lib/lab/data"
 import { MAX_GAMES, MIN_GAMES, getHistoryView } from "@/lib/lab/history"
@@ -67,8 +68,11 @@ export default function WillItLastPage() {
 
 					<section className="container pb-10 sm:pb-14" aria-labelledby="bottom-heading">
 						<div className="rounded-2xl border border-lab-line bg-lab-surface p-6 sm:p-8">
-							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">The bottom line</p>
-							<h2 id="bottom-heading" className="m-0 mt-2 max-w-3xl font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">The bottom line</p>
+								<ShareCard kind="bottom" view={{}} stamp={stamp} text={`${view.bottomLine.title} What the Raiders' hot and cold stats looked like against every team since ${view.first}.`} alt={`The bottom line: ${view.bottomLine.title}`} />
+							</div>
+							<h2 id="bottom-heading" className="m-0 mt-2 max-w-3xl scroll-mt-6 font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
 								{view.bottomLine.title}
 							</h2>
 							<p className="m-0 mt-4 max-w-3xl text-base leading-relaxed text-lab-soft">{view.bottomLine.body}</p>
