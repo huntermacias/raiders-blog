@@ -1,6 +1,3 @@
-import { existsSync } from "node:fs"
-import { join } from "node:path"
-
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
@@ -9,13 +6,9 @@ import ShareCard from "@/components/lab/ShareCard"
 import WillItLast from "@/components/lab/WillItLast"
 import { getScouting } from "@/lib/lab/data"
 import { MAX_GAMES, MIN_GAMES, getHistoryView } from "@/lib/lab/history"
+import { raidersLogo } from "@/lib/lab/shield"
 
 // Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
-
-// The Raiders shield shows up next to the Rundown logo once the file is in /public. The page is built ahead of
-// time, so this is checked at build; nothing broken is ever shown when the file is not there.
-const RAIDERS_LOGO = "/raiders-shield.png"
-const raidersLogo = existsSync(join(process.cwd(), "public", RAIDERS_LOGO)) ? RAIDERS_LOGO : null
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/will-it-last`
