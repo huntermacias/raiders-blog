@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Check, Link2, Minus, Pause, Play, RotateCcw, TrendingDown, TrendingUp } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Link2, Minus, Pause, Play, RotateCcw, TrendingDown, TrendingUp, X as CloseIcon } from "lucide-react"
 
 import CardFigure from "@/components/lab/CardFigure"
+import { GameRuler, Leaderboard, MoveLine, PlayoffMark, RaidersMark, YearPicker } from "@/components/lab/WillItLastParts"
 import { LAB } from "@/lib/lab/theme"
 import {
 	type Analysis,
@@ -33,6 +34,7 @@ const PAGE_PATH = "/lab/will-it-last"
 const TABLE_LIMIT = 300
 /** The checklist shows this many stats before "Show every stat". */
 const CHECK_LIMIT = 8
+const RIDGE_BINS = 44
 
 function usePrefersReducedMotion() {
 	const [reduced, setReduced] = React.useState(false)
@@ -57,6 +59,14 @@ const SILVER = 0.7548776662
 /** A circle as path text, so hundreds of them cost one element. */
 const circle = (x: number, y: number, r: number) => `M${(x - r).toFixed(1)} ${y.toFixed(1)}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`
 
+/** How many teams fall in each slice of the axis, smoothed a little so it reads as a shape. */
+function density(values: number[], d0: number, d1: number): number[] {
+	const raw = new Array<number>(RIDGE_BINS).fill(0)
+	for (const v of values) raw[Math.min(RIDGE_BINS - 1, Math.max(0, Math.floor(((v - d0) / (d1 - d0)) * RIDGE_BINS)))]++
+	const w = [1, 2, 3, 2, 1]
+	return raw.map((_, k) => w.reduce((a, wt, j) => (k + j - 2 >= 0 && k + j - 2 < RIDGE_BINS ? a + raw[k + j - 2] * wt : a), 0) / 9)
+}
+
 function verdictColor(id: Analysis["verdict"]["id"]): string {
 	if (id === "fade") return LAB.opp
 	if (id === "improve") return LAB.scrimmage
@@ -68,15 +78,6 @@ function VerdictIcon({ id }: { id: Analysis["verdict"]["id"] }) {
 	if (id === "fade" || id === "linger") return <TrendingDown className={cls} aria-hidden />
 	if (id === "improve" || id === "hold") return <TrendingUp className={cls} aria-hidden />
 	return <Minus className={cls} aria-hidden />
-}
-
-/** The playoff marker used in the legend, the chips and the tooltip: filled for a playoff team, hollow for one that missed. */
-function PlayoffMark({ made, size = 12 }: { made: boolean; size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 12 12" aria-hidden className="shrink-0">
-			{made ? <circle cx="6" cy="6" r="5" fill={LAB.scrimmage} /> : <circle cx="6" cy="6" r="4.4" fill={LAB.opp} fillOpacity={0.14} stroke={LAB.opp} strokeWidth="1.7" />}
-		</svg>
-	)
 }
 
 type Props = {
@@ -94,6 +95,8 @@ type Props = {
 	stamp: number
 	/** The Raiders' record through `n` games, when none of them was a tie. */
 	start: { wins: number; losses: number } | null
+	/** Path of the Raiders shield in /public, when the site has the file. */
+	raidersLogo?: string | null
 }
 
 const FAMILIES: { id: Table["family"]; label: string }[] = [
@@ -102,10 +105,12 @@ const FAMILIES: { id: Table["family"]; label: string }[] = [
 	{ id: "def", label: "Defense" },
 ]
 
-export default function WillItLast({ meta, tables, standouts, checklist, season, n, first, last, stamp, start }: Props) {
+export default function WillItLast({ meta, tables, standouts, checklist, season, n, first, last, stamp, start, raidersLogo = null }: Props) {
 	const [statKey, setStatKey] = React.useState(standouts[0] ?? tables[0]?.key ?? "")
 	const [filter, setFilter] = React.useState<Filter>(DEFAULT_FILTER)
-	const [spot, setSpot] = React.useState<number | null>(null)
+	const [pin, setPin] = React.useState<number | null>(null)
+	const [yMode, setYMode] = React.useState<"spread" | "wins">("spread")
+	const [yBlend, setYBlend] = React.useState(0)
 	const [p, setP] = React.useState(0)
 	const [playing, setPlaying] = React.useState(false)
 	const [hover, setHover] = React.useState<number | null>(null)
@@ -120,11 +125,22 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 	const svgRef = React.useRef<SVGSVGElement>(null)
 	const pRef = React.useRef(0)
 	const raf = React.useRef(0)
+	const yRaf = React.useRef(0)
+	const yRef = React.useRef(0)
 	const started = React.useRef(false)
 
 	const table = tables.find((t) => t.key === statKey) ?? tables[0]
 	const story = React.useMemo(() => (table ? analyze(meta, table, season, filter) : null), [meta, table, season, filter])
 	const raidersRows = React.useMemo(() => (story ? story.rows.filter((r) => r.raiders).sort((a, b) => seasonOf(meta.teams[a.i]) - seasonOf(meta.teams[b.i])) : []), [story, meta])
+	const members = React.useMemo(() => (story ? story.rows.filter((r) => r.inGroup) : []), [story])
+	const ordered = React.useMemo(() => (story ? members.slice().sort((a, b) => Math.abs(a.start - story.value) - Math.abs(b.start - story.value)) : []), [members, story])
+	const dens = React.useMemo(() => {
+		if (!story || !members.length) return null
+		const [d0, d1] = story.domain
+		const a = density(members.map((r) => r.start), d0, d1)
+		const b = density(members.map((r) => r.rest), d0, d1)
+		return { a, b, max: Math.max(1, ...a, ...b) }
+	}, [story, members])
 
 	React.useEffect(() => {
 		const el = stripRef.current
@@ -136,6 +152,29 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		ro.observe(el)
 		return () => ro.disconnect()
 	}, [])
+
+	// Slide the dots between "spread out" and "by final wins".
+	React.useEffect(() => {
+		const target = yMode === "wins" ? 1 : 0
+		cancelAnimationFrame(yRaf.current)
+		if (reducedRef.current) {
+			yRef.current = target
+			setYBlend(target)
+			return
+		}
+		let prev = performance.now()
+		const tick = (now: number) => {
+			const dt = Math.min(50, now - prev)
+			prev = now
+			const cur = yRef.current
+			const next = target > cur ? Math.min(target, cur + dt / 500) : Math.max(target, cur - dt / 500)
+			yRef.current = next
+			setYBlend(next)
+			if (next !== target) yRaf.current = requestAnimationFrame(tick)
+		}
+		yRaf.current = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(yRaf.current)
+	}, [yMode])
 
 	const stop = React.useCallback(() => {
 		cancelAnimationFrame(raf.current)
@@ -174,7 +213,13 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		[set],
 	)
 
-	React.useEffect(() => () => cancelAnimationFrame(raf.current), [])
+	React.useEffect(
+		() => () => {
+			cancelAnimationFrame(raf.current)
+			cancelAnimationFrame(yRaf.current)
+		},
+		[],
+	)
 
 	// Start the first time the chart is on screen, so the movement is the first thing a reader sees.
 	React.useEffect(() => {
@@ -194,6 +239,8 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		return () => io.disconnect()
 	}, [play, set])
 
+	const toChart = () => stripRef.current?.scrollIntoView?.({ block: "center", behavior: reducedRef.current ? "auto" : "smooth" })
+
 	const pick = (key: string, scroll = false) => {
 		stop()
 		setStatKey(key)
@@ -204,7 +251,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 			set(0)
 			play(true)
 		}
-		if (scroll) stripRef.current?.scrollIntoView?.({ block: "center", behavior: reducedRef.current ? "auto" : "smooth" })
+		if (scroll) toChart()
 	}
 
 	const update = (next: Partial<Filter>) => {
@@ -216,19 +263,25 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 	if (!story || !table) return null
 
 	const narrow = width < 560
-	const H = narrow ? 290 : 340
-	const M = { left: 18, right: 18, top: 44, bottom: 34 }
+	const H = narrow ? 330 : 390
+	const M = { left: 18, right: 18, top: 62, bottom: 34 }
 	const plotW = width - M.left - M.right
 	const [d0, d1] = story.domain
 	const X = (v: number) => M.left + ((v - d0) / (d1 - d0)) * plotW
 	const R = narrow ? 3.4 : 4.2
 	const lane = H - M.top - M.bottom - 14
-	const yOf = (i: number) => M.top + 7 + spread(i + 1, GOLDEN) * lane
-	const delayOf = (i: number) => spread(i + 1, SILVER) * 0.22
-	const xAt = (r: { i: number; start: number; rest: number }) => {
-		const local = ease(clamp01((p - delayOf(r.i)) / (1 - delayOf(r.i))))
-		return X(r.start + (r.rest - r.start) * local)
+	const games = seasonGames(season)
+	const mix = ease(p)
+	const yJit = (i: number) => M.top + 7 + spread(i + 1, GOLDEN) * lane
+	const yWin = (i: number) => M.top + 7 + (1 - clamp01(meta.wins[i] / games)) * lane + (spread(i + 1, SILVER) - 0.5) * 9
+	const yAt = (i: number) => {
+		const b = ease(yBlend)
+		const a = yJit(i)
+		return a + (yWin(i) - a) * b
 	}
+	const delayOf = (i: number) => spread(i + 1, SILVER) * 0.22
+	const localAt = (i: number) => ease(clamp01((p - delayOf(i)) / (1 - delayOf(i))))
+	const xAt = (r: { i: number; start: number; rest: number }) => X(r.start + (r.rest - r.start) * localAt(r.i))
 
 	const ticks = [0, 1, 2, 3, 4].map((k) => {
 		const v = d0 + ((d1 - d0) * k) / 4
@@ -236,29 +289,45 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		return { x: X(v), label: formatStat(story, shown) }
 	})
 	const rvX = X(story.value)
-	const flip = rvX > width * 0.66
 	const chip = `${season} Raiders ${story.valueText}`
-	const chipW = chip.length * 8.4 + 24
+	const logoW = raidersLogo ? 26 : 0
+	const chipW = chip.length * 8.4 + 24 + logoW
+	const chipX = Math.max(4, Math.min(width - chipW - 4, rvX + 6 + chipW > width - 4 ? rvX - chipW - 6 : rvX + 6))
 	const vColor = verdictColor(story.verdict.id)
 	const empty = story.groupSize === 0
-	const games = seasonGames(season)
 	const remaining = games - n
+	const baseY = H - M.bottom + 6
 
 	// Dots: everyone not in the group faint behind, the group as playoff (filled) and missed (hollow), Raiders on top.
 	let bgPath = ""
 	let madePath = ""
+	let glowPath = ""
 	let missedPath = ""
+	let trailPath = ""
+	let closer = 0
 	for (const r of story.rows) {
+		if (r.inGroup) {
+			const cur = r.start + (r.rest - r.start) * localAt(r.i)
+			if (Math.abs(cur - story.base) < Math.abs(r.start - story.base)) closer++
+		}
 		if (r.raiders) continue
 		const x = xAt(r)
-		const y = yOf(r.i)
+		const y = yAt(r.i)
 		if (!r.inGroup) bgPath += circle(x, y, R * 0.75)
-		else if (r.po) madePath += circle(x, y, R)
-		else missedPath += circle(x, y, R - 0.6)
+		else {
+			if (p > 0.005) trailPath += `M${X(r.start).toFixed(1)} ${y.toFixed(1)}L${x.toFixed(1)} ${y.toFixed(1)}`
+			if (r.po) {
+				madePath += circle(x, y, R)
+				glowPath += circle(x, y, R * 2.1)
+			} else missedPath += circle(x, y, R - 0.6)
+		}
 	}
+	const liveAvg = story.avgStart + (story.avgRest - story.avgStart) * mix
+	const avgX = X(liveAvg)
+	const closerPct = members.length ? Math.round((closer / members.length) * 100) : 0
 	const rowOf = (i: number | null) => (i === null ? null : (story.rows.find((r) => r.i === i) ?? null))
 	const hv = rowOf(hover)
-	const spotRow = raidersRows.find((r) => seasonOf(meta.teams[r.i]) === spot) ?? null
+	const pinned = rowOf(pin)
 
 	const nearest = (clientX: number, clientY: number): number | null => {
 		const rect = svgRef.current?.getBoundingClientRect()
@@ -269,7 +338,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		let bestD = 15 * 15
 		for (const r of story.rows) {
 			const dx = xAt(r) - px
-			const dy = yOf(r.i) - py
+			const dy = yAt(r.i) - py
 			const dist = dx * dx + dy * dy - (r.raiders ? 40 : r.inGroup ? 12 : 0)
 			if (dist < bestD) {
 				bestD = dist
@@ -277,6 +346,13 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 			}
 		}
 		return best
+	}
+
+	const step = (dir: 1 | -1) => {
+		if (!ordered.length) return
+		const at = ordered.findIndex((r) => r.i === pin)
+		const next = at < 0 ? (dir === 1 ? 0 : ordered.length - 1) : (at + dir + ordered.length) % ordered.length
+		setPin(ordered[next].i)
 	}
 
 	const keptPct = Math.round(story.kept * 100)
@@ -301,14 +377,17 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 	const o = story.outcomes
 	const phase = p < 0.03 ? 0 : p > 0.97 ? 2 : 1
 	const hasBackground = story.rows.length > story.groupSize
+	const gamesA = `Games 1–${n}`
+	const gamesB = `Games ${n + 1}–${games}`
+	const phaseLabel = phase === 0 ? gamesA : phase === 2 ? gamesB : `${gamesA} → ${gamesB}`
 	const caption = [
 		empty ? "Nothing to show with these filters. Widen them to see teams." : `Where the ${story.groupSize} highlighted teams stood after their first ${n} games${hasBackground ? ", with every other team faint behind them" : ""}.`,
 		"Now the rest of their seasons play out. Watch where the dots head.",
 		empty ? "" : `Where they finished. ${towardPct}% of the highlighted teams slid back toward the dashed line, the league average.`,
 	][phase]
 	const raidersWin = start ? start.wins / n : null
-	const progressText = p <= 0 ? `First ${n} games` : p >= 1 ? "Rest of the season" : `${Math.round(p * 100)}% of the way`
-	const filtered = filter.scope !== DEFAULT_FILTER.scope || !!filter.team || filter.playoffs !== "any"
+	const progressText = p <= 0 ? `${gamesA}, the first ${n} games` : p >= 1 ? `${gamesB}, the rest of the season` : `Moving from ${gamesA.toLowerCase()} to ${gamesB.toLowerCase()}, ${Math.round(p * 100)}% of the way`
+	const filtered = filter.scope !== DEFAULT_FILTER.scope || !!filter.team || filter.playoffs !== "any" || filter.years.length > 0
 
 	const teamOptions = Array.from(new Set(meta.teams.map(abbrOf))).sort((a, b) => (a === "LV" ? -1 : b === "LV" ? 1 : teamName(a).localeCompare(teamName(b))))
 	const statList = [...standouts, ...(standouts.includes(statKey) ? [] : [statKey])].flatMap((k) => {
@@ -321,12 +400,23 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 		const r = table.rest[i]
 		return `${teamLabel(meta.teams[i])}: ${s === null ? "n/a" : formatStat(table, s)} through ${n} games (${recordText(meta.startWins[i], meta.startLosses[i], n)}), ${r === null ? "n/a" : formatStat(table, r)} after. Finished ${recordText(meta.wins[i], meta.losses[i], g)}${meta.po[i] ? ", made the playoffs" : ", missed the playoffs"}.`
 	}
-
-	const tableRows = story.rows
-		.filter((r) => r.inGroup)
-		.sort((a, b) => Math.abs(a.start - story.value) - Math.abs(b.start - story.value))
-		.slice(0, TABLE_LIMIT)
 	const checks = showAllChecks ? checklist : checklist.slice(0, CHECK_LIMIT)
+
+	let ridge = ""
+	if (dens && !empty) {
+		const hmax = 54
+		const pts = dens.a.map((a, k) => {
+			const v = a + (dens.b[k] - a) * mix
+			return `${(M.left + ((k + 0.5) / RIDGE_BINS) * plotW).toFixed(1)} ${(baseY - (v / dens.max) * hmax).toFixed(1)}`
+		})
+		ridge = `M${M.left} ${baseY}L${pts.join("L")}L${M.left + plotW} ${baseY}Z`
+	}
+	let ghost = ""
+	if (dens && !empty) {
+		const hmax = 54
+		ghost = `M${dens.a.map((a, k) => `${(M.left + ((k + 0.5) / RIDGE_BINS) * plotW).toFixed(1)} ${(baseY - (a / dens.max) * hmax).toFixed(1)}`).join("L")}`
+	}
+	const winTicks = [4, 8, 12, 16].filter((w) => w < games)
 
 	return (
 		<div ref={rootRef}>
@@ -385,8 +475,11 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">The Lab &middot; Will it last?</p>
 						</div>
 					</div>
-					<p className="m-0 font-mono text-sm tabular-nums text-lab-soft">
-						{season} Raiders &middot; {start ? `${start.wins}-${start.losses} after ${n} games` : `${n} games played`}
+					<p className="m-0 flex items-center gap-2.5 font-mono text-sm tabular-nums text-lab-soft">
+						<RaidersMark src={raidersLogo} size={34} />
+						<span>
+							{season} Raiders &middot; {start ? `${start.wins}-${start.losses} after ${n} games` : `${n} games played`}
+						</span>
 					</p>
 				</div>
 				<div className="p-4 sm:p-7">
@@ -403,7 +496,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 
 					<ol className="m-0 mt-5 grid list-none gap-3 p-0 text-sm leading-snug text-lab-soft sm:grid-cols-3" aria-label="How to read this chart">
 						{[
-							{ t: "One dot is one team", d: `Each dot is one team in one season since ${first}. Filled blue dots made the playoffs, hollow orange rings did not, and gold rings are earlier Raiders teams.` },
+							{ t: "One dot is one team", d: `Each dot is one team in one season since ${first}. Filled blue dots made the playoffs, hollow orange rings did not, and gold rings are earlier Raiders teams. Tap a dot to pin it.` },
 							{ t: story.higherIsBetter ? "Further right is better" : "Further left is better", d: `Left to right is ${story.unit}. ${story.higherIsBetter ? "More is better" : "Less is better"} for a team, so ${story.higherIsBetter ? "the right" : "the left"} side is where you want to be.` },
 							{ t: "Press play to see the next games", d: `Each dot slides from where its team stood after ${n} games to where it stood over the rest of its season. The Raiders have ${remaining} games left.` },
 						].map((c, i) => (
@@ -421,7 +514,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 
 					<fieldset className="m-0 mt-5 min-w-0 rounded-xl border border-lab-line bg-lab-tint px-4 py-3">
 						<legend className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">Filter the teams</legend>
-						<div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+						<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
 							<div role="group" aria-label="Which teams" className="flex flex-col gap-1">
 								<span className="text-xs font-semibold text-lab-muted">Which teams</span>
 								<div className="flex overflow-hidden rounded-lg border border-lab-line-strong">
@@ -480,12 +573,9 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 									))}
 								</div>
 							</div>
+							<YearPicker first={first} last={last} years={filter.years} onChange={(years) => update({ years })} />
 							{filtered ? (
-								<button
-									type="button"
-									onClick={() => update(DEFAULT_FILTER)}
-									className="min-h-[40px] rounded-lg px-3 py-2 text-sm font-semibold text-lab-soft underline underline-offset-4 hover:text-lab-ink"
-								>
+								<button type="button" onClick={() => update(DEFAULT_FILTER)} className="min-h-[40px] self-end rounded-lg px-3 py-2 text-sm font-semibold text-lab-soft underline underline-offset-4 hover:text-lab-ink">
 									Reset filters
 								</button>
 							) : null}
@@ -494,12 +584,12 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 
 					<div className="mt-4">
 						<p className="m-0 mb-2 text-xs font-semibold text-lab-muted">
-							Compare with a Raiders season ({first} to {last}). Pick one to see its start and how it ended.
+							Compare with a Raiders season ({first} to {last}). Pick one to pin it and see how it started and ended.
 						</p>
 						<div className="flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Raiders seasons">
 							{raidersRows.map((r) => {
 								const yr = seasonOf(meta.teams[r.i])
-								const on = spot === yr
+								const on = pin === r.i
 								const rec = recordText(meta.startWins[r.i], meta.startLosses[r.i], n)
 								const fin = recordText(meta.wins[r.i], meta.losses[r.i], seasonGames(yr))
 								return (
@@ -508,7 +598,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 										type="button"
 										aria-pressed={on}
 										aria-label={`${yr} Raiders: started ${rec}, finished ${fin}, ${r.po ? "made" : "missed"} the playoffs`}
-										onClick={() => setSpot(on ? null : yr)}
+										onClick={() => setPin(on ? null : r.i)}
 										className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${on ? "border-lab-ink bg-lab-ink text-lab-page" : "border-lab-line-strong bg-lab-page text-lab-ink hover:bg-lab-hover"}`}
 									>
 										<PlayoffMark made={r.po} />
@@ -517,53 +607,110 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 								)
 							})}
 						</div>
-						{spotRow ? (
-							<p className="m-0 mt-2 rounded-lg border px-3 py-2 text-sm leading-snug text-lab-soft" style={{ borderColor: LAB.firstDown }}>
-								{lineFor(spotRow.i)} The {season} Raiders are at {story.valueText}.
+					</div>
+
+					<div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border border-lab-line bg-lab-tint px-4 py-3">
+						<div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+							<p className="m-0 inline-flex items-center gap-2 rounded-full bg-lab-ink px-4 py-1.5 font-mono text-sm font-bold tabular-nums text-lab-page" aria-live="off">
+								<span className="inline-block h-2 w-2 rounded-full" style={{ background: playing ? LAB.firstDown : LAB.inkMuted }} aria-hidden />
+								{phaseLabel}
 							</p>
-						) : null}
+							{!empty ? (
+								<>
+									<p className="m-0 text-xs leading-tight text-lab-muted">
+										<span className="block font-semibold uppercase tracking-[0.12em]">Group average</span>
+										<span className="font-mono text-lg font-bold tabular-nums text-lab-ink">{formatStat(story, liveAvg)}</span>
+										<span className="ml-1.5">league {story.baseText}</span>
+									</p>
+									<p className="m-0 text-xs leading-tight text-lab-muted">
+										<span className="block font-semibold uppercase tracking-[0.12em]">Closer to average</span>
+										<span className="font-mono text-lg font-bold tabular-nums text-lab-ink">{closerPct}%</span>
+										<span className="ml-1.5">of {members.length}</span>
+									</p>
+								</>
+							) : null}
+						</div>
+						<div role="group" aria-label="How the dots are spread" className="flex flex-col gap-1">
+							<span className="text-xs font-semibold text-lab-muted">Dots go up with</span>
+							<div className="flex overflow-hidden rounded-lg border border-lab-line-strong">
+								{(
+									[
+										["spread", "Nothing (spread out)"],
+										["wins", "Final wins"],
+									] as const
+								).map(([v, label]) => (
+									<button
+										key={v}
+										type="button"
+										aria-pressed={yMode === v}
+										onClick={() => setYMode(v)}
+										className={`min-h-[36px] px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${yMode === v ? "bg-lab-ink text-lab-page" : "bg-lab-surface text-lab-ink hover:bg-lab-hover"}`}
+									>
+										{label}
+									</button>
+								))}
+							</div>
+						</div>
 					</div>
+					<p className="m-0 mt-2 min-h-[2.5rem] text-sm leading-snug text-lab-soft">{caption}</p>
 
-					<div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-hidden>
-						{[`First ${n} games`, "Rest of the season"].map((label, i) => {
-							const on = i === 0 ? phase === 0 : phase > 0
-							return (
-								<span key={label} className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: on ? LAB.ink : LAB.inkMuted }}>
-									<span className="flex h-5 w-5 items-center justify-center rounded-full border text-[11px]" style={{ borderColor: on ? LAB.ink : LAB.line, background: on ? LAB.ink : "transparent", color: on ? LAB.page : LAB.inkMuted }}>
-										{i + 1}
-									</span>
-									{label}
-									{i === 0 ? <span className="px-1 text-lab-muted">&rarr;</span> : null}
-								</span>
-							)
-						})}
-					</div>
-					<p className="m-0 mt-1 min-h-[2.5rem] text-sm leading-snug text-lab-soft">{caption}</p>
-
-					<div ref={stripRef} className="relative mt-2 w-full">
+					<div ref={stripRef} className="relative mt-1 w-full">
 						<svg
 							ref={svgRef}
 							width={width}
 							height={H}
 							role="img"
 							aria-label={`${story.headline} ${story.verdict.text}. The table below the chart lists every team.`}
-							className="block max-w-full select-none overflow-visible"
+							className="block max-w-full cursor-crosshair select-none overflow-visible"
 							style={{ touchAction: "pan-y" }}
 							onPointerMove={(e) => setHover(nearest(e.clientX, e.clientY))}
 							onPointerDown={(e) => setHover(nearest(e.clientX, e.clientY))}
 							onPointerLeave={() => setHover(null)}
+							onClick={(e) => {
+								const i = nearest(e.clientX, e.clientY)
+								if (i !== null) setPin((cur) => (cur === i ? null : i))
+							}}
 						>
 							<rect x={0} y={0} width={width} height={H - M.bottom + 12} rx={12} fill={LAB.page} stroke={LAB.line} />
-							{!empty ? <rect x={X(story.band[0])} y={M.top - 8} width={Math.max(2, X(story.band[1]) - X(story.band[0]))} height={H - M.top - M.bottom + 16} fill={LAB.firstDown} fillOpacity={0.14 * ease(p)} stroke={LAB.firstDown} strokeOpacity={0.7 * ease(p)} strokeDasharray="4 4" /> : null}
+							{ticks.map((t, k) => (
+								<line key={`g${k}`} x1={t.x} x2={t.x} y1={M.top - 8} y2={H - M.bottom + 8} stroke={LAB.grid} strokeWidth={1} pointerEvents="none" />
+							))}
+							{yBlend > 0.02
+								? winTicks.map((w) => {
+										const y = M.top + 7 + (1 - w / games) * lane
+										return (
+											<g key={`w${w}`} pointerEvents="none" opacity={ease(yBlend)}>
+												<line x1={M.left} x2={width - M.right} y1={y} y2={y} stroke={LAB.grid} strokeDasharray="1 4" />
+												<text x={M.left + 4} y={y - 4} fontSize={11} fontWeight={600} fill={LAB.inkMuted} stroke={LAB.page} strokeWidth={4} paintOrder="stroke">
+													{w} wins
+												</text>
+											</g>
+										)
+									})
+								: null}
+							{!empty ? <rect x={X(story.band[0])} y={M.top - 8} width={Math.max(2, X(story.band[1]) - X(story.band[0]))} height={H - M.top - M.bottom + 16} fill={LAB.firstDown} fillOpacity={0.12 * mix} stroke={LAB.firstDown} strokeOpacity={0.6 * mix} strokeDasharray="4 4" /> : null}
+							{ridge ? <path d={ridge} fill={LAB.scrimmage} fillOpacity={0.16} stroke={LAB.scrimmage} strokeOpacity={0.7} strokeWidth={1.5} pointerEvents="none" /> : null}
+							{ghost && mix > 0.02 ? <path d={ghost} fill="none" stroke={LAB.inkMuted} strokeWidth={1.5} strokeDasharray="3 4" pointerEvents="none" /> : null}
 							<line x1={X(story.base)} x2={X(story.base)} y1={M.top - 8} y2={H - M.bottom + 8} stroke={LAB.axis} strokeDasharray="2 5" />
 							<line x1={rvX} x2={rvX} y1={M.top - 14} y2={H - M.bottom + 8} stroke={LAB.firstDown} strokeWidth={2.5} />
-							<path d={bgPath} fill={LAB.inkMuted} fillOpacity={0.2} pointerEvents="none" />
-							<path d={missedPath} fill={LAB.opp} fillOpacity={0.14} stroke={LAB.opp} strokeWidth={1.6} pointerEvents="none" />
-							<path d={madePath} fill={LAB.scrimmage} fillOpacity={0.8} pointerEvents="none" />
+							<path data-dots="faint" d={bgPath} fill={LAB.inkMuted} fillOpacity={0.2} pointerEvents="none" />
+							<path d={trailPath} fill="none" stroke={LAB.inkMuted} strokeOpacity={0.2} strokeWidth={1} pointerEvents="none" />
+							<path d={glowPath} fill={LAB.scrimmage} fillOpacity={0.1} pointerEvents="none" />
+							<path data-dots="missed" d={missedPath} fill={LAB.opp} fillOpacity={0.14} stroke={LAB.opp} strokeWidth={1.6} pointerEvents="none" />
+							<path data-dots="made" d={madePath} fill={LAB.scrimmage} fillOpacity={0.85} pointerEvents="none" />
+							{!empty ? (
+								<g pointerEvents="none">
+									<line x1={avgX} x2={avgX} y1={M.top - 2} y2={H - M.bottom + 6} stroke={LAB.ink} strokeWidth={2} strokeDasharray="1 0" strokeOpacity={0.85} />
+									<path d={`M${avgX - 6} ${M.top - 12}L${avgX + 6} ${M.top - 12}L${avgX} ${M.top - 2}Z`} fill={LAB.ink} />
+									<text x={avgX} y={M.top - 17} fontSize={12} fontWeight={700} textAnchor="middle" fill={LAB.ink} stroke={LAB.page} strokeWidth={4} paintOrder="stroke">
+										group average {formatStat(story, liveAvg)}
+									</text>
+								</g>
+							) : null}
 							{raidersRows.map((r) => {
-								const on = hover === r.i || spotRow?.i === r.i
+								const on = hover === r.i || pin === r.i
 								const cx = xAt(r)
-								const cy = yOf(r.i)
+								const cy = yAt(r.i)
 								return (
 									<g key={r.i} pointerEvents="none">
 										{r.po ? (
@@ -571,22 +718,26 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 										) : (
 											<circle cx={cx} cy={cy} r={on ? R + 4 : R + 2.4} fill={LAB.surface} stroke={LAB.firstDown} strokeWidth={2.6} strokeDasharray="3 2" />
 										)}
-										{spotRow?.i === r.i ? (
-											<text x={cx} y={cy - R - 8} fontSize={12} fontWeight={700} textAnchor="middle" fill={LAB.ink} stroke={LAB.page} strokeWidth={4} paintOrder="stroke">
-												{seasonOf(meta.teams[r.i])}
-											</text>
-										) : null}
 									</g>
 								)
 							})}
-							{hv && !hv.raiders ? <circle cx={xAt(hv)} cy={yOf(hv.i)} r={R + 3} fill="none" stroke={LAB.ink} strokeWidth={2} pointerEvents="none" /> : null}
-							<g transform={`translate(${flip ? rvX - chipW - 6 : rvX + 6}, 8)`} pointerEvents="none">
+							{pinned ? (
+								<g pointerEvents="none">
+									<circle cx={xAt(pinned)} cy={yAt(pinned.i)} r={R + 7} fill="none" stroke={LAB.ink} strokeWidth={2.5} />
+									<text x={xAt(pinned)} y={yAt(pinned.i) - R - 12} fontSize={12} fontWeight={700} textAnchor="middle" fill={LAB.ink} stroke={LAB.page} strokeWidth={4} paintOrder="stroke">
+										{teamLabel(meta.teams[pinned.i])}
+									</text>
+								</g>
+							) : null}
+							{hv && !hv.raiders ? <circle cx={xAt(hv)} cy={yAt(hv.i)} r={R + 3} fill="none" stroke={LAB.ink} strokeWidth={2} pointerEvents="none" /> : null}
+							<g transform={`translate(${chipX}, 8)`} pointerEvents="none">
 								<rect width={chipW} height={26} rx={7} fill={LAB.firstDown} />
-								<text x={11} y={17.5} fontSize={13} fontWeight={700} fill={LAB.onFirstDown}>
+								{raidersLogo ? <image href={raidersLogo} x={5} y={3} width={20} height={20} preserveAspectRatio="xMidYMid meet" /> : null}
+								<text x={11 + logoW} y={17.5} fontSize={13} fontWeight={700} fill={LAB.onFirstDown}>
 									{chip}
 								</text>
 							</g>
-							<text x={X(story.base)} y={H - M.bottom - 2} fontSize={12} textAnchor="middle" fill={LAB.inkMuted} pointerEvents="none" stroke={LAB.page} strokeWidth={5} paintOrder="stroke">
+							<text transform={`translate(${X(story.base) - 5} ${baseY - 4}) rotate(-90)`} fontSize={11} fontWeight={600} fill={LAB.inkMuted} pointerEvents="none" stroke={LAB.page} strokeWidth={4} paintOrder="stroke">
 								league average
 							</text>
 							{ticks.map((t, k) => (
@@ -599,7 +750,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							<div
 								role="presentation"
 								className="pointer-events-none absolute z-10 w-60 rounded-lg border border-lab-line-strong bg-lab-surface px-3 py-2 text-xs leading-snug shadow-[var(--lab-shadow)]"
-								style={{ left: Math.max(0, Math.min(width - 240, xAt(hv) > width * 0.55 ? xAt(hv) - 252 : xAt(hv) + 14)), top: Math.max(0, Math.min(H - 150, yOf(hv.i) > H * 0.5 ? yOf(hv.i) - 120 : yOf(hv.i) + 16)) }}
+								style={{ left: Math.max(0, Math.min(width - 240, xAt(hv) > width * 0.55 ? xAt(hv) - 252 : xAt(hv) + 14)), top: Math.max(0, Math.min(H - 150, yAt(hv.i) > H * 0.5 ? yAt(hv.i) - 120 : yAt(hv.i) + 16)) }}
 							>
 								<p className="m-0 flex items-center gap-2 text-sm font-bold text-lab-ink">
 									<PlayoffMark made={hv.po} />
@@ -614,6 +765,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 								<p className="m-0 mt-1 font-semibold text-lab-ink">
 									Finished {recordText(meta.wins[hv.i], meta.losses[hv.i], seasonGames(seasonOf(meta.teams[hv.i])))}, {hv.po ? "made the playoffs" : "missed the playoffs"}
 								</p>
+								<p className="m-0 mt-1 text-[11px] text-lab-muted">Click to pin</p>
 							</div>
 						) : null}
 						<div className="mt-1 flex justify-between text-xs font-semibold text-lab-muted" aria-hidden>
@@ -622,7 +774,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 						</div>
 					</div>
 
-					<div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+					<div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3">
 						<button
 							type="button"
 							onClick={() => (playing ? stop() : play())}
@@ -631,7 +783,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							{playing ? <Pause className="h-4 w-4" aria-hidden /> : p >= 1 ? <RotateCcw className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
 							{playing ? "Pause" : p >= 1 ? "Replay" : "Play"}
 						</button>
-						<div className="flex min-w-[220px] flex-1 flex-col gap-1">
+						<div className="flex min-w-[240px] flex-1 flex-col gap-1">
 							<input
 								type="range"
 								min={0}
@@ -645,18 +797,69 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 								}}
 								aria-label="Move every team from its first games to the rest of its season"
 								aria-valuetext={progressText}
-								className="w-full"
+								className="h-8 w-full"
 								style={{ accentColor: LAB.firstDown }}
 							/>
-							<div className="flex justify-between text-xs text-lab-muted">
-								<span>First {n} games</span>
-								<span>Rest of the season</span>
-							</div>
+							<GameRuler games={games} n={n} mix={mix} />
+							<p className="m-0 text-[11px] leading-snug text-lab-muted">Teams before 2021 played 16 games, so their second block ends at game 16.</p>
 						</div>
-						<p className="m-0 min-h-[44px] min-w-[220px] flex-1 basis-[240px] self-center text-sm leading-snug text-lab-soft" aria-live="polite">
-							{hv ? lineFor(hv.i) : "Hover or tap a dot to see which team it is, its record and whether it made the playoffs."}
-						</p>
 					</div>
+					<p className="m-0 mt-3 min-h-[44px] text-sm leading-snug text-lab-soft" aria-live="polite">
+						{hv ? lineFor(hv.i) : "Hover or tap a dot to see which team it is, its record and whether it made the playoffs. Click one to pin it."}
+					</p>
+
+					{pinned ? (
+						<section className="mt-3 rounded-xl border-2 p-4" style={{ borderColor: pinned.raiders ? LAB.firstDown : LAB.ink }} aria-label="Pinned team">
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<div className="min-w-0">
+									<p className="m-0 flex items-center gap-2 font-serif text-xl font-bold">
+										{pinned.raiders ? <RaidersMark src={raidersLogo} size={28} /> : null}
+										<PlayoffMark made={pinned.po} size={14} />
+										{teamLabel(meta.teams[pinned.i])}
+									</p>
+									<p className="m-0 mt-1 text-sm text-lab-soft">{lineFor(pinned.i)}</p>
+								</div>
+								<div className="flex items-center gap-2">
+									<button type="button" onClick={() => step(-1)} aria-label="Previous team" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
+										<ArrowLeft className="h-4 w-4" aria-hidden />
+									</button>
+									<button type="button" onClick={() => step(1)} aria-label="Next team" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
+										<ArrowRight className="h-4 w-4" aria-hidden />
+									</button>
+									<button type="button" onClick={() => setPin(null)} aria-label="Clear the pinned team" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
+										<CloseIcon className="h-4 w-4" aria-hidden />
+									</button>
+								</div>
+							</div>
+							<div className="mt-3 grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+								<MoveLine story={story} start={pinned.start} rest={pinned.rest} />
+								<dl className="m-0 grid grid-cols-3 gap-4 text-center sm:text-left">
+									<div>
+										<dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Move</dt>
+										<dd className="m-0 font-mono text-lg font-bold tabular-nums">{formatStat(table, pinned.rest - pinned.start)}</dd>
+									</div>
+									<div>
+										<dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Direction</dt>
+										<dd className="m-0 text-sm font-semibold">{pinned.toward ? "Toward average" : "Away from average"}</dd>
+									</div>
+									<div>
+										<dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Finished</dt>
+										<dd className="m-0 font-mono text-lg font-bold tabular-nums">{recordText(meta.wins[pinned.i], meta.losses[pinned.i], seasonGames(seasonOf(meta.teams[pinned.i])))}</dd>
+									</div>
+								</dl>
+							</div>
+							{pinned.raiders ? (
+								<button
+									type="button"
+									onClick={() => update({ years: [seasonOf(meta.teams[pinned.i])], scope: "all", team: null })}
+									className="mt-3 min-h-[40px] rounded-lg border border-lab-line-strong px-4 py-2 text-sm font-semibold text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink"
+								>
+									Show all 32 teams from {seasonOf(meta.teams[pinned.i])}
+								</button>
+							) : null}
+							<p className="m-0 mt-3 text-xs text-lab-muted">The {season} Raiders are at {story.valueText}.</p>
+						</section>
+					) : null}
 
 					<ul className="m-0 mt-4 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-xs text-lab-soft" aria-label="Legend">
 						<li className="flex items-center gap-2">
@@ -682,10 +885,22 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							</li>
 						) : null}
 						<li className="flex items-center gap-2">
+							<svg width="14" height="12" aria-hidden>
+								<line x1="7" x2="7" y1="0" y2="12" stroke={LAB.ink} strokeWidth="2" />
+							</svg>
+							Group average, moving as you play
+						</li>
+						<li className="flex items-center gap-2">
 							<svg width="18" height="12" aria-hidden>
 								<rect x="0.5" y="0.5" width="17" height="11" fill={LAB.firstDown} fillOpacity={0.14} stroke={LAB.firstDown} strokeOpacity={0.7} strokeDasharray="3 3" />
 							</svg>
 							Where the middle half finished
+						</li>
+						<li className="flex items-center gap-2">
+							<svg width="18" height="12" aria-hidden>
+								<path d="M0 12L3 5L7 8L11 1L15 7L18 12Z" fill={LAB.scrimmage} fillOpacity={0.25} stroke={LAB.scrimmage} />
+							</svg>
+							How many teams sit at each value
 						</li>
 						<li className="flex items-center gap-2">
 							<svg width="14" height="12" aria-hidden>
@@ -750,7 +965,7 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 							</section>
 						</>
 					) : (
-						<p className="m-0 mt-6 rounded-xl border border-lab-line bg-lab-tint px-4 py-3 text-sm text-lab-soft">No team-seasons match these filters. Try a different team, or choose &ldquo;Any&rdquo; for the season result.</p>
+						<p className="m-0 mt-6 rounded-xl border border-lab-line bg-lab-tint px-4 py-3 text-sm text-lab-soft">No team-seasons match these filters. Try a different team, other seasons, or choose &ldquo;Any&rdquo; for the season result.</p>
 					)}
 
 					<section className="mt-5 rounded-xl border border-lab-line bg-lab-tint p-4 sm:p-5" aria-labelledby="fifths-heading">
@@ -821,50 +1036,22 @@ export default function WillItLast({ meta, tables, standouts, checklist, season,
 						) : null}
 					</section>
 
-					<details className="mt-5 rounded-xl border border-lab-line bg-lab-tint px-4 py-3 text-sm">
+					<details open className="mt-5 rounded-xl border border-lab-line bg-lab-tint px-4 py-3 text-sm">
 						<summary className="cursor-pointer font-semibold text-lab-soft">See every team in this chart ({Math.min(story.groupSize, TABLE_LIMIT)})</summary>
-						<div className="mt-3 max-h-80 overflow-auto">
-							<table className="w-full border-collapse text-left text-xs tabular-nums">
-								<caption className="sr-only">
-									Highlighted teams, closest to the {season} Raiders first, with their {story.unit} through {n} games and over the rest of the season, their records and whether they made the playoffs.
-								</caption>
-								<thead>
-									<tr className="text-lab-muted">
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 pr-3 font-semibold">
-											Team
-										</th>
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 pr-3 text-right font-semibold">
-											First {n} games
-										</th>
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 pr-3 text-right font-semibold">
-											Rest of season
-										</th>
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 pr-3 font-semibold">
-											Started
-										</th>
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 pr-3 font-semibold">
-											Finished
-										</th>
-										<th scope="col" className="sticky top-0 bg-lab-page py-1.5 font-semibold">
-											Playoffs
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									{tableRows.map((r) => (
-										<tr key={r.i} className="border-t border-lab-line">
-											<th scope="row" className="py-1.5 pr-3 font-semibold">
-												{teamLabel(meta.teams[r.i])}
-											</th>
-											<td className="py-1.5 pr-3 text-right font-mono">{formatStat(table, r.start)}</td>
-											<td className="py-1.5 pr-3 text-right font-mono">{formatStat(table, r.rest)}</td>
-											<td className="py-1.5 pr-3 font-mono">{recordText(meta.startWins[r.i], meta.startLosses[r.i], n)}</td>
-											<td className="py-1.5 pr-3 font-mono">{recordText(meta.wins[r.i], meta.losses[r.i], seasonGames(seasonOf(meta.teams[r.i])))}</td>
-											<td className="py-1.5">{r.po ? "Made it" : "Missed"}</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
+						<div className="mt-3">
+							<Leaderboard
+								meta={meta}
+								table={table}
+								story={story}
+								rows={members}
+								pin={pin}
+								onPin={(i) => {
+									setPin(i)
+									toChart()
+								}}
+								season={season}
+								limit={TABLE_LIMIT}
+							/>
 						</div>
 					</details>
 

@@ -97,8 +97,19 @@ export type Table = {
 	rest: (number | null)[]
 }
 
-export type Filter = { scope: "like" | "all"; team: string | null; playoffs: "any" | "made" | "missed" }
-export const DEFAULT_FILTER: Filter = { scope: "like", team: null, playoffs: "any" }
+/** Which team-seasons to highlight. `years` is the seasons to keep; empty means every season. */
+export type Filter = { scope: "like" | "all"; team: string | null; playoffs: "any" | "made" | "missed"; years: number[] }
+export const DEFAULT_FILTER: Filter = { scope: "like", team: null, playoffs: "any", years: [] }
+
+/** "in 2016", "from 2010 to 2019", "in 2016 and 2021", or "in 5 chosen seasons"; empty for no filter. */
+export function yearsText(years: number[]): string {
+	if (!years.length) return ""
+	const ys = [...years].sort((a, b) => a - b)
+	if (ys.length === 1) return `in ${ys[0]}`
+	if (ys.every((y, i) => i === 0 || y === ys[i - 1] + 1)) return `from ${ys[0]} to ${ys[ys.length - 1]}`
+	if (ys.length <= 3) return `in ${ys.slice(0, -1).join(", ")} and ${ys[ys.length - 1]}`
+	return `in ${ys.length} chosen seasons`
+}
 
 export type VerdictId = "fade" | "improve" | "hold" | "linger" | "mixed"
 
@@ -288,6 +299,10 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 	if (filter.scope === "all") kind = "all"
 	if (filter.team) group = group.filter((i) => abbrOf(meta.teams[i]) === filter.team)
 	if (filter.playoffs !== "any") group = group.filter((i) => (meta.po[i] === 1) === (filter.playoffs === "made"))
+	if (filter.years.length) {
+		const keep = new Set(filter.years)
+		group = group.filter((i) => keep.has(seasonOf(meta.teams[i])))
+	}
 	const inGroup = new Set(group)
 
 	const rows: Row[] = measured.map((i) => ({
@@ -319,7 +334,8 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 	const fmt = (v: number) => formatStat(t, v)
 	const earlierRows = members.filter((r) => r.raiders)
 	const how = good ? "well" : "poorly"
-	const filtered = filter.scope === "all" || !!filter.team || filter.playoffs !== "any"
+	const filtered = filter.scope === "all" || !!filter.team || filter.playoffs !== "any" || filter.years.length > 0
+	const when = filter.years.length ? yearsText(filter.years) : `since ${meta.first}`
 	const who =
 		(filter.team ? `${teamName(filter.team)} team-seasons` : "teams") +
 		(filter.playoffs === "made" ? " that made the playoffs" : filter.playoffs === "missed" ? " that missed the playoffs" : "")
@@ -328,8 +344,8 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 			? `${members.length} teams since ${meta.first} started at least as ${how} as the ${season} Raiders at ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
 			: `The ${members.length} teams since ${meta.first} closest to the ${season} Raiders' ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
 		: members.length
-			? `${members.length} ${who} since ${meta.first}${filter.scope === "like" ? `, among those that started ${kind === "closest" ? "closest to" : `at least as ${how} as`} the Raiders at ${t.short}` : ""}. They averaged ${fmt(avgStart)} through ${n} games and ${fmt(avgRest)} after.`
-			: `No ${who} match these filters. Try widening them.`
+			? `${members.length} ${who} ${when}${filter.scope === "like" ? `, among those that started ${kind === "closest" ? "closest to" : `at least as ${how} as`} the Raiders at ${t.short}` : ""}. They averaged ${fmt(avgStart)} through ${n} games and ${fmt(avgRest)} after.`
+			: `No ${who}${filter.years.length ? ` ${when}` : ""} match these filters. Try widening them.`
 	const sub = `Each dot is one team in one season: its ${t.unit} through its first ${n} games, then over the rest of that season. The Raiders are at ${fmt(value)}, ${ordinalOf(t.rank)} of 32 teams.`
 
 	return {
