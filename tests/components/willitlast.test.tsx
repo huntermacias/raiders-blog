@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -8,13 +10,13 @@ import WillItLast from "../../components/lab/WillItLast"
 import WillItLastPage, { generateMetadata } from "../../app/(user)/lab/will-it-last/page"
 import LabHub from "../../app/(user)/lab/page"
 import { getHistoryView } from "../../lib/lab/history"
-import { analyze, checklist as buildChecklist, recordText, seasonGames, seasonOf, teamLabel } from "../../lib/lab/historyKit"
+import { DEFAULT_FILTER, analyze, checklist as buildChecklist, recordText, seasonGames, seasonOf, teamLabel } from "../../lib/lab/historyKit"
 import { fakeLeague } from "../helpers/historyFake"
 
 const view = getHistoryView()!
 
-function mount() {
-	return render(<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} />)
+function mount(extra: { raidersLogo?: string | null } = {}) {
+	return render(<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} {...extra} />)
 }
 
 /** The same chart on a small made-up league, for things that must not depend on this week's real numbers. */
@@ -26,11 +28,11 @@ function mountFake(edit?: (meta: ReturnType<typeof fakeLeague>["meta"]) => void)
 
 const svg = () => document.querySelector("svg[role=img]")!
 /** How many circles a dots path draws. */
-const dotsIn = (fill: string) => (svg().querySelector(`path[fill="${fill}"]`)!.getAttribute("d")!.match(/M/g) ?? []).length
-const pathD = (fill: string) => svg().querySelector(`path[fill="${fill}"]`)!.getAttribute("d")
-const MADE = "var(--lab-scrimmage)"
-const MISSED = "var(--lab-opp)"
-const FAINT = "var(--lab-ink-muted)"
+const dotsIn = (kind: string) => (svg().querySelector(`path[data-dots="${kind}"]`)!.getAttribute("d")!.match(/M/g) ?? []).length
+const pathD = (kind: string) => svg().querySelector(`path[data-dots="${kind}"]`)!.getAttribute("d")
+const MADE = "made"
+const MISSED = "missed"
+const FAINT = "faint"
 
 // jsdom has no PointerEvent, and the chart reads the pointer's position.
 if (typeof window !== "undefined" && !("PointerEvent" in window)) Object.defineProperty(window, "PointerEvent", { configurable: true, writable: true, value: class extends MouseEvent {} })
@@ -124,9 +126,9 @@ describe("<WillItLast />", () => {
 		expect(pathD(MADE)).not.toEqual(x0)
 		fireEvent.change(slider, { target: { value: "0" } })
 		expect(pathD(MADE)).toEqual(x0)
-		expect(slider.getAttribute("aria-valuetext")).toBe(`First ${view.n} games`)
+		expect(slider.getAttribute("aria-valuetext")).toBe(`Games 1\u2013${view.n}, the first ${view.n} games`)
 		fireEvent.change(slider, { target: { value: "100" } })
-		expect(slider.getAttribute("aria-valuetext")).toBe("Rest of the season")
+		expect(slider.getAttribute("aria-valuetext")).toBe(`Games ${view.n + 1}\u2013${seasonGames(view.season)}, the rest of the season`)
 	})
 
 	it("plays on its own over a few seconds and can be paused", () => {
@@ -193,7 +195,7 @@ describe("<WillItLast />", () => {
 		mount()
 		const s0 = view.stories[0]
 		fireEvent.click(screen.getByRole("button", { name: "Made playoffs" }))
-		const a = analyze(view.meta, view.tables.find((t) => t.key === s0.key)!, view.season, { scope: "like", team: null, playoffs: "made" })!
+		const a = analyze(view.meta, view.tables.find((t) => t.key === s0.key)!, view.season, { ...DEFAULT_FILTER, playoffs: "made" })!
 		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(a.headline)
 		expect(dotsIn(MISSED) + dotsIn(MADE)).toBe(a.groupSize - a.rows.filter((r) => r.inGroup && r.raiders).length)
 		expect(dotsIn(MISSED)).toBe(0)
@@ -266,7 +268,7 @@ describe("<WillItLast />", () => {
 		expect(rows).toHaveLength(Math.min(300, view.stories[0].groupSize))
 		expect(document.querySelector("details caption")!.textContent).toMatch(/Highlighted teams/)
 		const heads = Array.from(document.querySelectorAll("details thead th")).map((h) => h.textContent)
-		expect(heads).toEqual(expect.arrayContaining(["Started", "Finished", "Playoffs"]))
+		expect(heads).toEqual(["Team", `First ${view.n} games`, "Rest of season", "Move", "Finished", "Playoffs"])
 		expect(rows[0].textContent).toMatch(/\d+-\d+/)
 		expect(rows[0].textContent).toMatch(/Made it|Missed/)
 	})
@@ -337,6 +339,169 @@ describe("<WillItLast />", () => {
 	})
 })
 
+describe("<WillItLast /> game ruler, seasons, pinning and the other new controls", () => {
+	it("says which games the slider is showing, at the start, in between and at the end", () => {
+		reducedMotion(true)
+		mount()
+		const g = seasonGames(view.season)
+		const a = `Games 1\u2013${view.n}`
+		const b = `Games ${view.n + 1}\u2013${g}`
+		const slider = screen.getByRole("slider") as HTMLInputElement
+		fireEvent.change(slider, { target: { value: "0" } })
+		const pill = () => document.querySelector("p.rounded-full.bg-lab-ink")!.textContent
+		expect(pill()).toBe(a)
+		fireEvent.change(slider, { target: { value: "50" } })
+		expect(pill()).toBe(`${a} \u2192 ${b}`)
+		expect(slider.getAttribute("aria-valuetext")).toMatch(/^Moving from games 1.*to games \d+.*50% of the way$/)
+		fireEvent.change(slider, { target: { value: "100" } })
+		expect(pill()).toBe(b)
+		// The ruler has a box for every game in the season, labeled in two blocks.
+		const ruler = slider.parentElement!.querySelector("[aria-hidden]")!
+		expect(ruler.querySelectorAll(".flex-1")).toHaveLength(g)
+		expect(ruler.textContent).toContain(a)
+		expect(ruler.textContent).toContain(b)
+		expect(document.body.textContent).toContain("Teams before 2021 played 16 games")
+	})
+
+	it("shows the group average and the share closer to average moving with the slider", () => {
+		reducedMotion(true)
+		mount()
+		const s = view.stories[0]
+		const toolbar = () => document.querySelector("p.rounded-full.bg-lab-ink")!.parentElement!.parentElement!.textContent!
+		const slider = screen.getByRole("slider")
+		fireEvent.change(slider, { target: { value: "0" } })
+		expect(toolbar()).toContain(s.startText)
+		expect(toolbar()).toContain("Closer to average0%")
+		expect(svg().textContent).toContain(`group average ${s.startText}`)
+		fireEvent.change(slider, { target: { value: "100" } })
+		expect(toolbar()).toContain(s.restText)
+		expect(toolbar()).toContain(`${Math.round(s.toward * 100)}%`)
+		expect(svg().textContent).toContain(`group average ${s.restText}`)
+	})
+
+	it("filters by season with presets and a grid of every year", () => {
+		mount()
+		const seasons = screen.getByRole("group", { name: "Seasons" })
+		expect(within(seasons).getByRole("button", { name: "All seasons" }).getAttribute("aria-pressed")).toBe("true")
+		const grid = within(seasons).getByRole("group", { name: "Pick years" })
+		expect(within(grid).getAllByRole("button")).toHaveLength(view.last - view.first + 1)
+		fireEvent.click(screen.getByRole("button", { name: `Every team since ${view.first}` }))
+		fireEvent.click(within(seasons).getByRole("button", { name: "2010s" }))
+		expect(within(seasons).getByRole("button", { name: "2010s" }).getAttribute("aria-pressed")).toBe("true")
+		expect(within(seasons).getByRole("button", { name: "All seasons" }).getAttribute("aria-pressed")).toBe("false")
+		const t = view.tables.find((x) => x.key === view.stories[0].key)!
+		const a = analyze(view.meta, t, view.season, { ...DEFAULT_FILTER, scope: "all", years: [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019] })!
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(a.headline)
+		expect(a.headline).toContain("from 2010 to 2019")
+		expect(dotsIn(MADE) + dotsIn(MISSED)).toBe(a.rows.filter((r) => r.inGroup && !r.raiders).length)
+		// Any mix of single years from the grid.
+		fireEvent.click(within(grid).getByRole("button", { name: "2016" }))
+		expect(within(grid).getByRole("button", { name: "2016" }).getAttribute("aria-pressed")).toBe("false")
+		fireEvent.click(within(grid).getByRole("button", { name: "2010" }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("teams in 8 chosen seasons")
+		fireEvent.click(screen.getByRole("button", { name: "Reset filters" }))
+		expect(within(seasons).getByRole("button", { name: "All seasons" }).getAttribute("aria-pressed")).toBe("true")
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(view.stories[0].headline)
+	})
+
+	it("can show a single year of the league", () => {
+		mount()
+		const grid = screen.getByRole("group", { name: "Pick years" })
+		fireEvent.click(screen.getByRole("button", { name: `Every team since ${view.first}` }))
+		fireEvent.click(within(grid).getByRole("button", { name: "2021" }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/^32 teams in 2021\./)
+		expect(dotsIn(MADE) + dotsIn(MISSED)).toBe(31)
+	})
+
+	it("can spread the dots by final wins, with a wins scale, and back", () => {
+		reducedMotion(true)
+		mount()
+		const before = pathD(MADE)
+		expect(svg().textContent).not.toContain("12 wins")
+		fireEvent.click(screen.getByRole("button", { name: "Final wins" }))
+		expect(screen.getByRole("button", { name: "Final wins" }).getAttribute("aria-pressed")).toBe("true")
+		expect(svg().textContent).toContain("12 wins")
+		expect(pathD(MADE)).not.toEqual(before)
+		fireEvent.click(screen.getByRole("button", { name: "Nothing (spread out)" }))
+		expect(pathD(MADE)).toEqual(before)
+		expect(svg().textContent).not.toContain("12 wins")
+	})
+
+	it("pins a team from the chart, steps through the teams, and clears", () => {
+		mount()
+		expect(screen.queryByRole("region", { name: "Pinned team" })).toBeNull()
+		const ring = svg().querySelector("g > circle")!
+		fireEvent.click(svg(), pointAt(ring))
+		const card = screen.getByRole("region", { name: "Pinned team" })
+		expect(card.textContent).toMatch(/\d{4} Raiders/)
+		expect(card.textContent).toMatch(/Finished \d+-\d+/)
+		expect(card.textContent).toMatch(/Toward average|Away from average/)
+		expect(svg().textContent).toMatch(/\d{4} Raiders/)
+		const first = card.querySelector("p")!.textContent
+		fireEvent.click(within(card).getByRole("button", { name: "Next team" }))
+		expect(screen.getByRole("region", { name: "Pinned team" }).querySelector("p")!.textContent).not.toBe(first)
+		fireEvent.click(within(screen.getByRole("region", { name: "Pinned team" })).getByRole("button", { name: "Previous team" }))
+		fireEvent.click(within(screen.getByRole("region", { name: "Pinned team" })).getByRole("button", { name: "Clear the pinned team" }))
+		expect(screen.queryByRole("region", { name: "Pinned team" })).toBeNull()
+		// Clicking the same dot twice pins and unpins it.
+		fireEvent.click(svg(), pointAt(ring))
+		fireEvent.click(svg(), pointAt(ring))
+		expect(screen.queryByRole("region", { name: "Pinned team" })).toBeNull()
+	})
+
+	it("pins a Raiders season from its chip, and offers every team that year", () => {
+		mount()
+		const chip = within(screen.getByRole("group", { name: "Raiders seasons" })).getAllByRole("button").find((c) => c.textContent!.startsWith("2016"))!
+		fireEvent.click(chip)
+		const card = screen.getByRole("region", { name: "Pinned team" })
+		expect(card.textContent).toContain("2016 Raiders")
+		expect(card.textContent).toContain("Finished 12-4, made the playoffs")
+		fireEvent.click(within(card).getByRole("button", { name: "Show all 32 teams from 2016" }))
+		expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/^32 teams in 2016\./)
+		expect(screen.getByRole("region", { name: "Pinned team" })).toBeTruthy()
+	})
+
+	it("sorts and searches the table of teams, and a row pins its dot", () => {
+		mount()
+		const table = document.querySelector("details table")!
+		const rows = () => Array.from(table.querySelectorAll("tbody tr"))
+		const total = rows().length
+		const restHead = within(table as HTMLElement).getByRole("button", { name: /Rest of season/ })
+		fireEvent.click(restHead)
+		expect(restHead.closest("th")!.getAttribute("aria-sort")).toBe("descending")
+		const rest = rows().map((r) => r.querySelectorAll("td")[1].textContent!)
+		expect(rest.length).toBe(total)
+		fireEvent.click(restHead)
+		expect(restHead.closest("th")!.getAttribute("aria-sort")).toBe("ascending")
+		fireEvent.change(screen.getByRole("searchbox"), { target: { value: "raiders" } })
+		const found = rows()
+		expect(found.length).toBeGreaterThan(0)
+		expect(found.length).toBeLessThanOrEqual(view.last - view.first + 1)
+		expect(found.every((r) => /Raiders/.test(r.textContent!))).toBe(true)
+		fireEvent.click(within(found[0] as HTMLElement).getByRole("button"))
+		expect(screen.getByRole("region", { name: "Pinned team" }).textContent).toMatch(/Raiders/)
+		fireEvent.change(screen.getByRole("searchbox"), { target: { value: "no such team" } })
+		expect(rows()).toHaveLength(0)
+		expect(document.body.textContent).toContain("0 teams.")
+	})
+
+	it("puts the Raiders shield next to the Rundown logo and on the Raiders marker when the site has the file", () => {
+		mount({ raidersLogo: "/raiders-shield.png" })
+		const header = document.querySelector('img[src="/logo-rr.png"]')!.closest("div.flex.flex-wrap")!
+		expect(header.querySelector('img[src="/raiders-shield.png"]')).toBeTruthy()
+		expect(svg().querySelector('image[href="/raiders-shield.png"]')).toBeTruthy()
+		fireEvent.click(within(screen.getByRole("group", { name: "Raiders seasons" })).getAllByRole("button")[0])
+		expect(screen.getByRole("region", { name: "Pinned team" }).querySelector('img[src="/raiders-shield.png"]')).toBeTruthy()
+		expect(document.querySelector('img[src="/raiders-shield.png"]')!.getAttribute("alt")).toBe("")
+	})
+
+	it("shows no logo and nothing broken when the file is not there", () => {
+		mount()
+		expect(document.querySelector("[data-raiders-logo]")).toBeNull()
+		expect(svg().querySelector("image")).toBeNull()
+	})
+})
+
 describe("the Will it last? page", () => {
 	it("renders the chart, the bottom line and the data credit", () => {
 		render(<WillItLastPage />)
@@ -352,6 +517,12 @@ describe("the Will it last? page", () => {
 		const images = (meta.openGraph as { images: string[] }).images
 		expect(images[0]).toContain(`/api/og?type=last&stat=${encodeURIComponent(view.stories[0].key)}`)
 		expect(meta.alternates?.canonical).toBe("https://www.raidersrundown.com/lab/will-it-last")
+	})
+
+	it("shows the Raiders shield only when /public has it", () => {
+		render(<WillItLastPage />)
+		const has = existsSync(resolve(__dirname, "../../public/raiders-shield.png"))
+		expect(!!document.querySelector("[data-raiders-logo]")).toBe(has)
 	})
 
 	it("is linked from the Lab", () => {

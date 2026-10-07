@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
+
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
@@ -7,6 +10,11 @@ import { getScouting } from "@/lib/lab/data"
 import { MAX_GAMES, MIN_GAMES, getHistoryView } from "@/lib/lab/history"
 
 // Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
+
+// The Raiders shield shows up next to the Rundown logo once the file is in /public. The page is built ahead of
+// time, so this is checked at build; nothing broken is ever shown when the file is not there.
+const RAIDERS_LOGO = "/raiders-shield.png"
+const raidersLogo = existsSync(join(process.cwd(), "public", RAIDERS_LOGO)) ? RAIDERS_LOGO : null
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/will-it-last`
@@ -54,7 +62,7 @@ export default function WillItLastPage() {
 			{view ? (
 				<>
 					<section className="container py-10 sm:py-14" aria-label="The chart">
-						<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} start={view.start} />
+						<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={stamp} start={view.start} raidersLogo={raidersLogo} />
 					</section>
 
 					<section className="container pb-10 sm:pb-14" aria-labelledby="bottom-heading">

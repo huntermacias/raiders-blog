@@ -100,7 +100,7 @@ describe("the Lab section", () => {
 		it("credits nflverse and its license, names the history years, and has no dark-only colors", () => {
 			expect(read(page)).toMatch(/Credit/)
 			expect(read(page)).toMatch(/History covers every regular season/)
-			for (const f of [page, "components/lab/WillItLast.tsx"]) {
+			for (const f of [page, "components/lab/WillItLast.tsx", "components/lab/WillItLastParts.tsx"]) {
 				const src = read(f)
 				expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
 				expect(src).not.toMatch(/bg-\[#0/)

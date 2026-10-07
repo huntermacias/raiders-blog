@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { getHistory, getScouting } from "../../lib/lab/data"
 import { MAX_GAMES, MIN_GAMES, MIN_SIMILAR, STAT_DEFS, buildTables, getHistoryView, getStory, pickStandouts, recordStory, statDef } from "../../lib/lab/history"
 import type { HistoryData } from "../../lib/lab/history"
-import { DEFAULT_FILTER, analyze, checklist, fifthsOf, formatStat, isRaiders, ordinalOf, outcomesFor, recordText, seasonGames, seasonLine, teamLabel, teamName, winsLine } from "../../lib/lab/historyKit"
+import { DEFAULT_FILTER, yearsText, analyze, checklist, fifthsOf, formatStat, isRaiders, ordinalOf, outcomesFor, recordText, seasonGames, seasonLine, teamLabel, teamName, winsLine } from "../../lib/lab/historyKit"
 import type { Meta, Table } from "../../lib/lab/historyKit"
 import { fakeLeague } from "../helpers/historyFake"
 
@@ -160,17 +160,49 @@ describe("analyze", () => {
 		expect(missed.outcomes.playoffs).toBe(0)
 		expect(made.outcomes.playoffs).toBe(1)
 
-		const ne = analyze(meta, table, 2026, { scope: "all", team: "NE", playoffs: "any" })!
+		const ne = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", team: "NE" })!
 		expect(ne.rows.filter((r) => r.inGroup).every((r) => meta.teams[r.i].endsWith(" NE"))).toBe(true)
 		expect(ne.headline).toContain("Patriots team-seasons")
-		const lv = analyze(meta, table, 2026, { scope: "all", team: "LV", playoffs: "any" })!
+		const lv = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", team: "LV" })!
 		expect(lv.rows.filter((r) => r.raiders)).toHaveLength(15)
 		expect(lv.headline).toContain("Raiders team-seasons")
 	})
 
+	it("keeps only the seasons asked for, for any mix of years", () => {
+		const { meta, table } = fakeLeague(600, 0.3)
+		const seasonOf = (i: number) => Number(meta.teams[i].split(" ")[0])
+		const one = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", years: [2010] })!
+		expect(one.rows.filter((r) => r.inGroup).every((r) => seasonOf(r.i) === 2010)).toBe(true)
+		expect(one.groupSize).toBe(meta.teams.filter((t) => t.startsWith("2010 ")).length)
+		expect(one.headline).toContain("teams in 2010")
+		expect(one.rows).toHaveLength(600)
+		const some = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", years: [2005, 2006, 2007, 2008] })!
+		expect(some.groupSize).toBe(meta.teams.filter((t) => ["2005", "2006", "2007", "2008"].includes(t.slice(0, 4))).length)
+		expect(some.headline).toContain("from 2005 to 2008")
+		// Seasons narrow the 'started like the Raiders' group too, and combine with the other filters.
+		const like = analyze(meta, table, 2026)!
+		const likeYears = analyze(meta, table, 2026, { ...DEFAULT_FILTER, years: [2010, 2011, 2012] })!
+		expect(likeYears.groupSize).toBeLessThan(like.groupSize)
+		expect(likeYears.rows.filter((r) => r.inGroup).every((r) => r.start >= 2.4 && [2010, 2011, 2012].includes(seasonOf(r.i)))).toBe(true)
+		const lv = analyze(meta, table, 2026, { scope: "all", team: "LV", playoffs: "any", years: [2000, 2040] })!
+		expect(lv.rows.filter((r) => r.inGroup).every((r) => meta.teams[r.i] === "2000 LV")).toBe(true)
+		const none = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", years: [1980] })!
+		expect(none.groupSize).toBe(0)
+		expect(none.headline).toMatch(/^No teams in 1980 match these filters/)
+	})
+
+	it("describes a set of seasons in words", () => {
+		expect(yearsText([])).toBe("")
+		expect(yearsText([2016])).toBe("in 2016")
+		expect(yearsText([2021, 2016])).toBe("in 2016 and 2021")
+		expect(yearsText([2016, 2018, 2021])).toBe("in 2016, 2018 and 2021")
+		expect(yearsText([2012, 2010, 2011])).toBe("from 2010 to 2012")
+		expect(yearsText([2001, 2003, 2005, 2007])).toBe("in 4 chosen seasons")
+	})
+
 	it("says so when nothing matches, and keeps the rest of the numbers finite", () => {
 		const { meta, table } = fakeLeague(400, 0.3)
-		const s = analyze(meta, table, 2026, { scope: "all", team: "ZZZ", playoffs: "any" })!
+		const s = analyze(meta, table, 2026, { ...DEFAULT_FILTER, scope: "all", team: "ZZZ" })!
 		expect(s.groupSize).toBe(0)
 		expect(s.headline).toMatch(/^No .* match these filters/)
 		expect(s.winsLine).toBe("No team-seasons match these filters.")
@@ -402,7 +434,7 @@ describe("the view the page and cards use", () => {
 		expect(abbrs).toHaveLength(32)
 		for (const abbr of abbrs) expect(teamName(abbr), abbr).not.toBe(abbr)
 		for (const t of view.tables) {
-			const a = analyze(view.meta, t, view.season, { scope: "all", team: "LV", playoffs: "any" })
+			const a = analyze(view.meta, t, view.season, { ...DEFAULT_FILTER, scope: "all", team: "LV" })
 			expect(a, t.key).not.toBeNull()
 			expect(a!.groupSize, t.key).toBe(view.last - view.first + 1)
 		}
