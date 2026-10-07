@@ -88,6 +88,44 @@ describe("the Lab section", () => {
 			expect(src).toMatch(/labColorVars\(/)
 		})
 	})
+	describe("will it last", () => {
+		const page = "app/(user)/lab/will-it-last/page.tsx"
+
+		it("is a static page built from the JSON in the repo, with no revalidate", () => {
+			expect(read(page)).not.toMatch(/export const revalidate/)
+			expect(read(page)).not.toMatch(/force-dynamic/)
+			expect(read(page)).not.toMatch(/readClient|sanity/i)
+		})
+
+		it("credits nflverse and its license, names the history years, and has no dark-only colors", () => {
+			expect(read(page)).toMatch(/Credit/)
+			expect(read(page)).toMatch(/History covers every regular season/)
+			for (const f of [page, "components/lab/WillItLast.tsx"]) {
+				const src = read(f)
+				expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+				expect(src).not.toMatch(/bg-\[#0/)
+				expect(src).not.toMatch(/rgba\(255,\s*255,\s*255/)
+				expect(src).not.toMatch(/["'`]#[0-9a-fA-F]{3,8}["'`]/)
+			}
+		})
+
+		it("sets the lab theme, and is in the sitemap and linked from the Lab", () => {
+			expect(read(page)).toMatch(/className="lab /)
+			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/will-it-last")
+			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/will-it-last")
+		})
+
+		it("keeps the history script's wording clear of the tracking data that may not be published", () => {
+			for (const f of ["lib/lab/history.ts", "lib/lab/historyKit.ts", "scripts/lab/build_history.py"]) expect(read(f)).not.toMatch(/big.?data.?bowl|tracking/i)
+		})
+
+		it("is covered by the weekly workflow's script tests, and the history file does not need a weekly rebuild", () => {
+			const yml = read(".github/workflows/lab-data.yml")
+			expect(yml).toMatch(/pytest scripts\/lab/)
+			expect(yml).not.toMatch(/build_history\.py/)
+		})
+	})
+
 	describe("the top plays, fourth-down and scouting pages", () => {
 		it("builds the game and opponent pages ahead of time, with no revalidate", () => {
 			const scout = read("app/(user)/lab/scouting/[abbr]/page.tsx")

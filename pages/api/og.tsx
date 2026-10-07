@@ -12,6 +12,7 @@
 //   /api/og?type=lab&slug=week-N|season&view=play[&rank=N]   (a top play: the play that moved the game or the season most)
 //   /api/og?type=lab&slug=week-N|season&view=fourth   (the fourth-down report)
 //   /api/og?type=scout&opp=XX[&week=N]   (the scouting report for an opponent)
+//   /api/og?type=last&stat=def.turnovers[&n=N]   (will it last?: one stat against every team that started the same way)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -221,9 +222,9 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return page.report ? buildMathSpec(page.report, { team: first(query.team), take: first(query.take) }) : null
 	}
 
-	const insight = insightSpec({ type, slug: first(query.slug), view: first(query.view), rank: first(query.rank), opp: first(query.opp), week: first(query.week) })
+	const insight = insightSpec({ type, slug: first(query.slug), view: first(query.view), rank: first(query.rank), opp: first(query.opp), week: first(query.week), stat: first(query.stat) })
 	if (insight) return insight
-	if (type === "scout") return null
+	if (type === "scout" || type === "last") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -263,7 +264,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "fourth" || spec.type === "scout") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "fourth" || spec.type === "scout" || spec.type === "last") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
