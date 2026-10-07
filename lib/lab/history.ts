@@ -7,11 +7,11 @@
 // page, the share card and the tests all read the same answer.
 
 import { getGames, getHistory, getScouting } from "./data"
-import { type Dot, type Fmt, type StartRecord, type Story, formatStat, isRaiders, ordinalOf } from "./historyKit"
+import { type Dot, type Fmt, type Outcomes, type StartRecord, type Story, formatStat, isRaiders, ordinalOf, pctText, seasonGames } from "./historyKit"
 import type { Key } from "./scouting"
 
 export { formatStat, isRaiders, teamLabel } from "./historyKit"
-export type { Dot, Story, StartRecord, VerdictId } from "./historyKit"
+export type { Dot, Outcomes, Story, StartRecord, VerdictId } from "./historyKit"
 
 export type HistoryBlock = { w: number[]; s: Record<string, (number | null)[]>; r: Record<string, (number | null)[]> }
 
@@ -79,6 +79,8 @@ export type HistoryView = {
 	last: number
 	stories: Story[]
 	record: StartRecord | null
+	/** The Raiders' own record through n games, when none was a tie. */
+	start: { wins: number; losses: number } | null
 	bottomLine: { title: string; body: string }
 }
 
@@ -109,6 +111,35 @@ function verdictFor(kept: number, good: boolean): Story["verdict"] {
 	if (kept < 0.5) return good ? { id: "fade", text: "Likely to fade" } : { id: "improve", text: "Likely to improve" }
 	if (kept >= 0.75) return good ? { id: "hold", text: "Likely to hold" } : { id: "linger", text: "Likely to linger" }
 	return { id: "mixed", text: "Part real, part luck" }
+}
+
+/** How a set of team-seasons (row indexes) did in wins and playoffs, against all of `everyone`. */
+export function outcomesFor(history: HistoryData, n: number, group: number[], everyone: number[]): Outcomes {
+	const block = history.n[String(n)]
+	const rest = (i: number) => {
+		const games = seasonGames(Number(history.teams[i].split(" ")[0])) - n
+		return { wins: history.wins[i] - block.w[i], games }
+	}
+	const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
+	const restWin = (idx: number[]) => sum(idx.map((i) => rest(i).wins)) / sum(idx.map((i) => rest(i).games))
+	return {
+		startWin: sum(group.map((i) => block.w[i])) / (n * group.length),
+		restWin: restWin(group),
+		restWins: sum(group.map((i) => rest(i).wins)) / group.length,
+		restGames: sum(group.map((i) => rest(i).games)) / group.length,
+		playoffs: sum(group.map((i) => history.po[i])) / group.length,
+		allRestWin: restWin(everyone),
+		allPlayoffs: sum(everyone.map((i) => history.po[i])) / everyone.length,
+		avgWins: sum(group.map((i) => history.wins[i])) / group.length,
+	}
+}
+
+export function winsLine(o: Outcomes, n: number): string {
+	const move = o.startWin - o.restWin
+	const first = move > 0.05 ? `Their win rate fell from ${pctText(o.startWin)} in the first ${n} games to ${pctText(o.restWin)} after` : move < -0.05 ? `Their win rate rose from ${pctText(o.startWin)} in the first ${n} games to ${pctText(o.restWin)} after` : `Their win rate stayed near ${pctText(o.restWin)}`
+	const diff = o.restWin - o.allRestWin
+	const vs = diff >= 0.03 ? `, still above the average team's ${pctText(o.allRestWin)}` : diff <= -0.03 ? `, still below the average team's ${pctText(o.allRestWin)}` : `, about what the average team does`
+	return `${first}${vs}. ${pctText(o.playoffs)} made the playoffs, against ${pctText(o.allPlayoffs)} of all teams.`
 }
 
 /** One story: the Raiders' number for a stat against every team that started at least as far from average. */
@@ -171,6 +202,7 @@ export function buildStory(history: HistoryData, def: StatDef, n: number, value:
 	const pad = (hi - lo) * 0.06 || 0.01
 	const domain: [number, number] = [lo - pad, hi + pad]
 
+	const outcomes = outcomesFor(history, n, picked.map((r) => r.i), rows.map((r) => r.i))
 	const earlierRows = dots.filter((d) => d.raiders)
 	const pct = `${Math.round(toward * 100)}%`
 	const how = good ? "well" : "poorly"
@@ -183,6 +215,7 @@ export function buildStory(history: HistoryData, def: StatDef, n: number, value:
 	return {
 		key: def.key,
 		fmt: def.fmt,
+		higherIsBetter: def.higherIsBetter,
 		label: def.label,
 		short: def.short,
 		unit: def.unit,
@@ -201,6 +234,8 @@ export function buildStory(history: HistoryData, def: StatDef, n: number, value:
 		typical,
 		kept: keptShown,
 		verdict: verdictFor(kept, good),
+		outcomes,
+		winsLine: winsLine(outcomes, n),
 		earlier: { count: earlierRows.length, toward: earlierRows.filter((d) => d.toward).length },
 		domain,
 		headline,
@@ -287,8 +322,10 @@ export function getHistoryView(): HistoryView | null {
 		return s ? [s] : []
 	})
 	if (!stories.length) return null
+	const games = getGames().slice(0, n)
+	const start = games.length === n && games.every((g) => g.result !== "T") ? { wins: games.filter((g) => g.result === "W").length, losses: games.filter((g) => g.result === "L").length } : null
 	const record = recordStory(history, n, getGames())
-	return { season: scouting.season, n, first: history.first, last: history.last, stories, record, bottomLine: bottomLine(stories, record, n, scouting.season, history.first) }
+	return { season: scouting.season, n, first: history.first, last: history.last, stories, record, start, bottomLine: bottomLine(stories, record, n, scouting.season, history.first) }
 }
 
 /** One stat's story by key, for any stat in the catalog (the share cards ask for these), or null when the history does not apply yet. */

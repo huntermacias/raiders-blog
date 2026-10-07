@@ -383,6 +383,8 @@ export type LastCardSpec = {
 	band: [number, number]
 	startAvg: string
 	endAvg: string
+	/** "Won 67% of games early, 54% after. 51% made the playoffs." */
+	wins: string
 }
 
 const MAX_CARD_DOTS = 110
@@ -410,6 +412,7 @@ export function buildLastSpec(story: Story, n: number, first: number): LastCardS
 		band: [at(story.band[0]), at(story.band[1])],
 		startAvg: story.startText,
 		endAvg: story.restText,
+		wins: `Won ${Math.round(story.outcomes.startWin * 100)}% of games early, ${Math.round(story.outcomes.restWin * 100)}% after · ${Math.round(story.outcomes.playoffs * 100)}% made the playoffs`,
 	}
 }
 
@@ -453,6 +456,7 @@ export function renderLastCard(spec: LastCardSpec): ReactElement {
 			<div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, padding: "26px 40px 0 0" }}>
 				<LastStrip title={`First ${spec.n} games`} dots={spec.start} spec={spec} band={false} />
 				<LastStrip title="Rest of the season" dots={spec.end} spec={spec} band />
+				<div style={{ display: "flex", marginBottom: 10, fontFamily: "Oswald", fontWeight: 600, fontSize: 21, letterSpacing: 1, color: BRIGHT }}>{spec.wins}</div>
 				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 16, letterSpacing: 1, color: DIM }}>{`Gold line: the Raiders now. Gold band: where the middle half finished. Data: nflverse, CC BY 4.0.`}</div>
 			</div>
 		</Frame>

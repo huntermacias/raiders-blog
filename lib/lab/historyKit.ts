@@ -22,6 +22,13 @@ export function ordinalOf(n: number): string {
 	return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`
 }
 
+/** Regular-season games in a year: 17 from 2021, 16 before. */
+export function seasonGames(season: number): number {
+	return season >= 2021 ? 17 : 16
+}
+
+export const pctText = (v: number): string => `${Math.round(v * 100)}%`
+
 const OLD_RAIDERS = new Set(["OAK", "LV"])
 
 /** "2007 NE" for display. The Raiders were the Oakland team until 2019, so both names mean "Raiders". */
@@ -40,12 +47,28 @@ export type VerdictId = "fade" | "improve" | "hold" | "linger" | "mixed"
 
 export type StartRecord = { wins: number; losses: number; teams: number; playoffs: number; avgWins: number }
 
+/** What happened to a group of teams in wins and playoffs, against every team measured. */
+export type Outcomes = {
+	/** Share of games won in the first N games, and over the rest of the season. */
+	startWin: number
+	restWin: number
+	/** Wins per team over the rest of the season, and the games that was out of. */
+	restWins: number
+	restGames: number
+	playoffs: number
+	allRestWin: number
+	allPlayoffs: number
+	avgWins: number
+}
+
 export type Story = {
 	key: string
 	label: string
 	short: string
 	unit: string
 	fmt: Fmt
+	/** More of this stat is better for the Raiders (so the right end of the chart is the good end). */
+	higherIsBetter: boolean
 	/** Games played, which is also where the history is cut. */
 	n: number
 	value: number
@@ -69,6 +92,9 @@ export type Story = {
 	kept: number
 	verdict: { id: VerdictId; text: string }
 	earlier: { count: number; toward: number }
+	outcomes: Outcomes
+	/** The outcomes in plain sentences, for the page and the card. */
+	winsLine: string
 	domain: [number, number]
 	headline: string
 	sub: string

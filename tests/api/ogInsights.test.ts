@@ -75,6 +75,7 @@ describe("insightSpec", () => {
 			expect(a.raiders).toBeLessThan(1)
 			expect(a.band[0]).toBeLessThan(a.band[1])
 			expect(a.line).toMatch(/teams since 1999/)
+			expect(a.wins).toMatch(/^Won \d+% of games early, \d+% after · \d+% made the playoffs$/)
 		}
 		expect(insightSpec(q({ type: "last", stat: "off.epaRush" }))?.type).toBe("last")
 		expect(insightSpec(q({ type: "last", stat: "off.nope" }))).toBeNull()

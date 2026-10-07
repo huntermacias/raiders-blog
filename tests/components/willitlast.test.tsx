@@ -12,7 +12,7 @@ import { getHistoryView } from "../../lib/lab/history"
 const view = getHistoryView()!
 
 function mount() {
-	return render(<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} />)
+	return render(<WillItLast stories={view.stories} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} />)
 }
 
 function reducedMotion(on: boolean) {
@@ -46,7 +46,7 @@ describe("<WillItLast />", () => {
 		expect(tabs[1].getAttribute("aria-pressed")).toBe("true")
 		expect(tabs[0].getAttribute("aria-pressed")).toBe("false")
 		expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(view.stories[1].headline)
-		const img = document.querySelector("img") as HTMLImageElement
+		const img = document.querySelector("img[src^=\"/api/og\"]") as HTMLImageElement
 		expect(img.getAttribute("src")).toBe(`/api/og?type=last&stat=${encodeURIComponent(view.stories[1].key)}&n=${view.n}&v=123`)
 	})
 
@@ -127,6 +127,49 @@ describe("<WillItLast />", () => {
 		expect(cards).toContain(s.restText)
 		expect(cards).toContain(s.typicalText)
 		expect(cards).toContain(`${Math.round(s.toward * 100)}%`)
+	})
+
+	it("carries the Rundown logo and the Raiders' record in the card header", () => {
+		mount()
+		const logo = document.querySelector('img[src="/logo-rr.png"]')
+		expect(logo).toBeTruthy()
+		expect(screen.getByText("Raiders Rundown")).toBeTruthy()
+		expect(document.body.textContent).toContain(`${view.start!.wins}-${view.start!.losses} after ${view.n} games`)
+	})
+
+	it("explains how to read it: one dot per team, which way is better, and what play does", () => {
+		mount()
+		const steps = within(screen.getByRole("list", { name: "How to read this chart" })).getAllByRole("listitem")
+		expect(steps).toHaveLength(3)
+		const s = view.stories[0]
+		expect(steps[0].textContent).toMatch(/One dot is one team/)
+		expect(steps[1].textContent).toContain(s.higherIsBetter ? "Further right is better" : "Further left is better")
+		expect(steps[2].textContent).toContain(`after ${view.n} games`)
+		expect(steps[2].textContent).toContain(`${17 - view.n} games left`)
+		expect(document.body.textContent).toContain(s.higherIsBetter ? "Worse" : "Better")
+	})
+
+	it("narrates the replay: first games at the start, the finish at the end", () => {
+		reducedMotion(true)
+		mount()
+		expect(document.body.textContent).toContain(`Where each team stood after its first ${view.n} games`)
+		fireEvent.click(screen.getByRole("button", { name: "Play" }))
+		expect(document.body.textContent).toContain("Where they finished.")
+		expect(document.body.textContent).toContain("the league average")
+		fireEvent.change(screen.getByRole("slider"), { target: { value: "50" } })
+		expect(document.body.textContent).toContain("Now the rest of their seasons play out")
+	})
+
+	it("translates the stat into wins and playoffs", () => {
+		mount()
+		const panel = screen.getByRole("heading", { name: "What that meant in wins and playoffs" }).closest("section")!
+		const s = view.stories[0]
+		expect(panel.textContent).toContain(s.winsLine)
+		expect(panel.textContent).toContain(`${Math.round(s.outcomes.playoffs * 100)}%`)
+		expect(panel.textContent).toContain(`the Raiders now: ${view.start!.wins}-${view.start!.losses}`)
+		expect(panel.textContent).toMatch(/For scale: at \d+%, a team wins about/)
+		fireEvent.click(within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")[1])
+		expect(panel.textContent).toContain(view.stories[1].winsLine)
 	})
 
 	it("copies the page link", async () => {
