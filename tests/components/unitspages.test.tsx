@@ -47,6 +47,16 @@ describe("the team board", () => {
 		expect(document.body.textContent).toMatch(/Pro Football Reference/)
 	})
 
+	it("says where the grades come from, listing each group's stats", () => {
+		render(<TeamsPage />)
+		const key = screen.getByText("How these grades are calculated").closest("details")!
+		expect(key.textContent).toMatch(/never season totals/)
+		expect(key.textContent).not.toMatch(/For example/)
+		expect(key.textContent).toMatch(/rushing yards/)
+		for (const label of ["Offensive line", "Pass rush", "Pass coverage"]) expect(key.textContent).toContain(label)
+		expect(key.textContent).toContain("sacks allowed per dropback")
+	})
+
 	it("sorts by a column, best first, and filters by division", () => {
 		const rows = boardRows(data)
 		const teams = TEAMS.map((t) => ({ abbr: t.abbr, nick: t.nick, name: t.name, division: t.division, conference: t.conference, color: t.color }))
@@ -126,12 +136,20 @@ describe("a matchup page", () => {
 		render(await MatchupPage(props("lv-vs-ne")))
 		expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Raiders vs Patriots: position-group matchup")
 		for (const h of ["On paper", "Position group by position group", "Tale of the tape", "The coaches", "How each team plays", "Who is missing"]) expect(screen.getByRole("heading", { name: h })).toBeTruthy()
+		// The note works one real grade through: the Patriots' weakest group, stat by stat.
+		const key = screen.getByText("How these grades are calculated").closest("details")!
+		const ne = data.teams.NE.groups
+		const worst = Object.values(ne).sort((x, y) => y.rank - x.rank)[0]
+		expect(key.textContent).toContain(`For example, the Patriots`)
+		expect(key.textContent).toMatch(new RegExp(`is ${worst.rank}(st|nd|rd|th)\\.`))
+		expect(key.textContent).toContain(`a grade of ${Math.round(worst.score!)} out of 100`)
 		expect(document.body.textContent).toMatch(/Week \d+: Raiders at Patriots/)
 		expect(document.body.textContent).toMatch(/Patriots favored by/)
 		expect(document.body.textContent).toContain("Klint Kubiak")
 		expect(document.body.textContent).toContain("Mike Vrabel")
 		expect(screen.getAllByText(/Raiders big edge|Raiders edge|Patriots big edge|Patriots edge|^Even$/).length).toBeGreaterThanOrEqual(8)
-		expect(document.querySelectorAll("details").length).toBe(8)
+		// Eight pairings, and the note on where the grades come from.
+		expect(document.querySelectorAll("details").length).toBe(9)
 		expect(document.body.textContent).toMatch(/Pro Football Reference/)
 		// One Share button for the whole matchup in the header, and one for each section that has a card of its own.
 		const shares = screen.getAllByRole("button", { name: /^Share: / }).map((b) => b.getAttribute("aria-label"))

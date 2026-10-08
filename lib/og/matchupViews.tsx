@@ -6,6 +6,7 @@ import type { ReactElement, ReactNode } from "react"
 
 import { SIZE_PIXELS } from "../lab/lastShare"
 import { ordinal } from "../lab/unitsKit"
+import { GROUP_BASIS, SOURCES, sourceLine } from "./basis"
 import { BRIGHT, BRONZE, Brand, DIM, Eyebrow, Frame, GOLD, HIT, LINE, MISS, SILVER, WHITE, caps, clip, rgba } from "./kit"
 import type { CardTeam, CoachRow, HurtSide, MatchupCardSpec, PairingRow, Spoke, StyleRow, TapeGroup, TeamSide } from "./matchupCards"
 
@@ -37,17 +38,23 @@ const EYEBROW: Record<MatchupCardSpec["view"], string> = {
 	injuries: "Who is missing",
 }
 
-function Shell({ spec, d, note, children }: { spec: MatchupCardSpec; d: Dims; note?: string; children: ReactNode }) {
+function Shell({ spec, d, note, source = SOURCES.grades, children }: { spec: MatchupCardSpec; d: Dims; note?: string; source?: string; children: ReactNode }) {
 	const glow = winColor(spec)
+	const foot = (right: boolean) => (
+		<div style={{ display: "flex", flexDirection: "column", alignItems: right ? "flex-end" : "flex-start", fontFamily: "Oswald", fontWeight: 400, fontSize: d.tall ? 19 : 15, lineHeight: 1.25, letterSpacing: 1, color: DIM, textAlign: right ? "right" : "left" }}>
+			{note ? <div style={{ display: "flex" }}>{note}</div> : null}
+			<div style={{ display: "flex" }}>{sourceLine(source, spec.season, spec.through)}</div>
+		</div>
+	)
 	return (
 		<Frame glow={glow} w={d.w} h={d.h}>
 			<div style={{ display: "flex", flexDirection: "column", width: d.w, height: d.h, padding: `${d.padTop}px ${d.padX}px ${d.padBottom}px` }}>
 				<Eyebrow text={`${EYEBROW[spec.view]} · ${spec.week ? `Week ${spec.week}` : spec.season}`} color={glow} />
 				{children}
 				<div style={{ display: "flex", flexDirection: d.tall ? "column" : "row", alignItems: d.tall ? "flex-start" : "center", justifyContent: "space-between", marginTop: "auto" }}>
-					{d.tall ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 19, letterSpacing: 1, color: DIM, marginBottom: 14 }}>{note ?? `Data: nflverse, CC BY 4.0 · ${spec.season} through Week ${spec.through}`}</div> : null}
+					{d.tall ? <div style={{ display: "flex", marginBottom: 14 }}>{foot(false)}</div> : null}
 					<Brand />
-					{d.tall ? null : <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 15, letterSpacing: 1, color: DIM }}>{note ?? `Data: nflverse, CC BY 4.0 · ${spec.season} through Week ${spec.through}`}</div>}
+					{d.tall ? null : foot(true)}
 				</div>
 			</div>
 		</Frame>
@@ -201,7 +208,7 @@ function Overview({ spec }: { spec: Spec<"overview"> }) {
 	)
 	if (d.tall) {
 		return (
-			<Shell spec={spec} d={d} note={`Further out is better · dashed ring is league average · Data: nflverse, CC BY 4.0`}>
+			<Shell spec={spec} d={d} note="Further out is better · dashed ring: league average · graded on per-play stats, not totals or scouting">
 				<Teams spec={spec} d={d} big={112} />
 				<div style={{ display: "flex", justifyContent: "center", marginTop: 0 }}>
 					<RadarBox spec={spec} w={d.innerW} h={540} diameter={390} tall />
@@ -217,7 +224,7 @@ function Overview({ spec }: { spec: Spec<"overview"> }) {
 	const rightW = d.innerW - 520 - 36
 	const title = `${A.nick} vs ${B.nick}`
 	return (
-		<Shell spec={spec} d={d} note="Further out is better · dashed ring is league average · Data: nflverse, CC BY 4.0">
+		<Shell spec={spec} d={d} note="Further out is better · dashed ring: league average · graded on per-play stats, not totals or scouting">
 			<div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
 				<div style={{ display: "flex", flexDirection: "column", width: 520, marginRight: 36 }}>
 					<RadarBox spec={spec} w={520} h={402} diameter={320} tall={false} />
@@ -308,7 +315,7 @@ function Pairs({ spec }: { spec: Spec<"pairs"> }) {
 		</div>
 	)
 	return (
-		<Shell spec={spec} d={d} note="Circle: offense · Diamond: defense · Further right is better · Data: nflverse, CC BY 4.0">
+		<Shell spec={spec} d={d} note="Circle: offense · diamond: defense · further right is better · per-play stats">
 			<Teams spec={spec} d={d} big={d.tall ? 120 : 64} />
 			<div style={{ display: "flex", width: d.innerW, flexShrink: 0, marginTop: d.tall ? 16 : 8, fontFamily: "Oswald", fontWeight: 500, fontSize: d.tall ? 25 : 18, lineHeight: 1.3, color: BRIGHT }}>{clip(spec.line, d.tall ? 100 : 112)}</div>
 			<div style={{ display: "flex", flexDirection: d.tall ? "column" : "row", justifyContent: "space-between", marginTop: d.tall ? 22 : 12, width: d.innerW }}>
@@ -322,7 +329,7 @@ function Pairs({ spec }: { spec: Spec<"pairs"> }) {
 // ---- bars growing out from the middle ---------------------------------------------------------------------
 
 type BarSide = { main: string; sub?: string | null; frac: number }
-type BarRow = { key: string; title: string; tag: string | null; tagColor: string | null; a: BarSide | null; b: BarSide | null; winner: TeamSide | null }
+type BarRow = { key: string; title: string; tag: string | null; tagColor: string | null; a: BarSide | null; b: BarSide | null; winner: TeamSide | null; detail?: string }
 
 function Butterfly({ d, rows, colors, rowH, outerW, labelW, divider }: { d: Dims; rows: BarRow[]; colors: [string, string]; rowH: number; outerW: number; labelW: number; divider?: (index: number) => string | null }) {
 	const barW = Math.floor((d.innerW - outerW * 2 - labelW) / 2)
@@ -365,6 +372,7 @@ function Butterfly({ d, rows, colors, rowH, outerW, labelW, divider }: { d: Dims
 							{bar(0, r.a, r.winner)}
 							<div style={{ display: "flex", flexDirection: "column", width: labelW, alignItems: "center", justifyContent: "center" }}>
 								<div style={{ display: "flex", textAlign: "center", fontFamily: "Oswald", fontWeight: 600, fontSize: d.tall ? 22 : 16, letterSpacing: 1.5, lineHeight: 1.1, color: WHITE, ...caps }}>{r.title}</div>
+								{r.detail && d.tall ? <div style={{ display: "flex", maxWidth: labelW - 44, textAlign: "center", justifyContent: "center", fontFamily: "Oswald", fontWeight: 400, fontSize: 13, letterSpacing: 0.3, lineHeight: 1.15, marginTop: 3, color: DIM }}>{r.detail}</div> : null}
 								{r.tag ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: d.tall ? 15 : 11, letterSpacing: 2.5, marginTop: 2, color: r.tagColor ?? DIM, ...caps }}>{r.tag}</div> : null}
 							</div>
 							{bar(1, r.b, r.winner)}
@@ -388,14 +396,15 @@ function Tape({ spec }: { spec: Spec<"tape"> }) {
 		a: { main: ordinal(g.a.rank), frac: g.a.score / 100 },
 		b: { main: ordinal(g.b.rank), frac: g.b.score / 100 },
 		winner: g.winner,
+		detail: GROUP_BASIS[g.key],
 	}))
 	const firstDef = spec.groups.findIndex((g) => !g.off)
 	const divider = (i: number) => (i === 0 ? "Offense" : i === firstDef ? "Defense" : null)
 	return (
-		<Shell spec={spec} d={d} note={`Longer bar is better, ranked among ${spec.n} teams · dim bar: the other side's edge · Data: nflverse, CC BY 4.0`}>
+		<Shell spec={spec} d={d} note={`Longer bar is better, ranked of ${spec.n} · grade = average rank of its stats, per play not totals`}>
 			<Teams spec={spec} d={d} big={d.tall ? 120 : 58} context={d.tall} />
 			<div style={{ display: "flex", marginTop: d.tall ? 22 : 10 }}>
-				<Butterfly d={d} rows={rows} colors={colors} rowH={d.tall ? 96 : 41} outerW={d.tall ? 96 : 70} labelW={d.tall ? 270 : 214} divider={divider} />
+				<Butterfly d={d} rows={rows} colors={colors} rowH={d.tall ? 96 : 41} outerW={d.tall ? 96 : 70} labelW={d.tall ? 372 : 214} divider={divider} />
 			</div>
 		</Shell>
 	)
@@ -416,7 +425,7 @@ function Style({ spec }: { spec: Spec<"style"> }) {
 	const firstDef = spec.rows.findIndex((r) => !r.off)
 	const divider = (i: number) => (i === 0 ? "Offense" : i === firstDef ? "Defense" : null)
 	return (
-		<Shell spec={spec} d={d} note={`Not good or bad, just style · longer bar means more of it · Data: nflverse, CC BY 4.0`}>
+		<Shell spec={spec} d={d} source={SOURCES.style} note="Not good or bad, just style · longer bar means more of it">
 			<Teams spec={spec} d={d} big={d.tall ? 120 : 50} context={d.tall} />
 			<div style={{ display: "flex", marginTop: d.tall ? 18 : 4 }}>
 				<Butterfly d={d} rows={rows} colors={colors} rowH={d.tall ? 92 : 40} outerW={d.tall ? 132 : 112} labelW={d.tall ? 262 : 250} divider={divider} />
@@ -447,7 +456,7 @@ function Coaches({ spec }: { spec: Spec<"coaches"> }) {
 		</div>
 	)
 	return (
-		<Shell spec={spec} d={d} note="Regular-season games since 1999 · against the spread per the games file · Data: nflverse, CC BY 4.0">
+		<Shell spec={spec} d={d} source={SOURCES.coaches} note="Regular-season games since 1999 · against the spread per the games file">
 			<div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", width: d.innerW, marginTop: d.tall ? 24 : 12 }}>
 				{side(A, spec.coaches[0].name, true)}
 				<div style={{ display: "flex", width: 300, justifyContent: "center", fontFamily: "Anton", fontSize: d.tall ? 48 : 32, color: DIM, paddingTop: d.tall ? 36 : 14 }}>VS</div>
@@ -523,7 +532,7 @@ function Injuries({ spec }: { spec: Spec<"injuries"> }) {
 		)
 	}
 	return (
-		<Shell spec={spec} d={d} note="Starters averaged more than half the team's snaps · Data: nflverse injury reports, CC BY 4.0">
+		<Shell spec={spec} d={d} source={SOURCES.injuries} note="Starters averaged more than half the team's snaps">
 			<div style={{ display: "flex", justifyContent: "space-between", width: d.innerW, marginTop: d.tall ? 28 : 16 }}>
 				{column(0, spec.sides[0])}
 				{column(1, spec.sides[1])}
