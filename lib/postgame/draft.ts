@@ -5,7 +5,6 @@
 // Pure functions of plain data: scripts/postgame/run.ts does the network and Sanity calls around them.
 
 import { clipFor } from "../lab/clips"
-import { fourthGameFor, gameLine } from "../lab/fourthDown"
 import { type TopPlay, helped, playWord, swingText, topPlaysFor, whenText } from "../lab/topPlays"
 import type { LabGame } from "../lab/types"
 import type { LiveGameInfo } from "../live/types"
@@ -121,15 +120,13 @@ export function block(name: string, parts: Part[], opts: { style?: "normal" | "h
 export type LabPieces = {
 	game: LabGame
 	plays: TopPlay[]
-	fourth: string | null
 	clip: ReturnType<typeof clipFor>
 }
 
 /** The Lab's pieces for a game, or null when the Lab has not got it yet. */
 export function labPieces(game: LabGame | undefined, team: string): LabPieces | null {
 	if (!game) return null
-	const fg = fourthGameFor(game.week)
-	return { game, plays: topPlaysFor(game, team, 3), fourth: fg && fg.summary.graded > 0 ? gameLine(fg) : null, clip: clipFor(game.week) }
+	return { game, plays: topPlaysFor(game, team, 3), clip: clipFor(game.week) }
 }
 
 /** The Lab game that is this report's game: same opponent, within three days of the report's date. */
@@ -151,16 +148,15 @@ export function pipelineBlocks(f: Facts, lab: LabPieces | null) {
 		block(nextKey("intro"), [
 			lab
 				? `Everything below comes from the numbers. The box score on the published page fills itself in from ESPN. Write the recap under this section.`
-				: `The score and box score are filled in. The Lab replay, top plays, fourth-down grades, share cards and clip arrive once the play-by-play data posts (usually Monday morning); this section updates itself then.`,
+				: `The score and box score are filled in. The Lab replay, top plays, share cards and clip arrive once the play-by-play data posts (usually Monday morning); this section updates itself then.`,
 		]),
 	]
 	if (!lab) return out
 	const slug = `week-${lab.game.week}`
-	out.push(block(nextKey("lab"), [{ text: `Lab page: Week ${lab.game.week}`, href: abs(`/lab/${slug}`) }, " (win probability replay, drive replays, top plays, fourth-down report)"], { list: true }))
+	out.push(block(nextKey("lab"), [{ text: `Lab page: Week ${lab.game.week}`, href: abs(`/lab/${slug}`) }, " (win probability replay, drive replays, top plays)"], { list: true }))
 	for (const p of lab.plays) {
 		out.push(block(nextKey("play"), [{ text: `${p.rank === 1 ? "Play of the game" : `Play #${p.rank}`}: `, strong: true }, `${playWord(p)}${whenText(p) ? `, ${whenText(p)}` : ""}, ${swingText(p)} for the ${helped(p)}. `, { text: "Share card", href: abs(`/api/og?type=lab&slug=${slug}&view=play&rank=${p.rank}`) }], { list: true }))
 	}
-	if (lab.fourth) out.push(block(nextKey("fourth"), [{ text: "Fourth downs: ", strong: true }, `${lab.fourth}. `, { text: "Share card", href: abs(`/api/og?type=lab&slug=${slug}&view=fourth`) }], { list: true }))
 	out.push(block(nextKey("story"), [{ text: "Win probability story card: ", strong: true }, { text: "image", href: abs(`/api/og?type=lab&slug=${slug}`) }], { list: true }))
 	if (lab.clip) {
 		out.push(block(nextKey("clip"), [{ text: "Clips: ", strong: true }, { text: "landscape", href: abs(lab.clip.files.landscape) }, ", ", { text: "vertical", href: abs(lab.clip.files.vertical) }, ", ", { text: "square", href: abs(lab.clip.files.square) }, ", ", { text: "GIF", href: abs(lab.clip.files.gif) }], { list: true }))
@@ -204,6 +200,6 @@ export function mergeBody(existing: { _key?: string }[] | null | undefined, fres
 export function notifyText(f: Facts, kind: "created" | "lab", studioUrl: string | null, lab: LabPieces | null): string {
 	const head = `Raiders ${f.raiders}, ${f.opponent} ${f.opp} (${f.result === "W" ? "win" : f.result === "L" ? "loss" : "tie"})`
 	if (kind === "created") return `${head}: final. A draft game report is waiting in Studio${studioUrl ? `: ${studioUrl}` : ""}. The Lab pieces follow when the data posts.`
-	const bits = [lab?.plays.length ? "top plays" : null, lab?.fourth ? "fourth-down grades" : null, lab?.clip ? "clips" : null, "share cards"].filter(Boolean)
+	const bits = [lab?.plays.length ? "top plays" : null, lab?.clip ? "clips" : null, "share cards"].filter(Boolean)
 	return `${head}: the Lab pieces are added to your draft (${bits.join(", ")}).${studioUrl ? ` ${studioUrl}` : ""}`
 }

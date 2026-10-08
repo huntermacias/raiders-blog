@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 60_000 })
 
 const get = (query: Record<string, string>) => mockReq({ method: "GET", query })
 const isPng = (b: unknown) => (Buffer.isBuffer(b) || b instanceof Uint8Array) && Buffer.from(b as Uint8Array).subarray(1, 4).toString() === "PNG"
-const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
+const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin" | "a" | "b", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
 
 beforeEach(() => {
 	vi.spyOn(console, "error").mockImplementation(() => {})
@@ -43,12 +43,9 @@ describe("insightSpec", () => {
 		expect(a?.type === "play" && a.scope).toBe("season")
 	})
 
-	it("builds the fourth-down card for a game and for the season", () => {
-		const g = insightSpec(q({ type: "lab", slug: "week-2", view: "fourth" }))
-		const s = insightSpec(q({ type: "lab", slug: "season", view: "fourth" }))
-		expect(g?.type).toBe("fourth")
-		expect(s?.type === "fourth" && s.graded).toBeGreaterThan(0)
-		expect(g?.type === "fourth" && g.rows.length).toBeGreaterThan(0)
+	it("no longer builds a fourth-down card", () => {
+		expect(insightSpec(q({ type: "lab", slug: "week-2", view: "fourth" }))).toBeNull()
+		expect(insightSpec(q({ type: "lab", slug: "season", view: "fourth" }))).toBeNull()
 	})
 
 	it("builds a scouting card for an opponent, never for the Raiders or a made-up team", () => {
@@ -138,7 +135,7 @@ describe("insightSpec", () => {
 	it("returns null for anything else so the route can fall through", () => {
 		expect(insightSpec(q({ type: "lab", slug: "week-3" }))).toBeNull()
 		expect(insightSpec(q({ type: "lab", slug: "week-99", view: "play" }))).toBeNull()
-		expect(insightSpec(q({ type: "lab", slug: "../x", view: "fourth" }))).toBeNull()
+		expect(insightSpec(q({ type: "lab", slug: "../x", view: "play" }))).toBeNull()
 		expect(insightSpec(q({ type: "post", slug: "week-3", view: "play" }))).toBeNull()
 	})
 })
@@ -160,8 +157,6 @@ describe("/api/og insight cards", () => {
 	const cases: [string, Record<string, string>][] = [
 		["play of the game", { type: "lab", slug: "week-3", view: "play" }],
 		["play of the season", { type: "lab", slug: "season", view: "play", rank: "2" }],
-		["fourth down, one game", { type: "lab", slug: "week-1", view: "fourth" }],
-		["fourth down, season", { type: "lab", slug: "season", view: "fourth" }],
 		["scouting report", { type: "scout", opp: "KC", week: "5" }],
 		["scouting report without a week", { type: "scout", opp: "JAX" }],
 		["will it last, takeaways", { type: "last", stat: "def.turnovers", n: "4" }],
@@ -181,6 +176,10 @@ describe("/api/og insight cards", () => {
 		["season twins, tall", { type: "twins", size: "tall" }],
 		["season twins, offense only", { type: "twins", mode: "off" }],
 		["season twins, defense only, tall", { type: "twins", mode: "def", size: "tall" }],
+		["matchup, Raiders", { type: "matchup", a: "LV", b: "NE" }],
+		["matchup, Raiders, tall", { type: "matchup", a: "LV", b: "NE", size: "tall" }],
+		["matchup, two other teams", { type: "matchup", a: "KC", b: "BUF" }],
+		["matchup, two other teams, tall", { type: "matchup", a: "KC", b: "BUF", size: "tall" }],
 	]
 	it.each(cases)("renders %s as a cached PNG", async (_n, query) => {
 		const res = mockRes()
@@ -203,6 +202,32 @@ describe("/api/og insight cards", () => {
 		expect(await dims({ type: "scout", opp: "KC" })).toEqual([1200, 630])
 		expect(await dims({ type: "twins", size: "tall" })).toEqual([1080, 1350])
 		expect(await dims({ type: "twins" })).toEqual([1200, 630])
+		expect(await dims({ type: "matchup", a: "LV", b: "NE", size: "tall" })).toEqual([1080, 1350])
+		expect(await dims({ type: "matchup", a: "LV", b: "NE" })).toEqual([1200, 630])
+	})
+
+	it("builds a matchup card with eight pairings, edges that add up, and ignores anything made up", () => {
+		const m = insightSpec(q({ type: "matchup", a: "LV", b: "NE" }))
+		expect(m?.type).toBe("matchup")
+		if (m?.type !== "matchup") return
+		expect(m.rows).toHaveLength(8)
+		expect(m.rows.filter((r) => r.attacker === 0)).toHaveLength(4)
+		expect(m.teams.map((t) => t.abbr)).toEqual(["LV", "NE"])
+		expect(m.size).toBe("wide")
+		expect(m.edges[0] + m.edges[1]).toBeLessThanOrEqual(8)
+		for (const r of m.rows) {
+			expect(r.attackScore).toBeGreaterThanOrEqual(0)
+			expect(r.attackScore).toBeLessThanOrEqual(100)
+			expect(r.winner === null || r.winner === 0 || r.winner === 1).toBe(true)
+		}
+		// Edges on the card are the pairings the winner column says each team won.
+		expect(m.edges[0]).toBe(m.rows.filter((r) => r.winner === 0).length)
+		expect(m.edges[1]).toBe(m.rows.filter((r) => r.winner === 1).length)
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "NE", size: "huge" }))).toMatchObject({ size: "wide" })
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "LV" }))).toBeNull()
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "ZZZ" }))).toBeNull()
+		expect(insightSpec(q({ type: "matchup", a: "LV" }))).toBeNull()
+		expect(insightSpec(q({ type: "matchup", a: "lv", b: "ne" }))).toBeNull()
 	})
 
 	it("builds a season twins card for the closest twin, a chosen one, or the Raiders' own, and ignores anything made up", () => {
@@ -233,7 +258,7 @@ describe("/api/og insight cards", () => {
 	})
 
 	it("falls back to the default card when there is nothing to show", async () => {
-		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "fourth" }, { type: "last", stat: "off.nope" }, { type: "last", kind: "season" }, { type: "last", kind: "season", pin: "2016-ZZZ" }]
+		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "play" }, { type: "last", stat: "off.nope" }, { type: "last", kind: "season" }, { type: "last", kind: "season", pin: "2016-ZZZ" }]
 		for (const query of misses) {
 			const res = mockRes()
 			await handler(get(query), res)

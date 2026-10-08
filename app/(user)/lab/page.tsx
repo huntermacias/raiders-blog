@@ -94,7 +94,8 @@ export default function LabPage() {
 				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
 					{[
 						{ href: "/lab/top-plays", title: "Top plays", text: "The snaps that moved the Raiders' chance to win the furthest this season." },
-						{ href: "/lab/fourth-down", title: "Fourth-down report card", text: "Every go, punt and field goal, graded against similar spots from 2019 on." },
+						{ href: "/lab/matchups", title: "This week's matchups", text: "Every game on the slate, position group by position group: who has the edge at quarterback, on the line and in coverage." },
+						{ href: "/lab/teams", title: "How all 32 teams stack up", text: "Quarterback, line, receivers, run game, pass rush, run defense and coverage, ranked across the league." },
 						{ href: "/lab/scouting", title: "Scouting reports", text: "Where the Raiders have the edge on every opponent, and what to watch." },
 						{ href: "/lab/will-it-last", title: "Will it last?", text: "The Raiders' hottest and coldest stats, against every team since 1999 that started the same way." },
 						{ href: "/lab/season-twins", title: "Season twins", text: "The past teams that looked the most like the Raiders so far, laid over them stat by stat, and how their seasons ended." },
