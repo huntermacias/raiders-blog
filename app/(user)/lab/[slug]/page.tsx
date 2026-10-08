@@ -4,13 +4,11 @@ import { notFound } from "next/navigation"
 import Link from "@/components/SiteLink"
 import ClipPanel from "@/components/lab/ClipPanel"
 import DriveReplay from "@/components/lab/DriveReplay"
-import FourthDownReport from "@/components/lab/FourthDownReport"
 import TopPlays from "@/components/lab/TopPlays"
 import Tip from "@/components/lab/Tip"
 import WinProbabilityReplay from "@/components/lab/WinProbabilityReplay"
 import { clipFor } from "@/lib/lab/clips"
 import { gameSlug, getGameBySlug, getGames, getSeason, neighbours } from "@/lib/lab/data"
-import { fourthGameFor } from "@/lib/lab/fourthDown"
 import { SWING_HELP, WP_HELP } from "@/lib/lab/glossary"
 import { labColorVars } from "@/lib/lab/colors"
 import { topPlaysFor } from "@/lib/lab/topPlays"
@@ -75,7 +73,6 @@ export default async function LabGamePage(props: { params: Promise<{ slug: strin
     const swingPts = swing ? swingPoints(swing) : null
     const swingClock = swing ? clockAt(swing.el) : null
     const plays = topPlaysFor(g, season.team, 5)
-    const fourth = fourthGameFor(g.week)
     const stamp = Date.parse(season.generatedAt) || 0
     const clip = clipFor(g.week)
 
@@ -192,23 +189,6 @@ export default async function LabGamePage(props: { params: Promise<{ slug: strin
 						</p>
 					</div>
 					<TopPlays plays={plays} scope={slug} stamp={stamp} />
-				</section>
-			)}
-
-			{fourth && fourth.decisions.length > 0 && (
-				<section className="container pb-10 sm:pb-14" aria-labelledby="fourth-heading">
-					<div className="mb-5">
-						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">Fourth-down report</p>
-						<h2 id="fourth-heading" className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
-							Did the Raiders make the right calls on fourth down?
-						</h2>
-					</div>
-					<FourthDownReport game={fourth} scope={slug} stamp={stamp} />
-					<p className="mt-4 text-sm">
-						<Link href="/lab/fourth-down" className="font-semibold text-lab-soft underline-offset-4 hover:text-lab-ink hover:underline">
-							Every fourth down this season &rarr;
-						</Link>
-					</p>
 				</section>
 			)}
 

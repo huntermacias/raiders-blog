@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { getFourthDown, getGames, getScouting } from "../../lib/lab/data"
-import { VERDICTS, boldest, costliest, explain, fourthGameFor, gameLine, ptsText, seasonTotals, spotText } from "../../lib/lab/fourthDown"
+import { getGames, getScouting } from "../../lib/lab/data"
 import { KEYS, formatValue, matchups, ordinal, sampleNote, standouts, teamScout, watchList } from "../../lib/lab/scouting"
 import { playSentence, playWord, seasonTopPlays, swingText, topPlaysFor, whenText } from "../../lib/lab/topPlays"
 import type { LabGame } from "../../lib/lab/types"
@@ -63,59 +62,6 @@ describe("top plays", () => {
 		expect(w("M.Gay 52 yard field goal is No Good", "field_goal")).toBe("Missed field goal")
 		expect(w("A.Cole punts 40 yards", "punt")).toBe("Punt")
 		expect(w("A.Jeanty up the middle for 12 yards", "run", false, 12)).toBe("12-yard run")
-	})
-})
-
-describe("fourth-down report", () => {
-	const data = getFourthDown()
-
-	it("has a report for each played game with consistent counts", () => {
-		expect(data.games.length).toBe(games.length)
-		for (const g of data.games) {
-			expect(g.summary.decisions).toBe(g.decisions.length)
-			expect(g.summary.graded).toBe(g.decisions.filter((d) => d.verdict).length)
-			expect(g.summary.bestOrClose).toBeLessThanOrEqual(g.summary.graded)
-			expect(fourthGameFor(g.week)).toBe(g)
-		}
-	})
-
-	it("only calls a decision costly or questionable when the best option beats it by the stated margin", () => {
-		for (const g of data.games) for (const d of g.decisions) {
-			if (!d.verdict || !d.best) continue
-			const cost = (d.options[d.best]?.wp ?? 0) - (d.options[d.chosen]?.wp ?? 0)
-			if (d.verdict === "best") expect(d.best === d.chosen || cost <= 0.015).toBe(true)
-			if (d.verdict === "toss-up") expect(cost).toBeLessThan(0.015 + 1e-9)
-			if (d.verdict === "questionable") expect(cost).toBeGreaterThanOrEqual(0.015 - 1e-9)
-			if (d.verdict === "costly") expect(cost).toBeGreaterThanOrEqual(0.04 - 1e-9)
-		}
-	})
-
-	it("writes the spot, the verdict and the sentence under it", () => {
-		expect(spotText({ ytg: 2, yl: 29 })).toBe("4th & 2 · opp 29")
-		expect(spotText({ ytg: 11, yl: 65 })).toBe("4th & 11 · own 35")
-		expect(spotText({ ytg: 1, yl: 50 })).toBe("4th & 1 · midfield")
-		expect(ptsText(0.035)).toBe("3.5 pts")
-		expect(ptsText(0.12)).toBe("12 pts")
-		const questionable = data.games.flatMap((g) => g.decisions).find((d) => d.verdict === "questionable")!
-		expect(explain(questionable)).toMatch(/better/)
-		expect(VERDICTS[questionable.verdict!].label).toBe("Questionable")
-		const ungraded = { verdict: null } as never
-		expect(explain(ungraded)).toMatch(/Not graded/)
-	})
-
-	it("picks the decisions to show: costliest first, bold calls when nothing was wrong", () => {
-		for (const g of data.games) {
-			const c = costliest(g, 3)
-			for (let i = 1; i < c.length; i++) expect(c[i - 1].cost ?? 0).toBeGreaterThanOrEqual(c[i].cost ?? 0)
-			for (const d of boldest(g, 3)) expect(d.chosen).toBe("go")
-			expect(gameLine(g).length).toBeGreaterThan(5)
-		}
-	})
-
-	it("adds up a season", () => {
-		const t = seasonTotals(data.games)
-		expect(t.decisions).toBe(data.games.reduce((n, g) => n + g.decisions.length, 0))
-		expect(t.converted).toBeLessThanOrEqual(t.wentFor)
 	})
 })
 

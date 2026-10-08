@@ -5,14 +5,16 @@ vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn() }, clie
 
 import handler from "../../pages/api/og"
 import { insightSpec } from "../../lib/og/insightSpecs"
+import { getTwinsView } from "../../lib/lab/twins"
 import { playBlurb } from "../../lib/og/insightCards"
+import { MATCHUP_VIEWS } from "../../lib/lab/matchupShare"
 import { mockReq, mockRes } from "../helpers/http"
 
 vi.setConfig({ testTimeout: 60_000 })
 
 const get = (query: Record<string, string>) => mockReq({ method: "GET", query })
 const isPng = (b: unknown) => (Buffer.isBuffer(b) || b instanceof Uint8Array) && Buffer.from(b as Uint8Array).subarray(1, 4).toString() === "PNG"
-const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
+const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin" | "a" | "b" | "sort" | "show", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
 
 beforeEach(() => {
 	vi.spyOn(console, "error").mockImplementation(() => {})
@@ -42,12 +44,9 @@ describe("insightSpec", () => {
 		expect(a?.type === "play" && a.scope).toBe("season")
 	})
 
-	it("builds the fourth-down card for a game and for the season", () => {
-		const g = insightSpec(q({ type: "lab", slug: "week-2", view: "fourth" }))
-		const s = insightSpec(q({ type: "lab", slug: "season", view: "fourth" }))
-		expect(g?.type).toBe("fourth")
-		expect(s?.type === "fourth" && s.graded).toBeGreaterThan(0)
-		expect(g?.type === "fourth" && g.rows.length).toBeGreaterThan(0)
+	it("no longer builds a fourth-down card", () => {
+		expect(insightSpec(q({ type: "lab", slug: "week-2", view: "fourth" }))).toBeNull()
+		expect(insightSpec(q({ type: "lab", slug: "season", view: "fourth" }))).toBeNull()
 	})
 
 	it("builds a scouting card for an opponent, never for the Raiders or a made-up team", () => {
@@ -137,7 +136,7 @@ describe("insightSpec", () => {
 	it("returns null for anything else so the route can fall through", () => {
 		expect(insightSpec(q({ type: "lab", slug: "week-3" }))).toBeNull()
 		expect(insightSpec(q({ type: "lab", slug: "week-99", view: "play" }))).toBeNull()
-		expect(insightSpec(q({ type: "lab", slug: "../x", view: "fourth" }))).toBeNull()
+		expect(insightSpec(q({ type: "lab", slug: "../x", view: "play" }))).toBeNull()
 		expect(insightSpec(q({ type: "post", slug: "week-3", view: "play" }))).toBeNull()
 	})
 })
@@ -159,8 +158,6 @@ describe("/api/og insight cards", () => {
 	const cases: [string, Record<string, string>][] = [
 		["play of the game", { type: "lab", slug: "week-3", view: "play" }],
 		["play of the season", { type: "lab", slug: "season", view: "play", rank: "2" }],
-		["fourth down, one game", { type: "lab", slug: "week-1", view: "fourth" }],
-		["fourth down, season", { type: "lab", slug: "season", view: "fourth" }],
 		["scouting report", { type: "scout", opp: "KC", week: "5" }],
 		["scouting report without a week", { type: "scout", opp: "JAX" }],
 		["will it last, takeaways", { type: "last", stat: "def.turnovers", n: "4" }],
@@ -176,6 +173,25 @@ describe("/api/og insight cards", () => {
 		["will it last, a team's season, tall", { type: "last", kind: "season", size: "tall", stat: "def.turnovers", pin: "2016-LV" }],
 		["will it last, the bottom line", { type: "last", kind: "bottom" }],
 		["will it last, the bottom line, tall", { type: "last", kind: "bottom", size: "tall" }],
+		["season twins", { type: "twins" }],
+		["season twins, tall", { type: "twins", size: "tall" }],
+		["season twins, offense only", { type: "twins", mode: "off" }],
+		["season twins, defense only, tall", { type: "twins", mode: "def", size: "tall" }],
+		["matchup, Raiders", { type: "matchup", a: "LV", b: "NE" }],
+		["matchup, Raiders, tall", { type: "matchup", a: "LV", b: "NE", size: "tall" }],
+		["matchup, two other teams", { type: "matchup", a: "KC", b: "BUF" }],
+		["matchup, two other teams, tall", { type: "matchup", a: "KC", b: "BUF", size: "tall" }],
+		...MATCHUP_VIEWS.flatMap((view): [string, Record<string, string>][] => [
+			[`matchup ${view}`, { type: "matchup", a: "LV", b: "NE", view }],
+			[`matchup ${view}, tall`, { type: "matchup", a: "LV", b: "NE", view, size: "tall" }],
+			[`matchup ${view}, two other teams`, { type: "matchup", a: "KC", b: "BUF", view }],
+		]),
+		["the week's slate", { type: "slate" }],
+		["the week's slate, tall", { type: "slate", size: "tall" }],
+		["the league board", { type: "board" }],
+		["the league board, tall", { type: "board", size: "tall" }],
+		["the league board, sorted and filtered", { type: "board", sort: "rush", show: "AFC West", team: "LV" }],
+		["the league board, a conference, tall", { type: "board", sort: "qb", show: "NFC", team: "DAL", size: "tall" }],
 	]
 	it.each(cases)("renders %s as a cached PNG", async (_n, query) => {
 		const res = mockRes()
@@ -196,10 +212,134 @@ describe("/api/og insight cards", () => {
 		expect(await dims({ type: "last", kind: "chart", size: "tall", stat: "def.turnovers" })).toEqual([1080, 1350])
 		expect(await dims({ type: "last", kind: "chart", stat: "def.turnovers" })).toEqual([1200, 630])
 		expect(await dims({ type: "scout", opp: "KC" })).toEqual([1200, 630])
+		expect(await dims({ type: "twins", size: "tall" })).toEqual([1080, 1350])
+		expect(await dims({ type: "twins" })).toEqual([1200, 630])
+		expect(await dims({ type: "matchup", a: "LV", b: "NE", size: "tall" })).toEqual([1080, 1350])
+		expect(await dims({ type: "matchup", a: "LV", b: "NE" })).toEqual([1200, 630])
+		for (const view of MATCHUP_VIEWS) {
+			expect(await dims({ type: "matchup", a: "LV", b: "NE", view, size: "tall" })).toEqual([1080, 1350])
+			expect(await dims({ type: "matchup", a: "LV", b: "NE", view })).toEqual([1200, 630])
+		}
+		for (const type of ["slate", "board"]) {
+			expect(await dims({ type, size: "tall" })).toEqual([1080, 1350])
+			expect(await dims({ type })).toEqual([1200, 630])
+		}
+	})
+
+	it("builds a matchup card with eight pairings, edges that add up, and ignores anything made up", () => {
+		const m = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "pairs" }))
+		expect(m?.type).toBe("matchup")
+		if (m?.type !== "matchup" || m.view !== "pairs") throw new Error("expected a pairs card")
+		expect(m.rows).toHaveLength(8)
+		expect(m.rows.filter((r) => r.attacker === 0)).toHaveLength(4)
+		expect(m.teams.map((t) => t.abbr)).toEqual(["LV", "NE"])
+		expect(m.size).toBe("wide")
+		expect(m.edges[0] + m.edges[1]).toBeLessThanOrEqual(8)
+		for (const r of m.rows) {
+			expect(r.attackScore).toBeGreaterThanOrEqual(0)
+			expect(r.attackScore).toBeLessThanOrEqual(100)
+			expect(r.winner === null || r.winner === 0 || r.winner === 1).toBe(true)
+		}
+		// Edges on the card are the pairings the winner column says each team won.
+		expect(m.edges[0]).toBe(m.rows.filter((r) => r.winner === 0).length)
+		expect(m.edges[1]).toBe(m.rows.filter((r) => r.winner === 1).length)
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "NE", size: "huge" }))).toMatchObject({ size: "wide" })
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "LV" }))).toBeNull()
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "ZZZ" }))).toBeNull()
+		expect(insightSpec(q({ type: "matchup", a: "LV" }))).toBeNull()
+		// A team code in lower case is read as the team.
+		expect(insightSpec(q({ type: "matchup", a: "lv", b: "ne" }))).toMatchObject({ view: "overview", teams: [{ abbr: "LV" }, { abbr: "NE" }] })
+	})
+
+	it("builds each part of a matchup as its own card, and falls back to the overview", () => {
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "NE" }))).toMatchObject({ view: "overview" })
+		expect(insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "nonsense" }))).toMatchObject({ view: "overview" })
+		for (const view of MATCHUP_VIEWS) {
+			for (const size of ["wide", "tall"]) {
+				const m = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view, size }))
+				expect(m).toMatchObject({ type: "matchup", view, size })
+			}
+		}
+		const ov = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "overview" }))
+		if (ov?.type !== "matchup" || ov.view !== "overview") throw new Error("expected an overview")
+		expect(ov.radar).toHaveLength(7)
+		for (const s of ov.radar) {
+			expect(s.a).toBeGreaterThanOrEqual(0)
+			expect(s.a).toBeLessThanOrEqual(1)
+			expect(s.b).toBeGreaterThanOrEqual(0)
+			expect(s.b).toBeLessThanOrEqual(1)
+		}
+		expect(ov.callouts.length).toBeGreaterThan(0)
+		expect(ov.callouts.length).toBeLessThanOrEqual(3)
+		const tape = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "tape" }))
+		expect(tape?.type === "matchup" && tape.view === "tape" && tape.groups).toHaveLength(7)
+		const coaches = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "coaches", size: "tall" }))
+		if (coaches?.type !== "matchup" || coaches.view !== "coaches") throw new Error("expected a coaches card")
+		expect(coaches.rows.length).toBeGreaterThanOrEqual(6)
+		const wideCoaches = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "coaches" }))
+		expect(wideCoaches?.type === "matchup" && wideCoaches.view === "coaches" && wideCoaches.rows.length).toBeLessThanOrEqual(6)
+		const inj = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "injuries" }))
+		if (inj?.type !== "matchup" || inj.view !== "injuries") throw new Error("expected an injuries card")
+		expect(inj.sides).toHaveLength(2)
+		for (const side of inj.sides) expect(side.players.length).toBeLessThanOrEqual(6)
+	})
+
+	it("builds the week's slate with the Raiders' game first, and a board that can be sorted, filtered and focused", () => {
+		const s = insightSpec(q({ type: "slate" }))
+		if (s?.type !== "slate") throw new Error("expected a slate")
+		expect(s.games.length).toBeGreaterThan(0)
+		expect(s.games.length).toBeLessThanOrEqual(5)
+		const tall = insightSpec(q({ type: "slate", size: "tall" }))
+		expect(tall?.type === "slate" && tall.games.length).toBeLessThanOrEqual(9)
+		if (tall?.type === "slate") expect(tall.games.length + tall.more).toBe(s.games.length + s.more)
+
+		const b = insightSpec(q({ type: "board" }))
+		if (b?.type !== "board") throw new Error("expected a board")
+		expect(b.sort).toBe("composite")
+		expect(b.show).toBeNull()
+		expect(b.total).toBe(32)
+		expect(b.rows.length).toBeLessThanOrEqual(7)
+		expect(b.rows.some((r) => r.abbr === "LV")).toBe(true)
+
+		const west = insightSpec(q({ type: "board", sort: "rush", show: "AFC West", team: "LV" }))
+		if (west?.type !== "board") throw new Error("expected a board")
+		expect(west).toMatchObject({ sort: "rush", show: "AFC West", focus: "LV", total: 4 })
+		expect(west.rows).toHaveLength(4)
+
+		// Anything made up falls back to the plain league board.
+		const odd = insightSpec(q({ type: "board", sort: "bogus", show: "Mars", team: "ZZZ" }))
+		expect(odd).toMatchObject({ type: "board", sort: "composite", show: null, total: 32 })
+	})
+
+	it("builds a season twins card for the closest twin, a chosen one, or the Raiders' own, and ignores anything made up", () => {
+		const a = insightSpec(q({ type: "twins" }))
+		expect(a?.type).toBe("twins")
+		if (a?.type !== "twins") return
+		expect(a.mine).toHaveLength(18)
+		expect(a.theirs).toHaveLength(18)
+		expect(a.mode).toBe("all")
+		expect(a.title).toMatch(/^\d{4} [A-Z][A-Za-z0-9]+/)
+		const off = insightSpec(q({ type: "twins", mode: "off" }))
+		expect(off?.type === "twins" && off.mine).toHaveLength(9)
+		expect(off?.type === "twins" && off.modeName).toBe("Offense only")
+		// A twin that is not one of the five shown, a made-up mode and a made-up size all fall back to the defaults.
+		const junk = insightSpec(q({ type: "twins", mode: "net", size: "huge", twin: "1850-ZZZ" }))
+		expect(junk?.type === "twins" && junk.title).toBe(a.title)
+		expect(junk?.type === "twins" && junk.size).toBe("wide")
+		const third = getTwinsView()!.modes.all!.result.twins[2]
+		const picked = insightSpec(q({ type: "twins", twin: third.row.replace(" ", "-") }))
+		expect(picked?.type === "twins" && picked.title).toBe(third.label)
+		const defTwin = getTwinsView()!.modes.def!.result.twins[3]
+		const inDef = insightSpec(q({ type: "twins", mode: "def", twin: defTwin.row.replace(" ", "-") }))
+		expect(inDef?.type === "twins" && inDef.title).toBe(defTwin.label)
+		const own = getTwinsView()!.modes.all!.result.raidersTwin!
+		expect((insightSpec(q({ type: "twins", twin: own.row.replace(" ", "-") })) as { title: string }).title).toBe(own.label)
+		const tall = insightSpec(q({ type: "twins", size: "tall" }))
+		expect(tall?.type === "twins" && tall.size).toBe("tall")
 	})
 
 	it("falls back to the default card when there is nothing to show", async () => {
-		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "fourth" }, { type: "last", stat: "off.nope" }, { type: "last", kind: "season" }, { type: "last", kind: "season", pin: "2016-ZZZ" }]
+		const misses: Record<string, string>[] = [{ type: "scout", opp: "LV" }, { type: "scout" }, { type: "lab", slug: "week-99", view: "play" }, { type: "last", stat: "off.nope" }, { type: "last", kind: "season" }, { type: "last", kind: "season", pin: "2016-ZZZ" }]
 		for (const query of misses) {
 			const res = mockRes()
 			await handler(get(query), res)

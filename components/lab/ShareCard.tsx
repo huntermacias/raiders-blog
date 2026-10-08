@@ -20,10 +20,15 @@ const SIZE_CHOICES: { id: ShareSize; name: string; where: string }[] = [
 	},
 ]
 
+/** What a card is of when it is not a "Will it last?" card: the route's `type`, the link's query (without the size), where a shared link lands, and the words for it. */
+export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string }
+
 type Props = {
-	kind: ShareKind
+	/** The part of the "Will it last?" page the card is of. Leave out when `target` says what it is of. */
+	kind?: ShareKind
 	/** What the card shows: the stat, the filters, the pinned team, how the dots are laid out. */
-	view: Partial<ShareView>
+	view?: Partial<ShareView>
+	target?: ShareTarget
 	/** Changes when the data does, so a new card is fetched. */
 	stamp: number
 	/** The words that go with a post. */
@@ -43,7 +48,7 @@ const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * phone's own share sheet, save, copy the image, copy the link, X and Facebook. The link carries the chart's
  * stat, filters and pinned team, so whoever opens it sees the same chart.
  */
-export default function ShareCard({ kind, view, stamp, text, alt, label = "Share", className = "" }: Props) {
+export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "" }: Props) {
 	const [open, setOpen] = React.useState(false)
 	const [size, setSize] = React.useState<ShareSize>("wide")
 	const [note, setNote] = React.useState("")
@@ -100,11 +105,22 @@ export default function ShareCard({ kind, view, stamp, text, alt, label = "Share
 
 	React.useEffect(() => setLoaded(false), [size])
 
-	const query = viewQuery(view, { kind })
-	const src = `/api/og?type=last&${query}&size=${size}&v=${stamp}`
-	const filename = `raiders-will-it-last-${kind}${view.stat ? `-${view.stat.replace(".", "-")}` : ""}-${size}.png`
+	const t: ShareTarget = target ?? {
+		type: "last",
+		query: viewQuery(view, { kind: kind ?? "chart" }),
+		sharePath: SHARE_PATH,
+		name: KIND_NAMES[kind ?? "chart"],
+		file: `raiders-will-it-last-${kind ?? "chart"}${view.stat ? `-${view.stat.replace(".", "-")}` : ""}`,
+	}
+	const query = t.query
+	const src = `/api/og?type=${t.type}${query ? `&${query}` : ""}&size=${size}&v=${stamp}`
+	const filename = `${t.file}-${size}.png`
 	const px = SIZE_PIXELS[size]
-	const linkFor = (origin: string, utm = "") => `${origin}${SHARE_PATH}?${query}${utm}`
+	// The query, then any tracking parameters, joined with "&"; nothing to carry means no "?".
+	const linkFor = (origin: string, utm = "") => {
+		const qs = [query, utm.replace(/^&/, "")].filter(Boolean).join("&")
+		return `${origin}${t.sharePath}${qs ? `?${qs}` : ""}`
+	}
 
 	const say = (s: string) => {
 		setNote(s)
@@ -169,7 +185,7 @@ export default function ShareCard({ kind, view, stamp, text, alt, label = "Share
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-haspopup="dialog"
-				aria-label={`${label}: ${KIND_NAMES[kind]}`}
+				aria-label={`${label}: ${t.name}`}
 				className={`inline-flex min-h-[40px] items-center gap-2 rounded-full border border-lab-line-strong bg-lab-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-lab-ink transition hover:bg-lab-hover ${className}`}
 			>
 				<Share2 className="h-4 w-4" aria-hidden />
@@ -180,7 +196,7 @@ export default function ShareCard({ kind, view, stamp, text, alt, label = "Share
 					<div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} className="lab flex max-h-[100dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-lab-line bg-lab-page text-lab-ink shadow-[var(--lab-shadow)] sm:max-h-[92dvh] sm:rounded-2xl">
 						<div className="flex items-center justify-between gap-3 border-b border-lab-line px-4 py-3 sm:px-5">
 							<h2 id={titleId} className="m-0 font-serif text-lg font-bold">
-								Share: {KIND_NAMES[kind]}
+								Share: {t.name}
 							</h2>
 							<button ref={closeRef} type="button" onClick={close} aria-label="Close" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-lab-line-strong text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
 								<CloseIcon className="h-4 w-4" aria-hidden />

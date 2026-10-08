@@ -71,7 +71,7 @@ describe("the draft", () => {
 		const text = blocks.map((b) => b.children.map((c) => c.text).join("")).join("\n")
 		expect(text).toMatch(/Lab page: Week 3/)
 		expect(text).toMatch(/Play of the game: /)
-		expect(text).toMatch(/Fourth downs: /)
+		expect(text).not.toMatch(/Fourth downs/)
 		const hrefs = blocks.flatMap((b) => b.markDefs.map((m) => m.href))
 		expect(hrefs).toContain("https://www.raidersrundown.com/lab/week-3")
 		expect(hrefs.some((h) => h.includes("view=play&rank=1"))).toBe(true)

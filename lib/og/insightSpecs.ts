@@ -1,15 +1,22 @@
 // Picks the right share card for a request to /api/og. Kept out of the route so it can be tested without
 // Next: it only reads the Lab's static JSON.
 
-import { getFourthDown, getGameBySlug, getGames, getSeason } from "../lab/data"
-import { fourthGameFor } from "../lab/fourthDown"
+import { getGameBySlug, getGames, getSeason, getUnits } from "../lab/data"
 import { TEAMS } from "../nfl"
 import { seasonTopPlays, topPlaysFor } from "../lab/topPlays"
 import type { CardSpec } from "./cards"
 import { getHistoryView } from "../lab/history"
 import { analyze, abbrOf } from "../lab/historyKit"
 import { type RawView, readView } from "../lab/lastShare"
-import { buildFourthSeasonSpec, buildFourthSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { getTwinsView } from "../lab/twins"
+import { readTwinsView } from "../lab/twinsShare"
+import { isSize } from "../lab/lastShare"
+import { readBoardQuery, readMatchupQuery } from "../lab/matchupShare"
+import { buildMatchupSpec } from "./matchupCards"
+import { BOARD_SHOWS } from "../lab/boardShow"
+import { buildBoardSpec, buildSlateSpec } from "./unitsCards"
+import { buildTwinsSpec } from "./twinsCards"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/
@@ -22,9 +29,9 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView
+} & RawView & { mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string }
 
-/** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
+/** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
 	const team = getSeason().team
 
@@ -40,6 +47,23 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 		return lastSpec(q)
 	}
 
+	if (q.type === "twins") {
+		return twinsSpec(q)
+	}
+
+	if (q.type === "matchup") {
+		const m = readMatchupQuery({ a: q.a, b: q.b, view: q.view })
+		return m ? buildMatchupSpec(getUnits(), m.a, m.b, isSize(q.size) ? q.size : "wide", m.view) : null
+	}
+
+	if (q.type === "slate") return buildSlateSpec(getUnits(), isSize(q.size) ? q.size : "wide")
+
+	if (q.type === "board") {
+		const data = getUnits()
+		const view = readBoardQuery({ sort: q.sort, show: q.show, team: q.team }, { shows: BOARD_SHOWS, teams: new Set(Object.keys(data.teams)) })
+		return buildBoardSpec(data, view, isSize(q.size) ? q.size : "wide")
+	}
+
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null
 
 	if (q.view === "play") {
@@ -53,16 +77,6 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 		const game = getGameBySlug(q.slug)
 		const play = game ? topPlaysFor(game, team, 5)[n - 1] : undefined
 		return game && play ? buildPlaySpec(game, play, "game") : null
-	}
-
-	if (q.view === "fourth") {
-		if (q.slug === "season") {
-			const games = getFourthDown().games
-			return games.length ? buildFourthSeasonSpec(games) : null
-		}
-		const game = getGameBySlug(q.slug)
-		const fg = game ? fourthGameFor(game.week) : null
-		return game && fg ? buildFourthSpec(fg, game) : null
 	}
 
 	return null
@@ -101,4 +115,14 @@ function lastSpec(q: RawView): CardSpec | null {
 	if (view.kind === "fifths") return buildFifthsSpec(story, ctx)
 	if (view.kind === "season") return view.pin ? buildSeasonSpec(story, meta, ctx, view.pin, view.y) : null
 	return buildChartSpec(story, meta, ctx, { pin: view.pin, y: view.y })
+}
+
+/** A "season twins" card for the match and twin the request names; null when the Raiders have not played enough games for a match. */
+function twinsSpec(q: { size?: string; mode?: string; twin?: string }): CardSpec | null {
+	const data = getTwinsView()
+	if (!data?.modes.all) return null
+	const rows = new Set(Object.values(data.modes).flatMap((m) => (m ? [...m.result.twins, ...(m.result.raidersTwin ? [m.result.raidersTwin] : [])].map((t) => t.row) : [])))
+	const view = readTwinsView(q, rows)
+	const found = data.modes[view.mode] ?? data.modes.all
+	return buildTwinsSpec(found.result, view.twin, { size: view.size, season: data.season, first: data.first, last: data.last, start: data.start })
 }
