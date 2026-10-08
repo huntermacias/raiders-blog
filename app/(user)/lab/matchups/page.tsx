@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import ShareCard from "@/components/lab/ShareCard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { TeamTag } from "@/components/lab/UnitBits"
 import { getUnits } from "@/lib/lab/data"
+import { MATCHUP_SHARE_PATH, SLATE_SHARE_PATH, matchupQuery, viewText } from "@/lib/lab/matchupShare"
 import { matchupFor, namesFor } from "@/lib/lab/units"
 import { type SlateGame, edgeSentence, kickoffText, marketLine, matchupPath, tally, topEdges } from "@/lib/lab/unitsKit"
 import { pairTheme } from "@/lib/lab/unitsTheme"
@@ -17,16 +19,17 @@ export function generateMetadata(): Metadata {
 	const week = getUnits().slate?.week
 	const title = `${week ? `Week ${week} NFL matchups` : "NFL matchups"}, position group by position group | Raiders Rundown`
 	const description = "Every game on the slate, broken down by quarterback, line, receivers, run game, pass rush, run defense and coverage: where each team has the edge."
+	const card = getUnits().slate ? `${SITE_URL}/api/og?type=slate&size=wide&v=${Date.parse(getUnits().generatedAt) || 0}` : `${SITE_URL}/og-default-v2.png`
 	return {
 		title,
 		description,
 		alternates: { canonical: PAGE_URL },
-		openGraph: { type: "website", title, description, url: PAGE_URL, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] },
-		twitter: { card: "summary_large_image", title, description, images: [`${SITE_URL}/og-default-v2.png`] },
+		openGraph: { type: "website", title, description, url: PAGE_URL, siteName: "Raiders Rundown", images: [card] },
+		twitter: { card: "summary_large_image", title, description, images: [card] },
 	}
 }
 
-function GameCard({ game }: { game: SlateGame }) {
+function GameCard({ game, stamp }: { game: SlateGame; stamp: number }) {
 	const { rows, line } = matchupFor(game.away, game.home)
 	const names = namesFor(game.away, game.home)
 	const theme = pairTheme(game.away, game.home)
@@ -63,11 +66,17 @@ function GameCard({ game }: { game: SlateGame }) {
 					))}
 				</ul>
 			) : null}
-			<p className="m-0 mt-4">
+			<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 				<Link href={matchupPath(game.away, game.home)} className="text-sm font-semibold text-lab-soft underline-offset-4 hover:text-lab-ink hover:underline">
 					Full matchup, coaches and injuries &rarr;
 				</Link>
-			</p>
+				<ShareCard
+					target={{ type: "matchup", query: matchupQuery(game.away, game.home, "overview"), sharePath: MATCHUP_SHARE_PATH, name: `${names[game.away]} at ${names[game.home]}`, file: `raiders-rundown-${game.away.toLowerCase()}-at-${game.home.toLowerCase()}-matchup` }}
+					stamp={stamp}
+					text={viewText("overview", { a: names[game.away], b: names[game.home] }, line).text}
+					alt={viewText("overview", { a: names[game.away], b: names[game.home] }, line).alt}
+				/>
+			</div>
 		</li>
 	)
 }
@@ -75,6 +84,7 @@ function GameCard({ game }: { game: SlateGame }) {
 export default function MatchupsPage() {
 	const data = getUnits()
 	const slate = data.slate
+	const stamp = Date.parse(data.generatedAt) || 0
 	const games = slate ? [...slate.games].sort((a, b) => Number(b.away === "LV" || b.home === "LV") - Number(a.away === "LV" || a.home === "LV")) : []
 
 	return (
@@ -92,11 +102,19 @@ export default function MatchupsPage() {
 						Every game on the slate, broken into eight pairings: each offense against the other team&rsquo;s defense, one position group at a time. Open any game for the numbers, the players, the
 						coaches and who is missing.
 					</p>
-					<p className="mt-5">
+					<div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+						{slate ? (
+							<ShareCard
+								target={{ type: "slate", query: "", sharePath: SLATE_SHARE_PATH, name: `Week ${slate.week} matchups`, file: `raiders-rundown-week-${slate.week}-matchups` }}
+								stamp={stamp}
+								text={`Week ${slate.week} NFL matchups, position group by position group: where each team has the edge.`}
+								alt={`Week ${slate.week} matchups: every game, with how each team's position groups line up`}
+							/>
+						) : null}
 						<Link href="/lab/teams" className="text-sm font-semibold text-lab-soft underline-offset-4 hover:text-lab-ink hover:underline">
 							Or compare any two teams on the board &rarr;
 						</Link>
-					</p>
+					</div>
 				</div>
 			</section>
 
@@ -104,7 +122,7 @@ export default function MatchupsPage() {
 				{games.length ? (
 					<ul className="m-0 grid list-none gap-5 p-0 lg:grid-cols-2">
 						{games.map((g) => (
-							<GameCard key={`${g.away}-${g.home}`} game={g} />
+							<GameCard key={`${g.away}-${g.home}`} game={g} stamp={stamp} />
 						))}
 					</ul>
 				) : (

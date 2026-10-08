@@ -12,7 +12,10 @@ import { buildPlaySpec, buildScoutSpec } from "./insightCards"
 import { getTwinsView } from "../lab/twins"
 import { readTwinsView } from "../lab/twinsShare"
 import { isSize } from "../lab/lastShare"
+import { readBoardQuery, readMatchupQuery } from "../lab/matchupShare"
 import { buildMatchupSpec } from "./matchupCards"
+import { BOARD_SHOWS } from "../lab/boardShow"
+import { buildBoardSpec, buildSlateSpec } from "./unitsCards"
 import { buildTwinsSpec } from "./twinsCards"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
@@ -26,7 +29,7 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { mode?: string; twin?: string; a?: string; b?: string }
+} & RawView & { mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -49,7 +52,16 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	}
 
 	if (q.type === "matchup") {
-		return ABBR.test(q.a ?? "") && ABBR.test(q.b ?? "") ? buildMatchupSpec(getUnits(), q.a!, q.b!, isSize(q.size) ? q.size : "wide") : null
+		const m = readMatchupQuery({ a: q.a, b: q.b, view: q.view })
+		return m ? buildMatchupSpec(getUnits(), m.a, m.b, isSize(q.size) ? q.size : "wide", m.view) : null
+	}
+
+	if (q.type === "slate") return buildSlateSpec(getUnits(), isSize(q.size) ? q.size : "wide")
+
+	if (q.type === "board") {
+		const data = getUnits()
+		const view = readBoardQuery({ sort: q.sort, show: q.show, team: q.team }, { shows: BOARD_SHOWS, teams: new Set(Object.keys(data.teams)) })
+		return buildBoardSpec(data, view, isSize(q.size) ? q.size : "wide")
 	}
 
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null

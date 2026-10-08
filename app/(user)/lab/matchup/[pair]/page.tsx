@@ -6,6 +6,7 @@ import MatchupReport from "@/components/lab/MatchupReport"
 import ShareCard from "@/components/lab/ShareCard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { getUnits } from "@/lib/lab/data"
+import { MATCHUP_SHARE_PATH, matchupQuery, viewText } from "@/lib/lab/matchupShare"
 import { matchupFor, namesFor, parsePair } from "@/lib/lab/units"
 import { canonicalPair, kickoffText, marketLine, matchupPath } from "@/lib/lab/unitsKit"
 import { pairTheme } from "@/lib/lab/unitsTheme"
@@ -39,7 +40,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	const title = `${titleFor(a, b)} | Raiders Rundown`
 	const description = `${matchupFor(a, b).line} Quarterback, line, receivers, run game, pass rush, run defense and coverage for the ${teamByAbbr(a).name} and the ${teamByAbbr(b).name}, plus coaches and injuries.`
 	const url = `${SITE_URL}${matchupPath(a, b)}`
-	const card = `${SITE_URL}/api/og?type=matchup&a=${a}&b=${b}&v=${Date.parse(data.generatedAt) || 0}`
+	const card = `${SITE_URL}/api/og?type=matchup&${matchupQuery(a, b, "overview")}&size=wide&v=${Date.parse(data.generatedAt) || 0}`
 	return {
 		title,
 		description,
@@ -81,10 +82,10 @@ export default async function MatchupPage(props: Props) {
 					<div className="mt-3 flex flex-wrap items-start justify-between gap-4">
 						<h1 className="m-0 max-w-4xl font-serif text-3xl font-bold leading-tight tracking-tight sm:text-5xl">{titleFor(a, b)}</h1>
 						<ShareCard
-							target={{ type: "matchup", query: `a=${a}&b=${b}`, sharePath: matchupPath(a, b), name: `${names[a]} vs ${names[b]}`, file: `${a.toLowerCase()}-vs-${b.toLowerCase()}-matchup` }}
+							target={{ type: "matchup", query: matchupQuery(a, b, "overview"), sharePath: MATCHUP_SHARE_PATH, name: `${names[a]} vs ${names[b]}`, file: `raiders-rundown-${a.toLowerCase()}-vs-${b.toLowerCase()}-matchup` }}
 							stamp={stamp}
-							text={`${names[a]} vs ${names[b]}, position group by position group: ${line}`}
-							alt={`${names[a]} vs ${names[b]}: how each position group stacks up`}
+							text={viewText("overview", { a: names[a], b: names[b] }, line).text}
+							alt={viewText("overview", { a: names[a], b: names[b] }, line).alt}
 						/>
 					</div>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">{line}</p>
