@@ -122,6 +122,59 @@ describe("the Lab section", () => {
 			expect(comp).not.toMatch(/lib\/lab\/(data|history|twins)"/)
 		})
 	})
+	describe("position-group matchups", () => {
+		const pages = ["app/(user)/lab/teams/page.tsx", "app/(user)/lab/matchups/page.tsx", "app/(user)/lab/matchup/[pair]/page.tsx"]
+		const parts = [...pages, "components/lab/MatchupReport.tsx", "components/lab/TeamBoard.tsx", "components/lab/UnitBits.tsx", "components/lab/UnitsCredit.tsx", "lib/lab/unitsTheme.ts"]
+
+		it.each(pages)("%s is built from the JSON in the repo, with the lab theme and no revalidate", (f) => {
+			const src = read(f)
+			expect(src).not.toMatch(/export const revalidate/)
+			expect(src).not.toMatch(/force-dynamic/)
+			expect(src).not.toMatch(/readClient|sanity/i)
+			expect(src).toMatch(/lab-opp|theme\.className/)
+		})
+
+		it("credits nflverse, FTN and Pro Football Reference wherever the numbers are shown", () => {
+			expect(read("components/lab/UnitsCredit.tsx")).toMatch(/FTN charting, Pro Football Reference advanced stats/)
+			for (const f of pages) expect(read(f)).toMatch(/UnitsCredit/)
+			expect(read("app/(user)/lab/scouting/[abbr]/page.tsx")).toMatch(/UnitsCredit/)
+			expect(read("scripts/lab/build_units.py")).toMatch(/CC BY 4\.0/)
+		})
+
+		it.each(parts)("%s has no dark-only colors", (f) => {
+			const code = read(f)
+			expect(code).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+			expect(code).not.toMatch(/bg-\[#0/)
+			expect(code).not.toMatch(/rgba\(255,\s*255,\s*255/)
+			expect(code).not.toMatch(/["'`]#[0-9a-fA-F]{3,8}["'`]/)
+		})
+
+		it("keeps the matchup logic in code that does not import the data files, so the browser can run it", () => {
+			const kit = read("lib/lab/unitsKit.ts")
+			expect(kit).not.toMatch(/^import /m)
+			expect(read("components/lab/TeamBoard.tsx")).not.toMatch(/lib\/lab\/(data|units)"/)
+		})
+
+		it("never shows tracking data from the NFL Big Data Bowl", () => {
+			for (const f of ["lib/lab/unitsKit.ts", "lib/lab/units.ts", "scripts/lab/build_units.py"]) expect(read(f)).not.toMatch(/big.?data.?bowl|tracking/i)
+		})
+
+		it("is rebuilt by the weekly job, after its script is tested", () => {
+			const yml = read(".github/workflows/lab-data.yml")
+			expect(yml).toMatch(/build_units\.py --season/)
+			expect(yml.indexOf("pytest")).toBeLessThan(yml.indexOf("build_units.py --season"))
+		})
+
+		it("is in the sitemap and linked from the Lab", () => {
+			const sitemap = read("pages/sitemap.xml.tsx")
+			expect(sitemap).toContain("/lab/teams")
+			expect(sitemap).toContain("/lab/matchups")
+			expect(sitemap).toMatch(/matchupPath/)
+			const hub = read("app/(user)/lab/page.tsx")
+			expect(hub).toContain("/lab/teams")
+			expect(hub).toContain("/lab/matchups")
+		})
+	})
 	describe("will it last", () => {
 		const page = "app/(user)/lab/will-it-last/page.tsx"
 
@@ -167,12 +220,12 @@ describe("the Lab section", () => {
 		})
 	})
 
-	describe("the top plays, fourth-down and scouting pages", () => {
+	describe("the top plays and scouting pages", () => {
 		it("builds the game and opponent pages ahead of time, with no revalidate", () => {
 			const scout = read("app/(user)/lab/scouting/[abbr]/page.tsx")
 			expect(scout).toMatch(/export function generateStaticParams/)
 			expect(scout).toMatch(/export const dynamicParams = false/)
-			for (const f of ["app/(user)/lab/top-plays/page.tsx", "app/(user)/lab/fourth-down/page.tsx", "app/(user)/lab/scouting/[abbr]/page.tsx"]) {
+			for (const f of ["app/(user)/lab/top-plays/page.tsx", "app/(user)/lab/scouting/[abbr]/page.tsx"]) {
 				expect(read(f)).not.toMatch(/export const revalidate/)
 				expect(read(f)).not.toMatch(/force-dynamic/)
 			}
@@ -185,11 +238,11 @@ describe("the Lab section", () => {
 		})
 
 		it("credits nflverse and its license, and has no dark-only colors", () => {
-			const pages = ["app/(user)/lab/top-plays/page.tsx", "app/(user)/lab/fourth-down/page.tsx", "app/(user)/lab/scouting/page.tsx", "app/(user)/lab/scouting/[abbr]/page.tsx"]
+			const pages = ["app/(user)/lab/top-plays/page.tsx", "app/(user)/lab/scouting/page.tsx", "app/(user)/lab/scouting/[abbr]/page.tsx"]
 			const credit = read("components/lab/Credit.tsx")
 			expect(credit).toMatch(/nflverse/)
 			expect(credit).toMatch(/CC BY 4\.0/)
-			for (const f of [...pages, "components/lab/Credit.tsx", "components/lab/TopPlays.tsx", "components/lab/FourthDownReport.tsx", "components/lab/ScoutReport.tsx", "components/lab/CardFigure.tsx", "components/lab/ShareCard.tsx", "components/lab/ShareRedirect.tsx"]) {
+			for (const f of [...pages, "components/lab/Credit.tsx", "components/lab/TopPlays.tsx", "components/lab/ScoutReport.tsx", "components/lab/CardFigure.tsx", "components/lab/ShareCard.tsx", "components/lab/ShareRedirect.tsx"]) {
 				const src = read(f)
 				expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
 				expect(src).not.toMatch(/bg-\[#0/)
@@ -200,9 +253,11 @@ describe("the Lab section", () => {
 
 		it("is in the sitemap and linked from the Lab", () => {
 			const sitemap = read("pages/sitemap.xml.tsx")
-			for (const p of ["/lab/top-plays", "/lab/fourth-down", "/lab/scouting"]) expect(sitemap).toContain(p)
+			for (const p of ["/lab/top-plays", "/lab/scouting"]) expect(sitemap).toContain(p)
 			const hub = read("app/(user)/lab/page.tsx")
-			for (const p of ["/lab/top-plays", "/lab/fourth-down", "/lab/scouting"]) expect(hub).toContain(p)
+			for (const p of ["/lab/top-plays", "/lab/scouting"]) expect(hub).toContain(p)
+			expect(sitemap).not.toContain("fourth-down")
+			expect(hub).not.toContain("fourth-down")
 		})
 	})
 })

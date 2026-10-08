@@ -2,10 +2,12 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import Link from "@/components/SiteLink"
-import Credit from "@/components/lab/Credit"
+import MatchupReport from "@/components/lab/MatchupReport"
 import ScoutReport from "@/components/lab/ScoutReport"
+import UnitsCredit from "@/components/lab/UnitsCredit"
 import { labColorVars } from "@/lib/lab/colors"
-import { getScouting, getSeason } from "@/lib/lab/data"
+import { getScouting, getSeason, getUnits } from "@/lib/lab/data"
+import { pairTheme } from "@/lib/lab/unitsTheme"
 import { scoutLine } from "@/lib/lab/scouting"
 import { TEAMS } from "@/lib/nfl"
 
@@ -68,12 +70,19 @@ export default async function ScoutPage(props: { params: Promise<{ abbr: string 
 			<section className="container py-10 sm:py-14">
 				<ScoutReport abbr={t.abbr} stamp={Date.parse(data.generatedAt) || 0} />
 			</section>
+			{getUnits().teams[t.abbr] && getUnits().teams.LV ? (
+				<section className="border-t border-lab-line" aria-label="Position group matchups">
+					<div className="container py-10 sm:py-14">
+						<MatchupReport a="LV" b={t.abbr} theme={pairTheme("LV", t.abbr)} week={getUnits().slate?.games.some((g) => g.home === t.abbr || g.away === t.abbr) ? getUnits().slate!.week : null} compact />
+					</div>
+				</section>
+			) : null}
 			<section className="border-t border-lab-line">
 				<div className="container flex flex-wrap items-center justify-between gap-4 py-8">
 					<Link href="/lab/scouting" className="text-sm font-semibold text-lab-soft hover:text-lab-ink">
 						&larr; All teams
 					</Link>
-					<Credit>Ranks use the {data.season} regular season so far. </Credit>
+					<UnitsCredit>Ranks use the {data.season} regular season so far. </UnitsCredit>
 				</div>
 			</section>
 		</div>

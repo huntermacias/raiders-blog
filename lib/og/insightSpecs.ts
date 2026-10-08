@@ -1,17 +1,18 @@
 // Picks the right share card for a request to /api/og. Kept out of the route so it can be tested without
 // Next: it only reads the Lab's static JSON.
 
-import { getFourthDown, getGameBySlug, getGames, getSeason } from "../lab/data"
-import { fourthGameFor } from "../lab/fourthDown"
+import { getGameBySlug, getGames, getSeason, getUnits } from "../lab/data"
 import { TEAMS } from "../nfl"
 import { seasonTopPlays, topPlaysFor } from "../lab/topPlays"
 import type { CardSpec } from "./cards"
 import { getHistoryView } from "../lab/history"
 import { analyze, abbrOf } from "../lab/historyKit"
 import { type RawView, readView } from "../lab/lastShare"
-import { buildFourthSeasonSpec, buildFourthSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { buildPlaySpec, buildScoutSpec } from "./insightCards"
 import { getTwinsView } from "../lab/twins"
 import { readTwinsView } from "../lab/twinsShare"
+import { isSize } from "../lab/lastShare"
+import { buildMatchupSpec } from "./matchupCards"
 import { buildTwinsSpec } from "./twinsCards"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
@@ -25,9 +26,9 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { mode?: string; twin?: string }
+} & RawView & { mode?: string; twin?: string; a?: string; b?: string }
 
-/** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
+/** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
 	const team = getSeason().team
 
@@ -47,6 +48,10 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 		return twinsSpec(q)
 	}
 
+	if (q.type === "matchup") {
+		return ABBR.test(q.a ?? "") && ABBR.test(q.b ?? "") ? buildMatchupSpec(getUnits(), q.a!, q.b!, isSize(q.size) ? q.size : "wide") : null
+	}
+
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null
 
 	if (q.view === "play") {
@@ -60,16 +65,6 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 		const game = getGameBySlug(q.slug)
 		const play = game ? topPlaysFor(game, team, 5)[n - 1] : undefined
 		return game && play ? buildPlaySpec(game, play, "game") : null
-	}
-
-	if (q.view === "fourth") {
-		if (q.slug === "season") {
-			const games = getFourthDown().games
-			return games.length ? buildFourthSeasonSpec(games) : null
-		}
-		const game = getGameBySlug(q.slug)
-		const fg = game ? fourthGameFor(game.week) : null
-		return game && fg ? buildFourthSpec(fg, game) : null
 	}
 
 	return null

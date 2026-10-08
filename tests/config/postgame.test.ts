@@ -48,9 +48,12 @@ describe("the postgame pipeline", () => {
 		it("tests the scripts before it builds anything, then builds all the data", () => {
 			const at = (s: string) => yml.indexOf(s)
 			expect(at("pytest")).toBeGreaterThan(-1)
-			for (const s of ["build_lab_data.py --season", "build_fourth_down.py --season", "build_scouting.py --season"]) {
+			for (const s of ["build_lab_data.py --season", "build_scouting.py --season"]) {
 				expect(at(s)).toBeGreaterThan(at("pytest"))
 			}
+		})
+		it("no longer builds fourth-down grades", () => {
+			expect(yml).not.toMatch(/fourth/i)
 		})
 		it("draws the clips with ffmpeg and commits them with the data in one push", () => {
 			expect(yml).toMatch(/apt-get install .*ffmpeg/)

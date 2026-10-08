@@ -1,9 +1,7 @@
-// Share cards for the Lab's three insight features (1200x630):
+// Share cards for the Lab's insight features (1200x630):
 //
 //   the play card    (`type: "play"`):   the play that moved a game, or the season, the most, with the win
 //                                        probability before and after it.
-//   the fourth-down  (`type: "fourth"`): how the Raiders' fourth-down calls graded out, with the decisions
-//                                        worth a look.
 //   the scouting     (`type: "scout"`):  the Raiders against an opponent, unit by unit, and what to watch.
 //
 // The "will it last?" cards live in lib/og/lastCards.tsx.
@@ -16,7 +14,6 @@
 import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
-import { type Decision, type FourthGame, VERDICTS, boldest, choiceText, costliest, ptsText, spotText } from "../lab/fourthDown"
 import { ordinal, sampleNote, teamScout, watchList, type Watch } from "../lab/scouting"
 import { type TopPlay, playWord, swingText, whenText } from "../lab/topPlays"
 import type { LabGame } from "../lab/types"
@@ -154,115 +151,6 @@ export function renderPlayCard(spec: PlayCardSpec): ReactElement {
 		</Frame>
 	)
 }
-
-// ---- the fourth-down card -----------------------------------------------------------------------------------
-
-export type FourthRow = { spot: string; choice: string; short: string; verdict: string; tone: "good" | "even" | "warn" | "bad" | "none"; line: string }
-
-export type FourthCardSpec = {
-	type: "fourth"
-	scope: "game" | "season"
-	week: number | null
-	oppName: string | null
-	oppColor: string
-	/** Fourth downs graded the best call or a toss-up, out of those graded. */
-	good: number
-	graded: number
-	total: number
-	left: string | null
-	rows: FourthRow[]
-}
-
-const toneColor = (t: FourthRow["tone"]): string => (t === "good" ? HIT : t === "even" ? SILVER : t === "warn" ? GOLD : t === "bad" ? MISS : DIM)
-
-function rowOf(d: Decision): FourthRow {
-	const v = d.verdict ? VERDICTS[d.verdict] : null
-	const best = d.best && d.verdict && d.verdict !== "best" ? d.options[d.best] : null
-	const chosen = d.options[d.chosen]
-	const line = best && chosen ? `${ptsText(best.wp - chosen.wp)} better ${d.best === "go" ? "going for it" : d.best === "fg" ? "kicking" : "punting"}` : d.verdict === "best" ? "The best option" : "Not graded"
-	return { spot: spotText(d), choice: choiceText(d.chosen, d.result), short: d.chosen === "go" ? "Went for it" : d.chosen === "fg" ? "Kicked a field goal" : "Punted", verdict: v ? v.short : "Not graded", tone: v ? v.tone : "none", line }
-}
-
-export function buildFourthSpec(game: FourthGame, labGame: Pick<LabGame, "oppName" | "opp">): FourthCardSpec {
-	const worst = costliest(game, 4)
-	const picked = worst.length ? worst : boldest(game, 4).length ? boldest(game, 4) : game.decisions.slice(0, 4)
-	return {
-		type: "fourth",
-		scope: "game",
-		week: game.week,
-		oppName: labGame.oppName,
-		oppColor: opponentColors(labGame.opp).dark,
-		good: game.summary.bestOrClose,
-		graded: game.summary.graded,
-		total: game.summary.decisions,
-		left: game.summary.leftOnTable > 0 ? ptsText(game.summary.leftOnTable) : null,
-		rows: picked.map(rowOf),
-	}
-}
-
-export function buildFourthSeasonSpec(games: FourthGame[]): FourthCardSpec {
-	const all = games.flatMap((g) => g.decisions.map((d) => ({ d, week: g.week })))
-	const worst = all
-		.filter((x) => x.d.verdict === "questionable" || x.d.verdict === "costly")
-		.sort((a, b) => (b.d.cost ?? 0) - (a.d.cost ?? 0))
-		.slice(0, 4)
-	const picked = worst.length ? worst : all.slice(0, 4)
-	const left = games.reduce((n, g) => n + g.summary.leftOnTable, 0)
-	return {
-		type: "fourth",
-		scope: "season",
-		week: null,
-		oppName: null,
-		oppColor: SILVER,
-		good: games.reduce((n, g) => n + g.summary.bestOrClose, 0),
-		graded: games.reduce((n, g) => n + g.summary.graded, 0),
-		total: games.reduce((n, g) => n + g.summary.decisions, 0),
-		left: left > 0 ? ptsText(left) : null,
-		rows: picked.map((x) => ({ ...rowOf(x.d), spot: `Wk ${x.week} · ${rowOf(x.d).spot}` })),
-	}
-}
-
-export function renderFourthCard(spec: FourthCardSpec): ReactElement {
-	const glow = accent(spec.oppColor)
-	const eyebrow = spec.scope === "season" ? "Fourth downs · Season" : `Fourth downs · Week ${spec.week}`
-	const ratio = spec.graded > 0 ? spec.good / spec.graded : 0
-	const color = ratio >= 0.75 ? HIT : ratio >= 0.5 ? GOLD : MISS
-	const rows = spec.rows.slice(0, 4)
-	const rowH = rows.length > 3 ? 104 : 120
-	return (
-		<Frame glow={glow}>
-			<div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 540, height: H, padding: "58px 20px 50px 64px" }}>
-				<Eyebrow text={eyebrow} color={color} />
-				<div style={{ display: "flex", flexDirection: "column" }}>
-					<div style={{ display: "flex", alignItems: "baseline" }}>
-						<div style={{ display: "flex", fontFamily: "Anton", fontSize: 190, lineHeight: 1.0, color }}>{spec.graded > 0 ? String(spec.good) : "–"}</div>
-						<div style={{ display: "flex", marginLeft: 6, fontFamily: "Anton", fontSize: 84, color: SILVER }}>{spec.graded > 0 ? `/ ${spec.graded}` : ""}</div>
-					</div>
-					<div style={{ display: "flex", marginTop: 6, fontFamily: "Oswald", fontWeight: 600, fontSize: 30, lineHeight: 1.2, letterSpacing: 3, color: WHITE, ...caps, maxWidth: 440 }}>Fourth downs that were the best call or a toss-up</div>
-					<div style={{ display: "flex", marginTop: 18, fontFamily: "Oswald", fontWeight: 500, fontSize: 24, letterSpacing: 2, color: spec.left ? GOLD : SILVER }}>
-						{spec.left ? `${spec.left} of win probability left on the table${spec.scope === "season" ? ", all season" : ""}` : "Nothing left on the table"}
-					</div>
-				</div>
-				<Brand />
-			</div>
-			<div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, padding: "0 56px 0 20px" }}>
-				<div style={label({ fontSize: 19, marginBottom: 14 })}>{spec.rows.some((r) => r.tone === "warn" || r.tone === "bad") ? "The calls worth a look" : "A few of the calls"}</div>
-				{rows.map((r, i) => (
-					<div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: rowH - 14, marginBottom: 14, padding: "0 24px", backgroundColor: PANEL, border: `2px solid ${LINE}`, borderLeft: `8px solid ${toneColor(r.tone)}` }}>
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							<div style={{ display: "flex", fontFamily: "Anton", fontSize: 32, color: WHITE, ...caps, letterSpacing: 1 }}>{r.spot}</div>
-							<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 21, color: BRIGHT, marginTop: 2 }}>{r.tone === "warn" || r.tone === "bad" ? `${r.short} · ${r.line}` : r.choice}</div>
-						</div>
-						<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 22, letterSpacing: 3, color: toneColor(r.tone), ...caps }}>{r.verdict}</div>
-					</div>
-				))}
-				<div style={{ display: "flex", marginTop: 4, fontFamily: "Oswald", fontWeight: 400, fontSize: 17, letterSpacing: 1, color: DIM }}>{`${spec.oppName ? `Vs the ${spec.oppName}. ` : ""}Estimates from similar fourth downs, 2019 to last season.`}</div>
-			</div>
-		</Frame>
-	)
-}
-
-// ---- the scouting card --------------------------------------------------------------------------------------
 
 export type ScoutRow = { unit: string; ours: number; theirs: number; ourLabel: string; theirLabel: string; edge: number }
 
