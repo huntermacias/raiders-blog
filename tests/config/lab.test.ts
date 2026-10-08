@@ -88,6 +88,40 @@ describe("the Lab section", () => {
 			expect(src).toMatch(/labColorVars\(/)
 		})
 	})
+	describe("season twins", () => {
+		const page = "app/(user)/lab/season-twins/page.tsx"
+
+		it("is a static page built from the JSON in the repo, with the lab theme, the data credit and no dark-only colors", () => {
+			const src = read(page)
+			expect(src).not.toMatch(/export const revalidate/)
+			expect(src).not.toMatch(/force-dynamic/)
+			expect(src).not.toMatch(/readClient|sanity/i)
+			expect(src).toMatch(/className="lab /)
+			expect(src).toMatch(/Credit/)
+			expect(src).toMatch(/History covers every regular season/)
+			for (const f of [page, "components/lab/SeasonTwins.tsx"]) {
+				const code = read(f)
+				expect(code).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+				expect(code).not.toMatch(/bg-\[#0/)
+				expect(code).not.toMatch(/rgba\(255,\s*255,\s*255/)
+				expect(code).not.toMatch(/["'`]#[0-9a-fA-F]{3,8}["'`]/)
+			}
+		})
+
+		it("is in the sitemap and linked from the Lab", () => {
+			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/season-twins")
+			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/season-twins")
+		})
+
+		it("keeps the matching in code that does not import the data files, so the browser can run it", () => {
+			const kit = read("lib/lab/twinsKit.ts")
+			expect(kit).toMatch(/from "\.\/historyKit"/)
+			expect(kit).not.toMatch(/from "\.\/(data|history)"/)
+			expect(kit).not.toMatch(/tracking/i)
+			const comp = read("components/lab/SeasonTwins.tsx")
+			expect(comp).not.toMatch(/lib\/lab\/(data|history|twins)"/)
+		})
+	})
 	describe("will it last", () => {
 		const page = "app/(user)/lab/will-it-last/page.tsx"
 
