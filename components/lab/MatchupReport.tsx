@@ -1,4 +1,5 @@
 import Link from "@/components/SiteLink"
+import GradeKey, { type GradeExample } from "@/components/lab/GradeKey"
 import ShareCard from "@/components/lab/ShareCard"
 import { getUnits } from "@/lib/lab/data"
 import { MATCHUP_SHARE_PATH, VIEW_NAMES, type MatchupView, matchupQuery, viewText } from "@/lib/lab/matchupShare"
@@ -377,6 +378,22 @@ function Head({ children, id, sub, action }: { children: React.ReactNode; id: st
 	)
 }
 
+/** The team's weakest position group, worked through stat by stat: the grade readers are most likely to question. */
+function gradeExample(data: ReturnType<typeof getUnits>, abbr: string, name: string): GradeExample | undefined {
+	const t = data.teams[abbr]
+	if (!t) return undefined
+	const worst = GROUP_ORDER.map((k) => ({ k, g: t.groups[k] }))
+		.filter((x) => x.g && x.g.score !== null)
+		.sort((x, y) => y.g.rank - x.g.rank)[0]
+	if (!worst) return undefined
+	const info = GROUPS[worst.k]
+	const stats = Object.entries(info.stats).flatMap(([key, st]) => {
+		const v = worst.g.stats[key]
+		return v ? [{ label: st.label, rank: v.rank }] : []
+	})
+	return stats.length ? { team: name, group: info.label, rank: worst.g.rank, score: worst.g.score as number, stats } : undefined
+}
+
 export default function MatchupReport({ a, b, theme, week = null, compact = false }: Props) {
 	const data = getUnits()
 	const ta = data.teams[a]
@@ -427,6 +444,7 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 					Tale of the tape
 				</Head>
 				<Tape a={a} b={b} data={data} names={names} theme={theme} />
+				{compact ? null : <GradeKey n={teamCount(data)} example={gradeExample(data, b, names[b])} className="mt-4" />}
 			</section>
 
 			{compact ? (
