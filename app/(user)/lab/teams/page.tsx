@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import GradeKey from "@/components/lab/GradeKey"
 import TeamBoard from "@/components/lab/TeamBoard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { getUnits } from "@/lib/lab/data"
@@ -58,6 +59,7 @@ export default function TeamsPage() {
 
 			<section className="container py-10 sm:py-14" aria-label="The board">
 				<TeamBoard rows={rows} teams={teams} n={teamCount(data)} stamp={Date.parse(data.generatedAt) || 0} />
+				<GradeKey n={teamCount(data)} className="mt-6" />
 			</section>
 
 			<section className="border-t border-lab-line">

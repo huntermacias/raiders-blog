@@ -17,6 +17,7 @@ import { SIZE_PIXELS, type ShareSize } from "../lab/lastShare"
 import type { BoardSort, BoardView } from "../lab/matchupShare"
 import { type GroupKey, type UnitsData, GROUPS, GROUP_ORDER, boardRows, heat, kickoffText, matchupRows, ordinal, paperEdge, recText, tally, teamCount, topEdges, viewOf } from "../lab/unitsKit"
 import { TEAMS, teamByAbbr } from "../nfl"
+import { SOURCES, sourceLine } from "./basis"
 import { cardColors } from "./matchupCards"
 import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -31,16 +32,22 @@ function dims(size: ShareSize) {
 }
 type Dims = ReturnType<typeof dims>
 
-function Shell({ d, glow, eyebrow, note, children }: { d: Dims; glow: string; eyebrow: string; note: string; children: ReactNode }) {
+function Shell({ d, glow, eyebrow, note, season, through, children }: { d: Dims; glow: string; eyebrow: string; note: string; season: number; through: number; children: ReactNode }) {
+	const foot = (right: boolean) => (
+		<div style={{ display: "flex", flexDirection: "column", alignItems: right ? "flex-end" : "flex-start", fontFamily: "Oswald", fontWeight: 400, fontSize: d.tall ? 19 : 15, lineHeight: 1.25, letterSpacing: 1, color: DIM, textAlign: right ? "right" : "left" }}>
+			<div style={{ display: "flex" }}>{note}</div>
+			<div style={{ display: "flex" }}>{sourceLine(SOURCES.grades, season, through)}</div>
+		</div>
+	)
 	return (
 		<Frame glow={glow} w={d.w} h={d.h}>
 			<div style={{ display: "flex", flexDirection: "column", width: d.w, height: d.h, padding: `${d.padTop}px ${d.padX}px ${d.padBottom}px` }}>
 				<Eyebrow text={eyebrow} color={glow} />
 				{children}
 				<div style={{ display: "flex", flexDirection: d.tall ? "column" : "row", alignItems: d.tall ? "flex-start" : "center", justifyContent: "space-between", marginTop: "auto" }}>
-					{d.tall ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 19, letterSpacing: 1, color: DIM, marginBottom: 14 }}>{note}</div> : null}
+					{d.tall ? <div style={{ display: "flex", marginBottom: 14 }}>{foot(false)}</div> : null}
 					<Brand />
-					{d.tall ? null : <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 15, letterSpacing: 1, color: DIM }}>{note}</div>}
+					{d.tall ? null : foot(true)}
 				</div>
 			</div>
 		</Frame>
@@ -166,7 +173,7 @@ export function renderSlateCard(spec: SlateCardSpec): ReactElement {
 	const first = spec.games[0]
 	const glow = first?.raiders ? first.away.abbr === "LV" ? first.home.color : first.away.color : SILVER
 	return (
-		<Shell d={d} glow={glow} eyebrow={`Week ${spec.week} · the slate on paper`} note="Bar: whose position groups lead · numbers: pairings with the edge, of 8 · Data: nflverse, CC BY 4.0">
+		<Shell d={d} glow={glow} eyebrow={`Week ${spec.week} · the slate on paper`} note="Bar: whose position groups lead · numbers: pairings with the edge, of 8 · graded on per-play stats" season={spec.season} through={spec.through}>
 			<div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", width: d.innerW, marginTop: d.tall ? 22 : 10 }}>
 				<div style={{ display: "flex", fontFamily: "Anton", fontSize: d.tall ? 96 : 54, lineHeight: 1, color: WHITE, ...caps }}>{`Week ${spec.week} matchups`}</div>
 				<div style={label({ fontSize: d.tall ? 20 : 15, letterSpacing: 3, paddingBottom: d.tall ? 12 : 6 })}>Away · Home</div>
@@ -288,7 +295,7 @@ export function renderBoardCard(spec: BoardCardSpec): ReactElement {
 		</div>
 	)
 	return (
-		<Shell d={d} glow={glow} eyebrow={`${spec.season} season · through Week ${spec.through}`} note={`League ranks out of ${spec.n}, 1 is best · light is top of the league, rose is bottom · Data: nflverse, CC BY 4.0`}>
+		<Shell d={d} glow={glow} eyebrow={`${spec.season} season · through Week ${spec.through}`} note={`Ranks of ${spec.n}, 1 is best · each column is the average rank of that group's game stats`} season={spec.season} through={spec.through}>
 			<div style={{ display: "flex", flexDirection: "column", marginTop: d.tall ? 22 : 10 }}>
 				<div style={{ display: "flex", fontFamily: "Anton", fontSize: fit(title, d.innerW, d.tall ? 92 : 52, 36), lineHeight: 1, color: WHITE, ...caps }}>{title}</div>
 				<div style={label({ fontSize: d.tall ? 21 : 15, letterSpacing: 3, marginTop: 6, color: BRIGHT })}>{sub}</div>
