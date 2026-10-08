@@ -1,7 +1,7 @@
 name: Refresh Lab data
 
 # Every Monday (and Tuesday, in case the data was late) this pulls the latest nflverse play-by-play and rebuilds
-# everything the Lab shows: the game replays, the fourth-down grades, the scouting numbers and the win-probability
+# everything the Lab shows: the game replays, the scouting numbers, the position-group matchups and the win-probability
 # clips. It then adds the Lab's pieces to any postgame draft waiting in Studio. Everything is committed in one
 # push, only if something changed; a commit to main triggers the normal Vercel deploy, where the data checks in
 # tests/ run before the site is built.
@@ -49,11 +49,12 @@ jobs:
       - name: Build game replays
         run: python scripts/lab/build_lab_data.py --season "$SEASON" --team LV --out data/lab/season.json
 
-      - name: Build fourth-down grades
-        run: python scripts/lab/build_fourth_down.py --season "$SEASON" --team LV --out data/lab/fourth-down.json
-
       - name: Build scouting numbers
         run: python scripts/lab/build_scouting.py --season "$SEASON" --out data/lab/scouting.json
+
+      - name: Build position-group matchups
+        # Grades, coaches, injuries and the coming slate for every team. Needs the coaches and spreads file as well.
+        run: python scripts/lab/build_units.py --season "$SEASON" --out data/lab/units.json
 
       - uses: actions/setup-node@v4
         with:
