@@ -3,6 +3,8 @@
 import * as React from "react"
 
 import Link from "@/components/SiteLink"
+import ShareCard from "@/components/lab/ShareCard"
+import { BOARD_SHARE_PATH, BOARD_SORTS, MATCHUP_SHARE_PATH, boardQuery, matchupQuery } from "@/lib/lab/matchupShare"
 import { GROUPS, GROUP_ORDER, type BoardRow, type GroupKey, heat, matchupPath, ordinal } from "@/lib/lab/unitsKit"
 
 type TeamLite = { abbr: string; nick: string; name: string; division: string; conference: string; color: string }
@@ -11,6 +13,8 @@ type Props = {
 	rows: BoardRow[]
 	teams: TeamLite[]
 	n: number
+	/** Changes when the data does, so a new share card is fetched. */
+	stamp: number
 }
 
 type SortKey = "composite" | "off" | "def" | GroupKey
@@ -28,7 +32,7 @@ function cellStyle(rank: number | null | undefined, n: number): React.CSSPropert
 
 const rankOf = (r: BoardRow, key: SortKey): number => (key === "composite" ? r.compositeRank : key === "off" ? (r.off ?? 99) : key === "def" ? (r.def ?? 99) : r.groups[key])
 
-export default function TeamBoard({ rows, teams, n }: Props) {
+export default function TeamBoard({ rows, teams, n, stamp }: Props) {
 	const [sort, setSort] = React.useState<SortKey>("composite")
 	const [filter, setFilter] = React.useState<string>(ALL)
 	const [left, setLeft] = React.useState("LV")
@@ -36,6 +40,17 @@ export default function TeamBoard({ rows, teams, n }: Props) {
 
 	const info = React.useMemo(() => new Map(teams.map((t) => [t.abbr, t])), [teams])
 	const filters = React.useMemo(() => [ALL, "AFC", "NFC", ...Array.from(new Set(teams.map((t) => t.division)))], [teams])
+
+	// A shared link carries the sort, the group of teams and the team in the query; this reads them once the page is up.
+	React.useEffect(() => {
+		const q = new URLSearchParams(window.location.search)
+		const sortParam = q.get("sort")
+		const show = q.get("show")
+		const team = q.get("team")
+		if (sortParam && (BOARD_SORTS as readonly string[]).includes(sortParam)) setSort(sortParam as SortKey)
+		if (show && filters.includes(show) && show !== ALL) setFilter(show)
+		if (team && info.has(team)) setLeft(team)
+	}, [filters, info])
 	const shown = rows
 		.filter((r) => {
 			const t = info.get(r.abbr)
@@ -45,10 +60,12 @@ export default function TeamBoard({ rows, teams, n }: Props) {
 		.sort((a, b) => rankOf(a, sort) - rankOf(b, sort) || a.abbr.localeCompare(b.abbr))
 
 	const options = [...teams].sort((a, b) => a.name.localeCompare(b.name))
+	const shareQuery = boardQuery({ sort, show: filter === ALL ? null : filter, team: left })
+	const nick = (abbr: string) => info.get(abbr)?.nick ?? abbr
 	const pair = left && right && left !== right ? matchupPath(left, right) : null
 
 	const head = (key: SortKey, label: string, sub?: string) => (
-		<th scope="col" className="p-0 text-center align-bottom" aria-sort={sort === key ? "ascending" : "none"}>
+		<th key={key} scope="col" className="p-0 text-center align-bottom" aria-sort={sort === key ? "ascending" : "none"}>
 			<button
 				type="button"
 				onClick={() => setSort(key)}
@@ -99,15 +116,36 @@ export default function TeamBoard({ rows, teams, n }: Props) {
 						</select>
 					</label>
 					{pair ? (
-						<Link href={pair} className="inline-flex min-h-[44px] items-center rounded-lg bg-lab-ink px-5 text-sm font-bold text-lab-page transition hover:opacity-90">
-							See the matchup &rarr;
-						</Link>
+						<>
+							<Link href={pair} className="inline-flex min-h-[44px] items-center rounded-lg bg-lab-ink px-5 text-sm font-bold text-lab-page transition hover:opacity-90">
+								See the matchup &rarr;
+							</Link>
+							<ShareCard
+								target={{ type: "matchup", query: matchupQuery(left, right, "overview"), sharePath: MATCHUP_SHARE_PATH, name: `${nick(left)} vs ${nick(right)}`, file: `raiders-rundown-${left.toLowerCase()}-vs-${right.toLowerCase()}-matchup` }}
+								stamp={stamp}
+								label="Share matchup"
+								text={`${nick(left)} vs ${nick(right)}, position group by position group.`}
+								alt={`${nick(left)} vs ${nick(right)}: how the position groups stack up, with a radar of both teams`}
+							/>
+						</>
 					) : (
 						<span className="inline-flex min-h-[44px] items-center text-xs text-lab-muted">Pick two teams to see them side by side.</span>
 					)}
 				</div>
 			</div>
 
+			<div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+				<p className="m-0 text-xs text-lab-muted">
+					Sorted by {sort === "composite" ? "overall grade" : sort === "off" ? "offense" : sort === "def" ? "defense" : GROUPS[sort].label.toLowerCase()}
+					{filter === ALL ? "" : `, ${filter} only`}.
+				</p>
+				<ShareCard
+					target={{ type: "board", query: shareQuery, sharePath: BOARD_SHARE_PATH, name: filter === ALL ? "The league board" : `The ${filter} board`, file: `raiders-rundown-position-groups${filter === ALL ? "" : `-${filter.toLowerCase().replace(/\s+/g, "-")}`}${sort === "composite" ? "" : `-${sort}`}` }}
+					stamp={stamp}
+					text={`How ${filter === ALL ? "all 32 NFL teams" : `the ${filter}`} stack up, position group by position group.`}
+					alt={`${filter === ALL ? "Every team" : `The ${filter}`} ranked at each position group, as a heat map`}
+				/>
+			</div>
 			<div className="overflow-x-auto rounded-2xl border border-lab-line">
 				<table className="w-full min-w-[46rem] border-collapse text-sm">
 					<caption className="sr-only">Every team ranked at each position group. 1st is best. Select a column heading to sort by it.</caption>

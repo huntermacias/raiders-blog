@@ -14,7 +14,9 @@
 //   /api/og?type=last[&kind=chart|wins|fifths|checklist|season|bottom][&size=wide|tall][&stat=def.turnovers]
 //           [&scope=all][&team=KC][&po=made|missed][&years=2016,2021][&pin=2016-LV][&y=wins]
 //           (will it last?: a card for each part of the page; wide 1200x630 or tall 1080x1350)
-//   /api/og?type=matchup&a=LV&b=NE[&size=wide|tall]   (two teams' position groups, pairing by pairing)
+//   /api/og?type=matchup&a=LV&b=NE[&view=overview|pairs|tape|style|coaches|injuries][&size=wide|tall]   (two teams' position groups: a card for each part of the matchup page)
+//   /api/og?type=slate[&size=wide|tall]   (the week's games, how each team's position groups line up)
+//   /api/og?type=board[&sort=composite|off|def|qb|ol|rec|run|rush|rund|cov][&show=AFC|NFC|<division>][&team=XX][&size=wide|tall]   (the league's position-group heat map)
 //   /api/og?type=twins[&size=wide|tall][&mode=off|def][&twin=2022-JAX]   (season twins: the Raiders' closest team-season)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
@@ -245,9 +247,11 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		twin: first(query.twin),
 		a: first(query.a),
 		b: first(query.b),
+		sort: first(query.sort),
+		show: first(query.show),
 	})
 	if (insight) return insight
-	if (type === "scout" || type === "last" || type === "twins" || type === "matchup") return null
+	if (type === "scout" || type === "last" || type === "twins" || type === "matchup" || type === "slate" || type === "board") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -287,7 +291,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "matchup") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

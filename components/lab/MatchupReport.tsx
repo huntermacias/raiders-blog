@@ -1,6 +1,8 @@
 import Link from "@/components/SiteLink"
+import ShareCard from "@/components/lab/ShareCard"
 import { getUnits } from "@/lib/lab/data"
-import { namesFor } from "@/lib/lab/units"
+import { MATCHUP_SHARE_PATH, VIEW_NAMES, type MatchupView, matchupQuery, viewText } from "@/lib/lab/matchupShare"
+import { matchupFor, namesFor } from "@/lib/lab/units"
 import {
 	GROUPS,
 	GROUP_ORDER,
@@ -361,12 +363,15 @@ function Injuries({ a, b, data, names, theme, week }: { a: string; b: string; da
 	)
 }
 
-function Head({ children, id, sub }: { children: React.ReactNode; id: string; sub?: string }) {
+function Head({ children, id, sub, action }: { children: React.ReactNode; id: string; sub?: string; action?: React.ReactNode }) {
 	return (
 		<div className="mb-4">
-			<h2 id={id} className="m-0 scroll-mt-6 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
-				{children}
-			</h2>
+			<div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+				<h2 id={id} className="m-0 scroll-mt-6 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+					{children}
+				</h2>
+				{action}
+			</div>
 			{sub ? <p className="m-0 mt-1 max-w-2xl text-sm leading-relaxed text-lab-muted">{sub}</p> : null}
 		</div>
 	)
@@ -380,6 +385,21 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 	const names = namesFor(a, b)
 	const rows = matchupRows(data, a, b)
 	const g = Math.min(ta.g, tb.g)
+	const stamp = Date.parse(data.generatedAt) || 0
+	const line = matchupFor(a, b).line
+	// Each part of the page has a Share button for its own card; the short version on a scouting page has none.
+	const share = (view: MatchupView) => {
+		if (compact) return undefined
+		const words = viewText(view, { a: names[a], b: names[b] }, line)
+		return (
+			<ShareCard
+				target={{ type: "matchup", query: matchupQuery(a, b, view), sharePath: MATCHUP_SHARE_PATH, name: `${VIEW_NAMES[view]}: ${names[a]} vs ${names[b]}`, file: `raiders-rundown-${a.toLowerCase()}-vs-${b.toLowerCase()}-${view}` }}
+				stamp={stamp}
+				text={words.text}
+				alt={words.alt}
+			/>
+		)
+	}
 
 	return (
 		<div className="space-y-12">
@@ -395,7 +415,7 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 
 			{compact ? null : (
 				<section aria-labelledby="pairs-heading">
-					<Head id="pairs-heading" sub="Each offense against the other team's defense, one position group at a time. Circle: the offense. Diamond: the defense. Whoever sits further right wins that pairing.">
+					<Head id="pairs-heading" action={share("pairs")} sub="Each offense against the other team's defense, one position group at a time. Circle: the offense. Diamond: the defense. Whoever sits further right wins that pairing.">
 						Position group by position group
 					</Head>
 					<PairColumns rows={rows} data={data} a={a} b={b} names={names} theme={theme} week={week} />
@@ -403,7 +423,7 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 			)}
 
 			<section aria-labelledby="tape-heading">
-				<Head id="tape-heading" sub="Every unit on its own, side by side.">
+				<Head id="tape-heading" action={share("tape")} sub="Every unit on its own, side by side.">
 					Tale of the tape
 				</Head>
 				<Tape a={a} b={b} data={data} names={names} theme={theme} />
@@ -418,21 +438,21 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 			) : (
 				<>
 					<section aria-labelledby="coach-heading">
-						<Head id="coach-heading" sub="Records are regular-season games since 1999, against the spread as listed by the games file. A new coach has no history here yet.">
+						<Head id="coach-heading" action={share("coaches")} sub="Records are regular-season games since 1999, against the spread as listed by the games file. A new coach has no history here yet.">
 							The coaches
 						</Head>
 						<Coaching a={a} b={b} data={data} names={names} theme={theme} />
 					</section>
 
 					<section aria-labelledby="style-heading">
-						<Head id="style-heading" sub="Not good or bad, just the style. Ranks go from the highest rate down, so a 1st means the most of it in the league.">
+						<Head id="style-heading" action={share("style")} sub="Not good or bad, just the style. Ranks go from the highest rate down, so a 1st means the most of it in the league.">
 							How each team plays
 						</Head>
 						<StyleTable a={a} b={b} data={data} names={names} theme={theme} />
 					</section>
 
 					<section aria-labelledby="injury-heading">
-						<Head id="injury-heading" sub="The latest injury report for each team, sorted by position group. A starter averaged more than half the team's snaps in the games he played.">
+						<Head id="injury-heading" action={share("injuries")} sub="The latest injury report for each team, sorted by position group. A starter averaged more than half the team's snaps in the games he played.">
 							Who is missing
 						</Head>
 						<Injuries a={a} b={b} data={data} names={names} theme={theme} week={week} />

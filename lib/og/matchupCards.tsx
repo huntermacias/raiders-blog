@@ -1,54 +1,229 @@
-// The share card for a position-group matchup (/lab/matchup/lv-vs-ne): both teams' units against each other, eight
-// pairings in all, each drawn as a circle (the offense) and a diamond (the defense) on a line from the weakest unit
-// in the league to the best.
+// The share cards for a position-group matchup (/lab/matchup/lv-vs-ne). One matchup has six cards, one for each part
+// of the page, each in two sizes:
+//
+//   overview   both teams' seven position groups on one radar, the score on paper and the biggest mismatches
+//   pairs      each offense against the other defense, eight pairings, a circle (offense) and a diamond (defense)
+//   tape       the seven units side by side, bars growing out from the middle
+//   style      how each team likes to play (not good or bad, just the style)
+//   coaches    the two head coaches: records, against the spread, head to head
+//   injuries   who is on the report, starters first
 //
 //   wide  1200x630   the link preview (X, Facebook, iMessage, Slack, Discord)
 //   tall  1080x1350  the picture itself, 4:5, for Instagram, X in the feed and phone screens
 //
 // buildMatchupSpec turns the tables into a small plain spec (no network, so it can be tested from fixed data) and
-// renderMatchupCard turns the spec into JSX. See lib/og/kit.tsx for the Satori notes: inline styles only, every
-// element with more than one child is display:flex, and no text inside an <svg>.
+// renderMatchupCard (lib/og/matchupViews.tsx) turns the spec into JSX. See lib/og/kit.tsx for the Satori notes.
 
 import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { SIZE_PIXELS, type ShareSize } from "../lab/lastShare"
-import { type UnitsData, headline, matchupRows, ordinal, paperEdge, tally } from "../lab/unitsKit"
+import type { MatchupView } from "../lab/matchupShare"
+import {
+	type AtsRec,
+	type Coaching,
+	type GroupKey,
+	type InjuryPlayer,
+	type MatchupRow,
+	type Rec,
+	type UnitTeam,
+	type UnitsData,
+	GROUPS,
+	GROUP_ORDER,
+	STYLE,
+	STYLE_ORDER,
+	atsText,
+	boardRows,
+	edgeSentence,
+	formatStyle,
+	games,
+	headline,
+	isGameStatus,
+	kickoffText,
+	marketLine,
+	matchupRows,
+	paperEdge,
+	recText,
+	share,
+	tally,
+	teamCount,
+	tierOf,
+	topEdges,
+} from "../lab/unitsKit"
 import { teamByAbbr } from "../nfl"
-import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
+import { GOLD, SILVER, WHITE, accent } from "./kit"
+import { renderMatchupView } from "./matchupViews"
 
-export type MatchupCardRow = {
+export type TeamSide = 0 | 1
+
+export type CardTeam = {
+	abbr: string
+	nick: string
+	name: string
+	color: string
+	record: string
+	/** League rank on offense and on defense, per play (1 is best), and the rank of the mean of the seven groups. */
+	off: number | null
+	def: number | null
+	overall: number
+}
+
+export type PairingRow = {
 	id: string
 	label: string
 	/** The team with the ball: 0 is the first team, 1 the second. */
-	attacker: 0 | 1
+	attacker: TeamSide
 	attackRank: number
 	defendRank: number
 	/** 0 to 100, further right is better. */
 	attackScore: number
 	defendScore: number
 	/** Who wins the pairing: 0, 1, or null when it is even. */
-	winner: 0 | 1 | null
+	winner: TeamSide | null
 	big: boolean
 }
 
-export type MatchupCardSpec = {
+export type Spoke = { key: GroupKey; label: string; off: boolean; ranks: [number, number]; a: number; b: number }
+export type Callout = { team: TeamSide; big: boolean; text: string }
+export type TapeGroup = { key: GroupKey; label: string; off: boolean; a: { score: number; rank: number }; b: { score: number; rank: number }; winner: TeamSide | null; big: boolean }
+export type StyleSide = { text: string; rank: number; pct: number }
+export type StyleRow = { key: string; label: string; off: boolean; a: StyleSide | null; b: StyleSide | null }
+export type CoachCell = { main: string; sub: string | null }
+export type CoachRow = { label: string; a: CoachCell; b: CoachCell; better: TeamSide | null }
+export type Meeting = { text: string; won: boolean | null }
+export type Hurt = { name: string; pos: string; group: string; status: string; injury: string | null; starter: boolean }
+export type HurtSide = { starters: number; note: string | null; players: Hurt[]; more: number; empty: string }
+
+type Base = {
 	type: "matchup"
 	size: ShareSize
-	teams: [{ abbr: string; nick: string; color: string; record: string }, { abbr: string; nick: string; color: string; record: string }]
+	teams: [CardTeam, CardTeam]
 	line: string
 	week: number | null
-	/** Pairings with the edge for each team. */
+	/** "Raiders at Patriots" when the two meet on the coming slate. */
+	game: string | null
+	kickoff: string | null
+	market: string | null
+	/** Pairings with the edge for each team, out of eight. */
 	edges: [number, number]
 	/** Which team the position groups favor overall, or null when they cancel out. */
-	lead: 0 | 1 | null
-	rows: MatchupCardRow[]
+	lead: TeamSide | null
 	season: number
+	/** The week the ranks run through. */
+	through: number
+	n: number
 }
 
-const colorOf = (abbr: string): string => (abbr === "LV" ? WHITE : accent(opponentColors(abbr).dark))
+export type MatchupCardSpec = Base &
+	(
+		| { view: "overview"; radar: Spoke[]; callouts: Callout[]; verdict: string }
+		| { view: "pairs"; rows: PairingRow[] }
+		| { view: "tape"; groups: TapeGroup[] }
+		| { view: "style"; rows: StyleRow[] }
+		| { view: "coaches"; coaches: [{ name: string }, { name: string }]; rows: CoachRow[]; meetings: Meeting[]; note: string | null }
+		| { view: "injuries"; sides: [HurtSide, HurtSide] }
+	)
 
-export function buildMatchupSpec(data: UnitsData, a: string, b: string, size: ShareSize): MatchupCardSpec | null {
+// ---- colors -----------------------------------------------------------------------------------------------
+
+const hexOf = (c: string): [number, number, number] => {
+	const m = /^#([0-9a-f]{6})$/i.exec(c)
+	if (!m) return [167, 174, 179]
+	const n = parseInt(m[1], 16)
+	return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+const apart = (x: string, y: string): number => {
+	const [a, b] = [hexOf(x), hexOf(y)]
+	return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+}
+
+/** Each team's color on the dark card. The Raiders are silver-white; two teams in nearly the same color get a different second color. */
+export function cardColors(a: string, b: string): [string, string] {
+	const of = (abbr: string) => (abbr === "LV" ? WHITE : accent(opponentColors(abbr).dark))
+	const first = of(a)
+	let second = of(b)
+	if (apart(first, second) < 70) second = apart(first, GOLD) < 70 ? SILVER : GOLD
+	return [first, second]
+}
+
+// ---- building ---------------------------------------------------------------------------------------------
+
+const RADAR_LABEL: Record<GroupKey, string> = { qb: "QB", ol: "O-line", rec: "Receivers", run: "Run game", rush: "Pass rush", rund: "Run D", cov: "Coverage" }
+
+const round1 = (v: number) => Math.round(v * 10) / 10
+const pct = (r: { w: number; l: number }) => (r.w + r.l ? Math.round((r.w / (r.w + r.l)) * 100) : null)
+
+/** The better record of two, as 0 or 1, or null when either has no games or they match. */
+function betterShare(a: Rec | AtsRec, b: Rec | AtsRec): TeamSide | null {
+	const sa = share({ w: a.w, l: a.l, t: "t" in a ? a.t : 0 })
+	const sb = share({ w: b.w, l: b.l, t: "t" in b ? b.t : 0 })
+	if (sa === null || sb === null || Math.abs(sa - sb) < 0.005) return null
+	return sa > sb ? 0 : 1
+}
+
+function coachRows(ta: UnitTeam, tb: UnitTeam, a: string, b: string, size: ShareSize): { rows: CoachRow[]; meetings: Meeting[]; note: string | null } | null {
+	const ca = ta.coach
+	const cb = tb.coach
+	if (!ca || !cb) return null
+	const none: CoachCell = { main: "—", sub: null }
+	const recCell = (r: Rec, sub: string | null): CoachCell => (games(r) ? { main: recText(r), sub } : none)
+	const atsCell = (r: AtsRec): CoachCell => (games(r) ? { main: atsText(r), sub: pct(r) === null ? null : `${pct(r)}% cover` } : none)
+	const career = (c: Coaching, t: UnitTeam): CoachCell => recCell(c.career, c.career.n <= t.g ? "first year" : `${c.career.n} games`)
+	const withTeam = (c: Coaching): CoachCell => recCell(c.withTeam, `since ${c.withTeam.since}`)
+	const meet = (t: UnitTeam, other: string): CoachCell => {
+		const v = t.coach!.vs[other]
+		return v && v.coachMeet.n ? { main: recText(v.coachMeet), sub: null } : { main: "Not met", sub: null }
+	}
+	const series = (t: UnitTeam, other: string): CoachCell => {
+		const v = t.coach!.vs[other]
+		return v && v.teamMeet.n ? { main: recText(v.teamMeet), sub: `${v.teamMeet.n} games` } : none
+	}
+	const meetBetter = (): TeamSide | null => {
+		const va = ca.vs[b]
+		return va && va.coachMeet.n ? betterShare(va.coachMeet, invert(va.coachMeet)) : null
+	}
+	const seriesBetter = (): TeamSide | null => {
+		const va = ca.vs[b]
+		return va && va.teamMeet.n ? betterShare(va.teamMeet, invert(va.teamMeet)) : null
+	}
+	const all: CoachRow[] = [
+		{ label: "Career record", a: career(ca, ta), b: career(cb, tb), better: betterShare(ca.career, cb.career) },
+		{ label: "With this team", a: withTeam(ca), b: withTeam(cb), better: betterShare(ca.withTeam, cb.withTeam) },
+		{ label: "Against the spread, this season", a: atsCell(ca.ats.season), b: atsCell(cb.ats.season), better: betterShare(ca.ats.season, cb.ats.season) },
+		{ label: "Against the spread, career", a: atsCell(ca.ats.career), b: atsCell(cb.ats.career), better: betterShare(ca.ats.career, cb.ats.career) },
+		{ label: "As an underdog", a: atsCell(ca.ats.underdog), b: atsCell(cb.ats.underdog), better: betterShare(ca.ats.underdog, cb.ats.underdog) },
+		{ label: "As a favorite", a: atsCell(ca.ats.favorite), b: atsCell(cb.ats.favorite), better: betterShare(ca.ats.favorite, cb.ats.favorite) },
+		{ label: "Coming off a bye", a: recCell(ca.bye, null), b: recCell(cb.bye, null), better: betterShare(ca.bye, cb.bye) },
+		{ label: "Coach against coach", a: meet(ta, b), b: meet(tb, a), better: meetBetter() },
+		{ label: "Team against team since 1999", a: series(ta, b), b: series(tb, a), better: seriesBetter() },
+	]
+	const wide = ["Career record", "With this team", "Against the spread, this season", "Against the spread, career", "Coach against coach", "Team against team since 1999"]
+	const rows = size === "tall" ? all : all.filter((r) => wide.includes(r.label))
+	const recent = ca.vs[b]?.recent ?? []
+	const meetings: Meeting[] = recent.slice(0, 5).map((m) => ({ text: `${m.pf}-${m.pa}  ${m.season} Wk ${m.week}`, won: m.pf === m.pa ? null : m.pf > m.pa }))
+	return { rows, meetings, note: null }
+}
+
+const invert = (r: Rec): Rec => ({ w: r.l, l: r.w, t: r.t })
+
+const STATUS_ORDER = ["Out", "Doubtful", "Questionable"]
+
+function hurtSide(t: UnitTeam, week: number | null, size: ShareSize): HurtSide {
+	const max = size === "tall" ? 10 : 6
+	const rank = (p: InjuryPlayer) => (isGameStatus(p.status) ? 0 : 10) + (p.starter ? 0 : 3) + Math.max(0, STATUS_ORDER.indexOf(p.status))
+	const sorted = [...t.injuries.players].sort((x, y) => rank(x) - rank(y))
+	const w = t.injuries.week
+	const note = w === null ? "No report yet" : week !== null && w < week ? `Week ${w} report · Week ${week} not out` : `Week ${w} report`
+	return {
+		starters: t.injuries.players.filter((p) => p.starter && isGameStatus(p.status)).length,
+		note,
+		players: sorted.slice(0, max).map((p) => ({ name: p.name, pos: p.pos, group: GROUPS[p.group].label, status: p.status, injury: p.injury, starter: p.starter })),
+		more: Math.max(0, sorted.length - max),
+		empty: w === null ? "No report yet." : "Nobody at a tracked position is on the report.",
+	}
+}
+
+export function buildMatchupSpec(data: UnitsData, a: string, b: string, size: ShareSize, view: MatchupView = "overview"): MatchupCardSpec | null {
 	const ta = data.teams[a]
 	const tb = data.teams[b]
 	if (!ta || !tb || a === b) return null
@@ -56,140 +231,108 @@ export function buildMatchupSpec(data: UnitsData, a: string, b: string, size: Sh
 	if (!rows.length) return null
 	const names = { [a]: teamByAbbr(a).nick, [b]: teamByAbbr(b).nick }
 	const edge = paperEdge(rows, a)
-	const team = (abbr: string, t: typeof ta) => ({ abbr, nick: teamByAbbr(abbr).nick, color: colorOf(abbr), record: `${t.w}-${t.l}${t.t ? `-${t.t}` : ""}` })
-	return {
+	const [ca, cb] = cardColors(a, b)
+	const board = new Map(boardRows(data).map((r) => [r.abbr, r.compositeRank]))
+	const team = (abbr: string, t: UnitTeam, color: string): CardTeam => ({
+		abbr,
+		nick: teamByAbbr(abbr).nick,
+		name: teamByAbbr(abbr).name,
+		color,
+		record: recText({ w: t.w, l: t.l, t: t.t }),
+		off: t.overall.off?.rank ?? null,
+		def: t.overall.def?.rank ?? null,
+		overall: board.get(abbr) ?? 0,
+	})
+	const slate = data.slate?.games.find((g) => (g.home === a && g.away === b) || (g.home === b && g.away === a)) ?? null
+	const lead: TeamSide | null = Math.abs(edge) < 6 ? null : edge > 0 ? 0 : 1
+	const n = teamCount(data)
+	const base: Base = {
 		type: "matchup",
 		size,
-		teams: [team(a, ta), team(b, tb)],
+		teams: [team(a, ta, ca), team(b, tb, cb)],
 		line: headline(rows, a, b, names),
-		week: data.slate?.games.some((g) => (g.home === a && g.away === b) || (g.home === b && g.away === a)) ? data.slate.week : null,
+		week: slate && data.slate ? data.slate.week : null,
+		game: slate ? `${names[slate.away]} at ${names[slate.home]}` : null,
+		kickoff: slate ? kickoffText(slate.day, slate.time) : null,
+		market: slate ? marketLine(slate, names) : null,
 		edges: [tally(rows, a).edges, tally(rows, b).edges],
-		lead: Math.abs(edge) < 6 ? null : edge > 0 ? 0 : 1,
+		lead,
 		season: data.season,
-		rows: rows.map((r) => ({
-			id: r.pair.id,
-			label: r.pair.label,
-			attacker: r.attacker === a ? 0 : 1,
-			attackRank: r.attack.rank,
-			defendRank: r.defend.rank,
-			attackScore: Math.round(r.attack.score * 10) / 10,
-			defendScore: Math.round(r.defend.score * 10) / 10,
-			winner: r.tier === "even" ? null : (r.edge > 0 ? r.attacker : r.defender) === a ? 0 : 1,
-			big: r.tier === "big",
-		})),
+		through: data.week,
+		n,
 	}
+	const sideIdx = (abbr: string): TeamSide => (abbr === a ? 0 : 1)
+
+	if (view === "pairs") {
+		return {
+			...base,
+			view,
+			rows: rows.map((r) => ({
+				id: r.pair.id,
+				label: r.pair.label,
+				attacker: sideIdx(r.attacker),
+				attackRank: r.attack.rank,
+				defendRank: r.defend.rank,
+				attackScore: round1(r.attack.score),
+				defendScore: round1(r.defend.score),
+				winner: r.tier === "even" ? null : sideIdx(r.edge > 0 ? r.attacker : r.defender),
+				big: r.tier === "big",
+			})),
+		}
+	}
+
+	if (view === "tape") {
+		const groups: TapeGroup[] = []
+		for (const key of GROUP_ORDER) {
+			const ga = ta.groups[key]
+			const gb = tb.groups[key]
+			if (ga.score === null || gb.score === null) continue
+			const diff = ga.score - gb.score
+			const tier = tierOf(Math.abs(diff))
+			groups.push({ key, label: GROUPS[key].label, off: GROUPS[key].side === "off", a: { score: round1(ga.score), rank: ga.rank }, b: { score: round1(gb.score), rank: gb.rank }, winner: tier === "even" ? null : diff > 0 ? 0 : 1, big: tier === "big" })
+		}
+		return groups.length ? { ...base, view, groups } : null
+	}
+
+	if (view === "style") {
+		const side = (t: UnitTeam, off: boolean, key: string): StyleSide | null => {
+			const m = (off ? t.style.off : t.style.def)[key]
+			return m ? { text: formatStyle(key, m.v), rank: m.rank, pct: n < 2 ? 0.5 : (n - m.rank) / (n - 1) } : null
+		}
+		const out: StyleRow[] = []
+		for (const off of [true, false]) {
+			for (const key of off ? STYLE_ORDER.off : STYLE_ORDER.def) out.push({ key, label: STYLE[key].label, off, a: side(ta, off, key), b: side(tb, off, key) })
+		}
+		return out.some((r) => r.a || r.b) ? { ...base, view, rows: out } : null
+	}
+
+	if (view === "coaches") {
+		const c = coachRows(ta, tb, a, b, size)
+		return c ? { ...base, view, coaches: [{ name: ta.coach!.name }, { name: tb.coach!.name }], rows: c.rows, meetings: c.meetings, note: c.note } : null
+	}
+
+	if (view === "injuries") {
+		return { ...base, view, sides: [hurtSide(ta, base.week, size), hurtSide(tb, base.week, size)] }
+	}
+
+	const radar: Spoke[] = GROUP_ORDER.map((key) => ({
+		key,
+		label: RADAR_LABEL[key],
+		off: GROUPS[key].side === "off",
+		ranks: [ta.groups[key].rank, tb.groups[key].rank],
+		a: ta.groups[key].score === null ? 0.5 : round1(ta.groups[key].score!) / 100,
+		b: tb.groups[key].score === null ? 0.5 : round1(tb.groups[key].score!) / 100,
+	}))
+	const picks: Array<{ team: TeamSide; r: MatchupRow }> = [...topEdges(rows, a, 3).map((r) => ({ team: 0 as TeamSide, r })), ...topEdges(rows, b, 3).map((r) => ({ team: 1 as TeamSide, r }))]
+		.sort((x, y) => Math.abs(y.r.edge) - Math.abs(x.r.edge))
+		.slice(0, 3)
+	const callouts: Callout[] = picks.map(({ team: side, r }) => ({ team: side, big: r.tier === "big", text: edgeSentence(r, side === 0 ? a : b, names) }))
+	const verdict = lead === null ? "A toss-up on paper" : `${names[lead === 0 ? a : b]} hold the edge on paper`
+	return { ...base, view: "overview", radar, callouts, verdict }
 }
 
 export const matchupCardSize = (spec: Pick<MatchupCardSpec, "size">) => SIZE_PIXELS[spec.size]
 
-// ---- drawing -----------------------------------------------------------------------------------------------
-
-const label = (extra: Record<string, string | number> = {}) => ({ display: "flex", fontFamily: "Oswald", fontWeight: 500, letterSpacing: 4, color: DIM, ...caps, ...extra })
-
-/** The Anton size (up to `big`) at which `text` fits `maxW` on one line. */
-const fit = (text: string, maxW: number, big: number): number => Math.max(34, Math.min(big, Math.floor(maxW / (text.length * 0.5))))
-
-function Rail({ w, h, row, colors }: { w: number; h: number; row: MatchupCardRow; colors: [string, string] }) {
-	const atkColor = colors[row.attacker]
-	const defColor = colors[row.attacker === 0 ? 1 : 0]
-	const pad = h * 0.6
-	const x = (s: number) => pad + ((w - pad * 2) * Math.max(2, Math.min(98, s))) / 100
-	const lo = Math.min(row.attackScore, row.defendScore)
-	const hi = Math.max(row.attackScore, row.defendScore)
-	const winColor = row.attackScore >= row.defendScore ? atkColor : defColor
-	const r = h * 0.34
-	const cy = h / 2
-	const dx = x(row.defendScore)
-	return (
-		<svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-			<rect x={pad} y={cy - 3} width={w - pad * 2} height={6} rx={3} fill={LINE} />
-			<rect x={x(lo)} y={cy - 3} width={Math.max(0, x(hi) - x(lo))} height={6} rx={3} fill={rgba(winColor, 0.65)} />
-			<polygon points={`${dx},${cy - r * 1.15} ${dx + r * 1.15},${cy} ${dx},${cy + r * 1.15} ${dx - r * 1.15},${cy}`} fill={defColor} stroke="#0a0a0b" strokeWidth={3} />
-			<circle cx={x(row.attackScore)} cy={cy} r={r} fill={atkColor} stroke="#0a0a0b" strokeWidth={3} />
-		</svg>
-	)
-}
-
-function PairRow({ row, spec, w, tall }: { row: MatchupCardRow; spec: MatchupCardSpec; w: number; tall: boolean }) {
-	const colors: [string, string] = [spec.teams[0].color, spec.teams[1].color]
-	const atkColor = colors[row.attacker]
-	const defColor = colors[row.attacker === 0 ? 1 : 0]
-	const win = row.winner === null ? null : colors[row.winner]
-	const verdict = row.winner === null ? "Even" : `${spec.teams[row.winner].nick} ${row.big ? "big edge" : "edge"}`
-	const side = tall ? 96 : 66
-	const rank = { display: "flex", width: side, fontFamily: "Oswald", fontWeight: 600, fontSize: tall ? 27 : 20, letterSpacing: 0.5 }
-	return (
-		<div style={{ display: "flex", flexDirection: "column", width: w }}>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: tall ? 27 : 19, letterSpacing: 1, color: WHITE, ...caps }}>{row.label}</div>
-				<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: tall ? 21 : 15, letterSpacing: 3, color: win ?? DIM, ...caps }}>{verdict}</div>
-			</div>
-			<div style={{ display: "flex", alignItems: "center" }}>
-				<div style={{ ...rank, color: atkColor }}>{ordinal(row.attackRank)}</div>
-				<Rail w={w - side * 2} h={tall ? 44 : 30} row={row} colors={colors} />
-				<div style={{ ...rank, color: defColor, justifyContent: "flex-end" }}>{ordinal(row.defendRank)}</div>
-			</div>
-		</div>
-	)
-}
-
 export function renderMatchupCard(spec: MatchupCardSpec): ReactElement {
-	const { width: w, height: h } = SIZE_PIXELS[spec.size]
-	const tall = spec.size === "tall"
-	const padX = tall ? 66 : 56
-	const padTop = tall ? 64 : 34
-	const padBottom = tall ? 54 : 26
-	const innerW = w - padX * 2
-	const [A, B] = spec.teams
-	const title = `${A.nick} vs ${B.nick}`
-	const titleSize = fit(title, innerW, tall ? 124 : 88)
-	const glow = spec.lead === null ? SILVER : spec.teams[spec.lead].color
-	const colGap = 44
-	const colW = tall ? innerW : Math.floor((innerW - colGap) / 2)
-	const column = (team: 0 | 1) => (
-		<div key={team} style={{ display: "flex", flexDirection: "column", width: colW }}>
-			<div style={{ display: "flex", alignItems: "center", marginBottom: tall ? 12 : 6 }}>
-				<div style={{ display: "flex", width: tall ? 16 : 13, height: tall ? 16 : 13, borderRadius: 20, backgroundColor: spec.teams[team].color, marginRight: 12 }} />
-				<div style={label({ fontSize: tall ? 24 : 18, letterSpacing: 4, color: BRIGHT })}>{`${spec.teams[team].nick} attack`}</div>
-			</div>
-			{spec.rows
-				.filter((r) => r.attacker === team)
-				.map((r) => (
-					<div key={r.id} style={{ display: "flex", marginBottom: tall ? 10 : 7 }}>
-						<PairRow row={r} spec={spec} w={colW} tall={tall} />
-					</div>
-				))}
-		</div>
-	)
-	const edgeBox = (team: 0 | 1) => (
-		<div key={team} style={{ display: "flex", flexDirection: "column", alignItems: team === 0 ? "flex-start" : "flex-end" }}>
-			<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 84 : 50, lineHeight: 1, color: spec.teams[team].color }}>{spec.edges[team]}</div>
-			<div style={label({ fontSize: tall ? 19 : 14, letterSpacing: 3 })}>{`${spec.teams[team].nick} edges`}</div>
-		</div>
-	)
-
-	return (
-		<Frame glow={glow} w={w} h={h}>
-			<div style={{ display: "flex", flexDirection: "column", width: w, height: h, padding: `${padTop}px ${padX}px ${padBottom}px` }}>
-				<Eyebrow text={`Matchup by position group${spec.week ? ` · Week ${spec.week}` : ""}`} color={glow} />
-				<div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: tall ? 20 : 8, width: innerW }}>
-					{edgeBox(0)}
-					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-						<div style={{ display: "flex", fontFamily: "Anton", fontSize: titleSize * (tall ? 0.78 : 0.56), lineHeight: 1.02, color: WHITE, ...caps }}>{title}</div>
-						<div style={label({ fontSize: tall ? 22 : 16, letterSpacing: 3, marginTop: 4 })}>{`${A.record} · ${B.record}`}</div>
-					</div>
-					{edgeBox(1)}
-				</div>
-				<div style={{ display: "flex", marginTop: tall ? 18 : 4, fontFamily: "Oswald", fontWeight: 400, fontSize: tall ? 27 : 18, lineHeight: 1.3, color: BRIGHT }}>{clip(spec.line, tall ? 130 : 112)}</div>
-				<div style={{ display: "flex", flexDirection: tall ? "column" : "row", justifyContent: "space-between", marginTop: tall ? 24 : 14, width: innerW }}>
-					{column(0)}
-					{column(1)}
-				</div>
-				<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
-					<Brand />
-					<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: tall ? 19 : 15, letterSpacing: 1, color: DIM }}>{`Circle: offense · Diamond: defense · Data: nflverse, CC BY 4.0 · ${spec.season}`}</div>
-				</div>
-			</div>
-		</Frame>
-	)
+	return renderMatchupView(spec)
 }

@@ -14,12 +14,15 @@ const PAGE_URL = `${SITE_URL}/lab/teams`
 const TITLE = "How all 32 teams stack up, position group by position group | Raiders Rundown"
 const DESCRIPTION = "Quarterback, offensive line, receivers, run game, pass rush, run defense and coverage: where every NFL team ranks right now, and any two teams side by side."
 
+// The link preview is the league board card, refreshed whenever the data is.
+const CARD = `${SITE_URL}/api/og?type=board&size=wide&v=${Date.parse(getUnits().generatedAt) || 0}`
+
 export const metadata: Metadata = {
 	title: TITLE,
 	description: DESCRIPTION,
 	alternates: { canonical: PAGE_URL },
-	openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: PAGE_URL, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] },
-	twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [`${SITE_URL}/og-default-v2.png`] },
+	openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: PAGE_URL, siteName: "Raiders Rundown", images: [CARD] },
+	twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [CARD] },
 }
 
 export default function TeamsPage() {
@@ -54,7 +57,7 @@ export default function TeamsPage() {
 			</section>
 
 			<section className="container py-10 sm:py-14" aria-label="The board">
-				<TeamBoard rows={rows} teams={teams} n={teamCount(data)} />
+				<TeamBoard rows={rows} teams={teams} n={teamCount(data)} stamp={Date.parse(data.generatedAt) || 0} />
 			</section>
 
 			<section className="border-t border-lab-line">
