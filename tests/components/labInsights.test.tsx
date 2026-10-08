@@ -3,12 +3,10 @@ import { cleanup, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest"
 
 import ClipPanel from "../../components/lab/ClipPanel"
-import FourthDownReport from "../../components/lab/FourthDownReport"
 import ScoutReport from "../../components/lab/ScoutReport"
 import TopPlays from "../../components/lab/TopPlays"
 import { clipFor, sizeText, type GameClip } from "../../lib/lab/clips"
-import { getFourthDown, getGames } from "../../lib/lab/data"
-import { fourthGameFor } from "../../lib/lab/fourthDown"
+import { getGames } from "../../lib/lab/data"
 import { seasonTopPlays, topPlaysFor } from "../../lib/lab/topPlays"
 
 afterEach(cleanup)
@@ -41,32 +39,6 @@ describe("<TopPlays />", () => {
 	it("renders nothing without plays", () => {
 		const { container } = render(<TopPlays plays={[]} scope="week-1" stamp={1} />)
 		expect(container.textContent).toBe("")
-	})
-})
-
-describe("<FourthDownReport />", () => {
-	it("shows every decision with a verdict in words, the estimate caveat and a card", () => {
-		const fg = fourthGameFor(2)!
-		render(<FourthDownReport game={fg} scope="week-2" stamp={9} />)
-		expect(screen.getAllByRole("listitem")).toHaveLength(fg.decisions.length)
-		expect(screen.getAllByText(/Best call|Toss-up|Questionable|Costly|Not graded/).length).toBeGreaterThanOrEqual(fg.decisions.length)
-		expect(screen.getByText(/These are estimates/)).toBeTruthy()
-		expect((screen.getByRole("img", { name: /Fourth-down report/ }) as HTMLImageElement).getAttribute("src")).toBe("/api/og?type=lab&slug=week-2&view=fourth&v=9")
-	})
-
-	it("makes clear the counts are the Raiders' own fourth downs, and how many could be judged", () => {
-		const fg = fourthGameFor(3)!
-		render(<FourthDownReport game={fg} scope="week-3" stamp={1} />)
-		expect(screen.getByText("Raiders' 4th downs")).toBeTruthy()
-		expect(screen.getByText(`${fg.summary.graded} of ${fg.summary.decisions}`)).toBeTruthy()
-		expect(screen.queryByText("Fourth downs")).toBeNull()
-	})
-
-	it("shows what each option was worth and which one was chosen", () => {
-		const fg = getFourthDown().games.find((g) => g.decisions.some((d) => d.verdict === "questionable"))!
-		render(<FourthDownReport game={fg} scope="x" stamp={1} />)
-		expect(screen.getAllByText(/\(chosen\)/).length).toBeGreaterThan(0)
-		expect(screen.getAllByText(/similar$/).length).toBeGreaterThan(0)
 	})
 })
 

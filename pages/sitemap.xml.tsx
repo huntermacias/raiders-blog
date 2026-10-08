@@ -2,7 +2,8 @@ import type { GetServerSideProps } from "next"
 import { groq } from "next-sanity"
 
 import { readClient as client } from "../lib/sanity.client"
-import { gameSlug, getGames } from "../lib/lab/data"
+import { gameSlug, getGames, getUnits } from "../lib/lab/data"
+import { matchupPath } from "../lib/lab/unitsKit"
 import { TEAMS } from "../lib/nfl"
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -16,6 +17,15 @@ function url(loc: string, lastmod?: string, priority = "0.7", changefreq = "week
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`
+}
+
+/** The Raiders against every team, and every game on the coming slate. */
+function matchupPaths(): string[] {
+	const data = getUnits()
+	const paths = new Set<string>()
+	for (const abbr of Object.keys(data.teams)) if (abbr !== "LV") paths.add(matchupPath("LV", abbr))
+	for (const g of data.slate?.games ?? []) paths.add(matchupPath(g.away, g.home))
+	return Array.from(paths).sort()
 }
 
 function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {
@@ -33,9 +43,12 @@ ${url(`${SITE_URL}/community`, undefined, "0.6", "daily")}
 ${url(`${SITE_URL}/lab`, undefined, "0.8", "weekly")}
 ${getGames().map((g) => url(`${SITE_URL}/lab/${gameSlug(g)}`, undefined, "0.7", "monthly")).join("\n")}
 ${url(`${SITE_URL}/lab/top-plays`, undefined, "0.7", "weekly")}
-${url(`${SITE_URL}/lab/fourth-down`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/scouting`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}
+${matchupPaths().map((p) => url(`${SITE_URL}${p}`, undefined, "0.5", "weekly")).join("\n")}
 ${TEAMS.filter((t) => t.abbr !== "LV").map((t) => url(`${SITE_URL}/lab/scouting/${t.abbr.toLowerCase()}`, undefined, "0.5", "weekly")).join("\n")}
 ${games.map((g) => url(`${SITE_URL}/games/${g.slug.current}`, g._updatedAt, "0.8")).join("\n")}
 ${posts.map((p) => url(`${SITE_URL}/post/${p.slug.current}`, p._updatedAt, "0.6")).join("\n")}
