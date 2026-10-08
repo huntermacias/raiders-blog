@@ -5,6 +5,7 @@ vi.mock("../../lib/sanity.client", () => ({ readClient: { fetch: vi.fn() }, clie
 
 import handler from "../../pages/api/og"
 import { insightSpec } from "../../lib/og/insightSpecs"
+import { getTwinsView } from "../../lib/lab/twins"
 import { playBlurb } from "../../lib/og/insightCards"
 import { mockReq, mockRes } from "../helpers/http"
 
@@ -12,7 +13,7 @@ vi.setConfig({ testTimeout: 60_000 })
 
 const get = (query: Record<string, string>) => mockReq({ method: "GET", query })
 const isPng = (b: unknown) => (Buffer.isBuffer(b) || b instanceof Uint8Array) && Buffer.from(b as Uint8Array).subarray(1, 4).toString() === "PNG"
-const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
+const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
 
 beforeEach(() => {
 	vi.spyOn(console, "error").mockImplementation(() => {})
@@ -176,6 +177,10 @@ describe("/api/og insight cards", () => {
 		["will it last, a team's season, tall", { type: "last", kind: "season", size: "tall", stat: "def.turnovers", pin: "2016-LV" }],
 		["will it last, the bottom line", { type: "last", kind: "bottom" }],
 		["will it last, the bottom line, tall", { type: "last", kind: "bottom", size: "tall" }],
+		["season twins", { type: "twins" }],
+		["season twins, tall", { type: "twins", size: "tall" }],
+		["season twins, offense only", { type: "twins", mode: "off" }],
+		["season twins, defense only, tall", { type: "twins", mode: "def", size: "tall" }],
 	]
 	it.each(cases)("renders %s as a cached PNG", async (_n, query) => {
 		const res = mockRes()
@@ -196,6 +201,35 @@ describe("/api/og insight cards", () => {
 		expect(await dims({ type: "last", kind: "chart", size: "tall", stat: "def.turnovers" })).toEqual([1080, 1350])
 		expect(await dims({ type: "last", kind: "chart", stat: "def.turnovers" })).toEqual([1200, 630])
 		expect(await dims({ type: "scout", opp: "KC" })).toEqual([1200, 630])
+		expect(await dims({ type: "twins", size: "tall" })).toEqual([1080, 1350])
+		expect(await dims({ type: "twins" })).toEqual([1200, 630])
+	})
+
+	it("builds a season twins card for the closest twin, a chosen one, or the Raiders' own, and ignores anything made up", () => {
+		const a = insightSpec(q({ type: "twins" }))
+		expect(a?.type).toBe("twins")
+		if (a?.type !== "twins") return
+		expect(a.mine).toHaveLength(18)
+		expect(a.theirs).toHaveLength(18)
+		expect(a.mode).toBe("all")
+		expect(a.title).toMatch(/^\d{4} [A-Z][A-Za-z0-9]+/)
+		const off = insightSpec(q({ type: "twins", mode: "off" }))
+		expect(off?.type === "twins" && off.mine).toHaveLength(9)
+		expect(off?.type === "twins" && off.modeName).toBe("Offense only")
+		// A twin that is not one of the five shown, a made-up mode and a made-up size all fall back to the defaults.
+		const junk = insightSpec(q({ type: "twins", mode: "net", size: "huge", twin: "1850-ZZZ" }))
+		expect(junk?.type === "twins" && junk.title).toBe(a.title)
+		expect(junk?.type === "twins" && junk.size).toBe("wide")
+		const third = getTwinsView()!.modes.all!.result.twins[2]
+		const picked = insightSpec(q({ type: "twins", twin: third.row.replace(" ", "-") }))
+		expect(picked?.type === "twins" && picked.title).toBe(third.label)
+		const defTwin = getTwinsView()!.modes.def!.result.twins[3]
+		const inDef = insightSpec(q({ type: "twins", mode: "def", twin: defTwin.row.replace(" ", "-") }))
+		expect(inDef?.type === "twins" && inDef.title).toBe(defTwin.label)
+		const own = getTwinsView()!.modes.all!.result.raidersTwin!
+		expect((insightSpec(q({ type: "twins", twin: own.row.replace(" ", "-") })) as { title: string }).title).toBe(own.label)
+		const tall = insightSpec(q({ type: "twins", size: "tall" }))
+		expect(tall?.type === "twins" && tall.size).toBe("tall")
 	})
 
 	it("falls back to the default card when there is nothing to show", async () => {

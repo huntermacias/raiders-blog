@@ -15,6 +15,7 @@
 //   /api/og?type=last[&kind=chart|wins|fifths|checklist|season|bottom][&size=wide|tall][&stat=def.turnovers]
 //           [&scope=all][&team=KC][&po=made|missed][&years=2016,2021][&pin=2016-LV][&y=wins]
 //           (will it last?: a card for each part of the page; wide 1200x630 or tall 1080x1350)
+//   /api/og?type=twins[&size=wide|tall][&mode=off|def][&twin=2022-JAX]   (season twins: the Raiders' closest team-season)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -240,9 +241,11 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		years: first(query.years),
 		pin: first(query.pin),
 		y: first(query.y),
+		mode: first(query.mode),
+		twin: first(query.twin),
 	})
 	if (insight) return insight
-	if (type === "scout" || type === "last") return null
+	if (type === "scout" || type === "last" || type === "twins") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -282,7 +285,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "fourth" || spec.type === "scout" || spec.type === "last") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "fourth" || spec.type === "scout" || spec.type === "last" || spec.type === "twins") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

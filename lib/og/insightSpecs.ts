@@ -10,6 +10,9 @@ import { getHistoryView } from "../lab/history"
 import { analyze, abbrOf } from "../lab/historyKit"
 import { type RawView, readView } from "../lab/lastShare"
 import { buildFourthSeasonSpec, buildFourthSpec, buildPlaySpec, buildScoutSpec } from "./insightCards"
+import { getTwinsView } from "../lab/twins"
+import { readTwinsView } from "../lab/twinsShare"
+import { buildTwinsSpec } from "./twinsCards"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/
@@ -22,7 +25,7 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView
+} & RawView & { mode?: string; twin?: string }
 
 /** A card for `view=play`, `view=fourth`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -38,6 +41,10 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 
 	if (q.type === "last") {
 		return lastSpec(q)
+	}
+
+	if (q.type === "twins") {
+		return twinsSpec(q)
 	}
 
 	if (q.type !== "lab" || !SLUG.test(q.slug)) return null
@@ -101,4 +108,14 @@ function lastSpec(q: RawView): CardSpec | null {
 	if (view.kind === "fifths") return buildFifthsSpec(story, ctx)
 	if (view.kind === "season") return view.pin ? buildSeasonSpec(story, meta, ctx, view.pin, view.y) : null
 	return buildChartSpec(story, meta, ctx, { pin: view.pin, y: view.y })
+}
+
+/** A "season twins" card for the match and twin the request names; null when the Raiders have not played enough games for a match. */
+function twinsSpec(q: { size?: string; mode?: string; twin?: string }): CardSpec | null {
+	const data = getTwinsView()
+	if (!data?.modes.all) return null
+	const rows = new Set(Object.values(data.modes).flatMap((m) => (m ? [...m.result.twins, ...(m.result.raidersTwin ? [m.result.raidersTwin] : [])].map((t) => t.row) : [])))
+	const view = readTwinsView(q, rows)
+	const found = data.modes[view.mode] ?? data.modes.all
+	return buildTwinsSpec(found.result, view.twin, { size: view.size, season: data.season, first: data.first, last: data.last, start: data.start })
 }

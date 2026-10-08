@@ -91,12 +91,13 @@ export default function LabPage() {
 				<h2 id="tools-heading" className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
 					More from the Lab
 				</h2>
-				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
 					{[
 						{ href: "/lab/top-plays", title: "Top plays", text: "The snaps that moved the Raiders' chance to win the furthest this season." },
 						{ href: "/lab/fourth-down", title: "Fourth-down report card", text: "Every go, punt and field goal, graded against similar spots from 2019 on." },
 						{ href: "/lab/scouting", title: "Scouting reports", text: "Where the Raiders have the edge on every opponent, and what to watch." },
 						{ href: "/lab/will-it-last", title: "Will it last?", text: "The Raiders' hottest and coldest stats, against every team since 1999 that started the same way." },
+						{ href: "/lab/season-twins", title: "Season twins", text: "The past teams that looked the most like the Raiders so far, laid over them stat by stat, and how their seasons ended." },
 					].map((t) => (
 						<li key={t.href}>
 							<Link href={t.href} className="group block h-full rounded-2xl border border-lab-line bg-lab-surface p-5 transition hover:border-lab-line-strong hover:bg-lab-tint">
