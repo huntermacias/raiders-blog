@@ -17,6 +17,7 @@ import { buildMatchupSpec } from "./matchupCards"
 import { BOARD_SHOWS } from "../lab/boardShow"
 import { buildBoardSpec, buildSlateSpec } from "./unitsCards"
 import { buildTwinsSpec } from "./twinsCards"
+import { playoffsSpec } from "./playoffsSpec"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/
@@ -29,7 +30,7 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string }
+} & RawView & { mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -50,6 +51,8 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	if (q.type === "twins") {
 		return twinsSpec(q)
 	}
+
+	if (q.type === "playoffs") return playoffsSpec({ s: q.s, t: q.t, size: q.size })
 
 	if (q.type === "matchup") {
 		const m = readMatchupQuery({ a: q.a, b: q.b, view: q.view })

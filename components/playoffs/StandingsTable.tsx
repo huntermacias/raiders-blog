@@ -4,19 +4,28 @@ import { divisionShort } from "@/lib/playoffs/format"
 import { recordText } from "@/lib/playoffs/season"
 import type { SimulationResult } from "@/lib/playoffs/simulator"
 import { describeTie, standingLabel } from "@/lib/playoffs/summary"
+import { oddsText } from "@/lib/playoffs/format"
+import type { Odds } from "@/lib/playoffs/odds"
 import type { Conference } from "@/lib/playoffs/types"
 import { teamByAbbr } from "@/lib/nfl"
 
 type Props = {
 	sim: SimulationResult
 	conference: Conference
-	raiders: boolean
+	/** The followed team to highlight, or null when highlighting is off. */
+	team: string | null
 	rivals: ReadonlySet<string>
+	/** Every team's odds of making the playoffs, once they have been worked out. */
+	odds?: Record<string, Odds> | null
+	/** True when the odds on screen are for the picks before the latest one. */
+	oddsWorking?: boolean
+	/** True when no game is left, so the odds are the table itself. */
+	oddsExact?: boolean
 }
 
 const NUMBER_ONE = "No. 1 seed, first-round bye"
 
-export default function StandingsTable({ sim, conference, raiders, rivals }: Props) {
+export default function StandingsTable({ sim, conference, team, rivals, odds, oddsWorking = false, oddsExact = false }: Props) {
 	const table = sim.conferences[conference].table
 	const inConf = new Set(table)
 	const ties = sim.ties.filter((d) => inConf.has(d.placed))
@@ -39,6 +48,9 @@ export default function StandingsTable({ sim, conference, raiders, rivals }: Pro
 							<th scope="col" className="p-2 text-right">
 								W-L-T
 							</th>
+							<th scope="col" className="p-2 text-right" title="Chance of making the playoffs, from simulating the rest of the season">
+								Odds
+							</th>
 							<th scope="col" className="hidden p-2 text-right sm:table-cell">
 								Div
 							</th>
@@ -51,8 +63,8 @@ export default function StandingsTable({ sim, conference, raiders, rivals }: Pro
 						{table.map((id, i) => {
 							const t = sim.teams[id]
 							const info = teamByAbbr(id)
-							const me = raiders && id === "LV"
-							const rival = raiders && rivals.has(id)
+							const me = team !== null && id === team
+							const rival = team !== null && rivals.has(id)
 							const out = t.eliminated
 							return (
 								<RowGroup key={id} showFourLine={i === 4} showPlayoffLine={i === 7}>
@@ -71,13 +83,14 @@ export default function StandingsTable({ sim, conference, raiders, rivals }: Pro
 													<span className="sm:hidden">{id}</span>
 													<span className="hidden sm:inline">{info.nick}</span>
 												</span>
-												{me ? <span className="rounded-sm bg-lab-ink px-1 text-[9px] font-bold uppercase tracking-[0.1em] text-lab-page">Raiders</span> : rival ? <span className="rounded-sm border border-lab-line-strong px-1 text-[9px] font-bold uppercase tracking-[0.1em] text-lab-soft">Rival</span> : null}
+												{me ? <span className="rounded-sm bg-lab-ink px-1 text-[9px] font-bold uppercase tracking-[0.1em] text-lab-page">{info.nick}</span> : rival ? <span className="rounded-sm border border-lab-line-strong px-1 text-[9px] font-bold uppercase tracking-[0.1em] text-lab-soft">Rival</span> : null}
 											</div>
 											<div className="mt-0.5 pl-[18px] text-[11px] leading-snug text-lab-muted">
 												{divisionShort(t.division)} &middot; <span className={t.eliminated ? "" : "text-lab-soft"}>{standingLabel(t)}</span>
 											</div>
 										</td>
 										<td className="p-2 text-right font-mono text-sm tabular-nums">{recordText(t.overall)}</td>
+										<td className={`p-2 text-right font-mono text-xs tabular-nums text-lab-soft transition-opacity ${oddsWorking ? "opacity-50" : ""}`}>{t.eliminated ? "0%" : t.clinchedPlayoff ? "100%" : oddsText(odds?.[id]?.playoffs, oddsExact)}</td>
 										<td className="hidden p-2 text-right font-mono text-xs tabular-nums text-lab-soft sm:table-cell">{recordText(t.divisionRecord)}</td>
 										<td className="hidden p-2 text-right font-mono text-xs tabular-nums text-lab-soft sm:table-cell">{recordText(t.conferenceRecord)}</td>
 									</tr>
@@ -113,14 +126,14 @@ function RowGroup({ children, showFourLine, showPlayoffLine }: { children: React
 		<>
 			{showFourLine ? (
 				<tr aria-hidden="true">
-					<td colSpan={5} className="border-y border-lab-line bg-lab-tint px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">
+					<td colSpan={6} className="border-y border-lab-line bg-lab-tint px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">
 						Wild cards
 					</td>
 				</tr>
 			) : null}
 			{showPlayoffLine ? (
 				<tr aria-hidden="true">
-					<td colSpan={5} className="border-y-2 border-lab-ink bg-lab-tint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-lab-ink">
+					<td colSpan={6} className="border-y-2 border-lab-ink bg-lab-tint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-lab-ink">
 						Playoff line &middot; outside the playoffs
 					</td>
 				</tr>

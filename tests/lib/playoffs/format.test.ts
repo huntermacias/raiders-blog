@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { getGames } from "@/lib/playoffs/data"
-import { divisionShort, kickoffLabel, rivalsOf } from "@/lib/playoffs/format"
+import { divisionShort, kickoffLabel, oddsText, ordinal, rivalsOf } from "@/lib/playoffs/format"
 import { simulateSeason } from "@/lib/playoffs/simulator"
 
 describe("kickoff times", () => {
@@ -43,5 +43,25 @@ describe("rivals in a playoff race", () => {
 		const outsiders = Object.values(sim.teams).filter((t) => t.conference === "AFC" && t.division !== "AFC West" && Math.abs(t.rank - sim.teams.LV.rank) > 2)
 		for (const t of outsiders) expect(r.has(t.team)).toBe(false)
 		expect(rivalsOf(sim, "XXX").size).toBe(0)
+	})
+})
+
+describe("how odds and places read", () => {
+	it("never shows an estimate as certain, and shows a certain result as it is", () => {
+		expect(oddsText(0.724)).toBe("72%")
+		expect(oddsText(0.5)).toBe("50%")
+		expect(oddsText(0)).toBe("<1%")
+		expect(oddsText(0.003)).toBe("<1%")
+		expect(oddsText(1)).toBe(">99%")
+		expect(oddsText(0.997)).toBe(">99%")
+		expect(oddsText(0, true)).toBe("0%")
+		expect(oddsText(1, true)).toBe("100%")
+		expect(oddsText(null)).toBe("\u2013")
+		expect(oddsText(undefined)).toBe("\u2013")
+		expect(oddsText(Number.NaN)).toBe("\u2013")
+	})
+
+	it("writes places the way people say them", () => {
+		expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "23rd", "101st", "111th"])
 	})
 })

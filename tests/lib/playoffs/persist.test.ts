@@ -78,6 +78,12 @@ describe("saved picks", () => {
 		expect(loadPrefs(store)).toEqual({ v: STORAGE_VERSION, raiders: false })
 		expect(loadPrefs(memory({ [PREFS_KEY]: JSON.stringify({ v: 9, raiders: true }) }))).toBeNull()
 		expect(loadPrefs(memory({ [PREFS_KEY]: JSON.stringify({ v: 1, raiders: "yes" }) }))).toBeNull()
+		// The followed team is kept when it is a team code, and ignored when it is not.
+		const withTeam = memory({})
+		savePrefs(withTeam, { raiders: true, team: "KC" })
+		expect(loadPrefs(withTeam)).toEqual({ v: STORAGE_VERSION, raiders: true, team: "KC" })
+		expect(loadPrefs(memory({ [PREFS_KEY]: JSON.stringify({ v: 1, raiders: true, team: "<script>" }) }))).toEqual({ v: STORAGE_VERSION, raiders: true })
+		expect(loadPrefs(memory({ [PREFS_KEY]: JSON.stringify({ v: 1, raiders: true, team: 7 }) }))).toEqual({ v: STORAGE_VERSION, raiders: true })
 	})
 })
 

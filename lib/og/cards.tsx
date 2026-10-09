@@ -14,6 +14,7 @@ import { type LastCardSpec, lastCardSize, renderLastCard } from "./lastCards"
 import { type MatchupCardSpec, matchupCardSize, renderMatchupCard } from "./matchupCards"
 import { type BoardCardSpec, type SlateCardSpec, renderBoardCard, renderSlateCard } from "./unitsCards"
 import { type TwinsCardSpec, renderTwinsCard, twinsCardSize } from "./twinsCards"
+import { type PlayoffsCardSpec, playoffsCardSize, renderPlayoffsCard } from "./playoffsCard"
 import { type LabCardSpec, renderLabCard } from "./labCard"
 import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
@@ -67,6 +68,7 @@ export type CardSpec =
 	| ScoutCardSpec
 	| LastCardSpec
 	| TwinsCardSpec
+	| PlayoffsCardSpec
 	| MatchupCardSpec
 	| SlateCardSpec
 	| BoardCardSpec
@@ -82,9 +84,9 @@ export type CardSpec =
 	  }
 	| LiveCardSpec
 
-/** The pixel size of a card: 1200x630 for every card but the tall version of a "will it last?" or "season twins" or matchup card (1080x1350). */
+/** The pixel size of a card: 1200x630 for every card but the tall version of a "will it last?", "season twins", playoff machine or matchup card (1080x1350). */
 export function cardSize(spec: CardSpec): { width: number; height: number } {
-	return spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
+	return spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
 }
 
 /** Trim to a word boundary so a title never runs off the card. */
@@ -477,6 +479,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 			return renderLastCard(spec)
 		case "twins":
 			return renderTwinsCard(spec)
+		case "playoffs":
+			return renderPlayoffsCard(spec)
 
 		case "matchup":
 			return renderMatchupCard(spec)

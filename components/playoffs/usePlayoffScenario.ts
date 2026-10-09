@@ -6,7 +6,8 @@ import { trackPlayoff } from "@/lib/analytics"
 import { crossedMilestone, newlyCompletedWeeks } from "@/lib/playoffs/events"
 import { type Scope, clearPicks, pickHomeTeams, pickRandom, sanitizePicks, seededRandom, setPick } from "@/lib/playoffs/picks"
 import { loadPrefs, loadScenario, savePrefs, saveScenario } from "@/lib/playoffs/persist"
-import { SCENARIO_PARAM, decodeScenario, encodeScenario } from "@/lib/playoffs/share"
+import { DEFAULT_TEAM, SCENARIO_PARAM, TEAM_PARAM, decodeScenario, encodeScenario, readTeam } from "@/lib/playoffs/share"
+import { NFL_LEAGUE } from "@/lib/playoffs/season"
 import { simulateSeason } from "@/lib/playoffs/simulator"
 import type { Game, Outcome, Predictions } from "@/lib/playoffs/types"
 
@@ -21,6 +22,21 @@ function storage(): Storage | null {
 }
 
 const count = (p: Predictions) => Object.keys(p).length
+const TEAM_IDS: ReadonlySet<string> = new Set(NFL_LEAGUE.teams.map((t) => t.id))
+
+/** Puts the scenario code and the followed team in the address bar, leaving the rest of the address alone. The Raiders are the default, so they are left out. */
+function syncUrl(code: string, team: string) {
+	try {
+		const url = new URL(window.location.href)
+		if (code) url.searchParams.set(SCENARIO_PARAM, code)
+		else url.searchParams.delete(SCENARIO_PARAM)
+		if (team && team !== DEFAULT_TEAM) url.searchParams.set(TEAM_PARAM, team)
+		else url.searchParams.delete(TEAM_PARAM)
+		window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash)
+	} catch {
+		// the address bar is a convenience
+	}
+}
 
 /**
  * The reader's scenario: their picks, what they have saved, what a shared link says, and the bulk actions. The page
@@ -32,7 +48,10 @@ const count = (p: Predictions) => Object.keys(p).length
  */
 export function usePlayoffScenario(games: readonly Game[], season: number) {
 	const [picks, setPicks] = useState<Predictions>({})
-	const [raiders, setRaidersState] = useState(true)
+	// The team being followed (the Raiders unless the reader picks another) and whether it is highlighted everywhere.
+	const [team, setTeamState] = useState(DEFAULT_TEAM)
+	const [focus, setFocusState] = useState(true)
+	const teamRef = useRef(DEFAULT_TEAM)
 	const [ready, setReady] = useState(false)
 	const [notice, setNotice] = useState<Notice>(null)
 	const [undo, setUndo] = useState<{ picks: Predictions; label: string } | null>(null)
@@ -44,13 +63,20 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 	useEffect(() => {
 		const store = storage()
 		const prefs = loadPrefs(store)
-		if (prefs) setRaidersState(prefs.raiders)
+		let followed = DEFAULT_TEAM
+		if (prefs) {
+			setFocusState(prefs.raiders)
+			followed = readTeam(prefs.team, TEAM_IDS)
+		}
 
 		const saved = loadScenario(store, season, games)
 		let start: Predictions = saved ?? {}
 		let shared = false
 		try {
-			const code = new URLSearchParams(window.location.search).get(SCENARIO_PARAM)
+			const params = new URLSearchParams(window.location.search)
+			// A link that names a team is about that team, whatever this browser last followed.
+			if (params.has(TEAM_PARAM)) followed = readTeam(params.get(TEAM_PARAM), TEAM_IDS)
+			const code = params.get(SCENARIO_PARAM)
 			if (code) {
 				const result = decodeScenario(games, code)
 				if (result.ok) {
@@ -66,6 +92,8 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 			// no URL to read
 		}
 		setPicks(start)
+		teamRef.current = followed
+		setTeamState(followed)
 		setReady(true)
 		if (!opened.current) {
 			opened.current = true
@@ -79,15 +107,7 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 			const clean = sanitizePicks(games, next)
 			setPicks(clean)
 			saveScenario(storage(), season, clean)
-			try {
-				const code = encodeScenario(games, clean)
-				const url = new URL(window.location.href)
-				if (code) url.searchParams.set(SCENARIO_PARAM, code)
-				else url.searchParams.delete(SCENARIO_PARAM)
-				window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash)
-			} catch {
-				// the address bar is a convenience
-			}
+			syncUrl(encodeScenario(games, clean), teamRef.current)
 			setNotice((n) => (n?.kind === "shared" ? null : n))
 
 			const milestone = crossedMilestone(count(before), count(clean))
@@ -137,15 +157,28 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 		mine.current = null
 	}, [commit, picks])
 
-	const setRaiders = useCallback((on: boolean) => {
-		setRaidersState(on)
-		savePrefs(storage(), { raiders: on })
-		if (on) trackPlayoff("raiders_mode_enabled")
+	const setFocus = useCallback((on: boolean) => {
+		setFocusState(on)
+		savePrefs(storage(), { raiders: on, team: teamRef.current })
+		if (on && teamRef.current === DEFAULT_TEAM) trackPlayoff("raiders_mode_enabled")
 	}, [])
+
+	const setTeam = useCallback(
+		(id: string) => {
+			const next = readTeam(id, TEAM_IDS)
+			if (next === teamRef.current) return
+			teamRef.current = next
+			setTeamState(next)
+			savePrefs(storage(), { raiders: focus, team: next })
+			syncUrl(encodeScenario(games, picks), next)
+			trackPlayoff("playoff_team_followed", { team: next })
+		},
+		[focus, games, picks],
+	)
 
 	const dismissNotice = useCallback(() => setNotice(null), [])
 	const sim = useMemo(() => simulateSeason({ games, predictions: picks }), [games, picks])
 	const code = useMemo(() => encodeScenario(games, picks), [games, picks])
 
-	return { picks, sim, code, ready, notice, undo, pick, fillHome, fillRandom, reset, undoLast, restoreMine, dismissNotice, raiders, setRaiders }
+	return { picks, sim, code, ready, notice, undo, pick, fillHome, fillRandom, reset, undoLast, restoreMine, dismissNotice, team, setTeam, focus, setFocus }
 }

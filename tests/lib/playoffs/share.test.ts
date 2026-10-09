@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { getGames } from "@/lib/playoffs/data"
 import { pickRandom, seededRandom } from "@/lib/playoffs/picks"
-import { SCENARIO_PARAM, decodeScenario, encodeScenario, scenarioLink, scheduleFingerprint } from "@/lib/playoffs/share"
+import { DEFAULT_TEAM, SCENARIO_PARAM, decodeScenario, encodeScenario, PLAYOFFS_PATH, PLAYOFFS_SHARE_PATH, readTeam, scenarioLink, scenarioQuery, scheduleFingerprint } from "@/lib/playoffs/share"
 import { actualOutcome } from "@/lib/playoffs/season"
 import { simulateSeason } from "@/lib/playoffs/simulator"
 import type { Outcome } from "@/lib/playoffs/types"
@@ -90,5 +90,47 @@ describe("scenario codes", () => {
 	it("builds the link", () => {
 		expect(scenarioLink("https://www.raidersrundown.com", "/lab/playoff-machine", "1abcdXYZ")).toBe(`https://www.raidersrundown.com/lab/playoff-machine?${SCENARIO_PARAM}=1abcdXYZ`)
 		expect(scenarioLink("https://www.raidersrundown.com", "/lab/playoff-machine", "")).toBe("https://www.raidersrundown.com/lab/playoff-machine")
+	})
+})
+
+describe("the team a link is about", () => {
+	const teams = new Set(["LV", "KC", "DEN"])
+
+	it("reads a valid team in any case and falls back to the Raiders for anything else", () => {
+		expect(readTeam("KC", teams)).toBe("KC")
+		expect(readTeam("kc", teams)).toBe("KC")
+		expect(readTeam("XXX", teams)).toBe(DEFAULT_TEAM)
+		expect(readTeam("", teams)).toBe(DEFAULT_TEAM)
+		expect(readTeam(null, teams)).toBe(DEFAULT_TEAM)
+		expect(readTeam(undefined, teams)).toBe(DEFAULT_TEAM)
+		expect(readTeam("KC&s=1", teams)).toBe(DEFAULT_TEAM)
+	})
+
+	it("adds the team to a link only when it is not the Raiders", () => {
+		const o = "https://www.raidersrundown.com"
+		const path = "/lab/playoff-machine"
+		expect(scenarioLink(o, path, "1abcdXYZ", "LV")).toBe(`${o}${path}?s=1abcdXYZ`)
+		expect(scenarioLink(o, path, "1abcdXYZ", "KC")).toBe(`${o}${path}?s=1abcdXYZ&t=KC`)
+		expect(scenarioLink(o, path, "", "KC")).toBe(`${o}${path}?t=KC`)
+		expect(scenarioLink(o, path, "", "LV")).toBe(`${o}${path}`)
+		expect(scenarioLink(o, path, "")).toBe(`${o}${path}`)
+	})
+})
+
+describe("the query a shared scenario carries", () => {
+	it("is the picks, then the team when it is not the Raiders, and nothing for the plain page", () => {
+		expect(scenarioQuery("1abcdXYZ")).toBe("s=1abcdXYZ")
+		expect(scenarioQuery("1abcdXYZ", "LV")).toBe("s=1abcdXYZ")
+		expect(scenarioQuery("1abcdXYZ", "KC")).toBe("s=1abcdXYZ&t=KC")
+		expect(scenarioQuery("", "KC")).toBe("t=KC")
+		expect(scenarioQuery("", "LV")).toBe("")
+		expect(scenarioQuery(null)).toBe("")
+		expect(scenarioQuery(undefined, undefined)).toBe("")
+	})
+
+	it("agrees with the link the page builds, and the share page sits under the page", () => {
+		const o = "https://www.raidersrundown.com"
+		expect(scenarioLink(o, PLAYOFFS_PATH, "1abcdXYZ", "KC")).toBe(`${o}${PLAYOFFS_PATH}?${scenarioQuery("1abcdXYZ", "KC")}`)
+		expect(PLAYOFFS_SHARE_PATH).toBe(`${PLAYOFFS_PATH}/share`)
 	})
 })

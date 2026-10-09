@@ -38,6 +38,8 @@ type Props = {
 	/** The button's words; defaults to "Share". */
 	label?: string
 	className?: string
+	/** Called when the reader sends the card somewhere, with how. Lets a page count shares without the window knowing about its analytics. */
+	onAction?: (method: "share" | "save" | "copy_image" | "copy_link" | "x" | "facebook") => void
 }
 
 const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -48,7 +50,7 @@ const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * phone's own share sheet, save, copy the image, copy the link, X and Facebook. The link carries the chart's
  * stat, filters and pinned team, so whoever opens it sees the same chart.
  */
-export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "" }: Props) {
+export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "", onAction }: Props) {
 	const [open, setOpen] = React.useState(false)
 	const [size, setSize] = React.useState<ShareSize>("wide")
 	const [note, setNote] = React.useState("")
@@ -132,6 +134,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 		try {
 			await navigator.clipboard.writeText(url)
 			say("Link copied")
+			onAction?.("copy_link")
 		} catch {
 			window.prompt("Copy this link", url)
 		}
@@ -142,6 +145,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 			const blob = await (await fetch(src)).blob()
 			await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })])
 			say("Image copied")
+			onAction?.("copy_image")
 		} catch {
 			say("Could not copy the image. Use Save image instead.")
 		}
@@ -154,6 +158,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 			const file = new File([blob], filename, { type: "image/png" })
 			if (navigator.canShare?.({ files: [file] })) {
 				await navigator.share({ files: [file], text: `${text} ${url}` })
+				onAction?.("share")
 				return
 			}
 		} catch (e) {
@@ -161,6 +166,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 		}
 		try {
 			await navigator.share({ text, url })
+			onAction?.("share")
 		} catch {
 			/* the reader closed the share sheet */
 		}
@@ -168,11 +174,13 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 
 	const postOnX = () => {
 		const url = linkFor(SITE_URL, "&utm_source=x&utm_medium=social&utm_campaign=lab_share")
+		onAction?.("x")
 		window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}
 
 	const postOnFacebook = () => {
 		const url = linkFor(SITE_URL, "&utm_source=facebook&utm_medium=social&utm_campaign=lab_share")
+		onAction?.("facebook")
 		window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}
 
@@ -231,7 +239,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 										Share&hellip;
 									</button>
 								) : null}
-								<a href={src} download={filename} className={action}>
+								<a href={src} download={filename} onClick={() => onAction?.("save")} className={action}>
 									<Download className="h-4 w-4" aria-hidden />
 									Save image
 								</a>

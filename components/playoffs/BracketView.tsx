@@ -5,10 +5,10 @@ import type { SimulationResult } from "@/lib/playoffs/simulator"
 import type { Conference } from "@/lib/playoffs/types"
 import { teamByAbbr } from "@/lib/nfl"
 
-function Side({ seed, id, sim, raiders }: { seed: number; id: string; sim: SimulationResult; raiders: boolean }) {
+function Side({ seed, id, sim, team }: { seed: number; id: string; sim: SimulationResult; team: string | null }) {
 	const info = teamByAbbr(id)
 	const t = sim.teams[id]
-	const me = raiders && id === "LV"
+	const me = team !== null && id === team
 	return (
 		<div className={`flex items-center gap-3 px-3.5 py-3 ${me ? "bg-lab-hover" : ""}`} style={me ? { boxShadow: "inset 4px 0 0 var(--lab-team)" } : undefined}>
 			<span className="w-5 text-center font-mono text-sm font-bold tabular-nums text-lab-muted">{seed}</span>
@@ -20,7 +20,8 @@ function Side({ seed, id, sim, raiders }: { seed: number; id: string; sim: Simul
 	)
 }
 
-export default function BracketView({ sim, conference, raiders }: { sim: SimulationResult; conference: Conference; raiders: boolean }) {
+/** `team` is the followed team to highlight, or null when highlighting is off. */
+export default function BracketView({ sim, conference, team }: { sim: SimulationResult; conference: Conference; team: string | null }) {
 	const b = sim.bracket[conference]
 	return (
 		<div>
@@ -32,16 +33,16 @@ export default function BracketView({ sim, conference, raiders }: { sim: Simulat
 							Seed {g.awaySeed} {teamByAbbr(g.away).name} at seed {g.homeSeed} {teamByAbbr(g.home).name}
 						</p>
 						<div aria-hidden="true" className="divide-y divide-lab-line">
-							<Side seed={g.awaySeed} id={g.away} sim={sim} raiders={raiders} />
+							<Side seed={g.awaySeed} id={g.away} sim={sim} team={team} />
 							<div className="bg-lab-tint px-3.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">at</div>
-							<Side seed={g.homeSeed} id={g.home} sim={sim} raiders={raiders} />
+							<Side seed={g.homeSeed} id={g.home} sim={sim} team={team} />
 						</div>
 					</li>
 				))}
 			</ol>
 			{b.byes.map((bye) => (
 				<div key={bye.seed} className="mt-3 overflow-hidden rounded-2xl border border-dashed border-lab-line-strong bg-lab-surface">
-					<Side seed={bye.seed} id={bye.team} sim={sim} raiders={raiders} />
+					<Side seed={bye.seed} id={bye.team} sim={sim} team={team} />
 					<p className="m-0 border-t border-lab-line bg-lab-tint px-3.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">First-round bye</p>
 				</div>
 			))}

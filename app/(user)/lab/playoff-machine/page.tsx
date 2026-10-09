@@ -12,14 +12,16 @@ const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/playoff-machine`
 const season = getSchedule().season
 const TITLE = `NFL Playoff Machine ${season} | Raiders Rundown`
-const DESCRIPTION = `Pick the winner of every remaining NFL game and watch the ${season} standings, seeds and playoff bracket update with the real tiebreakers. See what it takes for the Raiders, and share your scenario.`
+const DESCRIPTION = `Pick the winner of every remaining NFL game and watch the ${season} standings, seeds and playoff bracket update with the real tiebreakers. See the playoff odds and what it takes for the Raiders, or any team, and share your scenario.`
+// The card for the race as it stands. A shared scenario has its own card, from the share page.
+const CARD = `${SITE_URL}/api/og?type=playoffs&size=wide&v=${Date.parse(getSchedule().generatedAt) || 0}`
 
 export const metadata: Metadata = {
 	title: TITLE,
 	description: DESCRIPTION,
 	alternates: { canonical: PAGE_URL },
-	openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: PAGE_URL, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] },
-	twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [`${SITE_URL}/og-default-v2.png`] },
+	openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: PAGE_URL, siteName: "Raiders Rundown", images: [CARD] },
+	twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [CARD] },
 }
 
 const jsonLd = {
@@ -46,23 +48,23 @@ export default function PlayoffMachinePage() {
 		<div className="lab min-h-screen bg-lab-page text-lab-ink">
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 			<section className="border-b border-lab-line">
-				<div className="container py-8 sm:py-12">
+				<div className="container py-6 sm:py-12">
 					<p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-lab-muted">
 						<Link href="/lab" className="hover:text-lab-ink">
 							The Lab
 						</Link>{" "}
 						&middot; {schedule.season} season, results through Week {schedule.throughWeek}
 					</p>
-					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">NFL Playoff Machine {schedule.season}</h1>
-					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
-						Pick the winner of every game left on the schedule. The standings, the seeds and the playoff bracket update as you go, with the NFL&rsquo;s real tiebreakers. Start
-						with the Raiders, or fill the whole season in and see who you get.
+					<h1 className="mt-2 max-w-3xl font-serif text-3xl font-bold leading-[1.05] tracking-tight sm:mt-3 sm:text-6xl">NFL Playoff Machine {schedule.season}</h1>
+					<p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-lab-soft sm:mt-4 sm:text-lg">
+						Pick the winner of every game left on the schedule. The standings, the seeds and the bracket update as you go, with the NFL&rsquo;s real tiebreakers, and the odds
+						show what your team needs. Follow the Raiders, or any team you like.
 					</p>
 				</div>
 			</section>
 
 			<section className="container py-6 sm:py-10" aria-label="The playoff machine">
-				<PlayoffMachine games={games} season={schedule.season} throughWeek={schedule.throughWeek} />
+				<PlayoffMachine games={games} season={schedule.season} throughWeek={schedule.throughWeek} stamp={Date.parse(schedule.generatedAt) || 0} />
 			</section>
 
 			<section className="border-t border-lab-line" aria-label="About the playoff machine">
@@ -78,8 +80,8 @@ export default function PlayoffMachinePage() {
 					<p className="mt-3 leading-relaxed text-lab-soft">
 						The table always shows the real results so far plus the picks you have made. A game you have not picked counts for nothing yet, so the table fills in as you go.
 						Quick fill can pick the home team in every open game or flip a coin for each one, and it keeps the picks you made unless you tell it not to. Your picks are saved on
-						this device, so you can leave and come back, and nothing about them is sent to us. &ldquo;Copy scenario link&rdquo; makes a short link to exactly your picks; anyone
-						who opens it sees your scenario first, and your own saved picks are still there when they want them back.
+						this device, so you can leave and come back, and nothing about them is sent to us. &ldquo;Share&rdquo; makes a picture of your scenario, wide for link previews or tall for
+						posting, and a short link to exactly your picks; anyone who opens it sees your scenario first, and your own saved picks are still there when they want them back.
 					</p>
 
 					<h2 className="mt-10 font-serif text-2xl font-bold">How NFL playoff seeding works</h2>
@@ -103,9 +105,23 @@ export default function PlayoffMachinePage() {
 						toss are not supported at all. When a tie goes that far, the page says so and shows the teams in a fixed order by name, rather than pretending a rule decided it.
 					</p>
 
+					<h2 className="mt-10 font-serif text-2xl font-bold">Where the playoff odds come from</h2>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						The odds are worked out by playing the rest of the season thousands of times. Every team gets an Elo rating built from this season&rsquo;s final scores alone, with
+						the same method behind our Blogger vs. the Math page, and that rating gives each open game a win chance, with a small edge for the home team. The games you
+						picked are treated as played, so the odds change as you pick. Each run produces a full set of standings with the same tiebreakers the page uses, and the odds
+						are how often a team made the playoffs, won its division or took the No. 1 seed. The same simulated seasons are used for every comparison, so &ldquo;if they win
+						out&rdquo; and &ldquo;if they lose out&rdquo; differ only because of the games they change.
+					</p>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						This is a model, not a forecast. It knows nothing about injuries, quarterbacks, weather or last year, it starts every team at the same rating, and it does not
+						simulate ties. Early in the season a few games decide a lot, so the odds are rough until more results are in. They are shown as &ldquo;&lt;1%&rdquo; or
+						&ldquo;&gt;99%&rdquo; rather than 0 or 100 unless the standings themselves say the matter is settled.
+					</p>
+
 					<h2 className="mt-10 font-serif text-2xl font-bold">A simulation, not official standings</h2>
 					<p className="mt-3 leading-relaxed text-lab-soft">
-						Everything here is a projection from the picks you make. It is not the NFL&rsquo;s standings and it is not a forecast: no game is given a probability. Results come in
+						The standings and the bracket are a projection from the picks you make. They are not the NFL&rsquo;s standings. Results come in
 						with our weekly data refresh (last run {updated}), so a game played this week may not show as final until the next one. &ldquo;Clinched&rdquo; and
 						&ldquo;Eliminated&rdquo; are shown only when the games left cannot change the answer even if every tiebreaker went the other way, so the page can be a little
 						slower than the NFL to call a team in or out, but it will not call one wrongly.
