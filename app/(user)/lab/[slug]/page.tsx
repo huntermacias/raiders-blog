@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import ClipPanel from "@/components/lab/ClipPanel"
 import DriveReplay from "@/components/lab/DriveReplay"
 import TopPlays from "@/components/lab/TopPlays"
@@ -225,6 +227,7 @@ export default async function LabGamePage(props: { params: Promise<{ slug: strin
 					</p>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/game" weeks={labWeeks()} />
 		</div>
 	)
 }

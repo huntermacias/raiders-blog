@@ -26,7 +26,7 @@ export function isUnder(href: string, pathname: string | null): boolean {
  * A disclosure rather than an ARIA menu: it is a button that shows a list of links, closes on
  * Escape, an outside click, focus leaving it, or choosing a link, and Tab moves through it normally.
  */
-export default function NavMore({ items, label = "More" }: { items: MoreItem[]; label?: string }) {
+export default function NavMore({ items, label = "More", labelHref }: { items: MoreItem[]; label?: string; /** Makes the label a link to a page of its own, with the arrow beside it opening the menu. */ labelHref?: string }) {
 	const pathname = usePathname()
 	const [open, setOpen] = React.useState(false)
 	const root = React.useRef<HTMLDivElement>(null)
@@ -63,20 +63,43 @@ export default function NavMore({ items, label = "More" }: { items: MoreItem[]; 
 				if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
 			}}
 		>
-			<button
-				ref={button}
-				type="button"
-				aria-expanded={open}
-				aria-controls={panelId}
-				onClick={() => setOpen((o) => !o)}
-				className={cn(
-					"inline-flex items-center gap-1 rounded-sm text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-					active || open ? "text-foreground" : "text-muted-foreground"
-				)}
-			>
-				{label}
-				<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} aria-hidden />
-			</button>
+			{labelHref ? (
+				<div className="inline-flex items-center gap-0.5">
+					<Link
+						href={labelHref}
+						aria-current={isUnder(labelHref, pathname) && pathname === labelHref ? "page" : undefined}
+						className={cn("rounded-sm text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background", active || isUnder(labelHref, pathname) || open ? "text-foreground" : "text-muted-foreground")}
+					>
+						{label}
+					</Link>
+					<button
+						ref={button}
+						type="button"
+						aria-expanded={open}
+						aria-controls={panelId}
+						aria-label={`${label} menu`}
+						onClick={() => setOpen((o) => !o)}
+						className={cn("inline-flex h-6 w-6 items-center justify-center rounded-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background", active || isUnder(labelHref, pathname) || open ? "text-foreground" : "text-muted-foreground")}
+					>
+						<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} aria-hidden />
+					</button>
+				</div>
+			) : (
+				<button
+					ref={button}
+					type="button"
+					aria-expanded={open}
+					aria-controls={panelId}
+					onClick={() => setOpen((o) => !o)}
+					className={cn(
+						"inline-flex items-center gap-1 rounded-sm text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+						active || open ? "text-foreground" : "text-muted-foreground"
+					)}
+				>
+					{label}
+					<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} aria-hidden />
+				</button>
+			)}
 
 			<div
 				id={panelId}

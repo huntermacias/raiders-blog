@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import MatchupReport from "@/components/lab/MatchupReport"
 import ScoutReport from "@/components/lab/ScoutReport"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -85,6 +87,7 @@ export default async function ScoutPage(props: { params: Promise<{ abbr: string 
 					<UnitsCredit>Ranks use the {data.season} regular season so far. </UnitsCredit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/scouting" weeks={labWeeks()} />
 		</div>
 	)
 }

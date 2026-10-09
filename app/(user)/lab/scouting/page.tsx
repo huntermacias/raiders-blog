@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { groq } from "next-sanity"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import ScoutReport from "@/components/lab/ScoutReport"
 import { labColorVars } from "@/lib/lab/colors"
@@ -107,6 +109,7 @@ export default async function ScoutingHub() {
 					<Credit>Ranks use the {data.season} regular season so far. </Credit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/scouting" weeks={labWeeks()} />
 		</div>
 	)
 }

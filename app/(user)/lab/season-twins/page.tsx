@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import SeasonTwins from "@/components/lab/SeasonTwins"
 import { getScouting } from "@/lib/lab/data"
@@ -76,6 +78,7 @@ export default function SeasonTwinsPage() {
 					<Credit>{view ? `History covers every regular season from ${view.first} to ${view.last}. ` : ""}</Credit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/season-twins" weeks={labWeeks()} />
 		</div>
 	)
 }

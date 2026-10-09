@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import PlayoffMachine from "@/components/playoffs/PlayoffMachine"
 import { getGames, getSchedule } from "@/lib/playoffs/data"
 import { supportedSteps } from "@/lib/playoffs/tiebreakers"
@@ -141,6 +143,7 @@ export default function PlayoffMachinePage() {
 					</p>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/playoff-machine" weeks={labWeeks()} />
 		</div>
 	)
 }

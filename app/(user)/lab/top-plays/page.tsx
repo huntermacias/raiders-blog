@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import TopPlays from "@/components/lab/TopPlays"
 import { labColorVars } from "@/lib/lab/colors"
@@ -68,6 +70,7 @@ export default function TopPlaysPage() {
 					<Credit>Win probability added is the nflverse model&rsquo;s. </Credit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/top-plays" weeks={labWeeks()} />
 		</div>
 	)
 }

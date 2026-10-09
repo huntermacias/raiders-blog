@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import NavMore, { isUnder, type MoreItem } from "@/components/NavMore"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LAB_TOOLS } from "@/lib/lab/tools"
 
 /** The pages most visitors come for. Home is the logo on desktop, and a row in the phone menu. */
 const mainLinks = [
@@ -33,6 +34,9 @@ const moreLinks: MoreItem[] = [
 	{ href: "/community", label: "Discussion", hint: "Every conversation on the site, in one place." },
 	{ href: "https://huntermacias.com", label: "Meet the Maintainer", hint: "Hunter's tech blog, and who builds this site.", external: true },
 ]
+
+/** The Lab's tools, for the menu under "Lab". The list lives in lib/lab/tools.ts, so a new tool shows up here without touching the header. */
+const labItems: MoreItem[] = LAB_TOOLS.map((t) => ({ href: t.href, label: t.isNew ? `${t.title} (new)` : t.title, hint: t.short }))
 
 function NavLink({
 	href,
@@ -98,9 +102,9 @@ function Header() {
 				</Link>
 
 				<nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
-					{mainLinks.map((link) => (
-						<NavLink key={link.label} {...link} />
-					))}
+					{mainLinks.map((link) =>
+						link.href === "/lab" ? <NavMore key={link.label} label={link.label} labelHref={link.href} items={labItems} /> : <NavLink key={link.label} {...link} />
+					)}
 					<NavMore items={moreLinks} />
 				</nav>
 
@@ -119,9 +123,22 @@ function Header() {
 							</SheetHeader>
 							<nav aria-label="Menu" className="mt-8 flex flex-col gap-5">
 								<NavLink href="/" label="Home" onClick={() => setOpen(false)} />
-								{mainLinks.map((link) => (
-									<NavLink key={link.label} {...link} onClick={() => setOpen(false)} />
-								))}
+								{mainLinks.map((link) =>
+									link.href === "/lab" ? (
+										<div key={link.label} className="flex flex-col gap-3">
+											<NavLink {...link} onClick={() => setOpen(false)} />
+											<ul className="m-0 flex list-none flex-col gap-2.5 border-l border-border/60 p-0 pl-4">
+												{labItems.map((item) => (
+													<li key={item.href}>
+														<NavLink href={item.href} label={item.label} onClick={() => setOpen(false)} />
+													</li>
+												))}
+											</ul>
+										</div>
+									) : (
+										<NavLink key={link.label} {...link} onClick={() => setOpen(false)} />
+									)
+								)}
 								<div className="mt-1 flex flex-col gap-5 border-t border-border/60 pt-5">
 									<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">More</p>
 									{moreLinks.map((link) => (
