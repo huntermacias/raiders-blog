@@ -170,11 +170,12 @@ export function renderPlayoffsCard(spec: PlayoffsCardSpec): ReactElement {
 			{!racing && spec.odds !== null ? chip(`${oddsText(spec.odds)} from here`) : null}
 		</div>
 	)
+	// The glow behind the number is a gradient, not a blurred shadow: a blur of that size is what made the picture take seconds to draw.
 	const number = (
-		<div style={{ display: "flex", flexDirection: "column" }}>
+		<div style={{ display: "flex", flexDirection: "column", padding: tall ? "30px 60px 30px 30px" : "24px 50px 24px 24px", margin: tall ? "-30px -60px -30px -30px" : "-24px -50px -24px -24px", backgroundImage: `radial-gradient(ellipse closest-side at 50% 50%, ${rgba(spec.color, 0.3)} 0%, ${rgba(spec.color, 0)} 100%)` }}>
 			<div style={label({ fontSize: tall ? 30 : 22, color: BRIGHT, marginTop: tall ? 0 : 6 })}>{heroLabel}</div>
 			<div style={{ display: "flex", alignItems: "flex-end" }}>
-				<div style={{ display: "flex", fontFamily: "Anton", fontSize: bigSize, lineHeight: 1, color: spec.seed === null && !racing ? DIM : WHITE, textShadow: `0 0 ${tall ? 70 : 50}px ${rgba(spec.color, 0.5)}` }}>{hr.big}</div>
+				<div style={{ display: "flex", fontFamily: "Anton", fontSize: bigSize, lineHeight: 1, color: spec.seed === null && !racing ? DIM : WHITE }}>{hr.big}</div>
 				{hr.small ? <div style={{ display: "flex", fontFamily: "Anton", fontSize: Math.round(bigSize * 0.4), lineHeight: 1.5, color: SILVER, marginLeft: 6 }}>{hr.small}</div> : null}
 			</div>
 			<div style={label({ fontSize: tall ? 30 : 22, color: SILVER, marginTop: tall ? 6 : 2 })}>{hr.note}</div>
@@ -193,7 +194,7 @@ export function renderPlayoffsCard(spec: PlayoffsCardSpec): ReactElement {
 	)
 
 	const bracket = (
-		<div style={{ display: "flex", flexDirection: "column", backgroundColor: "rgba(15,16,18,0.6)", border: `2px solid ${LINE}`, borderRadius: 20, padding: tall ? "24px 26px 26px" : "18px 18px 20px", boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 60px ${rgba(spec.color, 0.14)}`, width: tall ? w - 144 : 490 }}>
+		<div style={{ display: "flex", flexDirection: "column", backgroundColor: "rgba(12,13,15,0.72)", border: `2px solid ${LINE}`, borderRadius: 20, padding: tall ? "24px 26px 26px" : "18px 18px 20px", width: tall ? w - 144 : 490 }}>
 			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: tall ? 16 : 10 }}>
 				<div style={label({ fontSize: tall ? 26 : 19, color: SILVER, fontWeight: 600, letterSpacing: 5 })}>{`${spec.conference} bracket`}</div>
 				<div style={label({ fontSize: tall ? 22 : 16 })}>{racing ? "If the season ended today" : "In this scenario"}</div>
