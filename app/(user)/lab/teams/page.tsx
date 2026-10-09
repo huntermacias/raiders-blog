@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import GradeKey from "@/components/lab/GradeKey"
 import TeamBoard from "@/components/lab/TeamBoard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -86,6 +88,7 @@ export default function TeamsPage() {
 					<UnitsCredit>Each group's grade is the average of its stats' league ranks. Early in the season a handful of plays can move a rank a lot. </UnitsCredit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/teams" weeks={labWeeks()} />
 		</div>
 	)
 }

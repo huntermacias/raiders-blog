@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import ShareCard from "@/components/lab/ShareCard"
 import WillItLast from "@/components/lab/WillItLast"
@@ -113,6 +115,7 @@ export default function WillItLastPage() {
 					<Credit>{view ? `History covers every regular season from ${view.first} to ${view.last}. ` : ""}</Credit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/will-it-last" weeks={labWeeks()} />
 		</div>
 	)
 }

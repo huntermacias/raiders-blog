@@ -57,6 +57,12 @@ describe("header navigation", () => {
 		}
 	})
 
+	it("builds the Lab menu from the list of Lab tools, so a new tool shows up without editing the header", () => {
+		expect(header).toContain('from "@/lib/lab/tools"')
+		expect(header).toMatch(/labHref=|labelHref=/)
+		expect(header).toMatch(/LAB_TOOLS\.map/)
+	})
+
 	it("still lists the live and discussion pages in the footer", () => {
 		expect(footer).toContain('href="/live"')
 		expect(footer).toContain('href="/community"')

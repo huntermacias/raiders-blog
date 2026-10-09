@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { notFound, permanentRedirect } from "next/navigation"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import MatchupReport from "@/components/lab/MatchupReport"
 import ShareCard from "@/components/lab/ShareCard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -111,6 +113,7 @@ export default async function MatchupPage(props: Props) {
 					<UnitsCredit>Ranks use the {data.season} regular season through Week {data.week}. </UnitsCredit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/matchups" weeks={labWeeks()} />
 		</div>
 	)
 }

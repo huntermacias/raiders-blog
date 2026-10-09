@@ -110,7 +110,7 @@ describe("the Lab section", () => {
 
 		it("is in the sitemap and linked from the Lab", () => {
 			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/season-twins")
-			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/season-twins")
+			expect(read("lib/lab/tools.ts")).toContain("/lab/season-twins")
 		})
 
 		it("keeps the matching in code that does not import the data files, so the browser can run it", () => {
@@ -170,7 +170,7 @@ describe("the Lab section", () => {
 			expect(sitemap).toContain("/lab/teams")
 			expect(sitemap).toContain("/lab/matchups")
 			expect(sitemap).toMatch(/matchupPath/)
-			const hub = read("app/(user)/lab/page.tsx")
+			const hub = read("lib/lab/tools.ts")
 			expect(hub).toContain("/lab/teams")
 			expect(hub).toContain("/lab/matchups")
 		})
@@ -199,7 +199,7 @@ describe("the Lab section", () => {
 		it("sets the lab theme, and is in the sitemap and linked from the Lab", () => {
 			expect(read(page)).toMatch(/className="lab /)
 			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/will-it-last")
-			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/will-it-last")
+			expect(read("lib/lab/tools.ts")).toContain("/lab/will-it-last")
 		})
 
 		it("keeps the chart's team names and filters in code that does not import the data files", () => {
@@ -254,7 +254,7 @@ describe("the Lab section", () => {
 		it("is in the sitemap and linked from the Lab", () => {
 			const sitemap = read("pages/sitemap.xml.tsx")
 			for (const p of ["/lab/top-plays", "/lab/scouting"]) expect(sitemap).toContain(p)
-			const hub = read("app/(user)/lab/page.tsx")
+			const hub = read("lib/lab/tools.ts")
 			for (const p of ["/lab/top-plays", "/lab/scouting"]) expect(hub).toContain(p)
 			expect(sitemap).not.toContain("fourth-down")
 			expect(hub).not.toContain("fourth-down")
@@ -288,7 +288,7 @@ describe("the Lab section", () => {
 
 		it("is in the sitemap and linked from the Lab", () => {
 			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/playoff-machine")
-			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/playoff-machine")
+			expect(read("lib/lab/tools.ts")).toContain("/lab/playoff-machine")
 		})
 
 		it("keeps the engine free of the data file, the clock and Math.random, so it can run thousands of times anywhere", () => {

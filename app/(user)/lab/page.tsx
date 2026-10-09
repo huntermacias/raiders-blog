@@ -3,24 +3,26 @@ import type { Metadata } from "next"
 import Link from "@/components/SiteLink"
 import Sparkline from "@/components/lab/Sparkline"
 import Tip from "@/components/lab/Tip"
-import WinProbabilityReplay from "@/components/lab/WinProbabilityReplay"
+import LabToolCard from "@/components/lab/LabToolCard"
 import { gameSlug, getGames, getSeason } from "@/lib/lab/data"
 import { SWING_HELP } from "@/lib/lab/glossary"
 import { labColorVars } from "@/lib/lab/colors"
+import { LAB_GROUPS, toolBadges, toolsIn } from "@/lib/lab/tools"
+import { labWeeks } from "@/lib/lab/toolsData"
 import { formatSwing, gameStory, swingPoints, clockAt, pct } from "@/lib/lab/wp"
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab`
 
 export const metadata: Metadata = {
-	title: "The Lab: Raiders win probability and drive replays | Raiders Rundown",
+	title: "The Lab: playoff odds, matchups and Raiders game replays | Raiders Rundown",
 	description:
-		"Every Raiders game rebuilt from the play-by-play. Scrub through the win probability, watch each drive move across the field, and see the plays that decided the game.",
+		"Playoff odds and a playoff machine, position-group matchups for every game, and every Raiders game rebuilt from the play-by-play, with win probability scrubbers and drive replays.",
 	alternates: { canonical: PAGE_URL },
 	openGraph: {
 		type: "website",
 		title: "The Lab | Raiders Rundown",
-		description: "Every Raiders game rebuilt from the play-by-play: win probability replays and drive-by-drive animations.",
+		description: "Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play.",
 		url: PAGE_URL,
 		siteName: "Raiders Rundown",
 		images: [`${SITE_URL}/og-default-v2.png`],
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: "summary_large_image",
 		title: "The Lab | Raiders Rundown",
-		description: "Every Raiders game rebuilt from the play-by-play: win probability replays and drive-by-drive animations.",
+		description: "Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play.",
 		images: [`${SITE_URL}/og-default-v2.png`],
 	},
 }
@@ -39,81 +41,96 @@ export default function LabPage() {
 	const latest = games[games.length - 1]
 	const wins = games.filter((g) => g.result === "W").length
 	const losses = games.filter((g) => g.result === "L").length
+	const weeks = labWeeks()
+	const latestStory = latest ? gameStory(latest.wp, latest.keyPlays, latest.scores) : null
+	const latestSwing = latestStory?.swing ? swingPoints(latestStory.swing) : null
+	const latestLow = latestStory ? clockAt(latestStory.low.el) : null
 
 	return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink" style={labColorVars(latest?.opp ?? "")}>
 			<section className="border-b border-lab-line">
-				<div className="container py-12 sm:py-16">
+				<div className="container py-10 sm:py-14">
 					<p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-lab-muted">Raiders Rundown &middot; The Lab</p>
-					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-						Every Raiders game, rebuilt from the play-by-play.
-					</h1>
-					<p className="mt-5 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
-						Drag through the win probability to find the play that turned the game. Watch any drive move down the field, one snap at a time.
-						Updated every Monday from open NFL data.
+					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">The Lab</h1>
+					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
+						Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play. Built from open NFL data and updated every Monday.
 					</p>
-					<div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-sm tabular-nums text-lab-muted">
+					<div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-sm tabular-nums text-lab-muted">
 						<span>
 							{season.season} season &middot; {wins}-{losses}
 						</span>
 						<span>{games.length} games replayed</span>
 					</div>
+					<nav aria-label="On this page" className="mt-6 flex flex-wrap gap-2">
+						{[
+							{ href: "#start", label: "Start here" },
+							{ href: "#raiders", label: "The Raiders" },
+							{ href: "#league", label: "League and history" },
+							{ href: "#games", label: "Every game" },
+						].map((l) => (
+							<a key={l.href} href={l.href} className="inline-flex min-h-[40px] items-center rounded-full border border-lab-line-strong bg-lab-surface px-4 text-sm font-semibold text-lab-soft transition hover:bg-lab-hover hover:text-lab-ink">
+								{l.label}
+							</a>
+						))}
+					</nav>
 				</div>
 			</section>
 
-			{latest && (
-				<section className="container py-10 sm:py-14">
-					<div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-						<div>
-							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lab-muted">Latest game</p>
-							<h2 className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
-								Week {latest.week}: Raiders {latest.score[0]}, {latest.oppName} {latest.score[1]}
-							</h2>
-						</div>
-						<Link href={`/lab/${gameSlug(latest)}`} className="text-sm font-semibold text-lab-soft underline-offset-4 hover:text-lab-ink hover:underline">
-							Full game, with drive replays &rarr;
-						</Link>
+			{LAB_GROUPS.map((group) => (
+				<section key={group.id} id={group.id} className="container scroll-mt-24 pt-10 sm:pt-12" aria-labelledby={`${group.id}-heading`}>
+					<div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+						<h2 id={`${group.id}-heading`} className="m-0 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							{group.title}
+						</h2>
+						<p className="m-0 text-sm text-lab-muted">{group.blurb}</p>
 					</div>
-					<WinProbabilityReplay
-						series={latest.wp}
-						keyPlays={latest.keyPlays}
-						scores={latest.scores}
-						teamName="Raiders"
-						oppName={latest.oppName}
-						finalScore={latest.score}
-						sharePath={`/lab/${gameSlug(latest)}`}
-						shareText={`Raiders ${latest.score[0]}, ${latest.oppName} ${latest.score[1]}: scrub through the win probability, play by play.`}
-					/>
+					<ul className={`m-0 grid list-none gap-4 p-0 ${group.id === "start" ? "md:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+						{group.id === "raiders" && latest && latestStory && latestLow ? (
+							<li>
+								<Link
+									href={`/lab/${gameSlug(latest)}`}
+									className="group block h-full rounded-2xl border border-lab-line-strong bg-lab-surface p-5 transition hover:bg-lab-tint"
+								>
+									<div className="flex flex-wrap items-center justify-between gap-2">
+										<h3 className="m-0 font-serif text-xl font-bold">Latest game</h3>
+										<span className="rounded-full border border-lab-line-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-lab-soft">Week {latest.week}</span>
+									</div>
+									<p className="m-0 mt-1 text-sm text-lab-soft">
+										{latest.home ? "vs" : "at"} {latest.oppName} &middot;{" "}
+										<span className="font-mono font-semibold tabular-nums text-lab-ink">
+											{latest.score[0]}&ndash;{latest.score[1]} {latest.result}
+										</span>
+									</p>
+									<div className="mt-3">
+										<Sparkline id="spark-latest" series={latest.wp} label={`Raiders win probability in week ${latest.week} against the ${latest.oppName}`} />
+									</div>
+									<p className="m-0 mt-2 text-xs text-lab-muted">
+										Lowest point{" "}
+										<span className="font-mono font-semibold tabular-nums text-lab-ink">
+											{pct(latestStory.low.p)} at {latestLow.q} {latestLow.clock}
+										</span>
+										{latestSwing !== null ? (
+											<>
+												{" "}
+												&middot; Biggest swing <span className="font-mono font-semibold tabular-nums text-lab-ink">{formatSwing(latestSwing)}</span>
+											</>
+										) : null}
+									</p>
+									<p className="m-0 mt-3 text-sm font-semibold text-lab-soft transition group-hover:text-lab-ink">Scrub the win probability, drive by drive &rarr;</p>
+								</Link>
+							</li>
+						) : null}
+						{toolsIn(group.id).map((t) => (
+							<li key={t.id}>
+								<LabToolCard tool={t} badges={toolBadges(t, weeks)} featured={group.id === "start"} />
+							</li>
+						))}
+					</ul>
 				</section>
-			)}
+			))}
 
-			<section className="container pb-10 sm:pb-14" aria-labelledby="tools-heading">
-				<h2 id="tools-heading" className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
-					More from the Lab
-				</h2>
-				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
-					{[
-						{ href: "/lab/top-plays", title: "Top plays", text: "The snaps that moved the Raiders' chance to win the furthest this season." },
-						{ href: "/lab/playoff-machine", title: "NFL Playoff Machine", text: "Pick the winner of every game left, and watch the standings, seeds and bracket update with the real tiebreakers. See what the Raiders need, and share your scenario." },
-						{ href: "/lab/matchups", title: "This week's matchups", text: "Every game on the slate, position group by position group: who has the edge at quarterback, on the line and in coverage." },
-						{ href: "/lab/teams", title: "How all 32 teams stack up", text: "Quarterback, line, receivers, run game, pass rush, run defense and coverage, ranked across the league." },
-						{ href: "/lab/scouting", title: "Scouting reports", text: "Where the Raiders have the edge on every opponent, and what to watch." },
-						{ href: "/lab/will-it-last", title: "Will it last?", text: "The Raiders' hottest and coldest stats, against every team since 1999 that started the same way." },
-						{ href: "/lab/season-twins", title: "Season twins", text: "The past teams that looked the most like the Raiders so far, laid over them stat by stat, and how their seasons ended." },
-					].map((t) => (
-						<li key={t.href}>
-							<Link href={t.href} className="group block h-full rounded-2xl border border-lab-line bg-lab-surface p-5 transition hover:border-lab-line-strong hover:bg-lab-tint">
-								<h3 className="m-0 font-serif text-xl font-bold">{t.title}</h3>
-								<p className="m-0 mt-2 text-sm leading-relaxed text-lab-soft">{t.text}</p>
-								<p className="m-0 mt-3 text-sm font-semibold text-lab-soft transition group-hover:text-lab-ink">Open &rarr;</p>
-							</Link>
-						</li>
-					))}
-				</ul>
-			</section>
-
-			<section className="container pb-14 sm:pb-20">
-				<h2 className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">The season so far</h2>
+			<section id="games" className="container scroll-mt-24 py-10 pb-14 sm:py-12 sm:pb-20" aria-labelledby="games-heading">
+				<h2 id="games-heading" className="mb-5 font-serif text-2xl font-bold tracking-tight sm:text-3xl">Every game, week by week</h2>
 				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{games
 						.slice()

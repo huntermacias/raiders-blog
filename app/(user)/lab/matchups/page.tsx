@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
+import MoreFromLab from "@/components/lab/MoreFromLab"
+import { labWeeks } from "@/lib/lab/toolsData"
 import ShareCard from "@/components/lab/ShareCard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { TeamTag } from "@/components/lab/UnitBits"
@@ -141,6 +143,7 @@ export default function MatchupsPage() {
 					<UnitsCredit>Ranks use the {data.season} regular season through Week {data.week}. Lines are the opening spreads in the games file. </UnitsCredit>
 				</div>
 			</section>
+			<MoreFromLab current="/lab/matchups" weeks={labWeeks()} />
 		</div>
 	)
 }
