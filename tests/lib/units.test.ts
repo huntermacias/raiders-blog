@@ -84,8 +84,22 @@ describe("data/lab/units.json", () => {
 		for (const a of abbrs) {
 			for (const p of data.teams[a].injuries.players) {
 				expect(isGroup(p.group)).toBe(true)
-				expect(["Out", "Doubtful", "Questionable", "DNP", "Limited"]).toContain(p.status)
+				expect(["Out", "Doubtful", "Questionable", "DNP", "Limited", "Full"]).toContain(p.status)
 				if (isGameStatus(p.status)) expect(p.name.length).toBeGreaterThan(2)
+			}
+		}
+	})
+
+	it("keeps each player's practice trail in order, ending where his status is now", () => {
+		if (data.injuriesUpdatedAt) expect(Number.isNaN(new Date(data.injuriesUpdatedAt).getTime())).toBe(false)
+		for (const a of abbrs) {
+			for (const p of data.teams[a].injuries.players) {
+				if (!p.trail) continue
+				expect(p.trail.length).toBeGreaterThan(0)
+				const times = p.trail.map((t) => new Date(t.at).getTime())
+				expect(times).toEqual([...times].sort((x, y) => x - y))
+				expect(p.trail[p.trail.length - 1].status).toBe(p.status)
+				expect(p.trail[p.trail.length - 1].practice ?? null).toBe(p.practice ?? null)
 			}
 		}
 	})

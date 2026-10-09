@@ -491,48 +491,76 @@ function Coaches({ spec }: { spec: Spec<"coaches"> }) {
 // ---- who is missing ---------------------------------------------------------------------------------------
 
 const STATUS_COLOR: Record<string, string> = { Out: MISS, Doubtful: BRONZE, Questionable: GOLD }
-const STATUS_TEXT: Record<string, string> = { DNP: "Did not practice", Limited: "Limited" }
+const STATUS_TEXT: Record<string, string> = { DNP: "No practice", Limited: "Limited", Full: "Full practice" }
+const PRACTICE_COLOR: Record<string, string> = { DNP: MISS, Limited: GOLD, Full: HIT }
+const PRACTICE_PIP: Record<string, string> = { DNP: "DNP", Limited: "LTD", Full: "FULL" }
 
 function Injuries({ spec }: { spec: Spec<"injuries"> }) {
 	const d = dims(spec)
 	const gap = 44
 	const colW = Math.floor((d.innerW - gap) / 2)
-	const rowH = d.tall ? 84 : 58
-	const chipW = d.tall ? 144 : 124
+	const rowH = d.tall ? 98 : 72
+	const chipW = d.tall ? 150 : 124
 	const nameW = colW - chipW - 16
 	const column = (side: TeamSide, hs: HurtSide) => {
 		const t = spec.teams[side]
 		return (
 			<div key={t.abbr} style={{ display: "flex", flexDirection: "column", width: colW }}>
 				<div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", paddingBottom: d.tall ? 12 : 6, borderBottom: `3px solid ${t.color}` }}>
-					<div style={{ display: "flex", fontFamily: "Anton", fontSize: fit(t.nick, colW - 260, d.tall ? 70 : 46, 30), lineHeight: 1, color: t.color, ...caps }}>{t.nick}</div>
+					<div style={{ display: "flex", fontFamily: "Anton", fontSize: fit(t.nick, colW - 250, d.tall ? 70 : 46, 30), lineHeight: 1, color: t.color, ...caps }}>{t.nick}</div>
 					<div style={{ display: "flex", alignItems: "flex-end" }}>
-						<div style={label({ fontSize: d.tall ? 15 : 11, letterSpacing: 2.5, marginRight: 12, marginBottom: d.tall ? 8 : 4, textAlign: "right", width: d.tall ? 110 : 80 })}>starters on the game report</div>
+						<div style={label({ fontSize: d.tall ? 15 : 11, letterSpacing: 2.5, marginRight: 12, marginBottom: d.tall ? 8 : 4, textAlign: "right", width: d.tall ? 120 : 90 })}>starters out or limited</div>
 						<div style={{ display: "flex", fontFamily: "Anton", fontSize: d.tall ? 84 : 52, lineHeight: 1, color: hs.starters ? WHITE : DIM }}>{hs.starters}</div>
 					</div>
 				</div>
-				<div style={label({ fontSize: d.tall ? 17 : 12, letterSpacing: 2, marginTop: d.tall ? 10 : 6, marginBottom: d.tall ? 4 : 2 })}>{clip(hs.note ?? "", 60)}</div>
+				<div style={label({ fontSize: d.tall ? 17 : 12, letterSpacing: 2, marginTop: d.tall ? 10 : 6, marginBottom: d.tall ? 4 : 2 })}>{clip(hs.note ?? "", d.tall ? 54 : 58)}</div>
 				{hs.players.length ? (
-					hs.players.map((p, i) => (
-						<div key={`${p.name}-${i}`} style={{ display: "flex", alignItems: "center", height: rowH, borderBottom: `2px solid ${LINE}` }}>
-							<div style={{ display: "flex", flexShrink: 0, width: chipW, justifyContent: "center", padding: "3px 0", marginRight: 16, border: `2px solid ${STATUS_COLOR[p.status] ?? DIM}`, color: STATUS_COLOR[p.status] ?? DIM, fontFamily: "Oswald", fontWeight: 700, fontSize: d.tall ? 15 : 12, letterSpacing: 1.5, ...caps }}>
-								{STATUS_TEXT[p.status] ?? p.status}
+					hs.players.map((p, i) => {
+						const game = STATUS_COLOR[p.status]
+						const color = game ?? (p.practice ? PRACTICE_COLOR[p.practice] : DIM)
+						const trail = p.trail.slice(-(d.tall ? 4 : 3))
+						return (
+							<div key={`${p.name}-${i}`} style={{ display: "flex", alignItems: "center", height: rowH, borderBottom: `2px solid ${LINE}` }}>
+								<div style={{ display: "flex", flexShrink: 0, width: chipW, justifyContent: "center", padding: "4px 0", marginRight: 16, border: `2px solid ${color}`, backgroundColor: game ? color : "transparent", color: game ? "#0b0c0d" : color, fontFamily: "Oswald", fontWeight: 700, fontSize: d.tall ? 15 : 12, letterSpacing: 1.5, ...caps }}>
+									{game ? p.status : STATUS_TEXT[p.status] ?? p.status}
+								</div>
+								<div style={{ display: "flex", flexDirection: "column", width: nameW, flexShrink: 0 }}>
+									<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: d.tall ? 27 : 21, lineHeight: 1.1, color: p.starter ? WHITE : BRIGHT }}>{clip(p.name, d.tall ? 24 : 28)}</div>
+									<div style={label({ fontSize: d.tall ? 15 : 11.5, letterSpacing: 1.2, marginTop: 2 })}>{clip(`${p.pos} · ${p.group}${p.starter ? " · starter" : ""}${p.injury ? ` · ${p.injury}` : ""}`, d.tall ? 38 : 42)}</div>
+									{trail.length ? (
+										<div style={{ display: "flex", alignItems: "center", marginTop: d.tall ? 8 : 4 }}>
+											{trail.map((step, k) => (
+												<div key={k} style={{ display: "flex", alignItems: "center" }}>
+													{k > 0 ? <div style={{ display: "flex", fontFamily: "Oswald", fontSize: d.tall ? 15 : 11, color: DIM, margin: "0 6px" }}>›</div> : null}
+													<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: d.tall ? 14 : 10.5, letterSpacing: 1.2, color: step.practice ? PRACTICE_COLOR[step.practice] : DIM, ...caps }}>
+														{`${step.day} ${step.practice ? PRACTICE_PIP[step.practice] : step.label}`}
+													</div>
+												</div>
+											))}
+											{p.trend ? (
+													<svg width={d.tall ? 13 : 10} height={d.tall ? 11 : 9} viewBox="0 0 10 8" style={{ marginLeft: 10 }}>
+														<polygon points={p.trend === "up" ? "5,0 10,8 0,8" : "0,0 10,0 5,8"} fill={p.trend === "up" ? HIT : MISS} />
+													</svg>
+												) : null}
+										</div>
+									) : null}
+								</div>
 							</div>
-							<div style={{ display: "flex", flexDirection: "column", width: nameW, flexShrink: 0 }}>
-								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 600, fontSize: d.tall ? 27 : 21, lineHeight: 1.1, color: p.starter ? WHITE : BRIGHT }}>{clip(p.name, d.tall ? 24 : 30)}</div>
-								<div style={label({ fontSize: d.tall ? 15 : 11.5, letterSpacing: 1.2, marginTop: 2 })}>{clip(`${p.pos} · ${p.group}${p.starter ? " · starter" : ""}${p.injury ? ` · ${p.injury}` : ""}`, d.tall ? 38 : 46)}</div>
-							</div>
-						</div>
-					))
+						)
+					})
 				) : (
 					<div style={{ display: "flex", marginTop: 18, fontFamily: "Oswald", fontWeight: 500, fontSize: d.tall ? 26 : 18, color: BRIGHT }}>{hs.empty}</div>
 				)}
-				{hs.more ? <div style={label({ fontSize: d.tall ? 18 : 13, letterSpacing: 3, marginTop: 10, color: SILVER })}>{`+${hs.more} more on the report`}</div> : null}
+				{hs.more || hs.cleared ? (
+					<div style={label({ fontSize: d.tall ? 18 : 13, letterSpacing: 3, marginTop: 10, color: SILVER })}>
+						{[hs.more ? `+${hs.more} more` : "", hs.cleared ? `${hs.cleared} back at full practice` : ""].filter(Boolean).join("  ·  ")}
+					</div>
+				) : null}
 			</div>
 		)
 	}
 	return (
-		<Shell spec={spec} d={d} source={SOURCES.injuries} note="Starters averaged more than half the team's snaps">
+		<Shell spec={spec} d={d} source={SOURCES.injuries} note="Practice days as we saw them · starters play over half the snaps">
 			<div style={{ display: "flex", justifyContent: "space-between", width: d.innerW, marginTop: d.tall ? 28 : 16 }}>
 				{column(0, spec.sides[0])}
 				{column(1, spec.sides[1])}

@@ -21,7 +21,13 @@ import {
 	heat,
 	isGameStatus,
 	matchupRows,
+	injuryNote,
 	missingStarters,
+	practiceOf,
+	practiceTrend,
+	reportedStarters,
+	trailText,
+	updatedText,
 	ordinal,
 	paperEdge,
 	pairBoard,
@@ -165,6 +171,45 @@ describe("injuries", () => {
 		expect(groupInjuries(team, ["ol"]).map((p) => p.name)).toEqual(["Hurt Harry", "Bench Ben", "Limited Larry"])
 		expect(isGameStatus("Out") && isGameStatus("Doubtful") && isGameStatus("Questionable")).toBe(true)
 		expect(isGameStatus("DNP")).toBe(false)
+	})
+	it("reads how a player practiced, from the new field or an older file's status", () => {
+		expect(practiceOf(hurt({ status: "Out", practice: "DNP" }))).toBe("DNP")
+		expect(practiceOf(hurt({ status: "Questionable" }))).toBeNull()
+		expect(practiceOf(hurt({ status: "Limited" }))).toBe("Limited")
+		expect(practiceOf(hurt({ status: "Questionable", practice: null }))).toBeNull()
+	})
+	it("flags starters who are limited or out of practice as well as those on the game report", () => {
+		const team = fakeUnits().teams.AAA
+		team.injuries.players = [
+			hurt({ name: "Out Otis", status: "Out", practice: "DNP" }),
+			hurt({ name: "Limited Lou", status: "Limited", practice: "Limited" }),
+			hurt({ name: "Back Bo", status: "Full", practice: "Full" }),
+			hurt({ name: "Bench Ben", status: "Limited", practice: "Limited", starter: false }),
+			hurt({ name: "Quest Quinn", status: "Questionable", practice: "Full" }),
+		]
+		expect(reportedStarters(team).map((p) => p.name)).toEqual(["Out Otis", "Limited Lou", "Quest Quinn"])
+		expect(missingStarters(team).map((p) => p.name)).toEqual(["Out Otis", "Quest Quinn"])
+		expect(injuryNote(team.injuries.players[0])).toBe("out, did not practice, knee")
+		expect(injuryNote(team.injuries.players[1])).toBe("limited in practice, knee")
+	})
+	it("tells a player's practice week from our looks at it, and which way it is going", () => {
+		const step = (at: string, practice: "DNP" | "Limited" | "Full", status = practice as string) => ({ at, practice, status })
+		const p = hurt({
+			status: "Questionable",
+			practice: "Limited",
+			trail: [step("2026-10-07T20:00:00Z", "DNP"), step("2026-10-08T20:00:00Z", "Limited"), step("2026-10-09T20:00:00Z", "Limited", "Questionable")],
+		})
+		expect(trailText(p)).toBe("Wed DNP → Thu Limited → Fri Limited (questionable)")
+		expect(practiceTrend(p)).toBeNull()
+		expect(practiceTrend(hurt({ trail: [step("2026-10-08T20:00:00Z", "Limited"), step("2026-10-09T20:00:00Z", "Full")] }))).toBe("up")
+		expect(practiceTrend(hurt({ trail: [step("2026-10-08T20:00:00Z", "Limited"), step("2026-10-09T20:00:00Z", "DNP", "Out")] }))).toBe("down")
+		expect(practiceTrend(hurt({ trail: [step("2026-10-09T20:00:00Z", "Full")] }))).toBeNull()
+		expect(trailText(hurt())).toBe("")
+	})
+	it("writes the update time in Eastern time, whatever the reader's zone", () => {
+		expect(updatedText("2026-10-09T23:24:30Z")).toBe("Fri, Oct 9, 7:24 PM ET")
+		expect(updatedText("2027-01-03T02:00:00Z")).toBe("Sat, Jan 2, 9:00 PM ET")
+		expect(updatedText("nonsense")).toBe("")
 	})
 	it("notes a report that is older than the game", () => {
 		const team = fakeUnits().teams.AAA

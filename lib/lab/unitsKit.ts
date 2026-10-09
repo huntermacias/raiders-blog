@@ -10,7 +10,23 @@ export type GroupKey = "qb" | "ol" | "rec" | "run" | "rush" | "rund" | "cov"
 export type Metric = { v: number; rank: number } | null
 export type Leader = { name: string; pos: string; stat: string; v: number; n?: number; x?: number }
 export type GroupData = { score: number | null; rank: number; stats: Record<string, Metric>; leaders: Leader[] }
-export type InjuryPlayer = { name: string; pos: string; group: GroupKey; status: string; injury: string | null; starter: boolean; snap: number | null }
+export type Practice = "DNP" | "Limited" | "Full"
+/** One look at a player's status: when we saw it and what it was. Only changes are kept. */
+export type TrailStep = { at: string; practice: Practice | null; status: string }
+export type InjuryPlayer = {
+	name: string
+	pos: string
+	group: GroupKey
+	/** The game designation once the team has issued one; before that, how he practiced (DNP, Limited, or Full when he is back). */
+	status: string
+	/** How he practiced at the latest report. Old data files do not have it. */
+	practice?: Practice | null
+	injury: string | null
+	starter: boolean
+	snap: number | null
+	/** Changes in his status over the report week, oldest first. Old data files do not have it. */
+	trail?: TrailStep[]
+}
 export type Rec = { w: number; l: number; t: number }
 export type AtsRec = { w: number; l: number; p: number }
 export type Meeting = { season: number; week: number; pf: number; pa: number }
@@ -44,6 +60,8 @@ export type UnitsData = {
 	source: string
 	teams: Record<string, UnitTeam>
 	slate: { week: number; games: SlateGame[] } | null
+	/** When the injury reports last changed. The rest of the file is rebuilt weekly; the reports are refreshed through the week. */
+	injuriesUpdatedAt?: string
 }
 
 // ------------------------------------------------------------------------------------------------ the catalog
@@ -356,6 +374,57 @@ export function isGameStatus(status: string): boolean {
 	return (GAME_STATUS as readonly string[]).includes(status)
 }
 
+/** How he practiced, from the new field or, in older data files, from the status. */
+export function practiceOf(p: InjuryPlayer): Practice | null {
+	if (p.practice !== undefined) return p.practice
+	return p.status === "DNP" || p.status === "Limited" || p.status === "Full" ? p.status : null
+}
+
+const PRACTICE_RANK: Record<Practice, number> = { DNP: 0, Limited: 1, Full: 2 }
+const PRACTICE_TEXT: Record<Practice, string> = { DNP: "Did not practice", Limited: "Limited in practice", Full: "Full practice" }
+const PRACTICE_SHORT: Record<Practice, string> = { DNP: "DNP", Limited: "Limited", Full: "Full" }
+
+export const practiceText = (practice: Practice): string => PRACTICE_TEXT[practice]
+
+/** Whether he is practicing more ("up"), less ("down") or the same as at our previous look. Null with no earlier look. */
+export function practiceTrend(p: InjuryPlayer): "up" | "down" | null {
+	const seen = (p.trail ?? []).filter((t) => t.practice)
+	if (seen.length < 2) return null
+	const diff = PRACTICE_RANK[seen[seen.length - 1].practice as Practice] - PRACTICE_RANK[seen[seen.length - 2].practice as Practice]
+	return diff > 0 ? "up" : diff < 0 ? "down" : null
+}
+
+const ET = "America/New_York"
+const dayOf = (iso: string) => new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: ET }).format(new Date(iso))
+
+/** "Fri, Oct 9, 7:23 PM ET": when the reports last changed, in the NFL's own time zone so every reader sees the same thing. */
+export function updatedText(iso: string): string {
+	const d = new Date(iso)
+	if (Number.isNaN(d.getTime())) return ""
+	const date = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: ET }).format(d)
+	const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: ET }).format(d)
+	return `${date}, ${time} ET`
+}
+
+/** "Wed DNP → Thu Limited → Fri Full": his practice week as we saw it. A player we have looked at once reads "Fri Limited". */
+export type TrailLabel = { day: string; practice: Practice | null; label: string; game: string | null }
+
+/** His practice week as separate steps, for a view that wants to draw them. */
+export function trailSteps(p: InjuryPlayer): TrailLabel[] {
+	return (p.trail ?? []).map((t) => ({
+		day: dayOf(t.at),
+		practice: t.practice,
+		label: t.practice ? PRACTICE_SHORT[t.practice] : t.status,
+		game: isGameStatus(t.status) ? t.status.toLowerCase() : null,
+	}))
+}
+
+export function trailText(p: InjuryPlayer): string {
+	return trailSteps(p)
+		.map((t) => `${t.day} ${t.label}${t.game ? ` (${t.game})` : ""}`)
+		.join(" → ")
+}
+
 /** Report entries in these groups, those on the game-day report first and starters first. */
 export function groupInjuries(team: UnitTeam, groups: GroupKey[]): InjuryPlayer[] {
 	return team.injuries.players.filter((p) => groups.includes(p.group))
@@ -364,6 +433,25 @@ export function groupInjuries(team: UnitTeam, groups: GroupKey[]): InjuryPlayer[
 /** Starters on the game-day report: the ones that move a matchup. */
 export function missingStarters(team: UnitTeam, groups?: GroupKey[]): InjuryPlayer[] {
 	return team.injuries.players.filter((p) => p.starter && isGameStatus(p.status) && (!groups || groups.includes(p.group)))
+}
+
+/** Starters who are on the game-day report or did not practice fully this week, which is how a game designation is usually foreshadowed. */
+export function reportedStarters(team: UnitTeam, groups?: GroupKey[]): InjuryPlayer[] {
+	return team.injuries.players.filter((p) => {
+		if (!p.starter || (groups && !groups.includes(p.group))) return false
+		const practice = practiceOf(p)
+		return isGameStatus(p.status) || practice === "DNP" || practice === "Limited"
+	})
+}
+
+/** What to say about one player on the report: "questionable, limited in practice, knee". */
+export function injuryNote(p: InjuryPlayer): string {
+	const practice = practiceOf(p)
+	const parts: string[] = []
+	if (isGameStatus(p.status)) parts.push(p.status.toLowerCase())
+	if (practice) parts.push(PRACTICE_TEXT[practice].toLowerCase())
+	if (p.injury) parts.push(p.injury.toLowerCase())
+	return parts.join(", ")
 }
 
 export function groupsOfPair(pair: Pair, side: "off" | "def"): GroupKey[] {

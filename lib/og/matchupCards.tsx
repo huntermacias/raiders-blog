@@ -43,11 +43,16 @@ import {
 	marketLine,
 	matchupRows,
 	paperEdge,
+	practiceOf,
+	practiceTrend,
 	recText,
+	reportedStarters,
 	share,
 	tally,
 	teamCount,
 	tierOf,
+	trailSteps,
+	updatedText,
 	topEdges,
 } from "../lab/unitsKit"
 import { teamByAbbr } from "../nfl"
@@ -91,8 +96,18 @@ export type StyleRow = { key: string; label: string; off: boolean; a: StyleSide 
 export type CoachCell = { main: string; sub: string | null }
 export type CoachRow = { label: string; a: CoachCell; b: CoachCell; better: TeamSide | null }
 export type Meeting = { text: string; won: boolean | null }
-export type Hurt = { name: string; pos: string; group: string; status: string; injury: string | null; starter: boolean }
-export type HurtSide = { starters: number; note: string | null; players: Hurt[]; more: number; empty: string }
+export type HurtStep = { day: string; practice: "DNP" | "Limited" | "Full" | null; label: string }
+export type Hurt = { name: string; pos: string; group: string; status: string; practice: "DNP" | "Limited" | "Full" | null; injury: string | null; starter: boolean; trail: HurtStep[]; trend: "up" | "down" | null }
+export type HurtSide = {
+	/** Starters on the game report or limited or out of practice. */
+	starters: number
+	note: string | null
+	players: Hurt[]
+	more: number
+	/** Players back at full practice, who are left off the card. */
+	cleared: number
+	empty: string
+}
 
 type Base = {
 	type: "matchup"
@@ -208,18 +223,32 @@ const invert = (r: Rec): Rec => ({ w: r.l, l: r.w, t: r.t })
 
 const STATUS_ORDER = ["Out", "Doubtful", "Questionable"]
 
-function hurtSide(t: UnitTeam, week: number | null, size: ShareSize): HurtSide {
-	const max = size === "tall" ? 10 : 6
+function hurtSide(t: UnitTeam, week: number | null, size: ShareSize, updated: string | null): HurtSide {
+	const max = size === "tall" ? 8 : 4
+	// Players back at full practice are cleared; the card is about who might not play.
+	const flagged = t.injuries.players.filter((p) => practiceOf(p) !== "Full" || isGameStatus(p.status))
 	const rank = (p: InjuryPlayer) => (isGameStatus(p.status) ? 0 : 10) + (p.starter ? 0 : 3) + Math.max(0, STATUS_ORDER.indexOf(p.status))
-	const sorted = [...t.injuries.players].sort((x, y) => rank(x) - rank(y))
+	const sorted = [...flagged].sort((x, y) => rank(x) - rank(y))
 	const w = t.injuries.week
-	const note = w === null ? "No report yet" : week !== null && w < week ? `Week ${w} report · Week ${week} not out` : `Week ${w} report`
+	const stamp = updated ? ` · ${updated}` : ""
+	const note = w === null ? "No report yet" : week !== null && w < week ? `Week ${w} report · Week ${week} not out${stamp}` : `Week ${w} report${stamp}`
 	return {
-		starters: t.injuries.players.filter((p) => p.starter && isGameStatus(p.status)).length,
+		starters: reportedStarters(t).length,
 		note,
-		players: sorted.slice(0, max).map((p) => ({ name: p.name, pos: p.pos, group: GROUPS[p.group].label, status: p.status, injury: p.injury, starter: p.starter })),
+		players: sorted.slice(0, max).map((p) => ({
+			name: p.name,
+			pos: p.pos,
+			group: GROUPS[p.group].label,
+			status: p.status,
+			practice: practiceOf(p),
+			injury: p.injury,
+			starter: p.starter,
+			trail: trailSteps(p).map((s) => ({ day: s.day, practice: s.practice, label: s.label })),
+			trend: practiceTrend(p),
+		})),
 		more: Math.max(0, sorted.length - max),
-		empty: w === null ? "No report yet." : "Nobody at a tracked position is on the report.",
+		cleared: t.injuries.players.length - flagged.length,
+		empty: w === null ? "No report yet." : "Nobody at a tracked position is limited or out.",
 	}
 }
 
@@ -312,7 +341,8 @@ export function buildMatchupSpec(data: UnitsData, a: string, b: string, size: Sh
 	}
 
 	if (view === "injuries") {
-		return { ...base, view, sides: [hurtSide(ta, base.week, size), hurtSide(tb, base.week, size)] }
+		const stamp = data.injuriesUpdatedAt ? updatedText(data.injuriesUpdatedAt) : null
+		return { ...base, view, sides: [hurtSide(ta, base.week, size, stamp), hurtSide(tb, base.week, size, stamp)] }
 	}
 
 	const radar: Spoke[] = GROUP_ORDER.map((key) => ({

@@ -202,6 +202,14 @@ describe("a matchup page", () => {
 		expect(String((await matchupMeta(props("nope"))).title)).toContain("Lab")
 	})
 
+	it("shows how the report was kept and what it leaves out", async () => {
+		render(await MatchupPage(props("lv-vs-ne")))
+		const text = document.getElementById("injury-heading")!.closest("section")!.textContent ?? ""
+		expect(text).toMatch(/Week \d+ report/)
+		expect(text).toContain("Game-day inactives")
+		expect(text).toContain("not the league\u2019s own day-by-day log")
+	})
+
 	it("says when the injury report is older than the game", async () => {
 		render(await MatchupPage(props("lv-vs-ne")))
 		const older = data.teams.LV.injuries.week! < data.slate!.week
