@@ -340,6 +340,9 @@ async function debugReport(query: NextApiRequest["query"]) {
 	return out
 }
 
+// A card is drawn on request (the playoff card plays the rest of the season first), so allow longer than the platform default.
+export const config = { maxDuration: 30 }
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	if (req.method !== "GET" && req.method !== "HEAD") {
 		res.setHeader("Allow", "GET, HEAD")

@@ -56,7 +56,10 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 	const [note, setNote] = React.useState("")
 	const [canShare, setCanShare] = React.useState(false)
 	const [canCopyImage, setCanCopyImage] = React.useState(false)
-	const [loaded, setLoaded] = React.useState(false)
+	// What has loaded or failed is remembered by the picture's address, so a picture the browser already had cannot be mistaken for one still drawing.
+	const [loadedSrc, setLoadedSrc] = React.useState("")
+	const [failedKey, setFailedKey] = React.useState("")
+	const [attempt, setAttempt] = React.useState(0)
 	const trigger = React.useRef<HTMLButtonElement>(null)
 	const panel = React.useRef<HTMLDivElement>(null)
 	const closeRef = React.useRef<HTMLButtonElement>(null)
@@ -75,7 +78,6 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 
 	React.useEffect(() => {
 		if (!open) return
-		setLoaded(false)
 		closeRef.current?.focus()
 		const prev = document.body.style.overflow
 		document.body.style.overflow = "hidden"
@@ -105,7 +107,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 		}
 	}, [open, close])
 
-	React.useEffect(() => setLoaded(false), [size])
+	
 
 	const t: ShareTarget = target ?? {
 		type: "last",
@@ -116,6 +118,9 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 	}
 	const query = t.query
 	const src = `/api/og?type=${t.type}${query ? `&${query}` : ""}&size=${size}&v=${stamp}`
+	const shown = attempt ? `${src}&retry=${attempt}` : src
+	const loaded = loadedSrc === shown
+	const failed = failedKey === shown
 	const filename = `${t.file}-${size}.png`
 	const px = SIZE_PIXELS[size]
 	// The query, then any tracking parameters, joined with "&"; nothing to carry means no "?".
@@ -227,9 +232,22 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 							</div>
 							<div className={`mx-auto mt-4 overflow-hidden rounded-xl border border-lab-line bg-lab-tint ${size === "tall" ? "max-w-[22rem]" : "w-full"}`} style={{ aspectRatio: `${px.width} / ${px.height}` }}>
 								{/* eslint-disable-next-line @next/next/no-img-element */}
-								<img key={src} src={src} alt={alt} width={px.width} height={px.height} decoding="async" onLoad={() => setLoaded(true)} className={`block h-full w-full object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
+								<img key={shown} src={shown} alt={alt} width={px.width} height={px.height} decoding="async" onLoad={() => setLoadedSrc(shown)} onError={() => setFailedKey(shown)} className={`block h-full w-full object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
 							</div>
-							{!loaded ? <p className="m-0 mt-2 text-center text-xs text-lab-muted">Drawing the card&hellip;</p> : null}
+							{failed && !loaded ? (
+								<p className="m-0 mt-2 text-center text-xs text-lab-soft" role="alert">
+									The card did not draw.{" "}
+									<button
+										type="button"
+										onClick={() => setAttempt((n) => n + 1)}
+										className="font-semibold underline underline-offset-4"
+									>
+										Try again
+									</button>
+								</p>
+							) : !loaded ? (
+								<p className="m-0 mt-2 text-center text-xs text-lab-muted">Drawing the card&hellip;</p>
+							) : null}
 						</div>
 						<div className="border-t border-lab-line px-4 py-3 sm:px-5">
 							<div className="grid gap-2 sm:grid-cols-3">
