@@ -63,6 +63,12 @@ describe("header navigation", () => {
 		expect(header).toMatch(/LAB_TOOLS\.map/)
 	})
 
+	it("lets the phone menu scroll, so the last links are never cut off on a short screen", () => {
+		const sheet = header.slice(header.indexOf("<SheetContent"), header.indexOf(">", header.indexOf("<SheetContent")) + 1)
+		expect(sheet).toMatch(/overflow-y-auto/)
+		expect(sheet).toMatch(/safe-area-inset-bottom/)
+	})
+
 	it("still lists the live and discussion pages in the footer", () => {
 		expect(footer).toContain('href="/live"')
 		expect(footer).toContain('href="/community"')

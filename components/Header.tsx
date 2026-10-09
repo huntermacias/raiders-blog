@@ -117,17 +117,17 @@ function Header() {
 								<Menu className="h-5 w-5" />
 							</Button>
 						</SheetTrigger>
-						<SheetContent side="right">
+						<SheetContent side="right" className="overflow-y-auto overscroll-contain pb-[max(1.5rem,env(safe-area-inset-bottom))]">
 							<SheetHeader>
 								<SheetTitle className="font-serif">Raiders Rundown</SheetTitle>
 							</SheetHeader>
-							<nav aria-label="Menu" className="mt-8 flex flex-col gap-5">
+							<nav aria-label="Menu" className="mt-5 flex flex-col gap-4">
 								<NavLink href="/" label="Home" onClick={() => setOpen(false)} />
 								{mainLinks.map((link) =>
 									link.href === "/lab" ? (
-										<div key={link.label} className="flex flex-col gap-3">
+										<div key={link.label} className="flex flex-col gap-2.5">
 											<NavLink {...link} onClick={() => setOpen(false)} />
-											<ul className="m-0 flex list-none flex-col gap-2.5 border-l border-border/60 p-0 pl-4">
+											<ul className="m-0 flex list-none flex-col gap-2 border-l border-border/60 p-0 pl-4">
 												{labItems.map((item) => (
 													<li key={item.href}>
 														<NavLink href={item.href} label={item.label} onClick={() => setOpen(false)} />
@@ -139,7 +139,7 @@ function Header() {
 										<NavLink key={link.label} {...link} onClick={() => setOpen(false)} />
 									)
 								)}
-								<div className="mt-1 flex flex-col gap-5 border-t border-border/60 pt-5">
+								<div className="flex flex-col gap-4 border-t border-border/60 pt-4">
 									<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">More</p>
 									{moreLinks.map((link) => (
 										<NavLink key={link.label} href={link.href} label={link.label} external={link.external} onClick={() => setOpen(false)} />
