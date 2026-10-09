@@ -56,6 +56,10 @@ jobs:
         # Grades, coaches, injuries and the coming slate for every team. Needs the coaches and spreads file as well.
         run: python scripts/lab/build_units.py --season "$SEASON" --out data/lab/units.json
 
+      - name: Build the schedule for the Playoff Machine
+        # Every game of the season with the results so far. Keeps the file as it is if the download looks wrong.
+        run: python scripts/lab/build_schedule.py --season "$SEASON" --out data/lab/schedule.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24

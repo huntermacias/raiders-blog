@@ -94,6 +94,7 @@ export default function LabPage() {
 				<ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
 					{[
 						{ href: "/lab/top-plays", title: "Top plays", text: "The snaps that moved the Raiders' chance to win the furthest this season." },
+						{ href: "/lab/playoff-machine", title: "NFL Playoff Machine", text: "Pick the winner of every game left, and watch the standings, seeds and bracket update with the real tiebreakers. See what the Raiders need, and share your scenario." },
 						{ href: "/lab/matchups", title: "This week's matchups", text: "Every game on the slate, position group by position group: who has the edge at quarterback, on the line and in coverage." },
 						{ href: "/lab/teams", title: "How all 32 teams stack up", text: "Quarterback, line, receivers, run game, pass rush, run defense and coverage, ranked across the league." },
 						{ href: "/lab/scouting", title: "Scouting reports", text: "Where the Raiders have the edge on every opponent, and what to watch." },
