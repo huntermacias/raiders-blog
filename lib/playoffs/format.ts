@@ -35,3 +35,19 @@ export function rivalsOf(sim: SimulationResult, team: string): Set<string> {
 	}
 	return out
 }
+
+/** A chance as a short percentage that never claims more than the simulation can: an estimate is never shown as 0% or 100%, only "<1%" and ">99%". `exact` is for a result that is certain. */
+export function oddsText(p: number | null | undefined, exact = false): string {
+	if (p === null || p === undefined || Number.isNaN(p)) return "\u2013"
+	if (exact) return p >= 0.5 ? "100%" : "0%"
+	if (p < 0.005) return "<1%"
+	if (p > 0.995) return ">99%"
+	return `${Math.round(p * 100)}%`
+}
+
+/** "1st", "2nd", "3rd", "4th". */
+export function ordinal(n: number): string {
+	const v = n % 100
+	if (v >= 11 && v <= 13) return `${n}th`
+	return `${n}${n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th"}`
+}

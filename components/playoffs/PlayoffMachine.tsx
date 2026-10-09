@@ -1,29 +1,32 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, Link2, RotateCcw, Share2, Shuffle, Undo2 } from "lucide-react"
+import { Check, RotateCcw, Shuffle, Undo2 } from "lucide-react"
 
 import { trackPlayoff } from "@/lib/analytics"
+import { teamByAbbr } from "@/lib/nfl"
 import { rivalsOf } from "@/lib/playoffs/format"
 import { firstOpenWeek, weekProgress } from "@/lib/playoffs/picks"
-import { scenarioLink } from "@/lib/playoffs/share"
+import { PLAYOFFS_SHARE_PATH, scenarioQuery } from "@/lib/playoffs/share"
+import ShareCard from "@/components/lab/ShareCard"
 import type { Conference, Game } from "@/lib/playoffs/types"
 import BracketView from "./BracketView"
 import GameCard from "./GameCard"
-import RaidersOutlook from "./RaidersOutlook"
+import NeedsPanel from "./NeedsPanel"
 import StandingsTable from "./StandingsTable"
+import TeamOutlook from "./TeamOutlook"
+import TeamPicker from "./TeamPicker"
+import { useOdds } from "./useOdds"
 import { usePlayoffScenario } from "./usePlayoffScenario"
 
-type Tab = "games" | "standings" | "bracket"
+type Tab = "games" | "standings" | "bracket" | "needs"
 type Fill = "week" | "all"
 
-const PATH = "/lab/playoff-machine"
-const SITE_URL = "https://www.raidersrundown.com"
 
 const btn =
 	"inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-lab-line bg-lab-surface px-4 text-sm font-semibold text-lab-ink transition hover:border-lab-line-strong hover:bg-lab-tint disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lab-ink"
 
-export default function PlayoffMachine({ games, season, throughWeek }: { games: Game[]; season: number; throughWeek: number }) {
+export default function PlayoffMachine({ games, season, throughWeek, stamp }: { games: Game[]; season: number; throughWeek: number; stamp: number }) {
 	const s = usePlayoffScenario(games, season)
 	const { sim, picks } = s
 	const [tab, setTab] = useState<Tab>("games")
@@ -31,23 +34,27 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 	const [conference, setConference] = useState<Conference>("AFC")
 	const [fill, setFill] = useState<Fill>("all")
 	const [keep, setKeep] = useState(true)
-	const [copied, setCopied] = useState<"" | "copied" | "manual">("")
-	const [canShare, setCanShare] = useState(false)
 	const chips = useRef<HTMLDivElement>(null)
-
-	useEffect(() => setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"), [])
 
 	const progress = useMemo(() => weekProgress(games, picks), [games, picks])
 	const weeks = progress.map((w) => w.week)
 	const current = progress.find((w) => w.week === week)
 	const pickedCount = Object.keys(picks).length
-	const rivals = useMemo(() => rivalsOf(sim, "LV"), [sim])
+	const team = s.team
+	const info = teamByAbbr(team)
+	const focusTeam = s.focus ? team : null
+	const rivals = useMemo(() => rivalsOf(sim, team), [sim, team])
+	const myDivision = sim.teams[team]?.division ?? ""
+	const divisionMates = useMemo(() => new Set(Object.values(sim.teams).filter((t) => t.division === myDivision && t.team !== team).map((t) => t.team)), [sim, myDivision, team])
+	const { odds, working } = useOdds(games, picks, team, s.ready)
+	const mine = (g: Game) => g.homeTeam === team || g.awayTeam === team
 
 	const weekGames = useMemo(() => {
 		const list = games.filter((g) => g.week === week)
-		const rank = (g: Game) => (s.raiders && (g.homeTeam === "LV" || g.awayTeam === "LV") ? 0 : s.raiders && (rivals.has(g.homeTeam) || rivals.has(g.awayTeam)) && g.status !== "final" ? 1 : 2)
+		const rank = (g: Game) => (s.focus && mine(g) ? 0 : s.focus && (rivals.has(g.homeTeam) || rivals.has(g.awayTeam)) && g.status !== "final" ? 1 : 2)
 		return [...list].sort((a, b) => rank(a) - rank(b) || `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`) || a.id.localeCompare(b.id))
-	}, [games, week, s.raiders, rivals])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [games, week, s.focus, rivals, team])
 
 	// Keep the chosen week's chip in view on a narrow screen.
 	useEffect(() => {
@@ -56,33 +63,18 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 	}, [week, tab])
 
 	const scope = fill === "week" ? { weeks: [week], keepPicks: keep } : { keepPicks: keep }
-	const url = scenarioLink(typeof window === "undefined" ? SITE_URL : window.location.origin, PATH, s.code)
-
-	async function copyLink() {
-		try {
-			await navigator.clipboard.writeText(url)
-			setCopied("copied")
-			trackPlayoff("playoff_scenario_shared", { picks: pickedCount, method: "copy" })
-		} catch {
-			setCopied("manual")
-		}
-		window.setTimeout(() => setCopied((c) => (c === "copied" ? "" : c)), 2500)
-	}
-
-	async function nativeShare() {
-		try {
-			await navigator.share({ title: "My NFL playoff scenario | Raiders Rundown", url })
-			trackPlayoff("playoff_scenario_shared", { picks: pickedCount, method: "share" })
-		} catch {
-			// cancelled
-		}
-	}
+	const shareQuery = scenarioQuery(s.code, team)
+	const shareText = pickedCount
+		? `My ${season} NFL playoff scenario: the ${info.nick}' road to the playoffs, ${pickedCount} ${pickedCount === 1 ? "pick" : "picks"} in. Build yours:`
+		: `The ${season} NFL playoff race and what the ${info.nick} need. Build your own scenario:`
 
 	const tabs: { id: Tab; label: string }[] = [
 		{ id: "games", label: "Games" },
 		{ id: "standings", label: "Standings" },
 		{ id: "bracket", label: "Bracket" },
+		...(s.focus ? [{ id: "needs" as const, label: "Odds" }] : []),
 	]
+	const activeTab: Tab = tab === "needs" && !s.focus ? "games" : tab
 
 	const confSwitch = (
 		<div role="group" aria-label="Conference" className="inline-flex rounded-lg border border-lab-line bg-lab-surface p-0.5">
@@ -103,22 +95,21 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 	return (
 		<div className="space-y-5">
 			<div className="flex flex-wrap items-center gap-2">
-				<button type="button" role="switch" aria-checked={s.raiders} onClick={() => s.setRaiders(!s.raiders)} className={`${btn} pr-3`}>
-					<span>Raiders mode</span>
-					<span aria-hidden="true" className={`relative block h-5 w-9 rounded-full transition ${s.raiders ? "bg-lab-ink" : "bg-lab-line-strong"}`}>
-						<span className={`absolute top-0.5 block h-4 w-4 rounded-full bg-lab-page transition-all ${s.raiders ? "left-[18px]" : "left-0.5"}`} />
+				<TeamPicker value={team} onChange={s.setTeam} />
+				<button type="button" role="switch" aria-checked={s.focus} onClick={() => s.setFocus(!s.focus)} className={`${btn} pr-3`}>
+					<span>{info.nick} mode</span>
+					<span aria-hidden="true" className={`relative block h-5 w-9 rounded-full transition ${s.focus ? "bg-lab-ink" : "bg-lab-line-strong"}`}>
+						<span className={`absolute top-0.5 block h-4 w-4 rounded-full bg-lab-page transition-all ${s.focus ? "left-[18px]" : "left-0.5"}`} />
 					</span>
 				</button>
-				<button type="button" onClick={copyLink} disabled={pickedCount === 0} className={btn} title={pickedCount === 0 ? "Pick some games first" : undefined}>
-					{copied === "copied" ? <Check className="h-4 w-4" aria-hidden="true" /> : <Link2 className="h-4 w-4" aria-hidden="true" />}
-					{copied === "copied" ? "Link copied" : "Copy scenario link"}
-				</button>
-				{canShare && pickedCount > 0 ? (
-					<button type="button" onClick={nativeShare} className={btn}>
-						<Share2 className="h-4 w-4" aria-hidden="true" />
-						Share
-					</button>
-				) : null}
+				<ShareCard
+					target={{ type: "playoffs", query: shareQuery, sharePath: PLAYOFFS_SHARE_PATH, name: "Playoff scenario", file: `${team.toLowerCase()}-playoff-scenario` }}
+					stamp={stamp}
+					text={shareText}
+					alt={`${info.nick} playoff scenario: seeds, bracket and playoff odds`}
+					className="!min-h-[44px] !rounded-lg !border-lab-line !text-sm !font-semibold !normal-case !tracking-normal"
+					onAction={(method) => trackPlayoff("playoff_scenario_shared", { picks: pickedCount, method })}
+				/>
 				<button type="button" onClick={s.reset} disabled={pickedCount === 0} className={btn}>
 					<RotateCcw className="h-4 w-4" aria-hidden="true" />
 					Reset
@@ -129,17 +120,7 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 						Undo {s.undo.label}
 					</button>
 				) : null}
-				<p className="sr-only" role="status" aria-live="polite">
-					{copied === "copied" ? "Scenario link copied" : ""}
-				</p>
 			</div>
-
-			{copied === "manual" ? (
-				<label className="block text-xs font-semibold uppercase tracking-[0.12em] text-lab-muted">
-					Copy this link
-					<input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="mt-1 block min-h-[44px] w-full rounded-lg border border-lab-line bg-lab-surface px-3 font-mono text-xs normal-case tracking-normal text-lab-ink" />
-				</label>
-			) : null}
 
 			<details className="rounded-xl border border-lab-line bg-lab-surface">
 				<summary className="flex min-h-[44px] cursor-pointer items-center gap-2 px-4 text-sm font-semibold">
@@ -190,27 +171,33 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 				</div>
 			) : null}
 
-			{s.raiders ? <RaidersOutlook sim={sim} picked={pickedCount} /> : null}
+			{s.focus ? <TeamOutlook sim={sim} team={team} picked={pickedCount} odds={odds} working={working} /> : null}
 
-			<div role="tablist" aria-label="Playoff machine sections" className="grid grid-cols-3 gap-1 rounded-xl border border-lab-line bg-lab-surface p-1 lg:hidden">
+			<div role="tablist" aria-label="Playoff machine sections" className="grid gap-1 rounded-xl border border-lab-line bg-lab-surface p-1 lg:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
 				{tabs.map((t) => (
 					<button
 						key={t.id}
 						type="button"
 						role="tab"
 						id={`tab-${t.id}`}
-						aria-selected={tab === t.id}
+						aria-selected={activeTab === t.id}
 						aria-controls={`panel-${t.id}`}
 						onClick={() => setTab(t.id)}
-						className={`min-h-[44px] rounded-lg text-sm font-bold transition ${tab === t.id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}
+						className={`min-h-[44px] rounded-lg text-sm font-bold transition ${activeTab === t.id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}
 					>
 						{t.label}
 					</button>
 				))}
 			</div>
 
+			{s.focus ? (
+				<div id="panel-needs" role="tabpanel" aria-labelledby="tab-needs" className={`${activeTab === "needs" ? "block" : "hidden"} lg:block`}>
+					<NeedsPanel team={team} odds={odds} working={working} picked={pickedCount} />
+				</div>
+			) : null}
+
 			<div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-8">
-				<section id="panel-games" role="tabpanel" aria-labelledby="tab-games" className={`${tab === "games" ? "block" : "hidden"} lg:col-span-5 lg:block`}>
+				<section id="panel-games" role="tabpanel" aria-labelledby="tab-games" className={`${activeTab === "games" ? "block" : "hidden"} lg:col-span-5 lg:block`}>
 					<h2 className="sr-only">Games</h2>
 					<div ref={chips} role="group" aria-label="Week" className="-mx-4 flex snap-x gap-1.5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
 						{weeks.map((w) => {
@@ -246,7 +233,7 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 					<ul className="m-0 mt-3 list-none space-y-3 p-0">
 						{weekGames.map((g) => (
 							<li key={g.id}>
-								<GameCard game={g} pick={picks[g.id]} sim={sim} onPick={s.pick} rivals={s.raiders ? rivals : undefined} focus={s.raiders ? (g.homeTeam === "LV" || g.awayTeam === "LV" ? "raiders" : rivals.has(g.homeTeam) || rivals.has(g.awayTeam) ? "rival" : null) : null} />
+								<GameCard game={g} pick={picks[g.id]} sim={sim} onPick={s.pick} divisionMates={s.focus ? divisionMates : undefined} divisionLabel={myDivision} focusLabel={`${info.nick} game`} focus={s.focus ? (mine(g) ? "mine" : rivals.has(g.homeTeam) || rivals.has(g.awayTeam) ? "rival" : null) : null} />
 							</li>
 						))}
 					</ul>
@@ -255,22 +242,22 @@ export default function PlayoffMachine({ games, season, throughWeek }: { games: 
 				<div className="lg:col-span-7">
 					<div className="hidden items-center justify-between gap-3 lg:flex">{confSwitch}</div>
 
-					<section id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" className={`${tab === "standings" ? "block" : "hidden"} lg:mt-4 lg:block`}>
+					<section id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" className={`${activeTab === "standings" ? "block" : "hidden"} lg:mt-4 lg:block`}>
 						<div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
 							<h2 className="m-0 font-serif text-xl font-bold">Standings</h2>
 							{confSwitch}
 						</div>
 						<h2 className="sr-only lg:not-sr-only lg:mb-3 lg:font-serif lg:text-xl lg:font-bold">{conference} standings</h2>
-						<StandingsTable sim={sim} conference={conference} raiders={s.raiders} rivals={rivals} />
+						<StandingsTable sim={sim} conference={conference} team={focusTeam} rivals={rivals} odds={odds?.base.teams ?? null} oddsWorking={working} oddsExact={odds?.base.exact} />
 					</section>
 
-					<section id="panel-bracket" role="tabpanel" aria-labelledby="tab-bracket" className={`${tab === "bracket" ? "block" : "hidden"} mt-0 lg:mt-8 lg:block`}>
+					<section id="panel-bracket" role="tabpanel" aria-labelledby="tab-bracket" className={`${activeTab === "bracket" ? "block" : "hidden"} mt-0 lg:mt-8 lg:block`}>
 						<div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
 							<h2 className="m-0 font-serif text-xl font-bold">Bracket</h2>
 							{confSwitch}
 						</div>
 						<h2 className="sr-only lg:not-sr-only lg:mb-3 lg:font-serif lg:text-xl lg:font-bold">{conference} playoff bracket</h2>
-						<BracketView sim={sim} conference={conference} raiders={s.raiders} />
+						<BracketView sim={sim} conference={conference} team={focusTeam} />
 					</section>
 				</div>
 			</div>

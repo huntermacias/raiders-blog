@@ -12,7 +12,8 @@ export const SCENARIO_KEY = "rr.playoff-machine.scenario"
 export const PREFS_KEY = "rr.playoff-machine.prefs"
 
 export type SavedScenario = { v: number; season: number; picks: Record<string, Outcome>; savedAt: number }
-export type Prefs = { v: number; raiders: boolean }
+/** `raiders` is the old name of "highlight my team"; it is kept so saved settings still read. `team` is the team being followed. */
+export type Prefs = { v: number; raiders: boolean; team?: string }
 
 type ReadStore = Pick<Storage, "getItem">
 type WriteStore = Pick<Storage, "setItem" | "removeItem">
@@ -57,15 +58,15 @@ export function loadPrefs(store: ReadStore | null): Prefs | null {
 		if (!store) return null
 		const data = parse(store.getItem(PREFS_KEY)) as Partial<Prefs> | null
 		if (!data || data.v !== STORAGE_VERSION || typeof data.raiders !== "boolean") return null
-		return { v: STORAGE_VERSION, raiders: data.raiders }
+		return { v: STORAGE_VERSION, raiders: data.raiders, ...(typeof data.team === "string" && /^[A-Z]{2,3}$/.test(data.team) ? { team: data.team } : {}) }
 	} catch {
 		return null
 	}
 }
 
-export function savePrefs(store: WriteStore | null, prefs: { raiders: boolean }): void {
+export function savePrefs(store: WriteStore | null, prefs: { raiders: boolean; team?: string }): void {
 	try {
-		store?.setItem(PREFS_KEY, JSON.stringify({ v: STORAGE_VERSION, raiders: prefs.raiders }))
+		store?.setItem(PREFS_KEY, JSON.stringify({ v: STORAGE_VERSION, raiders: prefs.raiders, ...(prefs.team ? { team: prefs.team } : {}) }))
 	} catch {
 		// ignore
 	}

@@ -1,6 +1,8 @@
 // A short, plain description of a scenario for one team: what a share card or a headline would say. No images,
 // no formatting; the page shows it today and a social card can draw it later.
 
+import { teamByAbbr } from "../nfl"
+import { ordinal } from "./format"
 import { recordText } from "./season"
 import type { Berth, SimulationResult } from "./simulator"
 import { type StepId, type TieDecision, supportedSteps } from "./tiebreakers"
@@ -65,4 +67,25 @@ export function describeTie(d: TieDecision): string {
 		return `${tied} are still level (${kind}). ${d.placed} is listed first by name only, because ${why}.`
 	}
 	return `${d.placed} over ${d.over.join(", ")} (${kind}): ${STEP_NAMES[d.step]}.`
+}
+
+/**
+ * One sentence on how a team's scenario turned out, from the simulation: the bye, the home game it hosts, the road game it
+ * plays, or the playoffs it misses. This is the line a share card prints under the seed.
+ */
+export function scenarioStory(result: SimulationResult, team: string): string | null {
+	const t = result.teams[team]
+	if (!t) return null
+	const nick = teamByAbbr(team).nick
+	const rec = recordText(t.overall)
+	if (t.seed === null) return `The ${nick} miss the playoffs at ${rec}, finishing ${ordinal(t.rank)} in the ${t.conference}.`
+	const b = result.bracket[t.conference]
+	if (b.byes.some((x) => x.team === team)) return `The ${nick} take the No. ${t.seed} seed and a first-round bye at ${rec}.`
+	const game = b.wildCard.find((g) => g.home === team || g.away === team)
+	const home = game?.home === team
+	const oppSeed = game ? (home ? game.awaySeed : game.homeSeed) : null
+	const oppTeam = game ? (home ? game.away : game.home) : null
+	const opp = oppTeam ? ` the No. ${oppSeed} seed, the ${teamByAbbr(oppTeam).nick}` : ""
+	if (t.berth === "division") return `The ${nick} win the ${t.division} at ${rec} and host${opp || " the first round"}.`
+	return `The ${nick} get in as the No. ${t.seed} seed at ${rec} and visit${opp || " the first round"}.`
 }

@@ -9,6 +9,7 @@ import {
 	pickFavorites,
 	pickHomeTeams,
 	pickRandom,
+	pickTeamGames,
 	sanitizePicks,
 	seededRandom,
 	setPick,
@@ -140,4 +141,33 @@ describe("when analytics should hear about picks", () => {
 		expect(newlyCompletedWeeks(games, done, { ...done })).toEqual([])
 		expect(newlyCompletedWeeks(games, {}, {})).toEqual([])
 	})
+})
+
+describe("picking a team's games", () => {
+  it("sends every open game a team plays its way, leaves the other games alone, and never touches played games", () => {
+    const win = pickTeamGames(games, {}, "LV", "W")
+    const lose = pickTeamGames(games, {}, "LV", "L")
+    const mine = open.filter((g) => g.homeTeam === "LV" || g.awayTeam === "LV")
+    expect(mine.length).toBeGreaterThan(5)
+    expect(Object.keys(win).sort()).toEqual(mine.map((g) => g.id).sort())
+    for (const g of mine) {
+      const home = g.homeTeam === "LV"
+      expect(win[g.id]).toBe(home ? "H" : "A")
+      expect(lose[g.id]).toBe(home ? "A" : "H")
+    }
+    const other = open.find((g) => g.homeTeam !== "LV" && g.awayTeam !== "LV") as Game
+    expect(pickTeamGames(games, { [other.id]: "T" }, "LV", "W")[other.id]).toBe("T")
+    const playedGame = games.find((g) => actualOutcome(g) !== null && (g.homeTeam === "LV" || g.awayTeam === "LV")) as Game
+    expect(pickTeamGames(games, {}, "LV", "W")[playedGame.id]).toBeUndefined()
+  })
+
+  it("honors a scope, and does not change the picks it was given", () => {
+    const given = Object.freeze({}) as Predictions
+    const w = pickTeamGames(games, given, "LV", "W", { weeks: [6] })
+    expect(Object.keys(w).every((id) => (games.find((g) => g.id === id) as Game).week === 6)).toBe(true)
+    expect(Object.keys(given)).toHaveLength(0)
+    const first = open.find((g) => g.homeTeam === "LV" || g.awayTeam === "LV") as Game
+    const kept = pickTeamGames(games, { [first.id]: "T" }, "LV", "W", { keepPicks: true })
+    expect(kept[first.id]).toBe("T")
+  })
 })

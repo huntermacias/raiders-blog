@@ -263,7 +263,7 @@ describe("the Lab section", () => {
 
 	describe("playoff machine", () => {
 		const page = "app/(user)/lab/playoff-machine/page.tsx"
-		const ui = ["PlayoffMachine", "GameCard", "StandingsTable", "BracketView", "RaidersOutlook"].map((n) => `components/playoffs/${n}.tsx`)
+		const ui = ["PlayoffMachine", "GameCard", "StandingsTable", "BracketView", "TeamOutlook", "NeedsPanel", "TeamPicker"].map((n) => `components/playoffs/${n}.tsx`)
 
 		it("is a static page: the schedule comes from the JSON in the repo and the picks live in the browser", () => {
 			const src = read(page)
@@ -277,7 +277,7 @@ describe("the Lab section", () => {
 		})
 
 		it("has no dark-only colors", () => {
-			for (const f of [page, ...ui, "components/playoffs/usePlayoffScenario.ts"]) {
+			for (const f of [page, ...ui, "components/playoffs/usePlayoffScenario.ts", "components/playoffs/useOdds.ts"]) {
 				const src = read(f)
 				expect(src, f).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
 				expect(src, f).not.toMatch(/bg-\[#0/)
@@ -292,7 +292,7 @@ describe("the Lab section", () => {
 		})
 
 		it("keeps the engine free of the data file, the clock and Math.random, so it can run thousands of times anywhere", () => {
-			const engine = ["bracket", "clinching", "picks", "season", "simulator", "standings", "tiebreakers", "share", "summary", "schedule"]
+			const engine = ["bracket", "clinching", "picks", "season", "simulator", "standings", "tiebreakers", "share", "summary", "schedule", "odds"]
 			for (const n of engine) {
 				// Comments may mention these by name; only code counts.
 				const src = read(`lib/playoffs/${n}.ts`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
@@ -305,6 +305,26 @@ describe("the Lab section", () => {
 
 		it("builds the schedule from nflverse, under its license", () => {
 			expect(read("scripts/lab/build_schedule.py")).toMatch(/CC BY 4\.0/)
+		})
+
+		it("has a share card: a Share window on the page, a landing page that is kept out of search, and the card in the link preview", () => {
+			const machine = read("components/playoffs/PlayoffMachine.tsx")
+			expect(machine).toMatch(/<ShareCard/)
+			expect(machine).toMatch(/type: "playoffs"/)
+			expect(machine).toMatch(/PLAYOFFS_SHARE_PATH/)
+			const landing = read("app/(user)/lab/playoff-machine/share/page.tsx")
+			expect(landing).toMatch(/index: false/)
+			expect(landing).toMatch(/ShareRedirect/)
+			expect(landing).toMatch(/type=playoffs/)
+			expect(landing).not.toMatch(/export const revalidate/)
+			expect(read(page)).toMatch(/type=playoffs/)
+			expect(read("pages/api/og.tsx")).toMatch(/type=playoffs/)
+			expect(read("pages/sitemap.xml.tsx")).not.toContain("/lab/playoff-machine/share")
+			for (const f of ["app/(user)/lab/playoff-machine/share/page.tsx"]) {
+				const src = read(f)
+				expect(src, f).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+				expect(src, f).not.toMatch(/["'`]#[0-9a-fA-F]{3,8}["'`]/)
+			}
 		})
 	})
 })

@@ -41,6 +41,17 @@ export function setPick(games: readonly Game[], picks: Predictions, gameId: stri
 	return next
 }
 
+/** Every open game a team plays in scope goes its way: the team wins all of them, or loses all of them. Other games are left alone. */
+export function pickTeamGames(games: readonly Game[], picks: Predictions, team: string, result: "W" | "L", scope: Scope = {}): Predictions {
+	const next: Record<string, Outcome> = { ...picks }
+	for (const g of games) {
+		if (!inScope(g, scope, picks) || (g.homeTeam !== team && g.awayTeam !== team)) continue
+		const teamIsHome = g.homeTeam === team
+		next[g.id] = (result === "W") === teamIsHome ? "H" : "A"
+	}
+	return next
+}
+
 /** Every open game in scope goes to the home team. */
 export function pickHomeTeams(games: readonly Game[], picks: Predictions, scope: Scope = {}): Predictions {
 	const next: Record<string, Outcome> = { ...picks }

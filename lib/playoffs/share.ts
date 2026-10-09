@@ -17,6 +17,15 @@ const VALUE: Record<Outcome, number> = { H: 1, A: 2, T: 3 }
 const OUTCOME: (Outcome | null)[] = [null, "H", "A", "T"]
 
 export const SCENARIO_PARAM = "s"
+/** The team a link is about. Left out of a link when it is the Raiders. */
+export const TEAM_PARAM = "t"
+export const DEFAULT_TEAM = "LV"
+
+/** The team a link names, or the Raiders when it names none that this league has. */
+export function readTeam(value: string | null | undefined, teams: ReadonlySet<string>): string {
+	const v = (value ?? "").toUpperCase()
+	return teams.has(v) ? v : DEFAULT_TEAM
+}
 
 function orderedIds(games: readonly Game[]): string[] {
 	return games.map((g) => g.id).sort()
@@ -101,7 +110,20 @@ export function decodeScenario(games: readonly Game[], code: string | null | und
 	return { ok: true, predictions: sanitizePicks(games, picks) }
 }
 
-/** The address of a scenario on this page. */
-export function scenarioLink(origin: string, path: string, code: string): string {
-	return code ? `${origin}${path}?${SCENARIO_PARAM}=${code}` : `${origin}${path}`
+/** The page, and the address a shared scenario lands on (it carries the card for the link preview, then sends the reader to the page). */
+export const PLAYOFFS_PATH = "/lab/playoff-machine"
+export const PLAYOFFS_SHARE_PATH = "/lab/playoff-machine/share"
+
+/** The query string (no leading "?") for a scenario: the picks, then the team when it is not the Raiders. Empty for the plain page. */
+export function scenarioQuery(code: string | null | undefined, team: string = DEFAULT_TEAM): string {
+	const q: string[] = []
+	if (code) q.push(`${SCENARIO_PARAM}=${code}`)
+	if (team && team !== DEFAULT_TEAM) q.push(`${TEAM_PARAM}=${encodeURIComponent(team)}`)
+	return q.join("&")
+}
+
+/** The address of a scenario on this page. `team` is added when it is not the Raiders. */
+export function scenarioLink(origin: string, path: string, code: string, team: string = DEFAULT_TEAM): string {
+	const q = scenarioQuery(code, team)
+	return q ? `${origin}${path}?${q}` : `${origin}${path}`
 }

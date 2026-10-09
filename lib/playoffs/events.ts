@@ -12,6 +12,7 @@ export type PlayoffEventName =
 	| "playoff_scenario_shared"
 	| "playoff_reset"
 	| "raiders_mode_enabled"
+	| "playoff_team_followed"
 
 /** How many games a reader has picked when we report it: the first, then at a few round numbers. */
 export const PICK_MILESTONES = [1, 5, 10, 25, 50, 100, 150, 200] as const

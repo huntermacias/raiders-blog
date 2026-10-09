@@ -13,12 +13,16 @@ type Props = {
 	pick: Outcome | undefined
 	sim: SimulationResult
 	onPick: (id: string, outcome: Outcome) => void
-	/** Draw this game as one to watch: the Raiders, or a division rival of theirs. */
-	focus?: "raiders" | "rival" | null
-	rivals?: ReadonlySet<string>
+	/** Draw this game as one to watch: the followed team's own game, or one with a team it is racing. */
+	focus?: "mine" | "rival" | null
+	/** Says whose game it is, e.g. "Raiders game". */
+	focusLabel?: string
+	/** The followed team's division mates, tagged with `divisionLabel` (e.g. "AFC West"). */
+	divisionMates?: ReadonlySet<string>
+	divisionLabel?: string
 }
 
-function TeamButton({ game, side, picked, dimmed, sim, onPick, rival }: { game: Game; side: "H" | "A"; picked: boolean; dimmed: boolean; sim: SimulationResult; onPick: Props["onPick"]; rival: boolean }) {
+function TeamButton({ game, side, picked, dimmed, sim, onPick, rival }: { game: Game; side: "H" | "A"; picked: boolean; dimmed: boolean; sim: SimulationResult; onPick: Props["onPick"]; rival: string }) {
 	const id = side === "H" ? game.homeTeam : game.awayTeam
 	const info = teamByAbbr(id)
 	const rec = sim.teams[id]?.overall
@@ -38,7 +42,7 @@ function TeamButton({ game, side, picked, dimmed, sim, onPick, rival }: { game: 
 			</span>
 			<span className={`mt-1 text-xs ${picked ? "opacity-80" : "text-lab-muted"}`}>
 				{info.nick}
-				{rival ? <span className="ml-1.5 rounded-sm border border-current px-1 text-[9px] font-bold uppercase tracking-[0.1em]">AFC West</span> : null}
+				{rival ? <span className="ml-1.5 rounded-sm border border-current px-1 text-[9px] font-bold uppercase tracking-[0.1em]">{rival}</span> : null}
 			</span>
 			<span className={`mt-0.5 font-mono text-xs tabular-nums ${picked ? "opacity-80" : "text-lab-soft"}`}>{rec ? recordText(rec) : ""}</span>
 			<span className="sr-only">{picked ? ", picked to win" : ", tap to pick this team to win"}</span>
@@ -46,12 +50,12 @@ function TeamButton({ game, side, picked, dimmed, sim, onPick, rival }: { game: 
 	)
 }
 
-export default function GameCard({ game, pick, sim, onPick, focus = null, rivals }: Props) {
+export default function GameCard({ game, pick, sim, onPick, focus = null, focusLabel = "Your team", divisionMates, divisionLabel = "" }: Props) {
 	const away = teamByAbbr(game.awayTeam)
 	const home = teamByAbbr(game.homeTeam)
 	const final = game.status === "final"
 	const when = kickoffLabel(game.date, game.time)
-	const rivalOf = (id: string) => Boolean(rivals?.has(id)) && teamByAbbr(id).division === "AFC West"
+	const rivalOf = (id: string) => (divisionMates?.has(id) ? divisionLabel : "")
 
 	if (final) {
 		const hw = (game.homeScore ?? 0) > (game.awayScore ?? 0)
@@ -65,7 +69,7 @@ export default function GameCard({ game, pick, sim, onPick, focus = null, rivals
 			</div>
 		)
 		return (
-			<article aria-label={`${away.name} at ${home.name}, final`} className={`rounded-2xl border bg-lab-surface p-3.5 ${focus === "raiders" ? "border-lab-ink" : "border-lab-line"}`}>
+			<article aria-label={`${away.name} at ${home.name}, final`} className={`rounded-2xl border bg-lab-surface p-3.5 ${focus === "mine" ? "border-lab-ink" : "border-lab-line"}`}>
 				<header className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
 					<span>{when}</span>
 					<span className="inline-flex items-center gap-1">
@@ -84,11 +88,11 @@ export default function GameCard({ game, pick, sim, onPick, focus = null, rivals
 	return (
 		<article
 			aria-label={`${away.name} at ${home.name}`}
-			className={`rounded-2xl border bg-lab-surface p-3.5 ${focus === "raiders" ? "border-lab-ink ring-1 ring-lab-ink" : focus === "rival" ? "border-lab-line-strong" : "border-lab-line"}`}
+			className={`rounded-2xl border bg-lab-surface p-3.5 ${focus === "mine" ? "border-lab-ink ring-1 ring-lab-ink" : focus === "rival" ? "border-lab-line-strong" : "border-lab-line"}`}
 		>
 			<header className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
 				<span>{when}</span>
-				<span className={pick ? "text-lab-ink" : ""}>{focus === "raiders" ? "Raiders game" : pick ? "Picked" : "Open"}</span>
+				<span className={pick ? "text-lab-ink" : ""}>{focus === "mine" ? focusLabel : pick ? "Picked" : "Open"}</span>
 			</header>
 			<div className="flex items-stretch gap-2">
 				<TeamButton game={game} side="A" picked={pick === "A"} dimmed={pick === "H" || pick === "T"} sim={sim} onPick={onPick} rival={rivalOf(game.awayTeam)} />
