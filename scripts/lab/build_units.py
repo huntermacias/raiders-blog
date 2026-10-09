@@ -339,8 +339,29 @@ def snap_shares(snaps: pd.DataFrame) -> dict:
     return out
 
 
+PRACTICE_RANK = {"DNP": 0, "Limited": 1, "Full": 2}
+
+
+def practice_of(raw) -> str | None:
+    """The practice report as DNP, Limited or Full; None when the player wasn't listed in practice."""
+    text = str(raw) if isinstance(raw, str) else ""
+    if text.startswith("Did Not"):
+        return "DNP"
+    if text.startswith("Limited"):
+        return "Limited"
+    if text.startswith("Full"):
+        return "Full"
+    return None
+
+
 def injury_report(inj: pd.DataFrame, roster: pd.DataFrame, shares: dict[str, float]) -> dict[str, dict]:
-    """Each team's latest report: who is on it, which group he plays in, and whether he normally starts."""
+    """Each team's latest report: who is on it, which group he plays in, and whether he normally starts.
+
+    `status` is the game designation (Out, Doubtful, Questionable) once the team has issued one; before that it is
+    how he practiced (DNP, Limited). A player who practiced fully is listed only if the report names an injury for
+    him, as Full, so a player coming back from Limited to Full shows up rather than silently disappearing.
+    `practice` is always how he practiced, whatever his game designation.
+    """
     pfr_of = dict(zip(roster["gsis_id"], roster["pfr_id"])) if "pfr_id" in roster else {}
     out: dict[str, dict] = {}
     for team, g in inj.groupby("team"):
@@ -349,30 +370,51 @@ def injury_report(inj: pd.DataFrame, roster: pd.DataFrame, shares: dict[str, flo
         players = []
         for _, r in latest.iterrows():
             group = POS_GROUP.get(str(r["position"]))
-            status = r["report_status"] if isinstance(r["report_status"], str) else None
-            practice = str(r["practice_status"]) if isinstance(r["practice_status"], str) else ""
-            if status is None:
-                if practice.startswith("Did Not"):
-                    status = "DNP"
-                elif practice.startswith("Limited"):
-                    status = "Limited"
-                else:
-                    continue
             if group is None:
                 continue
+            status = r["report_status"] if isinstance(r["report_status"], str) else None
+            practice = practice_of(r["practice_status"])
+            injury = next((r[c] for c in ("report_primary_injury", "practice_primary_injury") if c in r and isinstance(r[c], str)), None)
+            if status is None:
+                if practice in ("DNP", "Limited"):
+                    status = practice
+                elif practice == "Full" and injury:
+                    status = "Full"
+                else:
+                    continue
             share = shares.get(pfr_of.get(r["gsis_id"], ""))
             if share is None:
                 share = shares.get((team, str(r["full_name"])))
             players.append({
-                "name": str(r["full_name"]), "pos": str(r["position"]), "group": group, "status": status,
-                "injury": None if not isinstance(r["report_primary_injury"], str) else r["report_primary_injury"],
+                "name": str(r["full_name"]), "pos": str(r["position"]), "group": group, "status": status, "practice": practice,
+                "injury": injury,
                 "starter": bool(share is not None and share >= 0.55),
                 "snap": None if share is None else round(float(share), 2),
             })
-        order = {"Out": 0, "Doubtful": 1, "Questionable": 2, "DNP": 3, "Limited": 4}
+        order = {"Out": 0, "Doubtful": 1, "Questionable": 2, "DNP": 3, "Limited": 4, "Full": 5}
         players.sort(key=lambda p: (order.get(p["status"], 9), not p["starter"], p["name"]))
         out[team] = {"week": week, "players": players}
     return out
+
+
+def carry_trails(old: dict | None, new: dict, now: str) -> dict:
+    """The new report with each player's trail: when his practice or game status changed, over the report week.
+
+    nflverse keeps only the latest status per player, not Wednesday's and Thursday's. So the trail is built from our
+    own look at the file every few hours: one entry the first time we see a player, another each time his status
+    changes. It resets with each new report week. Players we see for the first time late in the week start late.
+    """
+    before = {}
+    if old and old.get("week") == new.get("week"):
+        before = {(p["name"], p["pos"]): p for p in old.get("players", [])}
+    players = []
+    for p in new["players"]:
+        prev = before.get((p["name"], p["pos"]))
+        trail = list(prev.get("trail", [])) if prev else []
+        if not trail or (trail[-1]["practice"], trail[-1]["status"]) != (p["practice"], p["status"]):
+            trail.append({"at": now, "practice": p["practice"], "status": p["status"]})
+        players.append({**p, "trail": trail})
+    return {**new, "players": players}
 
 
 # ---------------------------------------------------------------------------------------------- leaders
@@ -569,14 +611,25 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    old = None
     if out.exists():
         try:
             old = json.loads(out.read_text())
-            if {**old, "generatedAt": ""} == {**result, "generatedAt": ""}:
-                print("data unchanged")
-                return 0
         except json.JSONDecodeError:
             pass
+    # The weekly rebuild must not throw away what the injury refresh has been collecting.
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    moved = old is None
+    for team, data in result["teams"].items():
+        before = ((old or {}).get("teams", {}).get(team) or {}).get("injuries")
+        data["injuries"] = carry_trails(before, data["injuries"], now)
+        moved = moved or before != data["injuries"]
+    stamp = now if moved else (old or {}).get("injuriesUpdatedAt")
+    if stamp:
+        result["injuriesUpdatedAt"] = stamp
+    if old is not None and {**old, "generatedAt": ""} == {**result, "generatedAt": ""}:
+        print("data unchanged")
+        return 0
     out.write_text(json.dumps(result, separators=(",", ":"), ensure_ascii=False, default=float) + "\n")
     print(f"wrote {out} ({len(result['teams'])} teams, {out.stat().st_size // 1024} KB)")
     return 0

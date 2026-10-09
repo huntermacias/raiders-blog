@@ -1,0 +1,57 @@
+name: Refresh injury reports
+
+# Teams post practice reports Wednesday to Friday and game designations Friday, and the league's data follows within the
+# hour. The Lab's weekly rebuild (lab-data.yml) only runs Monday and Tuesday, so without this the matchup pages show last
+# week's report all week. This refreshes just the injury reports in data/lab/units.json, keeps each player's practice
+# trail for the week, and commits only if something changed; a commit to main triggers the normal Vercel deploy.
+on:
+  schedule:
+    # Every three hours, Wednesday through Sunday (UTC). Sunday covers the early-morning designations changes.
+    - cron: "15 */3 * * 3-6"
+    - cron: "15 0-18/3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lab-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SEASON: ${{ vars.LAB_SEASON || '2026' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: pip install pandas numpy pytest
+
+      - name: Test the scripts
+        run: python -m pytest scripts/lab/test_refresh_injuries.py scripts/lab/test_build_units.py -q
+
+      - name: Refresh injury reports
+        run: python scripts/lab/refresh_injuries.py --season "$SEASON" --units data/lab/units.json
+
+      - name: Commit if changed
+        run: |
+          git add data/lab/units.json
+          if git diff --cached --quiet; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh injury reports"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 5
+          done
+          exit 1

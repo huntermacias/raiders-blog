@@ -10,6 +10,7 @@ import {
 	STYLE,
 	STYLE_ORDER,
 	type GroupKey,
+	type InjuryPlayer,
 	type MatchupRow,
 	type UnitTeam,
 	coachTape,
@@ -17,14 +18,18 @@ import {
 	formatStyle,
 	groupsOfPair,
 	isGameStatus,
+	injuryNote,
 	leaderLine,
 	matchupPath,
 	matchupRows,
-	missingStarters,
 	ordinal,
 	paperEdge,
 	percentile,
+	practiceOf,
+	practiceText,
+	practiceTrend,
 	reportNote,
+	reportedStarters,
 	sampleNote,
 	statLines,
 	styleTrait,
@@ -32,6 +37,8 @@ import {
 	teamCount,
 	tierLabel,
 	topEdges,
+	trailText,
+	updatedText,
 	watchPlayers,
 } from "@/lib/lab/unitsKit"
 import { type PairTheme } from "@/lib/lab/unitsTheme"
@@ -95,13 +102,13 @@ function Callouts({ rows, a, b, names, theme }: { rows: MatchupRow[]; a: string;
 }
 
 function StarterNote({ team, groups, name, week }: { team: UnitTeam; groups: GroupKey[]; name: string; week: number | null }) {
-	const out = missingStarters(team, groups)
+	const out = reportedStarters(team, groups)
 	if (!out.length) return null
 	// A report from before the game's week may be out of date, so it says which week it is from.
 	const old = week !== null && team.injuries.week !== null && team.injuries.week < week
 	return (
 		<p className="m-0 mt-1 text-xs leading-relaxed text-lab-soft">
-			<span className="font-semibold text-lab-ink">{name} {old ? `(Week ${team.injuries.week} report, latest out)` : "report"}:</span> {out.map((p) => `${p.name} (${p.pos}, ${p.status.toLowerCase()}${p.injury ? `, ${p.injury.toLowerCase()}` : ""})`).join("; ")}
+			<span className="font-semibold text-lab-ink">{name} {old ? `(Week ${team.injuries.week} report, latest out)` : "report"}:</span> {out.map((p) => `${p.name} (${p.pos}, ${injuryNote(p)})`).join("; ")}
 		</p>
 	)
 }
@@ -325,42 +332,82 @@ function StyleTable({ a, b, data, names, theme }: { a: string; b: string; data: 
 	)
 }
 
-function Injuries({ a, b, data, names, theme, week }: { a: string; b: string; data: ReturnType<typeof getUnits>; names: Record<string, string>; theme: PairTheme; week: number | null }) {
+const TREND_TEXT = { up: "Practicing more than at our last look", down: "Practicing less than at our last look" } as const
+
+function PlayerRow({ p }: { p: InjuryPlayer }) {
+	const practice = practiceOf(p)
+	const trend = practiceTrend(p)
+	const trail = p.trail?.length ? trailText(p) : null
 	return (
-		<div className="grid gap-6 lg:grid-cols-2">
-			{[a, b].map((team) => {
-				const t = data.teams[team]
-				const note = reportNote(t, week)
-				const players = t.injuries.players
-				return (
-					<div key={team} className="rounded-2xl border border-lab-line p-4">
-						<h3 className="m-0 font-serif text-lg font-bold">
-							<TeamTag color={theme.color[team]} name={names[team]} />
-						</h3>
-						{note ? <p className="m-0 mt-1 text-xs text-lab-muted">{note}</p> : null}
-						{players.length ? (
-							<ul className="m-0 mt-3 list-none divide-y divide-lab-line p-0 text-sm">
-								{players.map((p) => (
-									<li key={`${p.name}-${p.status}`} className="flex flex-wrap items-baseline justify-between gap-x-3 py-1.5">
-										<span>
-											<span className="font-semibold">{p.name}</span> <span className="text-lab-muted">{p.pos}</span>
-											{p.starter ? <span className="ml-2 rounded-full bg-lab-tint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-lab-soft">Starter</span> : null}
-										</span>
-										<span className={`text-xs ${isGameStatus(p.status) ? "font-semibold text-lab-ink" : "text-lab-muted"}`}>
-											{p.status === "DNP" ? "Did not practice" : p.status === "Limited" ? "Limited in practice" : p.status}
-											{p.injury ? ` · ${p.injury.toLowerCase()}` : ""}
-											<span className="text-lab-muted"> · {GROUPS[p.group].label.toLowerCase()}</span>
-										</span>
-									</li>
-								))}
-							</ul>
-						) : (
-							<p className="m-0 mt-3 text-sm text-lab-soft">{t.injuries.week ? "Nobody at a tracked position is on the report." : "No report yet."}</p>
-						)}
-					</div>
-				)
-			})}
-		</div>
+		<li className="py-2">
+			<div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+				<span>
+					<span className="font-semibold">{p.name}</span> <span className="text-lab-muted">{p.pos}</span>
+					{p.starter ? <span className="ml-2 rounded-full bg-lab-tint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-lab-soft">Starter</span> : null}
+				</span>
+				<span className={`text-xs ${isGameStatus(p.status) ? "font-semibold text-lab-ink" : "text-lab-muted"}`}>
+					{isGameStatus(p.status) ? p.status : practice ? practiceText(practice) : p.status}
+					{p.injury ? ` · ${p.injury.toLowerCase()}` : ""}
+					<span className="text-lab-muted"> · {GROUPS[p.group].label.toLowerCase()}</span>
+				</span>
+			</div>
+			{isGameStatus(p.status) && practice ? <p className="m-0 text-xs text-lab-muted">{practiceText(practice)} this week</p> : null}
+			{trail ? (
+				<p className="m-0 mt-0.5 text-xs text-lab-muted">
+					<span className="sr-only">Practice week: </span>
+					{trail}
+					{trend ? (
+						<span className={`ml-2 font-semibold ${trend === "up" ? "text-lab-ink" : "text-lab-soft"}`} title={TREND_TEXT[trend]}>
+							{trend === "up" ? "↑ more practice" : "↓ less practice"}
+						</span>
+					) : null}
+				</p>
+			) : null}
+		</li>
+	)
+}
+
+function Injuries({ a, b, data, names, theme, week }: { a: string; b: string; data: ReturnType<typeof getUnits>; names: Record<string, string>; theme: PairTheme; week: number | null }) {
+	const updated = data.injuriesUpdatedAt ? updatedText(data.injuriesUpdatedAt) : ""
+	return (
+		<>
+			<div className="grid gap-6 lg:grid-cols-2">
+				{[a, b].map((team) => {
+					const t = data.teams[team]
+					const note = reportNote(t, week)
+					const players = t.injuries.players
+					// Players back at full practice are cleared; they stay visible but out of the way of the ones to worry about.
+					const flagged = players.filter((p) => practiceOf(p) !== "Full" || isGameStatus(p.status))
+					const cleared = players.filter((p) => !flagged.includes(p))
+					return (
+						<div key={team} className="rounded-2xl border border-lab-line p-4">
+							<h3 className="m-0 font-serif text-lg font-bold">
+								<TeamTag color={theme.color[team]} name={names[team]} />
+							</h3>
+							{t.injuries.week ? <p className="m-0 mt-1 text-xs text-lab-muted">Week {t.injuries.week} report{updated ? ` · last changed ${updated}` : ""}</p> : null}
+							{note ? <p className="m-0 mt-1 text-xs text-lab-muted">{note}</p> : null}
+							{flagged.length ? (
+								<ul className="m-0 mt-3 list-none divide-y divide-lab-line p-0 text-sm">
+									{flagged.map((p) => (
+										<PlayerRow key={`${p.name}-${p.pos}`} p={p} />
+									))}
+								</ul>
+							) : (
+								<p className="m-0 mt-3 text-sm text-lab-soft">{t.injuries.week ? "Nobody at a tracked position is limited or out." : "No report yet."}</p>
+							)}
+							{cleared.length ? (
+								<p className="m-0 mt-3 border-t border-lab-line pt-3 text-xs leading-relaxed text-lab-muted">
+									<span className="font-semibold text-lab-soft">Full practice:</span> {cleared.map((p) => `${p.name} (${p.pos}${p.injury ? `, ${p.injury.toLowerCase()}` : ""})`).join("; ")}
+								</p>
+							) : null}
+						</div>
+					)
+				})}
+			</div>
+			<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">
+				Teams report practice on Wednesday, Thursday and Friday and issue game designations on Friday. We check the league&rsquo;s data every few hours from Wednesday to Sunday and keep what we saw, so a player&rsquo;s practice week starts the first time we saw him; it is not the league&rsquo;s own day-by-day log. Game-day inactives, announced about 90 minutes before kickoff, are not included.
+			</p>
+		</>
 	)
 }
 
@@ -470,7 +517,7 @@ export default function MatchupReport({ a, b, theme, week = null, compact = fals
 					</section>
 
 					<section aria-labelledby="injury-heading">
-						<Head id="injury-heading" action={share("injuries")} sub="The latest injury report for each team, sorted by position group. A starter averaged more than half the team's snaps in the games he played.">
+						<Head id="injury-heading" action={share("injuries")} sub="Each team's latest injury report, with how every player practiced this week. A starter averaged more than half the team's snaps in the games he played.">
 							Who is missing
 						</Head>
 						<Injuries a={a} b={b} data={data} names={names} theme={theme} week={week} />

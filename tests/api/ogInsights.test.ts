@@ -281,7 +281,14 @@ describe("/api/og insight cards", () => {
 		const inj = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "injuries" }))
 		if (inj?.type !== "matchup" || inj.view !== "injuries") throw new Error("expected an injuries card")
 		expect(inj.sides).toHaveLength(2)
-		for (const side of inj.sides) expect(side.players.length).toBeLessThanOrEqual(6)
+		for (const side of inj.sides) expect(side.players.length).toBeLessThanOrEqual(4)
+		// Players back at full practice are counted, not listed, and every row carries how he practiced.
+		for (const side of inj.sides) {
+			expect(side.players.every((p) => p.practice !== "Full" || ["Out", "Doubtful", "Questionable"].includes(p.status))).toBe(true)
+			expect(side.cleared).toBeGreaterThanOrEqual(0)
+		}
+		const tallInj = insightSpec(q({ type: "matchup", a: "LV", b: "NE", view: "injuries", size: "tall" }))
+		if (tallInj?.type === "matchup" && tallInj.view === "injuries") for (const side of tallInj.sides) expect(side.players.length).toBeLessThanOrEqual(8)
 	})
 
 	it("builds the week's slate with the Raiders' game first, and a board that can be sorted, filtered and focused", () => {

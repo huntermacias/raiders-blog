@@ -84,6 +84,8 @@ def sources():
              practice_status="Limited Participation in Practice"),
         dict(season=2026, team="AAA", week=3, gsis_id="g5", position="TE", full_name="Healthy Hal", report_status=np.nan, report_primary_injury=np.nan,
              practice_status="Full Participation in Practice"),
+        dict(season=2026, team="AAA", week=3, gsis_id="g6", position="WR", full_name="Back Barry", report_status=np.nan, report_primary_injury=np.nan,
+             practice_primary_injury="Hamstring", practice_status="Full Participation in Practice"),
     ])
     rows = []
     for wk, home, away in SCHEDULE:
@@ -234,6 +236,19 @@ def test_injuries_use_the_latest_report_and_group_by_position():
     assert pete["status"] == "Limited" and pete["group"] == "cov"
     # Out first, then the rest.
     assert names[0] == "Guard AAA"
+
+
+def test_injuries_say_how_each_player_practiced_and_keep_those_back_at_full_practice():
+    inj = b.build(sources(), 2026)["teams"]["AAA"]["injuries"]
+    by = {p["name"]: p for p in inj["players"]}
+    # A game designation does not hide how he practiced.
+    assert by["Guard AAA"]["status"] == "Out" and by["Guard AAA"]["practice"] == "DNP"
+    assert by["Backup Bob"]["status"] == "Questionable" and by["Backup Bob"]["practice"] == "Limited"
+    assert by["Practice Pete"]["practice"] == "Limited"
+    # Full practice with a named injury stays on the list, last; full practice with nothing wrong does not.
+    assert by["Back Barry"]["status"] == "Full" and by["Back Barry"]["practice"] == "Full" and by["Back Barry"]["injury"] == "Hamstring"
+    assert inj["players"][-1]["name"] == "Back Barry"
+    assert "Healthy Hal" not in by
 
 
 def test_teams_without_a_report_get_an_empty_one():
