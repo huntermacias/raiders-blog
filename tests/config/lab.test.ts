@@ -260,4 +260,51 @@ describe("the Lab section", () => {
 			expect(hub).not.toContain("fourth-down")
 		})
 	})
+
+	describe("playoff machine", () => {
+		const page = "app/(user)/lab/playoff-machine/page.tsx"
+		const ui = ["PlayoffMachine", "GameCard", "StandingsTable", "BracketView", "RaidersOutlook"].map((n) => `components/playoffs/${n}.tsx`)
+
+		it("is a static page: the schedule comes from the JSON in the repo and the picks live in the browser", () => {
+			const src = read(page)
+			expect(src).not.toMatch(/export const revalidate/)
+			expect(src).not.toMatch(/force-dynamic/)
+			expect(src).not.toMatch(/readClient|sanity/i)
+			expect(src).toMatch(/className="lab /)
+			expect(src).toMatch(/NFL Playoff Machine/)
+			expect(src).toMatch(/nflverse/)
+			expect(src).toMatch(/CC BY 4\.0/)
+		})
+
+		it("has no dark-only colors", () => {
+			for (const f of [page, ...ui, "components/playoffs/usePlayoffScenario.ts"]) {
+				const src = read(f)
+				expect(src, f).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
+				expect(src, f).not.toMatch(/bg-\[#0/)
+				expect(src, f).not.toMatch(/rgba\(255,\s*255,\s*255/)
+				expect(src, f).not.toMatch(/["'`]#[0-9a-fA-F]{3,8}["'`]/)
+			}
+		})
+
+		it("is in the sitemap and linked from the Lab", () => {
+			expect(read("pages/sitemap.xml.tsx")).toContain("/lab/playoff-machine")
+			expect(read("app/(user)/lab/page.tsx")).toContain("/lab/playoff-machine")
+		})
+
+		it("keeps the engine free of the data file, the clock and Math.random, so it can run thousands of times anywhere", () => {
+			const engine = ["bracket", "clinching", "picks", "season", "simulator", "standings", "tiebreakers", "share", "summary", "schedule"]
+			for (const n of engine) {
+				// Comments may mention these by name; only code counts.
+				const src = read(`lib/playoffs/${n}.ts`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
+				expect(src, n).not.toMatch(/data\/lab\/schedule/)
+				expect(src, n).not.toMatch(/Date\.now|new Date\(\)/)
+				expect(src, n).not.toMatch(/Math\.random/)
+			}
+			expect(read("lib/playoffs/data.ts")).toMatch(/data\/lab\/schedule\.json/)
+		})
+
+		it("builds the schedule from nflverse, under its license", () => {
+			expect(read("scripts/lab/build_schedule.py")).toMatch(/CC BY 4\.0/)
+		})
+	})
 })

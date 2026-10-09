@@ -48,6 +48,7 @@ ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/playoff-machine`, undefined, "0.8", "weekly")}
 ${matchupPaths().map((p) => url(`${SITE_URL}${p}`, undefined, "0.5", "weekly")).join("\n")}
 ${TEAMS.filter((t) => t.abbr !== "LV").map((t) => url(`${SITE_URL}/lab/scouting/${t.abbr.toLowerCase()}`, undefined, "0.5", "weekly")).join("\n")}
 ${games.map((g) => url(`${SITE_URL}/games/${g.slug.current}`, g._updatedAt, "0.8")).join("\n")}
