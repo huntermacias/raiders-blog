@@ -69,3 +69,32 @@ export function clinchStatuses(season: Season, seedings: readonly ConferenceSeed
 	}
 	return out
 }
+
+// Out of reach, the same safe way: only when the standings prove it without needing a tiebreaker. Used by the Sunday
+// Rooting Guide to say "this goal is out of reach" instead of showing odds for something that cannot happen.
+
+function floorsAndCeilings(season: Season, confTeams: readonly { id: string }[]) {
+	const floor = new Map(confTeams.map((t) => [t.id, winValue(recordOf(season, t.id).overall)]))
+	const ceil = new Map(confTeams.map((t) => [t.id, (floor.get(t.id) as number) + openGamesFor(season, t.id)]))
+	return { floor, ceil }
+}
+
+/** True when a division mate already has more wins than this team can finish with, so the team cannot win its division. */
+export function cannotWinDivision(season: Season, team: string): boolean {
+	const me = season.teamById.get(team)
+	if (!me) return false
+	const confTeams = season.league.teams.filter((t) => t.conference === me.conference)
+	const { floor, ceil } = floorsAndCeilings(season, confTeams)
+	const hi = ceil.get(team) as number
+	return confTeams.some((t) => t.id !== team && t.division === me.division && (floor.get(t.id) as number) > hi)
+}
+
+/** True when some team in the conference already has more wins than this team can finish with, so it cannot be the top seed. */
+export function cannotTakeTopSeed(season: Season, team: string): boolean {
+	const me = season.teamById.get(team)
+	if (!me) return false
+	const confTeams = season.league.teams.filter((t) => t.conference === me.conference)
+	const { floor, ceil } = floorsAndCeilings(season, confTeams)
+	const hi = ceil.get(team) as number
+	return confTeams.some((t) => t.id !== team && (floor.get(t.id) as number) > hi)
+}

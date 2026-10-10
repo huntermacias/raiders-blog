@@ -1,0 +1,81 @@
+name: Refresh Rooting Guide
+
+# The Sunday Rooting Guide (/lab/rooting-guide) reads data/lab/rooting.json, which is worked out ahead of time so that no page view
+# runs a simulation. This pulls the latest results into data/lab/schedule.json (the same file the Playoff Machine reads), and if a
+# final score has changed since the guide was last built it rebuilds the guide: every team, every goal, every game still to play.
+# The build is skipped when nothing changed (the file carries a key made from every final score), so a run with no new results
+# costs a few seconds. A commit to main triggers the normal Vercel deploy.
+#
+# The times are the hours after games end, in UTC: Sunday evening and night, the early hours of Monday and Tuesday (Sunday and
+# Monday night games), Friday (Thursday night games), and Saturday for the late-season Saturday games.
+on:
+  schedule:
+    - cron: "20 21,23 * * 0"
+    - cron: "20 1,3,5,8 * * 0,1,2,5"
+    - cron: "20 21,23 * * 6"
+    - cron: "20 12 * * 2,3"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild the guide even if no result has changed"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lab-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SEASON: ${{ vars.LAB_SEASON || '2026' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: pip install pandas numpy
+
+      - name: Refresh the schedule and results
+        # Keeps the file as it is if the download looks wrong.
+        run: python scripts/lab/build_schedule.py --season "$SEASON" --out data/lab/schedule.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install site packages
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Rebuild the guide
+        run: |
+          npx esbuild scripts/rooting/build.ts --bundle --platform=node --format=cjs --alias:@=. --log-level=warning --outfile=/tmp/rooting.cjs
+          if [ "${{ inputs.force }}" = "true" ]; then FLAG="--force"; else FLAG=""; fi
+          node /tmp/rooting.cjs $FLAG
+
+      - name: Commit if changed
+        run: |
+          git add data/lab/schedule.json data/lab/rooting.json
+          if git diff --cached --quiet; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh results and the Rooting Guide"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 5
+          done
+          exit 1

@@ -137,6 +137,11 @@ export default function PlayoffMachinePage() {
 						games file, CC BY 4.0. Tiebreaking follows the NFL&rsquo;s published procedures. Standings and tiebreakers calculated by Raiders Rundown.
 					</p>
 					<p className="mt-3 text-sm">
+						<Link href="/lab/rooting-guide" className="font-semibold underline underline-offset-4">
+							See which games to root for, ranked by how much each one moves your team&rsquo;s odds
+						</Link>
+					</p>
+					<p className="mt-3 text-sm">
 						<Link href="/lab/matchups" className="font-semibold underline underline-offset-4">
 							See how this week&rsquo;s games stack up, position group by position group
 						</Link>
