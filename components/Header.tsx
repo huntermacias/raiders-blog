@@ -25,11 +25,11 @@ const mainLinks = [
 	{ href: "/league", label: "League" },
 	{ href: "/rankings", label: "Rankings" },
 	{ href: "/lab", label: "Lab" },
-	{ href: "/schedule", label: "Schedule" },
 ]
 
 /** Quieter pages, tucked under "More" so the bar stays short. */
 const moreLinks: MoreItem[] = [
+	{ href: "/schedule", label: "Schedule", hint: "The Raiders' season, game by game." },
 	{ href: "/live", label: "Live", hint: "Live-updating threads for games, as they happen." },
 	{ href: "/community", label: "Discussion", hint: "Every conversation on the site, in one place." },
 	{ href: "https://huntermacias.com", label: "Meet the Maintainer", hint: "Hunter's tech blog, and who builds this site.", external: true },
