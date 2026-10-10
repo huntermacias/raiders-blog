@@ -9,7 +9,7 @@ import { settledGames } from "@/lib/rooting/live"
 import { type GuideQuery, readQuery } from "@/lib/rooting/share"
 import { GOALS, SCALE } from "@/lib/rooting/types"
 import { isRootingData } from "@/lib/rooting/validate"
-import { buildView, guideWeek, isStale, shareText, topThree } from "@/lib/rooting/view"
+import { buildView, guideWeek, isStale, ownGame, shareText, topThree } from "@/lib/rooting/view"
 import { buildRooting } from "@/lib/rooting/build"
 import { resultsKey } from "@/lib/rooting/engine"
 import { lateSeason } from "./helpers"
@@ -94,6 +94,11 @@ describe("the view, for all 32 teams and every goal", () => {
 		expect(top.length).toBeLessThanOrEqual(3)
 		expect(text).toContain(`1. ${teamByAbbr(top[0].rootFor as string).nick} win (${pointsText(top[0].gain ?? 0)})`)
 		expect(text).not.toContain("%")
+		// The team's own game is described by its stakes, and is not one of the numbered games to root for.
+		const own = ownGame(v)!
+		expect(text).toContain(`A Raiders win is worth ${pointsText(own.win.delta)} (a loss ${pointsText(own.loss.delta)}).`)
+		expect(top.every((r) => !r.yours)).toBe(true)
+		expect(text).not.toMatch(/1\. Raiders win/)
 	})
 
 	it("says when a link was made for another week, and shows the current one", () => {

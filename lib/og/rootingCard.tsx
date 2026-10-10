@@ -12,10 +12,10 @@ import type { ReactElement } from "react"
 
 import { SIZE_PIXELS, type ShareSize } from "../lab/lastShare"
 import { teamByAbbr } from "../nfl"
-import { GOAL_INFO, pctText } from "../rooting/guide"
-import type { GuideView } from "../rooting/view"
+import { GOAL_INFO, pctText, pointsText } from "../rooting/guide"
+import { type GuideView, ownGame, topThree } from "../rooting/view"
 import type { Goal } from "../rooting/types"
-import { BRIGHT, Brand, Button, DIM, Eyebrow, Frame, GOLD, HIT, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
+import { BRIGHT, Brand, Button, DIM, Eyebrow, Frame, GOLD, HIT, LINE, MISS, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
 export type RootingPick = {
 	rank: number
@@ -40,6 +40,14 @@ export type RootingPick = {
 	thenText: string
 }
 
+/** The followed team's own game: what a win and a loss are each worth to it. Shown as a highlight, never as a "root for" pick. */
+export type RootingOwn = {
+	opp: string
+	venue: "vs" | "at"
+	win: { text: string; delta: string }
+	loss: { text: string; delta: string }
+}
+
 export type RootingCardSpec = {
 	type: "rooting"
 	size: ShareSize
@@ -55,6 +63,9 @@ export type RootingCardSpec = {
 	standing: string
 	/** What the big number on the left shows. */
 	hero: { big: string; small: string; note: string; muted: boolean }
+	/** The team's own game, when it matters to the goal. */
+	own: RootingOwn | null
+	/** The other games to root in, most important first. Never includes the team's own game. */
 	picks: RootingPick[]
 	/** Said instead of the list when there are no picks. */
 	message: string
@@ -68,7 +79,7 @@ const wholePct = (p: number) => Math.round(p * 100)
 export function buildRootingSpec(view: GuideView, input: { season: number; size: ShareSize }): RootingCardSpec {
 	const info = teamByAbbr(view.team)
 	const goal = view.goals.find((g) => g.goal === view.goal)
-	const picks: RootingPick[] = view.recs.slice(0, 3).flatMap((r, i) => {
+	const picks: RootingPick[] = topThree(view).flatMap((r, i) => {
 		if (!r.rootFor || r.rootAgainst === null || r.bestP === null || r.gain === null) return []
 		const t = teamByAbbr(r.rootFor)
 		const gainPts = wholePct(r.gain)
@@ -93,6 +104,11 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 		]
 	})
 
+	const g = ownGame(view)
+	const own: RootingOwn | null = g
+		? { opp: g.opp, venue: g.venue, win: { text: pctText(g.win.p), delta: pointsText(g.win.delta) }, loss: { text: pctText(g.loss.p), delta: pointsText(g.loss.delta) } }
+		: null
+
 	const status = view.status
 	const live = status === "live"
 	const hero = live
@@ -102,7 +118,7 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 			: { big: "OUT", small: "", note: view.goal === "playoffs" ? "eliminated" : "out of reach", muted: true }
 
 	let message = ""
-	if (!picks.length) {
+	if (!picks.length && !own) {
 		if (!live) message = view.emptyText.replace(/ Try another goal\.$/, "")
 		else if (view.empty === "season-over") message = "The regular season is over. The Playoff Machine shows the final bracket."
 		else message = `No game left moves the ${info.nick}' chance ${GOAL_NOTE[view.goal]} by a point or more.`
@@ -121,6 +137,7 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 		record: view.standing.record,
 		standing: view.standing.text,
 		hero,
+		own,
 		picks,
 		message,
 	}
@@ -145,25 +162,24 @@ function Meter({ pick, w, h }: { pick: RootingPick; w: number; h: number }) {
 	)
 }
 
-function Row({ pick, tall, w }: { pick: RootingPick; tall: boolean; w: number }) {
+function Row({ pick, tall, w, tight }: { pick: RootingPick; tall: boolean; w: number; tight: boolean }) {
 	const c = accent(pick.color)
-	const h = tall ? 178 : 120
-	const abbrSize = tall ? 74 : 52
-	const bigSize = tall ? 92 : 64
+	const h = tall ? (tight ? 142 : 178) : tight ? 106 : 120
+	const abbrSize = tall ? (tight ? 54 : 74) : tight ? 46 : 52
+	const bigSize = tall ? (tight ? 72 : 92) : tight ? 56 : 64
 	const rank = tall ? 52 : 36
 	const meterW = tall ? 360 : 232
 	return (
-		<div style={{ display: "flex", alignItems: "center", width: w, height: h, marginTop: tall ? 14 : 12, paddingRight: tall ? 28 : 18, backgroundColor: "rgba(15,16,18,0.92)", border: `2px solid ${LINE}`, borderRadius: 14, overflow: "hidden" }}>
+		<div style={{ display: "flex", alignItems: "center", width: w, height: h, marginTop: tall ? 12 : tight ? 9 : 12, paddingRight: tall ? 28 : 18, backgroundColor: "rgba(15,16,18,0.92)", border: `2px solid ${LINE}`, borderRadius: 14, overflow: "hidden" }}>
 			<div style={{ display: "flex", width: tall ? 14 : 9, height: h, backgroundColor: c }} />
 			<div style={{ display: "flex", justifyContent: "center", width: rank + 14, fontFamily: "Anton", fontSize: rank, color: pick.rank === 1 ? GOLD : BRIGHT }}>{String(pick.rank)}</div>
 			<div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
-				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 5, color: SILVER })}>Root for</div>
+				<div style={label({ fontSize: tall ? (tight ? 19 : 24) : 15, letterSpacing: 5, color: SILVER })}>Root for</div>
 				<div style={{ display: "flex", alignItems: "flex-end" }}>
 					<div style={{ display: "flex", fontFamily: "Anton", fontSize: abbrSize, lineHeight: 1.05, letterSpacing: 1, color: WHITE }}>{pick.abbr}</div>
 					<div style={label({ fontSize: tall ? 30 : 19, letterSpacing: 3, color: BRIGHT, marginLeft: 14, marginBottom: tall ? 12 : 7 })}>{`${pick.venue} ${pick.opp}`}</div>
-					{pick.yours ? <div style={label({ fontSize: tall ? 20 : 13, letterSpacing: 4, color: GOLD, marginLeft: 14, marginBottom: tall ? 16 : 10 })}>Your game</div> : null}
 				</div>
-				<div style={{ display: "flex", alignItems: "center", marginTop: tall ? 14 : 8 }}>
+				<div style={{ display: "flex", alignItems: "center", marginTop: tall ? (tight ? 6 : 14) : tight ? 6 : 8 }}>
 					<Meter pick={pick} w={meterW} h={tall ? 14 : 9} />
 					<div style={label({ fontSize: tall ? 26 : 16, letterSpacing: 2, color: BRIGHT, marginLeft: 16 })}>{`${pick.nowText} to ${pick.thenText}`}</div>
 				</div>
@@ -177,12 +193,36 @@ function Row({ pick, tall, w }: { pick: RootingPick; tall: boolean; w: number })
 	)
 }
 
+/** The followed team's own game, drawn as a highlight: what winning it and losing it are each worth, in points. */
+function Own({ own, tall, w }: { own: RootingOwn; tall: boolean; w: number }) {
+	const stat = (name: string, v: { text: string; delta: string }, color: string) => (
+		<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginLeft: tall ? 40 : 26 }}>
+			<div style={label({ fontSize: tall ? 22 : 14, letterSpacing: 4, color: SILVER })}>{name}</div>
+			<div style={{ display: "flex", alignItems: "flex-end" }}>
+				<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 62 : 40, lineHeight: 1, color }}>{v.delta.replace(/ pts?$/, "")}</div>
+				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 3, color: SILVER, marginLeft: 8, marginBottom: tall ? 8 : 4 })}>{v.delta.endsWith("pt") ? "pt" : "pts"}</div>
+			</div>
+			<div style={label({ fontSize: tall ? 22 : 14, letterSpacing: 2, color: DIM })}>{`${v.text} chance`}</div>
+		</div>
+	)
+	return (
+		<div style={{ display: "flex", alignItems: "center", width: w, height: tall ? 132 : 96, paddingLeft: tall ? 30 : 22, paddingRight: tall ? 28 : 20, backgroundColor: "rgba(15,16,18,0.92)", border: `2px solid ${GOLD}`, borderRadius: 14 }}>
+			<div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 5, color: GOLD })}>Your game</div>
+				<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 58 : 38, lineHeight: 1.1, letterSpacing: 1, color: WHITE, ...caps }}>{`${own.venue} ${own.opp}`}</div>
+			</div>
+			{stat("A win is worth", own.win, HIT)}
+			{stat("A loss costs", own.loss, MISS)}
+		</div>
+	)
+}
+
 export function renderRootingCard(spec: RootingCardSpec): ReactElement {
 	const { width: w, height: h } = SIZE_PIXELS[spec.size]
 	const tall = spec.size === "tall"
 	const eyebrow = spec.week ? `${spec.season} · Week ${spec.week} rooting guide` : `${spec.season} · Rooting guide`
 	const hr = spec.hero
-	const bigSize = tall ? (hr.big.length > 3 ? 220 : 250) : hr.big.length > 3 ? 120 : 150
+	const bigSize = tall ? (hr.big.length > 3 ? 200 : spec.own ? 190 : 250) : hr.big.length > 3 ? 120 : 150
 
 	const chip = (text: string, hot = false) => (
 		<div style={{ display: "flex", alignSelf: "flex-start", padding: tall ? "10px 24px" : "7px 18px", marginRight: 12, marginTop: tall ? 14 : 8, border: `2px solid ${hot ? spec.color : LINE}`, color: hot ? WHITE : BRIGHT, fontFamily: "Oswald", fontWeight: 600, fontSize: tall ? 28 : 21, letterSpacing: 3, ...caps }}>{text}</div>
@@ -208,19 +248,23 @@ export function renderRootingCard(spec: RootingCardSpec): ReactElement {
 	)
 
 	const listW = tall ? w - 144 : 560
-	const list = spec.picks.length ? (
-		<div style={{ display: "flex", flexDirection: "column", width: listW }}>
-			<div style={label({ fontSize: tall ? 28 : 19, color: SILVER, fontWeight: 600, letterSpacing: 5 })}>{spec.picks.length === 1 ? "The game to root in" : `Root for these ${spec.picks.length}`}</div>
-			{spec.picks.map((p) => (
-				<Row key={p.rank} pick={p} tall={tall} w={listW} />
-			))}
-		</div>
-	) : (
-		<div style={{ display: "flex", flexDirection: "column", width: listW, padding: tall ? "40px 40px" : "28px 30px", backgroundColor: "rgba(12,13,15,0.72)", border: `2px solid ${LINE}`, borderRadius: 20 }}>
-			<div style={label({ fontSize: tall ? 28 : 19, color: SILVER, fontWeight: 600, letterSpacing: 5 })}>Nothing to root for</div>
-			<div style={{ display: "flex", marginTop: 14, fontFamily: "Oswald", fontWeight: 400, fontSize: tall ? 38 : 26, lineHeight: 1.28, color: BRIGHT }}>{clip(spec.message, 170)}</div>
-		</div>
-	)
+	const tight = spec.own !== null && spec.picks.length > 0
+	const head = (text: string) => <div style={label({ fontSize: tall ? 26 : 17, color: SILVER, fontWeight: 600, letterSpacing: 5, marginTop: tall ? 16 : 12 })}>{text}</div>
+	const list =
+		spec.picks.length || spec.own ? (
+			<div style={{ display: "flex", flexDirection: "column", width: listW }}>
+				{spec.own ? <Own own={spec.own} tall={tall} w={listW} /> : null}
+				{spec.picks.length ? head(spec.own ? spec.picks.length === 1 ? "Also root for this game" : `Also root for these ${spec.picks.length}` : spec.picks.length === 1 ? "The game to root in" : `Root for these ${spec.picks.length}`) : null}
+				{spec.picks.map((p) => (
+					<Row key={p.rank} pick={p} tall={tall} w={listW} tight={tight} />
+				))}
+			</div>
+		) : (
+			<div style={{ display: "flex", flexDirection: "column", width: listW, padding: tall ? "40px 40px" : "28px 30px", backgroundColor: "rgba(12,13,15,0.72)", border: `2px solid ${LINE}`, borderRadius: 20 }}>
+				<div style={label({ fontSize: tall ? 28 : 19, color: SILVER, fontWeight: 600, letterSpacing: 5 })}>Nothing to root for</div>
+				<div style={{ display: "flex", marginTop: 14, fontFamily: "Oswald", fontWeight: 400, fontSize: tall ? 38 : 26, lineHeight: 1.28, color: BRIGHT }}>{clip(spec.message, 170)}</div>
+			</div>
+		)
 
 	const fine = "Odds from a simulation of the rest of the season · Data: nflverse, CC BY 4.0"
 
