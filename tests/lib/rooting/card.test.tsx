@@ -8,6 +8,7 @@ import { insightSpec } from "@/lib/og/insightSpecs"
 import { renderCard, cardSize } from "@/lib/og/cards"
 import { getRooting } from "@/lib/rooting/data"
 import { buildRooting } from "@/lib/rooting/build"
+import { pctText, pointsText } from "@/lib/rooting/guide"
 import { GOALS } from "@/lib/rooting/types"
 import { buildView, topThree } from "@/lib/rooting/view"
 import { lateSeason } from "./helpers"
@@ -41,6 +42,38 @@ describe("the share card's spec", () => {
 				if (view.status === "live") expect(spec.hero.small).toBe("%")
 			}
 		}
+	})
+
+	it("never lists the team's own game as a game to root for; it is shown as the team's own stakes instead", () => {
+		for (const team of TEAMS) {
+			for (const goal of GOALS) {
+				const view = viewFor(team, goal)
+				const spec = buildRootingSpec(view, { season: 2026, size: "wide" })
+				for (const p of spec.picks) {
+					expect([p.abbr, p.opp], `${team} ${goal}`).not.toContain(team)
+					expect(p.yours).toBe(false)
+				}
+				const mine = view.recs.find((r) => r.yours)
+				expect(spec.own !== null).toBe(Boolean(mine && mine.pHome !== null && mine.pAway !== null))
+				if (spec.own && mine) {
+					const home = mine.home === team
+					expect(spec.own.opp).toBe(home ? mine.away : mine.home)
+					expect(spec.own.venue).toBe(home ? "vs" : "at")
+				}
+			}
+		}
+	})
+
+	it("says what a win and a loss are each worth to the team in its own game, from its side", () => {
+		const view = viewFor("LV", "playoffs")
+		const mine = view.recs.find((r) => r.yours)!
+		const spec = buildRootingSpec(view, { season: 2026, size: "wide" })
+		const homeIsLV = mine.home === "LV"
+		const win = (homeIsLV ? mine.pHome : mine.pAway) as number
+		const loss = (homeIsLV ? mine.pAway : mine.pHome) as number
+		expect(spec.own!.win).toEqual({ text: pctText(win), delta: pointsText(win - mine.baseline) })
+		expect(spec.own!.loss).toEqual({ text: pctText(loss), delta: pointsText(loss - mine.baseline) })
+		expect(win).toBeGreaterThan(loss)
 	})
 
 	it("shows the same chance the page shows for the goal, and a '+N' that is the gain over now", () => {

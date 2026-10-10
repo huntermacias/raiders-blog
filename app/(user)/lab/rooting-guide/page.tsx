@@ -20,7 +20,7 @@ import { GOAL_INFO, pctText, pointsText } from "@/lib/rooting/guide"
 import { type BoardGame, settledGames } from "@/lib/rooting/live"
 import { ROOTING_PATH, SITE_URL, type RawQuery, canonicalFor, readQuery } from "@/lib/rooting/share"
 import { getRooting } from "@/lib/rooting/data"
-import { buildView, shareText, topThree } from "@/lib/rooting/view"
+import { buildView, ownGame, shareText, topThree } from "@/lib/rooting/view"
 
 // Built per request from the stored guide (data/lab/rooting.json), the schedule file and ESPN's scoreboard, so a game that has just ended
 // comes off the list right away. No simulation runs here: the numbers were worked out when the final scores last arrived, by the
@@ -70,13 +70,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	}
 	const games = getGames()
 	const view = buildView({ data, schedule: games, query, settled: settledGames(data, games, []), season })
-	const lead = view.recs[0]
+	const lead = topThree(view)[0]
+	const own = ownGame(view)
 	const goal = GOAL_INFO[query.goal]
 	const weekText = view.week ? `Week ${view.week}` : `${season}`
 	const title = `${info.nick} Sunday Rooting Guide: who to root for in ${weekText} | Raiders Rundown`
 	const base = view.goals.find((g) => g.goal === query.goal)
 	const standing = base && base.status === "live" ? `The ${info.nick}' chance to ${goal.phrase} is ${pctText(base.baseline)}. ` : view.headline ? `${view.headline} ` : ""
-	const top = lead && lead.rootFor && lead.gain !== null ? `The game that matters most: root for the ${teamByAbbr(lead.rootFor).nick} (${pointsText(lead.gain)} to your odds).` : "See which games still move your odds."
+	const mine = own ? `A ${info.nick} win is worth ${pointsText(own.win.delta)} to that. ` : ""
+	const top = lead && lead.rootFor && lead.gain !== null ? `${mine}Best game to root for elsewhere: the ${teamByAbbr(lead.rootFor).nick} (${pointsText(lead.gain)}).` : mine ? mine.trim() : "See which games still move your odds."
 	const description = `${standing}${top}`
 	const card = `${SITE_URL}/api/og?type=rooting&team=${query.team}&goal=${query.goal}${view.week ? `&week=${view.week}` : ""}&size=wide&v=${stampOf(data.generatedAt)}`
 	return {

@@ -215,18 +215,33 @@ export function buildView({ data, schedule, query, settled = [], season }: ViewI
 	}
 }
 
-/** The few games the share card and the post text lead with: the top of this week's list. */
+/** The games the share card and the post text lead with: the top of the list, leaving out the followed team's own game, since "root for your own team" says nothing. */
 export function topThree(view: GuideView): Recommendation[] {
-	return view.recs.slice(0, 3)
+	return view.recs.filter((r) => !r.yours).slice(0, 3)
 }
 
-/** The words that go with a post: the week, the goal and the top games, each with what it is worth. */
+/** The followed team's own game in the list, with what a win and a loss are each worth to it; null when it has no game that matters. */
+export type OwnGame = { gameId: string; opp: string; venue: "vs" | "at"; win: { p: number; delta: number }; loss: { p: number; delta: number }; swing: number }
+
+export function ownGame(view: GuideView): OwnGame | null {
+	const r = view.recs.find((x) => x.yours)
+	if (!r || r.pHome === null || r.pAway === null) return null
+	const home = r.home === view.team
+	const win = home ? r.pHome : r.pAway
+	const loss = home ? r.pAway : r.pHome
+	return { gameId: r.gameId, opp: home ? r.away : r.home, venue: home ? "vs" : "at", win: { p: win, delta: win - r.baseline }, loss: { p: loss, delta: loss - r.baseline }, swing: r.spread }
+}
+
+/** The words that go with a post: the week, the goal, what the team's own game is worth, then the other games to root in, each with what it is worth. */
 export function shareText(view: GuideView): string {
 	const goal = GOAL_INFO[view.goal].phrase
 	if (view.empty === "clinched" || view.empty === "out") return `${view.nick} Sunday Rooting Guide: ${view.headline}`
 	const picks = topThree(view)
+	const own = ownGame(view)
 	const week = view.week ? `Week ${view.week} ` : ""
-	if (!picks.length) return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: nothing left moves their odds by a point.`
-	const list = picks.map((r, i) => `${i + 1}. ${nickOf(r.rootFor as string)} win (${pointsText(r.gain ?? 0)})`).join(" ")
-	return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: ${list}`
+	if (!picks.length && !own) return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: nothing left moves their odds by a point.`
+	const parts: string[] = []
+	if (own) parts.push(`A ${view.nick} win is worth ${pointsText(own.win.delta)} (a loss ${pointsText(own.loss.delta)}).`)
+	if (picks.length) parts.push(`${own ? "Elsewhere: " : ""}${picks.map((r, i) => `${i + 1}. ${nickOf(r.rootFor as string)} win (${pointsText(r.gain ?? 0)})`).join(" ")}`)
+	return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: ${parts.join(" ")}`
 }
