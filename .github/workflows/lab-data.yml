@@ -70,6 +70,12 @@ jobs:
           corepack enable
           yarn install --immutable
 
+      - name: Rebuild the Rooting Guide
+        # Reads the schedule file built above; skipped quickly when no result has changed since the guide was last built.
+        run: |
+          npx esbuild scripts/rooting/build.ts --bundle --platform=node --format=cjs --alias:@=. --log-level=warning --outfile=/tmp/rooting.cjs
+          node /tmp/rooting.cjs
+
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 

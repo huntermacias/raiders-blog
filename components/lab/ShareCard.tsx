@@ -21,7 +21,7 @@ const SIZE_CHOICES: { id: ShareSize; name: string; where: string }[] = [
 ]
 
 /** What a card is of when it is not a "Will it last?" card: the route's `type`, the link's query (without the size), where a shared link lands, and the words for it. */
-export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string }
+export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string; /** Names the campaign tracked links carry (utm_campaign). Defaults to "lab_share". */ campaign?: string }
 
 type Props = {
 	/** The part of the "Will it last?" page the card is of. Leave out when `target` says what it is of. */
@@ -40,6 +40,8 @@ type Props = {
 	className?: string
 	/** Called when the reader sends the card somewhere, with how. Lets a page count shares without the window knowing about its analytics. */
 	onAction?: (method: "share" | "save" | "copy_image" | "copy_link" | "x" | "facebook") => void
+	/** Called when the reader opens the share window. */
+	onOpen?: () => void
 }
 
 const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -50,7 +52,7 @@ const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * phone's own share sheet, save, copy the image, copy the link, X and Facebook. The link carries the chart's
  * stat, filters and pinned team, so whoever opens it sees the same chart.
  */
-export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "", onAction }: Props) {
+export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "", onAction, onOpen }: Props) {
 	const [open, setOpen] = React.useState(false)
 	const [size, setSize] = React.useState<ShareSize>("wide")
 	const [note, setNote] = React.useState("")
@@ -117,6 +119,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 		file: `raiders-will-it-last-${kind ?? "chart"}${view.stat ? `-${view.stat.replace(".", "-")}` : ""}`,
 	}
 	const query = t.query
+	const campaign = t.campaign ?? "lab_share"
 	const src = `/api/og?type=${t.type}${query ? `&${query}` : ""}&size=${size}&v=${stamp}`
 	const shown = attempt ? `${src}&retry=${attempt}` : src
 	const loaded = loadedSrc === shown
@@ -157,7 +160,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 	}
 
 	const nativeShare = async () => {
-		const url = linkFor(SITE_URL, "&utm_source=share&utm_medium=social&utm_campaign=lab_share")
+		const url = linkFor(SITE_URL, `&utm_source=share&utm_medium=social&utm_campaign=${campaign}`)
 		try {
 			const blob = await (await fetch(src)).blob()
 			const file = new File([blob], filename, { type: "image/png" })
@@ -178,13 +181,13 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 	}
 
 	const postOnX = () => {
-		const url = linkFor(SITE_URL, "&utm_source=x&utm_medium=social&utm_campaign=lab_share")
+		const url = linkFor(SITE_URL, `&utm_source=x&utm_medium=social&utm_campaign=${campaign}`)
 		onAction?.("x")
 		window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}
 
 	const postOnFacebook = () => {
-		const url = linkFor(SITE_URL, "&utm_source=facebook&utm_medium=social&utm_campaign=lab_share")
+		const url = linkFor(SITE_URL, `&utm_source=facebook&utm_medium=social&utm_campaign=${campaign}`)
 		onAction?.("facebook")
 		window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}
@@ -196,7 +199,10 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 			<button
 				ref={trigger}
 				type="button"
-				onClick={() => setOpen(true)}
+				onClick={() => {
+					setOpen(true)
+					onOpen?.()
+				}}
 				aria-haspopup="dialog"
 				aria-label={`${label}: ${t.name}`}
 				className={`inline-flex min-h-[40px] items-center gap-2 rounded-full border border-lab-line-strong bg-lab-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-lab-ink transition hover:bg-lab-hover ${className}`}

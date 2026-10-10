@@ -18,6 +18,7 @@
 //   /api/og?type=slate[&size=wide|tall]   (the week's games, how each team's position groups line up)
 //   /api/og?type=board[&sort=composite|off|def|qb|ol|rec|run|rush|rund|cov][&show=AFC|NFC|<division>][&team=XX][&size=wide|tall]   (the league's position-group heat map)
 //   /api/og?type=twins[&size=wide|tall][&mode=off|def][&twin=2022-JAX]   (season twins: the Raiders' closest team-season)
+//   /api/og?type=rooting&team=LV&goal=playoffs|division|bye[&week=8][&size=wide|tall]   (the rooting guide: a team's goal and the top three games to root in)
 //   /api/og?type=playoffs[&s=<scenario code>][&t=KC][&size=wide|tall]   (the playoff machine: a team's seed and bracket in a scenario, or its odds as the race stands)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
@@ -252,9 +253,10 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		show: first(query.show),
 		s: first(query.s),
 		t: first(query.t),
+		goal: first(query.goal),
 	})
 	if (insight) return insight
-	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "matchup" || type === "slate" || type === "board") return null
+	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -294,7 +296,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

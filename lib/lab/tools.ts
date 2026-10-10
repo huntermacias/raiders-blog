@@ -19,7 +19,7 @@ export type LabTool = {
 }
 
 export const LAB_GROUPS: { id: LabGroupId; title: string; blurb: string }[] = [
-	{ id: "start", title: "Start here", blurb: "The two you will probably come back to every week." },
+	{ id: "start", title: "Start here", blurb: "The ones you will probably come back to every week." },
 	{ id: "raiders", title: "The Raiders", blurb: "This season's games, plays and opponents." },
 	{ id: "league", title: "League and history", blurb: "How the Raiders compare with every team, now and since 1999." },
 ]
@@ -31,6 +31,16 @@ export const LAB_TOOLS: LabTool[] = [
 		title: "NFL Playoff Machine",
 		short: "Pick every game left and watch the seeds, bracket and playoff odds move.",
 		text: "Pick the winner of every game left, and watch the standings, seeds and bracket update with the real tiebreakers. See the playoff odds and what your team needs. Follow the Raiders or any team, and share your scenario.",
+		group: "start",
+		isNew: true,
+		weekly: "results",
+	},
+	{
+		id: "rooting-guide",
+		href: "/lab/rooting-guide",
+		title: "Sunday Rooting Guide",
+		short: "Which games to root for, ranked by how much each moves your team's playoff odds.",
+		text: "Pick any of the 32 teams and a goal (make the playoffs, win the division or get the No. 1 seed), and see every game still to play ranked by how much it changes your chances, with who to root for and why. Updated as final scores come in.",
 		group: "start",
 		isNew: true,
 		weekly: "results",

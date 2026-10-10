@@ -1,6 +1,7 @@
 import { track } from "@vercel/analytics"
 
 import type { PlayoffEventName } from "./playoffs/events"
+import type { RootingEventName } from "./rooting/events"
 import type { Utm } from "./utm"
 
 export type ConversionEvent = "newsletter_signup" | "league_join"
@@ -24,6 +25,18 @@ export function trackConversion(name: ConversionEvent, utm: Utm | null): void {
  * analytics can never get in the way of using the tool. What counts as worth reporting is decided in lib/playoffs/events.ts.
  */
 export function trackPlayoff(name: PlayoffEventName, props?: Record<string, string | number | boolean>): void {
+	try {
+		track(name, props)
+	} catch {
+		// ignore
+	}
+}
+
+/**
+ * Records a Sunday Rooting Guide event: the team picked, the goal changed, a game opened, a share started or finished, the way out to
+ * the Playoff Machine. At most two small properties, and a failure is swallowed. The names live in lib/rooting/events.ts.
+ */
+export function trackRooting(name: RootingEventName, props?: Record<string, string | number | boolean>): void {
 	try {
 		track(name, props)
 	} catch {
