@@ -50,8 +50,8 @@ describe("header navigation", () => {
 	it("keeps the main bar short and puts the quieter pages under More", () => {
 		const main = header.slice(header.indexOf("const mainLinks"), header.indexOf("const moreLinks"))
 		const more = header.slice(header.indexOf("const moreLinks"), header.indexOf("function NavLink"))
-		expect((main.match(/href:/g) ?? []).length).toBeLessThanOrEqual(6)
-		for (const href of ["/live", "/community", "https://huntermacias.com"]) {
+		expect((main.match(/href:/g) ?? []).length).toBeLessThanOrEqual(5)
+		for (const href of ["/schedule", "/live", "/community", "https://huntermacias.com"]) {
 			expect(more).toContain(href)
 			expect(main).not.toContain(href)
 		}
