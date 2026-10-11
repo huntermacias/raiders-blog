@@ -6,7 +6,8 @@
 // and worst, by league rank), and writes the bottom line. The analysis itself lives in historyKit.ts, which
 // the browser also runs so fans can filter by team and playoff result.
 
-import { getGames, getHistory, getScouting } from "./data"
+import { getHistory, getScouting } from "./data"
+import { raidersStart } from "./raidersStart"
 import { type Analysis, type CheckRow, type Fmt, type Meta, type StartRecord, type Table, analyze, checklist } from "./historyKit"
 import type { Key } from "./scouting"
 
@@ -229,9 +230,9 @@ export function getHistoryView(): HistoryView | null {
 		return a ? [a] : []
 	})
 	if (!stories.length) return null
-	const games = getGames().slice(0, n)
-	const start = games.length === n && games.every((g) => g.result !== "T") ? { wins: games.filter((g) => g.result === "W").length, losses: games.filter((g) => g.result === "L").length } : null
-	const record = recordStory(history, n, getGames())
+	const start = raidersStart(n)
+	// Only the wins and losses matter to the record, not the order, so the Raiders' record stands in for the game log.
+	const record = recordStory(history, n, start ? [...Array(start.wins).fill({ result: "W" }), ...Array(start.losses).fill({ result: "L" })] : [])
 	return { season: scouting.season, n, first: history.first, last: history.last, meta: built.meta, tables: built.tables, standouts, stories, checklist: checklist(built.meta, built.tables), record, start, bottomLine: bottomLine(stories, record, n, scouting.season, history.first) }
 }
 

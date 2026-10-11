@@ -100,7 +100,8 @@ describe("scouting", () => {
 		for (const abbr of Object.keys(data.teams).filter((a) => a !== "LV")) {
 			const w = watchList(abbr, abbr)
 			expect(w.length).toBeLessThanOrEqual(3)
-			expect(new Set(w.map((x) => x.detail)).size).toBe(w.length)
+			// Two matchups can read alike (the same two ranks), so tell them apart by what they are about, not by the sentence.
+			expect(new Set(w.map((x) => x.headline)).size).toBe(w.length)
 		}
 		expect(watchList("ZZZ")).toEqual([])
 	})

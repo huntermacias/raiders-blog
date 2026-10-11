@@ -1,7 +1,8 @@
 // "Season twins" for the page: the Raiders' closest team-seasons, worked out once at build from the same tables
 // "Will it last?" uses. The matching itself is in twinsKit.ts.
 
-import { getGames, getHistory, getScouting } from "./data"
+import { getHistory, getScouting } from "./data"
+import { raidersStart } from "./raidersStart"
 import { buildTables, MAX_GAMES, MIN_GAMES } from "./history"
 import { type Backtest, type TwinMode, type TwinsResult, TWIN_MODES, backtest, findTwins } from "./twinsKit"
 
@@ -31,7 +32,6 @@ export function getTwinsView(): TwinsView | null {
 		modes[m.id] = result ? { result, test: backtest(built.meta, built.tables, m.id) } : null
 	}
 	if (!modes.all) return null
-	const games = getGames().slice(0, lv.g)
-	const start = games.length === lv.g && games.every((g) => g.result !== "T") ? { wins: games.filter((g) => g.result === "W").length, losses: games.filter((g) => g.result === "L").length } : null
+	const start = raidersStart(lv.g)
 	return { season: scouting.season, n: lv.g, first: history.first, last: history.last, start, modes, stamp: Date.parse(scouting.generatedAt) || 0 }
 }
