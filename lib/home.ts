@@ -10,8 +10,17 @@ import type { LiveGameInfo } from "./live/types"
 /** How long after kickoff a game still counts as "live" before we call it over. */
 export const GAME_WINDOW_MS = 4 * 3600 * 1000
 
+/**
+ * How long after kickoff the top of the page is still about the game that was just played. Three days takes a Sunday game through
+ * Tuesday night: the day or two when people want the score, the recap and what it did to the playoff race. After that the page is
+ * about the next one.
+ */
+export const FINAL_WINDOW_MS = 72 * 3600 * 1000
+
 export type HubState =
 	| { kind: "live"; game: ScheduleRow }
+	/** The game just ended: `game` is the finished one and `next` is what comes after it (null when nothing is left). */
+	| { kind: "final"; game: ScheduleRow; next: ScheduleRow | null }
 	| { kind: "next"; game: ScheduleRow }
 	| { kind: "idle" }
 
@@ -28,8 +37,8 @@ function espnRaidersGame(board: LiveGameInfo[] | null | undefined): LiveGameInfo
 
 /**
  * What the top of the homepage should be about right now: a game that is
- * being played, the next game on the schedule, or nothing (offseason, or a
- * schedule that has not been entered).
+ * being played, a game that finished in the last three days, the next game on
+ * the schedule, or nothing (offseason, or a schedule that has not been entered).
  *
  * `board` is ESPN's scoreboard when the page has it. ESPN knows whether the Raiders are playing, so it
  * decides "Game on" for its game: live while ESPN says in progress, never live once it says final or has
@@ -48,6 +57,18 @@ export function hubState(rows: ScheduleRow[], nowMs: number, board?: LiveGameInf
 		return t !== null && t <= nowMs && nowMs < t + GAME_WINDOW_MS
 	})
 	if (live) return { kind: "live", game: live }
+
+	// A game with a final score that kicked off in the last three days is still the story.
+	const justPlayed = rows
+		.filter((r) => !r.bye && r.outcome && kickoffMs(r) !== null)
+		.sort((a, b) => (kickoffMs(b) as number) - (kickoffMs(a) as number))[0]
+	if (justPlayed) {
+		const t = kickoffMs(justPlayed) as number
+		if (nowMs >= t && nowMs - t < FINAL_WINDOW_MS) {
+			const rest = rows.filter((r) => r !== justPlayed && !(espn?.state === "post" && isEspnGame(r)))
+			return { kind: "final", game: justPlayed, next: nextGame(rest, nowMs) }
+		}
+	}
 
 	// A game ESPN has finished must not come back as "next", even if the score isn't in Studio yet.
 	const upcoming = espn?.state === "post" ? rows.filter((r) => !isEspnGame(r)) : rows
@@ -93,4 +114,10 @@ export function countdownParts(ms: number): { days: number; hours: number; minut
 		minutes: Math.floor((total % 3600) / 60),
 		seconds: total % 60,
 	}
+}
+
+/** How far off the pick's margin was, in points: the predicted margin against the final one. Null until the game has a score. */
+export function pickMarginError(row: ScheduleRow): number | null {
+	if (!row.pick || !row.outcome) return null
+	return Math.abs(row.pick.raiders - row.pick.opponent - (row.outcome.raiders - row.outcome.opponent))
 }

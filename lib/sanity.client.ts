@@ -13,6 +13,18 @@ export const client = createClient({
 	token,
 });
 
+// Token-free client that reads through Sanity's edge cache (the API CDN). The homepage uses it for its stories and
+// recaps: public, published content that every visitor asks for in the same shape, so one cached answer serves everyone
+// instead of Sanity running the same query again for each visit. Sanity clears the cache for a document when it is
+// published, so a new post still shows up promptly. Anything that must be read the instant it changes (reader votes,
+// graded picks) stays on `readClient`. Set `useCdn` to false to go back to reading straight from the API.
+export const cdnClient = createClient({
+	projectId,
+	dataset,
+	apiVersion,
+	useCdn: true,
+});
+
 // Token-free, read-only client for statically generated / ISR pages.
 //
 // Next 13.x treats any fetch that carries an `Authorization` header as

@@ -1,6 +1,7 @@
 import { groq } from "next-sanity";
 import type { Metadata } from "next";
-import { client, readClient } from "../../lib/sanity.client";
+import { cdnClient, readClient } from "../../lib/sanity.client";
+import { type HomePostRow, homeGameReportsQuery, homePostsQuery } from "../../lib/homeQueries";
 import { cardImageUrl, heroImageUrl, hotspotPosition } from "../../lib/urlFor";
 import {
 	SEASON,
@@ -12,12 +13,12 @@ import {
 } from "../../lib/predictions";
 import { type RankingsDoc, buildBoards, raidersRow } from "../../lib/rankings";
 import { type ScheduleGame, joinSchedule, scheduleRecord } from "../../lib/schedule";
-import { hubState, playedGames, readingMinutes } from "../../lib/home";
+import { hubState, minutesFromWords, playedGames } from "../../lib/home";
 import { loadLeague } from "../../lib/league.data";
 import { getScoreboard, withEspnFinals } from "../../lib/live/service";
 import type { LiveGameInfo } from "../../lib/live/types";
 import { buildStandings, gradedWeeks, openGames, weekSummary } from "../../lib/league";
-import BlogList from "../../components/BlogList";
+import BlogList, { type ListPost } from "../../components/BlogList";
 import GameReportsTeaser from "../../components/GameReportsTeaser";
 import SubscribeBox from "../../components/SubscribeBox";
 import GameDayHub from "../../components/home/GameDayHub";
@@ -26,20 +27,11 @@ import StatStrip, { type HomeRank } from "../../components/home/StatStrip";
 import FeaturedStories, { type FeaturedPost } from "../../components/home/FeaturedStories";
 import FlagCard from "../../components/home/FlagCard";
 import LeagueTeaser from "../../components/league/LeagueTeaser";
-
-const query = groq`
-	*[_type=='post' && !(_id in path('drafts.**'))] {
-		...,
-		author->,
-		categories[]->
-	} | order(_createdAt desc)
-`
-
-const gameReportsQuery = groq`
-	*[_type=='gameReport' && !(_id in path('drafts.**'))] {
-		_id, title, slug, opponent, gameDate, raidersScore, opponentScore, mainImage
-	} | order(gameDate desc) [0...3]
-`
+import LabBand from "../../components/home/LabBand";
+import { labCopy, labPhase, labTools } from "../../lib/homeLab";
+import { loadRootingSnapshot } from "../../lib/homeLab.server";
+import { toolBadges } from "../../lib/lab/tools";
+import { labWeeks } from "../../lib/lab/toolsData";
 
 // The hub, the stat strip and the flag card are all derived from the same
 // documents the schedule, scoreboard and rankings pages use.
@@ -147,7 +139,7 @@ async function liveBoard(): Promise<LiveGameInfo[] | null> {
 export default async function page() {
 
 	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league, board]: [
-		Post[],
+		HomePostRow[],
 		GameReport[],
 		{ games?: ScheduleGame[] } | null,
 		GamePrediction[],
@@ -156,8 +148,8 @@ export default async function page() {
 		Awaited<ReturnType<typeof loadLeague>>,
 		LiveGameInfo[] | null,
 	] = await Promise.all([
-		client.fetch(query),
-		client.fetch(gameReportsQuery),
+		safe(cdnClient.fetch(homePostsQuery), []),
+		safe(cdnClient.fetch(homeGameReportsQuery), []),
 		safe(readClient.fetch(scheduleQuery, { season: SEASON }), null),
 		safe(readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])), []),
 		safe(readClient.fetch(flagsQuery, { season: SEASON }), []),
@@ -171,6 +163,20 @@ export default async function page() {
 	const record = scheduleRecord(rows)
 	const played = playedGames(rows)
 	const state = hubState(rows, Date.now(), board)
+
+	// The Lab band: the same Rooting Guide the Lab shows, framed for where the Raiders are in their week.
+	const phase = labPhase(state, Date.now())
+	const snapshot = loadRootingSnapshot()
+	const weeks = labWeeks()
+	const labBand = (
+		<LabBand
+			copy={labCopy(phase, snapshot?.week ?? weeks.slate)}
+			snapshot={snapshot}
+			tools={labTools(phase).map((tool) => ({ tool, badges: toolBadges(tool, weeks) }))}
+		/>
+	)
+	// On game days the Lab is the more useful thing to scroll to, so it comes before the stories.
+	const labFirst = phase === "live" || phase === "final"
 	const summary = summarize(picks ?? [])
 	const keysSummary = summarizeKeys(picks ?? [])
 	const flagSummary = summarizeFlags(flags ?? [])
@@ -196,7 +202,7 @@ export default async function page() {
 		description: post.description,
 		createdAt: post._createdAt,
 		categories: (post.categories ?? []).map((c) => c.title),
-		minutes: readingMinutes(post.body),
+		minutes: minutesFromWords(post.words ?? 0),
 		imageUrl: i === 0 ? heroImageUrl(post.mainImage) : cardImageUrl(post.mainImage),
 		imagePosition: hotspotPosition(post.mainImage),
 	}))
@@ -230,8 +236,8 @@ export default async function page() {
 		],
 	}
 
-	// BlogList is a client component: hand it the read time, not 34 article bodies.
-	const listPosts: Post[] = (posts ?? []).map((p) => ({ ...p, body: [], readMinutes: readingMinutes(p.body) }))
+	// BlogList is a client component, so it gets only what a card shows.
+	const listPosts: ListPost[] = (posts ?? []).map((p) => ({ ...p, readMinutes: minutesFromWords(p.words ?? 0) }))
 
   return (
 	  <div>
@@ -244,7 +250,7 @@ export default async function page() {
 			  <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
 				  <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-secondary-foreground">{today}</span>
 				  <p className="font-serif text-lg font-bold tracking-tight">All About the Shield</p>
-				  <p className="hidden text-sm text-muted-foreground md:block">Independent coverage of the Las Vegas Raiders, with every pick graded in public.</p>
+				  <p className="basis-full text-xs text-muted-foreground sm:text-sm md:basis-auto">Independent coverage of the Las Vegas Raiders, with every pick graded in public.</p>
 			  </div>
 			  <GameDayHub
 				  state={state}
@@ -258,7 +264,11 @@ export default async function page() {
 			  </div>
 		  </div>
 
+		  {labFirst && labBand}
+
 		  <FeaturedStories posts={featured} />
+
+		  {!labFirst && labBand}
 
 		  <LeagueTeaser players={league.data.players.length} top={leagueRows} lastWeek={leagueLast} open={leagueOpen} />
 

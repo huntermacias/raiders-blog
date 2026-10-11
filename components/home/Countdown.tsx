@@ -13,7 +13,7 @@ function pad(n: number) {
  * render) shows nothing but the placeholder, so hydration always matches;
  * the clock starts in an effect.
  */
-export default function Countdown({ kickoff, live = false }: { kickoff: string; live?: boolean }) {
+export default function Countdown({ kickoff, live = false, compact = false }: { kickoff: string; live?: boolean; compact?: boolean }) {
 	const [now, setNow] = useState<number | null>(null)
 
 	useEffect(() => {
@@ -51,10 +51,10 @@ export default function Countdown({ kickoff, live = false }: { kickoff: string; 
 		  ]
 
 	return (
-		<div role="timer" aria-label="Time until kickoff" className="flex items-end gap-3">
+		<div role="timer" aria-label="Time until kickoff" className={compact ? "flex items-end gap-2.5" : "flex items-end gap-3"}>
 			{cells.map((c) => (
-				<div key={c.label} className="min-w-[2.75rem] text-center">
-					<p className="font-serif text-3xl font-bold leading-none tabular-nums text-zinc-50 md:text-4xl">{c.value}</p>
+				<div key={c.label} className={compact ? "min-w-[2rem] text-center" : "min-w-[2.75rem] text-center"}>
+					<p className={compact ? "font-serif text-xl font-bold leading-none tabular-nums text-zinc-50" : "font-serif text-3xl font-bold leading-none tabular-nums text-zinc-50 md:text-4xl"}>{c.value}</p>
 					<p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">{c.label}</p>
 				</div>
 			))}

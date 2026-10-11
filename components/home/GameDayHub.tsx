@@ -8,6 +8,7 @@ import type { HubState } from "@/lib/home"
 import { type ScheduleRow, recordText } from "@/lib/schedule"
 import { kickoffText } from "@/components/schedule/ScheduleList"
 import Countdown from "./Countdown"
+import FinalPanel from "./FinalPanel"
 import HeroVote from "./HeroVote"
 
 type Props = {
@@ -91,14 +92,19 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 
 	const game = state.kind === "idle" ? null : state.game
 	const opp = game ? teamInfo(game.opponent) : null
+	const final = state.kind === "final"
 	const pick = game?.pick ? picks.find((p) => p._id === game.pick?.id) ?? null : null
+	// After a final the vote is for the game that comes next, if I have put a pick on the record for it.
+	const nextRow = state.kind === "final" ? state.next : null
+	const votePick = final ? (nextRow?.pick ? picks.find((p) => p._id === nextRow.pick?.id) ?? null : null) : pick
+	const recap = state.kind === "final" ? state.game.report ?? null : null
 	const keys = pick?.keys?.filter((k) => k?.text?.trim()) ?? []
 	const when = game ? kickoffText(game.kickoff) : null
 	const live = state.kind === "live"
 
 	return (
 		<section
-			aria-label={game ? `Week ${game.week} game day` : "Season at a glance"}
+			aria-label={game ? `Week ${game.week} ${final ? "final" : "game day"}` : "Season at a glance"}
 			className="relative overflow-hidden rounded-2xl border border-[#27272a] bg-[#09090b] text-zinc-50 shadow-xl"
 		>
 			{/* Silver wash behind the numbers. Decorative. */}
@@ -113,8 +119,10 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 
 			<div className="relative grid gap-px bg-[#27272a] lg:grid-cols-[1.45fr_1fr]">
 				{/* LEFT: the game */}
-				<div className="bg-[#09090b]/95 p-6 md:p-8">
-					{game && opp ? (
+				<div className="bg-[#09090b]/95 p-5 sm:p-6 md:p-8">
+					{state.kind === "final" ? (
+						<FinalPanel game={state.game} next={state.next} recap={recap} />
+					) : game && opp ? (
 						<>
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 								<span className="rounded-full bg-zinc-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#09090b]">
@@ -165,7 +173,7 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 									<p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Keys to the game</p>
 									<ol className="grid gap-2 sm:grid-cols-2">
 										{keys.slice(0, 4).map((k, i) => (
-											<li key={k._key ?? i} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
+											<li key={k._key ?? i} className={cn("items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5", i < 2 ? "flex" : "hidden sm:flex")}>
 												<span aria-hidden className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-600 text-[11px] font-bold tabular-nums text-zinc-300">
 													{i + 1}
 												</span>
@@ -181,7 +189,7 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 								{pick?.preview?.slug && (
 									<Link
 										href={`/post/${pick.preview.slug}`}
-										className="inline-flex items-center gap-2 rounded-lg bg-zinc-50 px-5 py-2.5 text-sm font-bold text-[#09090b] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]"
+										className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 px-5 py-2.5 text-sm font-bold text-[#09090b] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b] sm:w-auto"
 									>
 										Read the Week {game.week} preview <ArrowRight aria-hidden className="h-4 w-4" />
 									</Link>
@@ -218,25 +226,25 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 
 				{/* RIGHT: vote + season so far */}
 				<div className="flex flex-col gap-px bg-[#27272a]">
-					{pick && game && (
-						<div className="bg-[#09090b]/95 p-6 md:p-8">
-							<p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Your turn</p>
+					{votePick && game && (
+						<div className="bg-[#09090b]/95 p-5 sm:p-6 md:p-8">
+							<p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Your turn{nextRow ? ` · Week ${nextRow.week}` : ""}</p>
 							<h3 className="mb-4 mt-1 font-serif text-2xl font-bold leading-tight">Who wins? Lock in your pick.</h3>
 							<HeroVote
 								pick={{
-									_id: pick._id,
-									week: pick.week,
-									awayTeam: pick.awayTeam,
-									homeTeam: pick.homeTeam,
-									kickoff: pick.kickoff,
-									readerVotesAway: pick.readerVotesAway,
-									readerVotesHome: pick.readerVotesHome,
+									_id: votePick._id,
+									week: votePick.week,
+									awayTeam: votePick.awayTeam,
+									homeTeam: votePick.homeTeam,
+									kickoff: votePick.kickoff,
+									readerVotesAway: votePick.readerVotesAway,
+									readerVotesHome: votePick.readerVotesHome,
 								}}
 							/>
 						</div>
 					)}
 
-					<div className="flex-1 bg-[#09090b]/95 p-6 md:p-8">
+					<div className="flex-1 bg-[#09090b]/95 p-5 sm:p-6 md:p-8">
 						<div className="flex items-end justify-between gap-4">
 							<div>
 								<p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Raiders record</p>
@@ -262,7 +270,7 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 							<p className="mt-4 text-sm text-zinc-400">The season hasn&rsquo;t started. The first final score starts the clock.</p>
 						)}
 
-						{latestReport && (
+						{latestReport && !(recap && recap.slug === latestReport.slug) && (
 							<Link
 								href={`/games/${latestReport.slug}`}
 								className="group mt-6 block rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-600 hover:bg-zinc-800/70"

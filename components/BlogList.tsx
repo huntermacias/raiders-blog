@@ -8,8 +8,22 @@ import CategoryFilter from "./CategoryFilter"
 import SearchBar from "./SearchBar"
 import StoryCard, { StoryMeta } from "./StoryCard"
 
+/** The part of a story the list shows. The homepage sends just this, with the read time already worked out. */
+export type ListPost = {
+	_id: string
+	_createdAt: string
+	title: string
+	description?: string | null
+	slug: { current: string }
+	mainImage?: unknown
+	categories?: { title: string }[] | null
+	readMinutes?: number
+	/** Only for callers that still hand over a whole post; the read time is worked out from it when there is no `readMinutes`. */
+	body?: unknown
+}
+
 type Props = {
-	posts: Post[]
+	posts: ListPost[]
 	/** Stories already shown in the homepage's "Top stories". Hidden from the default (unfiltered) list so nothing repeats. */
 	featuredIds?: string[]
 }

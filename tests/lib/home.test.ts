@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { GAME_WINDOW_MS, countdownParts, hubState, minutesFromWords, playedGames, readingMinutes } from "../../lib/home"
+import { FINAL_WINDOW_MS, GAME_WINDOW_MS, countdownParts, hubState, minutesFromWords, pickMarginError, playedGames, readingMinutes } from "../../lib/home"
 import type { GamePrediction } from "../../lib/predictions"
 import { type ScheduleGame, joinSchedule } from "../../lib/schedule"
 
@@ -35,7 +35,7 @@ describe("hubState", () => {
 		expect(s.kind === "next" && s.game.week).toBe(5)
 	})
 
-	it("is never 'live' for a game that already has a final score", () => {
+	it("is never 'live' for a game that already has a final score: it is the 'final' story for the next three days", () => {
 		const finished: GamePrediction = {
 			_id: "p4",
 			week: 4,
@@ -49,8 +49,50 @@ describe("hubState", () => {
 		}
 		const r = joinSchedule([g(4, KICKOFF), g(5, "2026-10-11T17:00:00Z")], [finished])
 		const s = hubState(r, T + 3_600_000)
-		expect(s.kind).toBe("next")
-		expect(s.kind === "next" && s.game.week).toBe(5)
+		expect(s.kind).toBe("final")
+		expect(s.kind === "final" && s.game.week).toBe(4)
+		expect(s.kind === "final" && s.next?.week).toBe(5)
+		// Once the window is over the page is about the next game again.
+		const later = hubState(r, T + FINAL_WINDOW_MS)
+		expect(later.kind).toBe("next")
+		expect(later.kind === "next" && later.game.week).toBe(5)
+	})
+
+	it("stays on the final through Tuesday night, and not a minute longer", () => {
+		const done = (week: number, kickoff: string, over: Partial<GamePrediction> = {}): GamePrediction => ({
+			_id: `p${week}`,
+			week,
+			awayTeam: "Kansas City Chiefs",
+			homeTeam: "Las Vegas Raiders",
+			kickoff,
+			predictedAwayScore: 20,
+			predictedHomeScore: 24,
+			actualAwayScore: 10,
+			actualHomeScore: 13,
+			...over,
+		})
+		const r = joinSchedule([g(4, KICKOFF), g(5, "2026-10-11T17:00:00Z")], [done(4, KICKOFF)])
+		expect(hubState(r, T + FINAL_WINDOW_MS - 1).kind).toBe("final")
+		expect(hubState(r, T + FINAL_WINDOW_MS).kind).toBe("next")
+	})
+
+	it("uses the most recent finished game, and has no 'next' when the season is over", () => {
+		const done = (week: number, kickoff: string): GamePrediction => ({
+			_id: `p${week}`,
+			week,
+			awayTeam: "Kansas City Chiefs",
+			homeTeam: "Las Vegas Raiders",
+			kickoff,
+			predictedAwayScore: 20,
+			predictedHomeScore: 24,
+			actualAwayScore: 10,
+			actualHomeScore: 13,
+		})
+		const k5 = "2026-10-11T17:00:00Z"
+		const r = joinSchedule([g(4, KICKOFF), g(5, k5)], [done(4, KICKOFF), done(5, k5)])
+		const s = hubState(r, new Date(k5).getTime() + 3_600_000)
+		expect(s.kind === "final" && s.game.week).toBe(5)
+		expect(s.kind === "final" && s.next).toBeNull()
 	})
 
 	it("ignores byes and games with no opponent or an unreadable kickoff when looking for live", () => {
@@ -141,5 +183,36 @@ describe("countdownParts", () => {
 	it("never goes negative once kickoff has passed", () => {
 		expect(countdownParts(-5000)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 		expect(countdownParts(0)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+	})
+})
+
+describe("pickMarginError", () => {
+	const pick = (pr: number, po: number, ar: number, ao: number) =>
+		joinSchedule(
+			[g(4, KICKOFF)],
+			[
+				{
+					_id: "p",
+					week: 4,
+					awayTeam: "Kansas City Chiefs",
+					homeTeam: "Las Vegas Raiders",
+					kickoff: KICKOFF,
+					predictedAwayScore: po,
+					predictedHomeScore: pr,
+					actualAwayScore: ao,
+					actualHomeScore: ar,
+				},
+			]
+		)[0]
+
+	it("is how far the predicted margin was from the final one", () => {
+		expect(pickMarginError(pick(24, 20, 27, 24))).toBe(1)
+		expect(pickMarginError(pick(24, 20, 10, 17))).toBe(11)
+		expect(pickMarginError(pick(24, 20, 24, 20))).toBe(0)
+	})
+
+	it("is null until the game has a score or without a pick", () => {
+		const open = joinSchedule([g(4, KICKOFF)], [])[0]
+		expect(pickMarginError(open)).toBeNull()
 	})
 })
