@@ -286,3 +286,22 @@ def test_no_finished_games_leaves_the_existing_file_alone(tmp_path, monkeypatch)
     out.write_text("keep me")
     assert b.main(["--season", "2026", "--out", str(out)]) == 0
     assert out.read_text() == "keep me"
+
+
+def test_a_game_counts_only_once_its_plays_are_in():
+    src = sources()
+    # Week 4 has a final score in the games file, but nothing in the play-by-play yet.
+    games = src["games"].copy()
+    games.loc[games["game_id"] == "2026_04_BBB_AAA", ["away_score", "home_score"]] = [14, 21]
+    src = {**src, "games": games}
+    out = b.build(src, 2026)
+    assert out["week"] == 3
+    assert out["teams"]["AAA"]["g"] == 3
+    assert out["teams"]["AAA"]["w"] == 3
+
+    # Once the plays arrive the game is counted.
+    rows, _ = plays(4, "AAA", "BBB", 10_000)
+    src = {**src, "pbp": pd.concat([src["pbp"], pd.DataFrame(rows)], ignore_index=True)}
+    out = b.build(src, 2026)
+    assert out["week"] == 4
+    assert out["teams"]["AAA"]["g"] == 4

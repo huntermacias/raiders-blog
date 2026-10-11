@@ -110,4 +110,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "data: refresh Lab replays, grades, scouting and clips"
-          git push
+          # The other data jobs and people push to main too, so rebase and try again rather than fail on the first rejection.
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 5
+          done
+          exit 1

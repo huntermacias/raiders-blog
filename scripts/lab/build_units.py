@@ -487,6 +487,11 @@ def build(src: dict[str, pd.DataFrame], season: int) -> dict:
     positions.update(dict(zip(snaps["pfr_player_id"], snaps["position"])))
 
     cur = games_all[(games_all["season"] == season) & (games_all["game_type"] == "REG") & games_all["home_score"].notna() & games_all["away_score"].notna()]
+    # The games file gets a final score within the hour; the play-by-play for it can take hours more. A game counts only once its plays
+    # are in, so the week, the records and the grades all describe the same games (and a run in between never says "through Week 5"
+    # over numbers that still leave out half of Week 5).
+    if not pbp.empty and "game_id" in cur and "game_id" in pbp:
+        cur = cur[cur["game_id"].isin(set(pbp["game_id"]))]
     teams = sorted(set(cur["home_team"]) | set(cur["away_team"]))
     if not teams:
         return {"season": season, "teams": {}}

@@ -143,10 +143,16 @@ describe("a matchup page", () => {
 		expect(key.textContent).toContain(`For example, the Patriots`)
 		expect(key.textContent).toMatch(new RegExp(`is ${worst.rank}(st|nd|rd|th)\\.`))
 		expect(key.textContent).toContain(`a grade of ${Math.round(worst.score!)} out of 100`)
-		expect(document.body.textContent).toMatch(/Week \d+: Raiders at Patriots/)
-		expect(document.body.textContent).toMatch(/Patriots favored by/)
-		expect(document.body.textContent).toContain("Klint Kubiak")
-		expect(document.body.textContent).toContain("Mike Vrabel")
+		// The game is only on the page while it is still on the slate: the slate drops a game once it is played.
+		const lvNe = data.slate!.games.find((g) => [g.home, g.away].sort().join() === "LV,NE")
+		if (lvNe) {
+			expect(document.body.textContent).toMatch(/Week \d+: (Raiders at Patriots|Patriots at Raiders)/)
+			if (lvNe.spread !== null && lvNe.spread !== 0) expect(document.body.textContent).toMatch(/(Raiders|Patriots) favored by/)
+		} else {
+			expect(document.body.textContent).not.toMatch(/Week \d+: (Raiders at Patriots|Patriots at Raiders)/)
+		}
+		expect(document.body.textContent).toContain(data.teams.LV.coach?.name ?? "Raiders")
+		expect(document.body.textContent).toContain(data.teams.NE.coach?.name ?? "Patriots")
 		expect(screen.getAllByText(/Raiders big edge|Raiders edge|Patriots big edge|Patriots edge|^Even$/).length).toBeGreaterThanOrEqual(8)
 		// Eight pairings, and the note on where the grades come from.
 		expect(document.querySelectorAll("details").length).toBe(9)
@@ -212,7 +218,9 @@ describe("a matchup page", () => {
 
 	it("says when the injury report is older than the game", async () => {
 		render(await MatchupPage(props("lv-vs-ne")))
-		const older = data.teams.LV.injuries.week! < data.slate!.week
+		// Only previewed while the game is on the slate; a played game has no "not out yet" to report.
+		const onSlate = data.slate!.games.some((g) => [g.home, g.away].sort().join() === "LV,NE")
+		const older = onSlate && (data.teams.LV.injuries.week! < data.slate!.week || data.teams.NE.injuries.week! < data.slate!.week)
 		expect(document.body.textContent?.includes("the Week " + data.slate!.week + " report is not out yet")).toBe(older)
 	})
 })
@@ -223,9 +231,12 @@ describe("the slate", () => {
 		expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(`Week ${data.slate!.week} matchups`)
 		const cards = screen.getAllByRole("listitem").filter((li) => li.querySelector("h3"))
 		expect(cards).toHaveLength(data.slate!.games.length)
-		expect(cards[0].textContent).toContain("Raiders")
 		const hrefs = screen.getAllByRole("link", { name: /Full matchup/ }).map((a) => a.getAttribute("href"))
-		expect(hrefs[0]).toMatch(/^\/lab\/matchup\/lv-vs-/)
+		// The Raiders' game leads, when they are still to play this week (not on a bye, not already played).
+		if (data.slate!.games.some((g) => g.home === "LV" || g.away === "LV")) {
+			expect(cards[0].textContent).toContain("Raiders")
+			expect(hrefs[0]).toMatch(/^\/lab\/matchup\/lv-vs-/)
+		}
 		expect(new Set(hrefs).size).toBe(hrefs.length)
 		expect(String(slateMeta().title)).toContain(`Week ${data.slate!.week}`)
 		expect(JSON.stringify(slateMeta().openGraph?.images)).toMatch(/\/api\/og\?type=slate&size=wide&v=\d+/)

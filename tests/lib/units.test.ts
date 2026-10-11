@@ -106,7 +106,8 @@ describe("data/lab/units.json", () => {
 
 	it("has a slate of real, different teams", () => {
 		expect(data.slate).toBeTruthy()
-		expect(data.slate!.week).toBeGreaterThan(data.week)
+		// A week can be part played: some games final, the rest still on the slate.
+		expect(data.slate!.week).toBeGreaterThanOrEqual(data.week)
 		for (const g of data.slate!.games) {
 			expect(data.teams[g.away]).toBeTruthy()
 			expect(data.teams[g.home]).toBeTruthy()
