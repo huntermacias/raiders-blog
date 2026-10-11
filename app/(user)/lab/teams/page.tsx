@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import GradeKey from "@/components/lab/GradeKey"
 import TeamBoard from "@/components/lab/TeamBoard"
@@ -10,7 +11,7 @@ import { getUnits } from "@/lib/lab/data"
 import { listedTeams } from "@/lib/lab/units"
 import { GROUPS, GROUP_ORDER, boardRows, teamCount } from "@/lib/lab/unitsKit"
 
-// Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
+// Built from the JSON in the repo, so it is static: it changes when a data refresh (every few hours on game days) is deployed.
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/teams`
@@ -49,6 +50,7 @@ export default function TeamsPage() {
 						Seven position groups, graded on plain stats like pressure rate, drops and points allowed per throw, and ranked across the league. Sort by any column, then pick two teams to
 						see how their units line up against each other.
 					</p>
+					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 					{slate ? (
 						<p className="mt-5">
 							<Link href="/lab/matchups" className="inline-flex min-h-[44px] items-center rounded-lg bg-lab-ink px-5 text-sm font-bold text-lab-page transition hover:opacity-90">

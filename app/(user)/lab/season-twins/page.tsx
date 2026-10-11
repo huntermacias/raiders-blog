@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import SeasonTwins from "@/components/lab/SeasonTwins"
@@ -9,7 +10,7 @@ import { getScouting } from "@/lib/lab/data"
 import { MAX_GAMES, MIN_GAMES } from "@/lib/lab/history"
 import { getTwinsView } from "@/lib/lab/twins"
 
-// Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
+// Built from the JSON in the repo, so it is static: it changes when a data refresh (every few hours on game days) is deployed.
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/season-twins`
@@ -50,6 +51,7 @@ export default function SeasonTwinsPage() {
 							? `Which team since ${view.first} looked the most like the Raiders after ${view.n} games? Right now it is the ${top.label}. Lay any of the closest teams over the Raiders, stat by stat, and see how their seasons ended.`
 							: "Which team since 1999 looked the most like the Raiders after the same number of games, and how did its season end?"}
 					</p>
+					<UpdatedStamp at={scouting.generatedAt} kind="grades" className="mt-4" />
 				</div>
 			</section>
 

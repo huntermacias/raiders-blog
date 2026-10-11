@@ -53,7 +53,7 @@ export default function LabPage() {
 					<p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-lab-muted">Raiders Rundown &middot; The Lab</p>
 					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">The Lab</h1>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
-						Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play. Built from open NFL data and updated every Monday.
+						Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play. Built from open NFL data, and refreshed through the week as games finish.
 					</p>
 					<div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-sm tabular-nums text-lab-muted">
 						<span>

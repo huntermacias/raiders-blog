@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import ShareCard from "@/components/lab/ShareCard"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -12,7 +13,7 @@ import { matchupFor, namesFor } from "@/lib/lab/units"
 import { type SlateGame, edgeSentence, kickoffText, marketLine, matchupPath, tally, topEdges } from "@/lib/lab/unitsKit"
 import { pairTheme } from "@/lib/lab/unitsTheme"
 
-// Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
+// Built from the JSON in the repo, so it is static: it changes when a data refresh (every few hours on game days) is deployed.
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/matchups`
@@ -104,6 +105,7 @@ export default function MatchupsPage() {
 						Every game on the slate, broken into eight pairings: each offense against the other team&rsquo;s defense, one position group at a time. Open any game for the numbers, the players, the
 						coaches and who is missing.
 					</p>
+					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 					<div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
 						{slate ? (
 							<ShareCard

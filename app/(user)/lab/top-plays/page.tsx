@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import TopPlays from "@/components/lab/TopPlays"
@@ -54,6 +55,7 @@ export default function TopPlaysPage() {
 						Every snap is worth some win probability. These are the ten that moved the Raiders&rsquo; chance to win the furthest so far, whichever way, across {games.length} games.
 						{plays[0] ? ` Number one: ${playWord(plays[0]).toLowerCase()}, ${whenText(plays[0])}.` : ""}
 					</p>
+					<UpdatedStamp at={season.generatedAt} kind="replays" className="mt-4" />
 				</div>
 			</section>
 			<section className="container py-10 sm:py-14" aria-labelledby="season-plays">

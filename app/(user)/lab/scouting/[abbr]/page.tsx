@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import MatchupReport from "@/components/lab/MatchupReport"
 import ScoutReport from "@/components/lab/ScoutReport"
@@ -67,6 +68,7 @@ export default async function ScoutPage(props: { params: Promise<{ abbr: string 
 					</p>
 					<h1 className="mt-3 max-w-4xl font-serif text-3xl font-bold leading-tight tracking-tight sm:text-5xl">Raiders vs {t.nick}: the scouting report</h1>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">{scoutLine(t.abbr, t.nick)}</p>
+					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 				</div>
 			</section>
 			<section className="container py-10 sm:py-14">

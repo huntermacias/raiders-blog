@@ -4,6 +4,7 @@ import { ArrowRight, Minus, TrendingDown, TrendingUp } from "lucide-react"
 import { TeamBadge } from "@/components/rooting/parts"
 import type { LabCopy, RootingSnapshot } from "@/lib/homeLab"
 import type { LabTool } from "@/lib/lab/tools"
+import { updatedText } from "@/lib/lab/unitsKit"
 import { cn } from "@/lib/utils"
 
 export type BandTool = { tool: LabTool; badges: string[] }
@@ -66,6 +67,12 @@ function OddsPanel({ s }: { s: RootingSnapshot }) {
 				{settled ? <p className="mt-3 max-w-md text-sm text-zinc-300">{s.headline}</p> : <Meter value={s.baseline} />}
 				<p className="mt-2 text-xs text-zinc-500">
 					A model estimate from the standings and the schedule left.{s.updating ? " A final score is still being worked in." : ""}
+					{s.updatedAt && updatedText(s.updatedAt) ? (
+						<>
+							{" "}
+							Updated <time dateTime={s.updatedAt}>{updatedText(s.updatedAt)}</time>.
+						</>
+					) : null}
 				</p>
 
 				<div className="mt-6 border-t border-zinc-800 pt-5">

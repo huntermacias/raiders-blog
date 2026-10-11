@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import ShareCard from "@/components/lab/ShareCard"
@@ -10,7 +11,7 @@ import { getScouting } from "@/lib/lab/data"
 import { MAX_GAMES, MIN_GAMES, getHistoryView } from "@/lib/lab/history"
 import { raidersLogo } from "@/lib/lab/shield"
 
-// Built from the JSON in the repo, so it is static: it changes when the Monday data refresh is deployed.
+// Built from the JSON in the repo, so it is static: it changes when a data refresh (every few hours on game days) is deployed.
 
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/will-it-last`
@@ -52,6 +53,7 @@ export default function WillItLastPage() {
 							? `The Raiders' loudest numbers after ${view.n} games, tested against every team since ${view.first} that started the same way. Press play to see what happened to them, then filter by team or playoff result, or compare with any Raiders season.`
 							: "The Raiders' loudest numbers, tested against every team since 1999 that started the same way."}
 					</p>
+					<UpdatedStamp at={scouting.generatedAt} kind="grades" className="mt-4" />
 				</div>
 			</section>
 

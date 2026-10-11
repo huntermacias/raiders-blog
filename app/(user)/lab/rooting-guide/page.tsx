@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import OpenPing from "@/components/rooting/OpenPing"
 import RootingControls from "@/components/rooting/RootingControls"
 import RootingGame from "@/components/rooting/RootingGame"
@@ -126,7 +127,6 @@ export default async function RootingGuidePage(props: Props) {
 	const nextOpp = nextGame ? (nextGame.homeTeam === view.team ? nextGame.awayTeam : nextGame.homeTeam) : null
 	const machineHref = `${PLAYOFFS_PATH}${view.team === "LV" ? "" : `?${scenarioQuery("", view.team)}`}`
 	const scopeLabel = view.scope === "all" || view.week === null ? "All remaining games" : `Week ${view.week}`
-	const updated = new Date(data.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })
 	const baseGoal = view.goals.find((g) => g.goal === view.goal)
 	const jsonLd = {
 		"@context": "https://schema.org",
@@ -156,6 +156,7 @@ export default async function RootingGuidePage(props: Props) {
 						Pick your team and what you want for it. The guide plays out the rest of the season thousands of times and ranks the games by how much each result moves
 						your odds, so you know who to cheer for on Sunday.
 					</p>
+					<UpdatedStamp at={data.generatedAt} kind="odds" className="mt-4" />
 				</div>
 			</section>
 
@@ -303,7 +304,6 @@ export default async function RootingGuidePage(props: Props) {
 						This is a model, not a forecast. The ratings come only from this season&rsquo;s final scores, so early in the year they are rough. They know nothing about injuries, quarterbacks, rest or the
 						spread, and ties are not part of the main simulation (a tie is worked out separately for the biggest games, from a smaller sample). Cross-conference games matter only through tiebreakers such as
 						strength of victory. The numbers are rebuilt when final scores reach our data, which can take a few hours after a game ends, and a game that has just finished is taken off the list in the meantime.
-						Last rebuilt {updated}.
 					</p>
 					<p className="mt-6 text-sm">
 						<PlayoffMachineLink href={machineHref} className="font-semibold underline underline-offset-4">

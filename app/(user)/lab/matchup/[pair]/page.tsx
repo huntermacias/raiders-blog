@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import MatchupReport from "@/components/lab/MatchupReport"
 import ShareCard from "@/components/lab/ShareCard"
@@ -100,6 +101,7 @@ export default async function MatchupPage(props: Props) {
 							{marketLine(game, names) ? <span>{marketLine(game, names)}</span> : null}
 						</p>
 					) : null}
+					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 				</div>
 			</section>
 			<section className="container py-10 sm:py-14">

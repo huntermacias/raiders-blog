@@ -2,12 +2,14 @@ import type { Metadata } from "next"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
+import { updatedText } from "@/lib/lab/unitsKit"
 import PlayoffMachine from "@/components/playoffs/PlayoffMachine"
 import { getGames, getSchedule } from "@/lib/playoffs/data"
 import { supportedSteps } from "@/lib/playoffs/tiebreakers"
 
-// Built from the schedule file in the repo, so it is static: it changes when the Monday data refresh is deployed.
+// Built from the schedule file in the repo, so it is static: it changes when a results refresh (a few hours after games end) is deployed.
 // The picks live in the visitor's browser, so nothing here is personal and nothing is requested from a server.
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -44,7 +46,7 @@ export default function PlayoffMachinePage() {
 	const steps = supportedSteps()
 	const projected = steps.filter((s) => s.inProjection)
 	const needsScores = steps.filter((s) => s.needs === "scores")
-	const updated = schedule.generatedAt.slice(0, 10)
+	const updated = updatedText(schedule.generatedAt)
 
 	return (
 		<div className="lab min-h-screen bg-lab-page text-lab-ink">
@@ -62,6 +64,7 @@ export default function PlayoffMachinePage() {
 						Pick the winner of every game left on the schedule. The standings, the seeds and the bracket update as you go, with the NFL&rsquo;s real tiebreakers, and the odds
 						show what your team needs. Follow the Raiders, or any team you like.
 					</p>
+					<UpdatedStamp at={schedule.generatedAt} kind="results" className="mt-4" />
 				</div>
 			</section>
 
@@ -124,7 +127,7 @@ export default function PlayoffMachinePage() {
 					<h2 className="mt-10 font-serif text-2xl font-bold">A simulation, not official standings</h2>
 					<p className="mt-3 leading-relaxed text-lab-soft">
 						The standings and the bracket are a projection from the picks you make. They are not the NFL&rsquo;s standings. Results come in
-						with our weekly data refresh (last run {updated}), so a game played this week may not show as final until the next one. &ldquo;Clinched&rdquo; and
+						a few hours after each game ends (last update {updated}), so a game that has just finished may not show as final until then. &ldquo;Clinched&rdquo; and
 						&ldquo;Eliminated&rdquo; are shown only when the games left cannot change the answer even if every tiebreaker went the other way, so the page can be a little
 						slower than the NFL to call a team in or out, but it will not call one wrongly.
 					</p>

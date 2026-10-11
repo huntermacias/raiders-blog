@@ -9,7 +9,7 @@ describe("the team grades refresh", () => {
 	const wf = read(".github/workflows/units.yml")
 
 	it("runs often through the game days, on a schedule that can be started by hand too", () => {
-		const crons = [...wf.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1])
+		const crons = (wf.match(/- cron: "[^"]+"/g) ?? []).map((m) => m.slice(8, -1))
 		expect(crons).toHaveLength(2)
 		// Sunday to Wednesday every two hours, and a few times a day from Thursday to Saturday.
 		expect(crons.some((c) => /\*\/2 \* \* 0-3$/.test(c))).toBe(true)
@@ -43,4 +43,21 @@ describe("the team grades refresh", () => {
 		expect(py).toMatch(/play/i)
 		expect(read("scripts/lab/test_build_units.py")).toContain("test_a_game_counts_only_once_its_plays_are_in")
 	})
+})
+
+describe("the workflows that install the site's packages", () => {
+	// The runner's own Yarn is version 1, which refuses a project that pins Yarn 4. setup-node's yarn cache runs `yarn` itself, so Corepack
+	// has to be on before it.
+	for (const f of ["lab-data", "rooting"]) {
+		it(`${f}.yml enables Corepack before setup-node caches Yarn`, () => {
+			const wf = read(`.github/workflows/${f}.yml`)
+			expect(read("package.json")).toContain('"packageManager": "yarn@')
+			const enable = wf.indexOf("run: corepack enable")
+			const setup = wf.indexOf("actions/setup-node@v4")
+			expect(enable).toBeGreaterThan(-1)
+			expect(setup).toBeGreaterThan(-1)
+			expect(enable).toBeLessThan(setup)
+			expect(wf).toContain("cache: yarn")
+		})
+	}
 })

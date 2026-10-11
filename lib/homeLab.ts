@@ -76,6 +76,8 @@ export type RootingSnapshot = {
 	headline: string
 	/** A final score has come in that the numbers do not include yet. */
 	updating: boolean
+	/** When the odds were last rebuilt (ISO), for the "Updated" line. */
+	updatedAt?: string
 	href: string
 }
 
@@ -120,6 +122,7 @@ export function rootingSnapshot(view: GuideView): RootingSnapshot {
 		matters: view.recs.length,
 		headline: view.headline || view.emptyText,
 		updating: view.stale || view.settled.length > 0,
+		updatedAt: view.generatedAt,
 		href: guidePath({ team: view.team, goal: view.goal }),
 	}
 }

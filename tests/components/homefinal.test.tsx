@@ -149,6 +149,10 @@ describe("<LabBand />", () => {
 		const section = screen.getByRole("region", { name: /Game week in the Lab/ })
 		expect(within(section).getByText(/chance to make the playoffs/)).toBeTruthy()
 		expect(within(section).getByText(/A model estimate/)).toBeTruthy()
+		// It says when the odds were last rebuilt, from the data file's own date.
+		const stamp = section.querySelector("time")
+		expect(stamp?.getAttribute("datetime")).toBe(snapshot!.updatedAt)
+		expect(stamp?.textContent).toMatch(/ET$/)
 		const links = within(section).getAllByRole("link").map((a) => a.getAttribute("href"))
 		expect(links).toContain("/lab")
 		expect(links).toContain("/lab/matchups")

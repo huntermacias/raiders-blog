@@ -3,6 +3,7 @@ import { groq } from "next-sanity"
 
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { labWeeks } from "@/lib/lab/toolsData"
 import Credit from "@/components/lab/Credit"
 import ScoutReport from "@/components/lab/ScoutReport"
@@ -66,6 +67,7 @@ export default async function ScoutingHub() {
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">
 						Where the Raiders have the edge on each opponent, and where they are in trouble, from how every team has actually played this season.
 					</p>
+					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 				</div>
 			</section>
 
