@@ -60,6 +60,11 @@ jobs:
         # Every game of the season with the results so far. Keeps the file as it is if the download looks wrong.
         run: python scripts/lab/build_schedule.py --season "$SEASON" --out data/lab/schedule.json
 
+      # Corepack first: setup-node's yarn cache step runs `yarn` itself, and the runner's own Yarn 1 refuses a project
+      # that pins Yarn 4 in package.json ("packageManager").
+      - name: Enable Corepack
+        run: corepack enable
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
