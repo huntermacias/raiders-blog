@@ -7,6 +7,7 @@ import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { EarlyChip, TeamPill, TierChip } from "@/components/lab/players/Bits"
 import GameLog from "@/components/lab/players/GameLog"
+import ContractSection from "@/components/lab/players/ContractSection"
 import GradeRing from "@/components/lab/players/GradeRing"
 import LeagueMap from "@/components/lab/players/LeagueMap"
 import { BestWorst, BuildAgainstPeers, Ladders, type GameCall } from "@/components/lab/players/ProfileExtras"
@@ -20,6 +21,8 @@ import SectionNav, { type NavItem } from "@/components/lab/players/SectionNav"
 import Situations from "@/components/lab/players/Situations"
 import SnapStrip from "@/components/lab/players/SnapStrip"
 import StatTile from "@/components/lab/players/StatTile"
+import { getContracts } from "@/lib/lab/contractData"
+import { dealFor, mainRow, payRank, valueFor } from "@/lib/lab/contractsKit"
 import { getPlayers, getUnits } from "@/lib/lab/data"
 import { teamView } from "@/lib/lab/playerTeam"
 import { getPlayerLogs } from "@/lib/lab/playerData"
@@ -95,6 +98,8 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const meta = GROUP_META[row.group]
 	const read = scoutingRead(data, row, { log })
 	const team = teamView(getUnits(), data, row)
+	const contracts = getContracts()
+	const deal = primary && mainRow(data, row.slug)?.group === row.group ? dealFor(data, contracts, row.slug) : null
 	const graded = row.stats.filter((s) => statInfo(row.group, s.k)?.higher !== null)
 	const style = row.stats.filter((s) => statInfo(row.group, s.k)?.higher === null)
 	const headFirst = graded.slice().sort((a, b) => (a.k === HEADLINE[row.group] ? -1 : b.k === HEADLINE[row.group] ? 1 : 0))
@@ -181,6 +186,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		...(situations.length ? [{ id: `situations-${g}`, label: "Situational" }] : []),
 		{ id: `numbers-${g}`, label: "In context" },
 		...(style.length ? [{ id: `style-${g}`, label: "How he plays" }] : []),
+		...(deal ? [{ id: `money-${g}`, label: "Contract" }] : []),
 		...(side !== "special" ? [{ id: `time-${g}`, label: "Playing time" }] : []),
 		...(games.length ? [{ id: `log-${g}`, label: "Game by game" }] : []),
 		...(boxKeys.length ? [{ id: `box-${g}`, label: "Box score" }] : []),
@@ -326,6 +332,20 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 						</div>
 					</div>
 				</section>
+			) : null}
+
+			{deal ? (
+				<ContractSection
+					data={data}
+					contracts={contracts}
+					row={row}
+					deal={deal}
+					rank={payRank(data, contracts, row.slug)}
+					value={valueFor(data, contracts, row.slug)}
+					id={`money-${row.group}`}
+					headingId={`money-h-${row.group}`}
+					className={`scroll-mt-32 border-t border-lab-line ${tone()}`}
+				/>
 			) : null}
 
 			{side !== "special" ? (

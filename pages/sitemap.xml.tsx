@@ -57,6 +57,7 @@ ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/players`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/lab/players/compare`, undefined, "0.5", "weekly")}
+${url(`${SITE_URL}/lab/players/value`, undefined, "0.6", "weekly")}
 ${playerPaths().map((p) => url(`${SITE_URL}${p}`, undefined, "0.5", "weekly")).join("\n")}
 ${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}

@@ -1,0 +1,14 @@
+{
+	"_about": "Full terms from OverTheCap player pages, read 2026-10-12. Money in $M. 'guaranteed' is OverTheCap's fully guaranteed money at signing, which can be less than the total that later vests. Key is TEAM|Name exactly as in contracts.psv. Add a player here to give him the cap-by-year table and the extra rows in Compare.",
+	"terms": {
+		"LV|Maxx Crosby": { "signed": "2025-03-05", "years": 3, "through": 2027, "total": 106.5, "guaranteed": 62.5, "capByYear": { "2026": 35.791, "2027": 29.782, "2028": 27.282, "2029": 28.212 }, "note": "Void years run the cap table to 2029.", "url": "https://overthecap.com/player/maxx-crosby/7897" },
+		"LV|Tyler Linderbaum": { "signed": "2026", "years": 3, "through": 2028, "total": 81, "guaranteed": 60, "capByYear": { "2026": 14, "2027": 34, "2028": 25, "2029": 8 }, "note": "Void years run the cap table to 2029.", "url": "https://overthecap.com/player/tyler-linderbaum/10070" },
+		"LV|Kolton Miller": { "signed": "2025", "years": 3, "through": 2027, "total": 66, "guaranteed": 36.5, "capByYear": { "2026": 22.54, "2027": 20.233, "2028": 20.233 }, "url": "https://overthecap.com/player/kolton-miller/6900" },
+		"LV|Brock Bowers": { "signed": "2024", "years": 4, "through": 2027, "total": 18.139, "guaranteed": 18.139, "rookie": true, "capByYear": { "2026": 4.947, "2027": 5.771 }, "note": "Rookie contract with a fifth-year team option.", "url": "https://overthecap.com/player/brock-bowers/11621" },
+		"LV|Ashton Jeanty": { "signed": "2025-05-02", "years": 4, "through": 2028, "total": 35.896, "guaranteed": 35.896, "rookie": true, "capByYear": { "2026": 8.158, "2027": 9.79, "2028": 11.421 }, "url": "https://overthecap.com/player/ashton-jeanty/12366" },
+		"LV|Fernando Mendoza": { "signed": "2026", "years": 4, "through": 2029, "total": 57.271, "guaranteed": 57.271, "rookie": true, "capByYear": { "2026": 10.413, "2027": 13.016, "2028": 15.619, "2029": 18.222 }, "url": "https://overthecap.com/player/fernando-mendoza/13145" },
+		"KC|Patrick Mahomes": { "total": 448, "guaranteed": 95.55, "url": "https://overthecap.com/contracts/las-vegas-raiders" },
+		"BUF|Josh Allen": { "total": 330, "guaranteed": 147, "url": "https://overthecap.com/contracts/las-vegas-raiders" }
+	},
+	"capNote": "2026 salary cap: $301.2M per team (NFL announcement)."
+}

@@ -290,6 +290,23 @@ export default function PlayersPage() {
 						</ul>
 					</Section>
 
+					<Section id="money" title="Pay against play" tint blurb={<p className="m-0">Contracts and cap hits for the Raiders and the teams they play, set beside how each player has played. Compare two players&apos; money on the compare page, or see every position ranked by who is earning more than his contract and who is not.</p>}>
+						<ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
+							<li>
+								<Link href="/lab/players/value" className="block rounded-xl border border-lab-line bg-lab-surface p-4 hover:border-lab-ink">
+									<span className="block font-serif text-lg font-bold text-lab-ink">Pay against play board</span>
+									<span className="mt-1 block text-xs leading-relaxed text-lab-muted">Grade rank against pay rank at every position, early reads marked.</span>
+								</Link>
+							</li>
+							<li>
+								<Link href="/lab/players/compare" className="block rounded-xl border border-lab-line bg-lab-surface p-4 hover:border-lab-ink">
+									<span className="block font-serif text-lg font-bold text-lab-ink">Compare two players, money included</span>
+									<span className="mt-1 block text-xs leading-relaxed text-lab-muted">Per-year pay, cap hit, guaranteed money and years left, side by side.</span>
+								</Link>
+							</li>
+						</ul>
+					</Section>
+
 					<Section id="all-boards" title="Every leaderboard" blurb={<p className="m-0">One page per stat. Solid pills are advanced stats, graded against the league. Dashed pills are box-score totals.</p>}>
 						<BoardIndex data={data} />
 					</Section>

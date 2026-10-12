@@ -7,8 +7,11 @@ import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import TrackView from "@/components/lab/players/TrackView"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import ComparePicker from "@/components/lab/players/ComparePicker"
+import MoneyCompare from "@/components/lab/players/MoneyCompare"
 import ProgressLine from "@/components/lab/players/ProgressLine"
 import Yardstick from "@/components/lab/players/Yardstick"
+import { getContracts } from "@/lib/lab/contractData"
+import { dealFor, moneyRows, payRank, valueFor, valueSentence } from "@/lib/lab/contractsKit"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { labColorVarsB } from "@/lib/lab/colors"
@@ -106,6 +109,12 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	const rows = ready ? compareRows(A, B) : []
 	const graded = rows.filter((r) => r.info.higher !== null)
 	const style = rows.filter((r) => r.info.higher === null)
+	const contracts = getContracts()
+	const dealA = ready && A ? dealFor(data, contracts, A.slug) : null
+	const dealB = ready && B ? dealFor(data, contracts, B.slug) : null
+	const money = ready && A && B ? moneyRows(dealA, dealB, dealA ? payRank(data, contracts, A.slug) : null, dealB ? payRank(data, contracts, B.slug) : null) : []
+	const valueA = dealA && A ? valueFor(data, contracts, A.slug) : null
+	const valueB = dealB && B ? valueFor(data, contracts, B.slug) : null
 	const aWins = graded.filter((r) => r.edge === "a" && r.strength === "clear").length
 	const bWins = graded.filter((r) => r.edge === "b" && r.strength === "clear").length
 	const close = graded.filter((r) => r.strength === "toss-up").length
@@ -247,7 +256,41 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 							) : null}
 							<p className="m-0 mt-5 max-w-3xl text-xs leading-relaxed text-lab-muted">&ldquo;Clearly ahead&rdquo; means the gap is bigger than what the plays behind each number could produce by chance. &ldquo;Slightly&rdquo; means it points one way but could still be noise.</p>
 						</div>
+</section>
+
+					<section className="border-t border-lab-line bg-lab-tint" aria-labelledby="money-h" id="money">
+						<div className="container py-8 sm:py-10">
+							<h2 id="money-h" className="m-0 font-serif text-2xl font-bold">The money</h2>
+							{money.length ? (
+								<>
+									<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Contract and cap numbers side by side. Bars share one scale, so the longer bar is the bigger number. A bigger number is not a better one: it is only what each is paid.</p>
+									<div className="mt-4">
+										<MoneyCompare rows={money} aName={A.name} bName={B.name} colorB={colorB} />
+									</div>
+									{valueA || valueB ? (
+										<ul className="m-0 mt-5 grid list-none gap-3 p-0 md:grid-cols-2" data-testid="money-value">
+											{valueA ? (
+												<li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(A.name, A.group, valueA)}</li>
+											) : null}
+											{valueB ? (
+												<li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(B.name, B.group, valueB)}</li>
+											) : null}
+										</ul>
+									) : null}
+									<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">
+										Contract figures as of {contracts.asOf}, kept by hand for {contracts.teams.length} teams so far. A player on another team shows &ldquo;not tracked&rdquo;.{" "}
+										<Link href="/lab/players/value" className="underline hover:text-lab-ink">
+											See pay against play for every position
+										</Link>
+										.
+									</p>
+								</>
+							) : (
+								<p className="m-0 mt-2 max-w-3xl text-sm text-lab-soft">We do not have contract numbers for either player yet. They are kept by hand for {contracts.teams.length} teams so far ({contracts.teams.join(", ")}).</p>
+							)}
+						</div>
 					</section>
+
 				</div>
 			) : (
 				<section className="container py-10 sm:py-14">
