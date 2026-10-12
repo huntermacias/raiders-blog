@@ -32,13 +32,44 @@ describe("<ContractSection />", () => {
 	})
 
 	it("is honest for a player with only a pay line: no guaranteed money or term is invented", () => {
-		const row = mainRow(data, "tre-tucker")!
-		const deal = dealFor(data, contracts, "tre-tucker")!
+		const row = mainRow(data, "marvin-harrison-jr")!
+		const deal = dealFor(data, contracts, "marvin-harrison-jr")!
+		expect(deal.row.terms).toBeUndefined()
 		render(<ContractSection data={data} contracts={contracts} row={row} deal={deal} rank={null} value={null} id="m" headingId="mh" className="" />)
 		const tiles = screen.getAllByTestId("money-tile").map((t) => t.textContent)
 		expect(tiles.join(" ")).toMatch(/Guaranteed–/)
 		expect(tiles.join(" ")).toMatch(/Runs through–/)
 		expect(screen.queryByTestId("cap-by-year")).toBeNull()
+	})
+})
+
+describe("guarantees for players without hand-entered terms", () => {
+	it("fills guaranteed money and the length from the OverTheCap list", () => {
+		const row = mainRow(data, "jaxon-smith-njigba")!
+		const deal = dealFor(data, contracts, "jaxon-smith-njigba")!
+		expect(deal.guaranteed).toBeCloseTo(69.131, 2)
+		expect(deal.total).toBeCloseTo(168.6, 1)
+		render(<ContractSection data={data} contracts={contracts} row={row} deal={deal} rank={null} value={null} id="m" headingId="mh" className="" />)
+		const tiles = screen.getAllByTestId("money-tile").map((t) => t.textContent).join(" ")
+		expect(tiles).toMatch(/Guaranteed\$69\.1M41% of the total, at signing/)
+		expect(tiles).toMatch(/4-year deal, final year not tracked/)
+		expect(screen.queryByTestId("cap-by-year")).toBeNull()
+	})
+	it("does not call guarantees above the listed total a share of it", () => {
+		const deal = dealFor(data, contracts, "matthew-stafford")!
+		expect(deal.guaranteed!).toBeGreaterThan(deal.total!)
+		expect(deal.guaranteedPct).toBeNull()
+	})
+	it("covers nearly every graded player", () => {
+		const graded = new Set(data.players.map((p) => p.slug))
+		let withDeal = 0
+		let withGuarantee = 0
+		for (const slug of Array.from(graded)) {
+			const d = dealFor(data, contracts, slug)
+			if (d) withDeal++
+			if (d?.guaranteed !== null && d?.guaranteed !== undefined) withGuarantee++
+		}
+		expect(withGuarantee / withDeal).toBeGreaterThan(0.97)
 	})
 })
 

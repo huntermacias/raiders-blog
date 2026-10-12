@@ -117,7 +117,8 @@ function toDeal(slug: string, row: ContractRow, season: number, salaryCap: numbe
 		through: t?.through ?? null,
 		total,
 		guaranteed,
-		guaranteedPct: total && guaranteed !== null ? Math.min(1, guaranteed / total) : null,
+		// Guarantees above the listed total (a deal that was extended or reworked) have no meaningful share of it.
+		guaranteedPct: total && guaranteed !== null && guaranteed <= total ? guaranteed / total : null,
 	}
 }
 
@@ -271,7 +272,9 @@ export function dealSentence(name: string, d: Deal): string {
 	} else {
 		parts.push(`${name} counts ${money(d.cap)} against the cap this season.`)
 	}
-	if (d.guaranteed !== null && d.guaranteed > 0) parts.push(`${money(d.guaranteed)} of it is guaranteed${d.guaranteedPct !== null ? `, ${Math.round(d.guaranteedPct * 100)}% of the total` : ""}.`)
+	if (d.guaranteed !== null && d.guaranteed > 0) {
+		parts.push(d.total !== null && d.guaranteed > d.total ? `OverTheCap lists ${money(d.guaranteed)} in guarantees, more than the deal's listed total.` : `${money(d.guaranteed)} of it is guaranteed${d.guaranteedPct !== null ? `, ${Math.round(d.guaranteedPct * 100)}% of the total` : ""}.`)
+	}
 	if (t?.rookie) parts.push("It is a rookie contract, so the pay is set by where he was drafted.")
 	return parts.join(" ")
 }

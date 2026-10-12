@@ -143,8 +143,8 @@ export default function ContractSection({
 				<div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
 					<Tile label="Per year" value={deal.apy !== null ? money(deal.apy) : "–"} sub={deal.apy !== null ? "average over the deal" : "no average given"} />
 					<Tile label="Cap hit, 2026" value={money(deal.cap)} sub={`${sharePct(deal.capPct)} of the ${money(contracts.salaryCap)} cap`} />
-					<Tile label="Guaranteed" value={deal.guaranteed !== null ? money(deal.guaranteed) : "–"} sub={deal.guaranteedPct !== null ? `${Math.round(deal.guaranteedPct * 100)}% of the total` : "not tracked"} />
-					<Tile label="Runs through" value={deal.through ? String(deal.through) : "–"} sub={t?.years ? `${t.years}-year deal${t.signed ? `, signed ${t.signed.slice(0, 4)}` : ""}` : "term not tracked"} />
+					<Tile label="Guaranteed" value={deal.guaranteed !== null ? money(deal.guaranteed) : "–"} sub={deal.guaranteedPct !== null ? `${Math.round(deal.guaranteedPct * 100)}% of the total, at signing` : deal.guaranteed !== null ? "more than the listed total" : "not tracked"} />
+					<Tile label="Runs through" value={deal.through ? String(deal.through) : "–"} sub={t?.years ? `${t.years}-year deal${t.signed ? `, signed ${t.signed.slice(0, 4)}` : ", final year not tracked"}` : "term not tracked"} />
 				</div>
 
 				<div className="mt-6 grid gap-6 lg:grid-cols-2">

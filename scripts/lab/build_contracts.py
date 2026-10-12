@@ -2,6 +2,7 @@
 
     data/lab/contracts.psv        team | player | pos | APY ($M) | 2026 cap hit ($M)
     data/lab/contract-terms.json  optional full terms for some players (years, total, guaranteed, cap by year)
+    data/lab/guarantees.psv       OverTheCap's contracts list: team nickname | player | pos | total | APY | total guaranteed ($M)
 
 There is no free feed of current NFL contracts (the nflverse file stops at 2022 signings), so these are kept by hand
 from public cap sites and carry an "as of" date. Run:  python3 build_contracts.py [--as-of 2026-10-12]
@@ -10,7 +11,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import unicodedata
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "lab"
@@ -46,7 +49,84 @@ def parse_psv(text: str) -> list[dict]:
     return rows
 
 
-def build(psv: str, terms_doc: dict, as_of: str) -> dict:
+NICK = {
+    "ARI": "Cardinals", "ATL": "Falcons", "BAL": "Ravens", "BUF": "Bills", "CAR": "Panthers", "CHI": "Bears", "CIN": "Bengals", "CLE": "Browns",
+    "DAL": "Cowboys", "DEN": "Broncos", "DET": "Lions", "GB": "Packers", "HOU": "Texans", "IND": "Colts", "JAX": "Jaguars", "KC": "Chiefs",
+    "LV": "Raiders", "LAC": "Chargers", "LAR": "Rams", "MIA": "Dolphins", "MIN": "Vikings", "NE": "Patriots", "NO": "Saints", "NYG": "Giants",
+    "NYJ": "Jets", "PHI": "Eagles", "PIT": "Steelers", "SF": "49ers", "SEA": "Seahawks", "TB": "Buccaneers", "TEN": "Titans", "WAS": "Commanders",
+}
+SUFFIX = {"jr", "sr", "ii", "iii", "iv", "v"}
+ALIASES = {"sauce gardner": "ahmad gardner", "riq woolen": "tariq woolen"}
+
+
+def name_key(name: str) -> str:
+    """Mirrors nameKey in lib/lab/contractsKit.ts: no case, accents, dots, apostrophes, commas, hyphens or Jr./III."""
+    t = unicodedata.normalize("NFD", name)
+    t = re.sub(r"[\u0300-\u036f]", "", t).lower()
+    t = re.sub(r"[.'\u2019`,]", "", t).replace("-", " ")
+    parts = t.split()
+    while len(parts) > 1 and parts[-1] in SUFFIX:
+        parts.pop()
+    k = " ".join(parts)
+    return ALIASES.get(k, k)
+
+
+def short_key(name: str) -> str:
+    parts = name_key(name).split(" ")
+    return f"{parts[0][0]} {parts[-1]}" if len(parts) > 1 else parts[0]
+
+
+def parse_guarantees(text: str) -> list[dict]:
+    out: list[dict] = []
+    for n, line in enumerate(text.splitlines(), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) != 6:
+            raise ValueError(f"guarantees line {n}: expected 6 fields, got {len(parts)}: {line!r}")
+        name, pos, nick, total, apy, gtd = parts
+        try:
+            out.append({"name": name, "pos": pos, "nick": nick, "total": float(total), "apy": float(apy), "guaranteed": float(gtd)})
+        except ValueError as e:
+            raise ValueError(f"guarantees line {n}: bad number in {line!r}") from e
+    return out
+
+
+def terms_from_list(g: dict) -> dict:
+    """What the OverTheCap list alone can say: total value, fully guaranteed money, and (when total / APY is a whole number) the length."""
+    t: dict = {"total": g["total"], "guaranteed": g["guaranteed"]}
+    if g["apy"] > 0:
+        yrs = g["total"] / g["apy"]
+        if abs(yrs - round(yrs)) < 0.15 and 1 <= round(yrs) <= 10:
+            t["years"] = int(round(yrs))
+    return t
+
+
+def attach_guarantees(rows: list[dict], guarantees: list[dict]) -> int:
+    """Give every contract with no hand-entered terms the list's numbers. Returns how many matched."""
+    by_team: dict[str, dict[str, list[dict]]] = {}
+    by_short: dict[str, dict[str, list[dict]]] = {}
+    for g in guarantees:
+        by_team.setdefault(g["nick"], {}).setdefault(name_key(g["name"]), []).append(g)
+        by_short.setdefault(g["nick"], {}).setdefault(short_key(g["name"]), []).append(g)
+    n = 0
+    for r in rows:
+        if "terms" in r:
+            continue
+        nick = NICK.get(r["team"])
+        cands = by_team.get(nick, {}).get(name_key(r["name"]), [])
+        if len(cands) != 1:
+            cands = by_short.get(nick, {}).get(short_key(r["name"]), []) if not cands else cands
+        if len(cands) > 1 and r["apy"]:
+            cands = [c for c in cands if abs(c["apy"] - r["apy"]) < 0.2]
+        if len(cands) == 1:
+            r["terms"] = terms_from_list(cands[0])
+            n += 1
+    return n
+
+
+def build(psv: str, terms_doc: dict, as_of: str, guarantees: str = "") -> dict:
     rows = parse_psv(psv)
     terms = terms_doc.get("terms", {})
     known = {f"{r['team']}|{r['name']}" for r in rows}
@@ -57,6 +137,8 @@ def build(psv: str, terms_doc: dict, as_of: str) -> dict:
         t = terms.get(f"{r['team']}|{r['name']}")
         if t:
             r["terms"] = t
+    if guarantees:
+        attach_guarantees(rows, parse_guarantees(guarantees))
     teams = sorted({r["team"] for r in rows})
     return {
         "season": 2026,
@@ -65,7 +147,7 @@ def build(psv: str, terms_doc: dict, as_of: str) -> dict:
         "teams": teams,
         "sources": [
             {"name": "StickToTheModel team cap pages", "url": "https://sticktothemodel.com/teams/LV/roster", "for": "APY and 2026 cap hit"},
-            {"name": "OverTheCap player pages", "url": "https://overthecap.com/", "for": "years, total value, guaranteed money, cap hit by year"},
+            {"name": "OverTheCap contracts list and player pages", "url": "https://overthecap.com/contracts", "for": "total value, fully guaranteed money, and (for a few players) years and cap hit by year"},
         ],
         "players": rows,
     }
@@ -82,7 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     if not as_of:
         print("pass --as-of YYYY-MM-DD the first time", file=sys.stderr)
         return 2
-    doc = build((DATA / "contracts.psv").read_text(), json.loads((DATA / "contract-terms.json").read_text()), as_of)
+    g_path = DATA / "guarantees.psv"
+    doc = build((DATA / "contracts.psv").read_text(), json.loads((DATA / "contract-terms.json").read_text()), as_of, g_path.read_text() if g_path.exists() else "")
     out_path.write_text(json.dumps(doc, indent="\t", ensure_ascii=False) + "\n")
     print(f"{len(doc['players'])} contracts across {len(doc['teams'])} teams -> {out_path}")
     return 0

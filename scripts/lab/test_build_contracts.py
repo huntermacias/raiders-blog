@@ -29,5 +29,27 @@ def test_terms_must_match_a_row():
 
 
 def test_committed_json_is_what_the_sources_build():
-    built = bc.build((DATA / "contracts.psv").read_text(), json.loads((DATA / "contract-terms.json").read_text()), json.loads((DATA / "contracts.json").read_text())["asOf"])
+    built = bc.build((DATA / "contracts.psv").read_text(), json.loads((DATA / "contract-terms.json").read_text()), json.loads((DATA / "contracts.json").read_text())["asOf"], (DATA / "guarantees.psv").read_text())
     assert built == json.loads((DATA / "contracts.json").read_text())
+
+
+def test_guarantees_fill_only_players_without_hand_entered_terms():
+    psv = "LV|Maxx Crosby|EDGE|35.5|35.8\nSEA|Jaxon Smith-Njigba|WR|42.1|10.4\nHOU|Will Anderson Jr|EDGE|37.5|12\nSEA|Nobody Here|WR|1|1\n"
+    g = "Maxx Crosby|EDGE|Raiders|1|1|1\nJaxon Smith-Njigba|WR|Seahawks|168.6|42.15|69.131\nWill Anderson Jr.|EDGE|Texans|150|50|100.064\n"
+    doc = bc.build(psv, {"terms": {"LV|Maxx Crosby": {"guaranteed": 62.5}}}, "2026-10-12", g)
+    by = {r["name"]: r for r in doc["players"]}
+    assert by["Maxx Crosby"]["terms"] == {"guaranteed": 62.5}  # the hand entry wins
+    assert by["Jaxon Smith-Njigba"]["terms"] == {"total": 168.6, "guaranteed": 69.131, "years": 4}
+    assert by["Will Anderson Jr"]["terms"]["guaranteed"] == 100.064  # suffix punctuation does not matter
+    assert "terms" not in by["Nobody Here"]
+
+
+def test_length_is_only_given_when_total_over_apy_is_a_whole_number():
+    assert bc.terms_from_list({"total": 100.0, "apy": 25.0, "guaranteed": 10.0})["years"] == 4
+    assert "years" not in bc.terms_from_list({"total": 100.0, "apy": 30.0, "guaranteed": 10.0})
+
+
+def test_every_guarantee_row_is_well_formed():
+    rows = bc.parse_guarantees((DATA / "guarantees.psv").read_text())
+    assert len(rows) > 900
+    assert all(r["total"] >= 0 and r["apy"] > 0 and r["guaranteed"] >= 0 and r["nick"] in bc.NICK.values() for r in rows)

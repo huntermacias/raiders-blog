@@ -132,7 +132,7 @@ describe("compare rows", () => {
 		expect(rows.find((r) => r.key === "apy")!.b).toBe("not tracked")
 		expect(moneyRows(null, null, null, null)).toEqual([])
 		// A tracked player missing one number says so, instead of looking like he is not tracked at all.
-		const tucker = dealFor(data, contracts, "tre-tucker")!
+		const tucker = dealFor(data, contracts, "marvin-harrison-jr")!
 		expect(moneyRows(a, tucker, null, null).find((r) => r.key === "guaranteed")!.b).toBe("not on file")
 	})
 })
