@@ -42,9 +42,11 @@ async function drawFrames(spec: NonNullable<ReturnType<typeof buildClipSpec>>, k
 		const f = plan.frames[i]
 		const svg = await satori(renderClipFrame(spec, kind, f), { width: w, height: h, fonts })
 		const png = new Resvg(svg, { fitTo: { mode: "width", value: w } }).render().asPng()
-		const name = join(dir, `f${String(i).padStart(4, "0")}.png`)
-		writeFileSync(name, new Uint8Array(png))
-		list.push(`file '${name}'`, `duration ${f.hold.toFixed(4)}`)
+		const base = `f${String(i).padStart(4, "0")}.png`
+		writeFileSync(join(dir, base), new Uint8Array(png))
+		// Just the file's name: the concat demuxer reads a relative path from the folder the list is in, not from where ffmpeg runs, so a
+		// path that already includes the folder (as with a relative --out) is looked for inside it twice.
+		list.push(`file '${base}'`, `duration ${f.hold.toFixed(4)}`)
 	}
 	// The concat demuxer ignores the last duration unless the last file is repeated.
 	list.push(list[list.length - 2])

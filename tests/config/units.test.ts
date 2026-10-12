@@ -73,3 +73,13 @@ describe("the clip drawing step in lab-data.yml", () => {
 		expect(wf).not.toContain("/tmp/render-clips.cjs")
 	})
 })
+
+describe("the clip renderer's frame list", () => {
+	// ffmpeg's concat demuxer reads a relative path from the folder the list file is in. A path that already includes that folder
+	// (which is what a relative --out gives, as in the workflow) fails with "Impossible to open .../.tmp-week-5-landscape/public/lab/clips/...".
+	it("names each frame by its file name alone", () => {
+		const src = read("scripts/clips/render.tsx")
+		expect(src).toMatch(/list\.push\(`file '\$\{base\}'`/)
+		expect(src).not.toMatch(/list\.push\(`file '\$\{name\}'`/)
+	})
+})
