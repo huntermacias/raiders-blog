@@ -11,7 +11,7 @@ import MoneyCompare from "@/components/lab/players/MoneyCompare"
 import ProgressLine from "@/components/lab/players/ProgressLine"
 import Yardstick from "@/components/lab/players/Yardstick"
 import { getContracts } from "@/lib/lab/contractData"
-import { dealFor, moneyRows, payRank, valueFor, valueSentence } from "@/lib/lab/contractsKit"
+import { coverageWords, dealFor, moneyRows, payRank, valueFor, valueSentence } from "@/lib/lab/contractsKit"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { labColorVarsB } from "@/lib/lab/colors"
@@ -278,7 +278,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 										</ul>
 									) : null}
 									<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">
-										Contract figures as of {contracts.asOf}, kept by hand for {contracts.teams.length} teams so far. A player on another team shows &ldquo;not tracked&rdquo;.{" "}
+										Contract figures as of {contracts.asOf}, read from public cap pages for {coverageWords(contracts)}. A player with no row there, such as a practice-squad name, shows &ldquo;not tracked&rdquo;.{" "}
 										<Link href="/lab/players/value" className="underline hover:text-lab-ink">
 											See pay against play for every position
 										</Link>
@@ -286,7 +286,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 									</p>
 								</>
 							) : (
-								<p className="m-0 mt-2 max-w-3xl text-sm text-lab-soft">We do not have contract numbers for either player yet. They are kept by hand for {contracts.teams.length} teams so far ({contracts.teams.join(", ")}).</p>
+								<p className="m-0 mt-2 max-w-3xl text-sm text-lab-soft">We have no contract row for either player. The file covers {coverageWords(contracts)}, but a practice-squad or just-signed player may not be on it yet.</p>
 							)}
 						</div>
 					</section>

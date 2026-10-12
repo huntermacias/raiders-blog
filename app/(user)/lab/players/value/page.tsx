@@ -8,7 +8,7 @@ import { DOWN, EarlyChip, UP } from "@/components/lab/players/Bits"
 import { TeamLogo } from "@/components/lab/players/Media"
 import TrackView from "@/components/lab/players/TrackView"
 import { getContracts } from "@/lib/lab/contractData"
-import { MIN_POOL, VERDICT_WORD, money, valueBoard } from "@/lib/lab/contractsKit"
+import { MIN_POOL, VERDICT_WORD, coverageWords, money, valueBoard } from "@/lib/lab/contractsKit"
 import { getPlayers } from "@/lib/lab/data"
 import { GROUP_META, GROUP_ORDER } from "@/lib/lab/playersKit"
 import { profileHref, teamName } from "@/lib/lab/playerView"
@@ -30,6 +30,59 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const MARK = { underpaid: { m: "▲", c: UP }, fair: { m: "●", c: "text-lab-soft" }, overpaid: { m: "▼", c: DOWN } } as const
+
+const SHOWN = 20
+
+type BoardRow = ReturnType<typeof valueBoard>[number]
+
+/** One position's table. The long tail is rendered without team logos so a full league board stays light. */
+function ValueTable({ rows, logos = false }: { rows: BoardRow[]; logos?: boolean }) {
+	return (
+		<div className={logos ? "mt-4 overflow-x-auto rounded-xl border border-lab-line bg-lab-surface" : "overflow-x-auto border-t border-lab-line"}>
+			<table className="w-full min-w-[34rem] border-collapse text-left text-sm" data-testid="value-table">
+				<thead>
+					<tr className="text-[11px] uppercase tracking-[0.1em] text-lab-muted">
+						<th scope="col" className="px-4 py-2 font-semibold">Player</th>
+						<th scope="col" className="px-3 py-2 text-right font-semibold">Play</th>
+						<th scope="col" className="px-3 py-2 text-right font-semibold">Pay</th>
+						<th scope="col" className="px-3 py-2 text-right font-semibold">Per year</th>
+						<th scope="col" className="px-3 py-2 text-right font-semibold">Cap hit</th>
+						<th scope="col" className="px-4 py-2 font-semibold">Read</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map((r) => (
+						<tr key={r.p.slug} className="border-t border-lab-line" data-testid="value-row">
+							<th scope="row" className="px-4 py-2 font-normal">
+								<span className="flex items-center gap-2">
+									{logos ? <TeamLogo team={r.p.team} size={16} /> : null}
+									<Link href={profileHref(r.p.slug)} className="font-semibold text-lab-ink hover:underline">
+										{r.p.name}
+									</Link>
+									{logos ? <span className="sr-only">{teamName(r.p.team)}</span> : <span className="text-xs text-lab-muted">{r.p.team}</span>}
+								</span>
+							</th>
+							<td className="px-3 py-2 text-right font-mono tabular-nums">{r.value.gradeRank} of {r.value.of}</td>
+							<td className="px-3 py-2 text-right font-mono tabular-nums">{r.value.payRank} of {r.value.of}</td>
+							<td className="px-3 py-2 text-right font-mono tabular-nums">{r.deal.apy !== null ? money(r.deal.apy) : "–"}</td>
+							<td className="px-3 py-2 text-right font-mono tabular-nums">{money(r.deal.cap)}</td>
+							<td className="px-4 py-2">
+								{r.value.verdict ? (
+									<span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.08em] ${MARK[r.value.verdict].c}`}>
+										<span aria-hidden="true" className="text-[9px]">{MARK[r.value.verdict].m}</span>
+										{VERDICT_WORD[r.value.verdict]}
+									</span>
+								) : (
+									<EarlyChip label={r.value.early ? "Early read" : "Too few to call"} />
+								)}
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	)
+}
 
 export default function ValuePage() {
 	const data = getPlayers()
@@ -53,10 +106,10 @@ export default function ValuePage() {
 					</p>
 					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Pay against play</h1>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">
-						Who has played better than his contract suggests, and who has not. Each player is ranked by overall grade and by yearly pay against the other players at his job on the {contracts.teams.length} teams whose contracts we track, and the gap between the two ranks is the read.
+						Who has played better than his contract suggests, and who has not. Each player is ranked by overall grade and by yearly pay against the other players at his job on {coverageWords(contracts)}, and the gap between the two ranks is the read.
 					</p>
 					<p className="mt-3 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-tint px-4 py-3 text-sm leading-relaxed text-lab-soft" data-testid="value-caveat">
-						This is a comparison among {contracts.teams.join(", ")} players only, so a rank here is a rank among those, not among the league. A player whose grade is still an early read is shown without a verdict, and a position with few players tracked is not called either way. Contract figures are as of {contracts.asOf}.
+						{contracts.teams.length >= 32 ? "A rank here is a rank across the league, among the players who have both a grade and a contract row, so a backup with no grade yet is left out." : `This is a comparison among ${contracts.teams.join(", ")} players only, so a rank here is a rank among those, not among the league.`} A player whose grade is still an early read is shown without a verdict, and a position with few players is not called either way. Contract figures are as of {contracts.asOf}, read from a public cap site, so a deal signed or cut since may differ.
 					</p>
 					<TrackView event="board_view" props={{ board: "value" }} />
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-5" />
@@ -120,51 +173,17 @@ export default function ValuePage() {
 							{GROUP_META[g].title}
 						</h2>
 						<p className="m-0 mt-1 text-sm text-lab-soft">
-							{rows.length} {GROUP_META[g].peers} with a grade and a contract: settled grades first, biggest gap in his favor first, early reads last.
+							{rows.length} {GROUP_META[g].peers} with a grade and a contract: settled grades first, biggest gap in his favor first, early reads last. The top {Math.min(rows.length, SHOWN)} are shown; the rest open below.
 						</p>
-						<div className="mt-4 overflow-x-auto rounded-xl border border-lab-line bg-lab-surface">
-							<table className="w-full min-w-[34rem] border-collapse text-left text-sm" data-testid="value-table">
-								<thead>
-									<tr className="text-[11px] uppercase tracking-[0.1em] text-lab-muted">
-										<th scope="col" className="px-4 py-2 font-semibold">Player</th>
-										<th scope="col" className="px-3 py-2 text-right font-semibold">Play</th>
-										<th scope="col" className="px-3 py-2 text-right font-semibold">Pay</th>
-										<th scope="col" className="px-3 py-2 text-right font-semibold">Per year</th>
-										<th scope="col" className="px-3 py-2 text-right font-semibold">Cap hit</th>
-										<th scope="col" className="px-4 py-2 font-semibold">Read</th>
-									</tr>
-								</thead>
-								<tbody>
-									{rows.map((r) => (
-										<tr key={r.p.slug} className="border-t border-lab-line" data-testid="value-row">
-											<th scope="row" className="px-4 py-2 font-normal">
-												<span className="flex items-center gap-2">
-													<TeamLogo team={r.p.team} size={16} />
-													<Link href={profileHref(r.p.slug)} className="font-semibold text-lab-ink hover:underline">
-														{r.p.name}
-													</Link>
-													<span className="sr-only">{teamName(r.p.team)}</span>
-												</span>
-											</th>
-											<td className="px-3 py-2 text-right font-mono tabular-nums">{r.value.gradeRank} of {r.value.of}</td>
-											<td className="px-3 py-2 text-right font-mono tabular-nums">{r.value.payRank} of {r.value.of}</td>
-											<td className="px-3 py-2 text-right font-mono tabular-nums">{r.deal.apy !== null ? money(r.deal.apy) : "–"}</td>
-											<td className="px-3 py-2 text-right font-mono tabular-nums">{money(r.deal.cap)}</td>
-											<td className="px-4 py-2">
-												{r.value.verdict ? (
-													<span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.08em] ${MARK[r.value.verdict].c}`}>
-														<span aria-hidden="true" className="text-[9px]">{MARK[r.value.verdict].m}</span>
-														{VERDICT_WORD[r.value.verdict]}
-													</span>
-												) : (
-													<EarlyChip label={r.value.early ? "Early read" : "Too few to call"} />
-												)}
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
+						<ValueTable rows={rows.slice(0, SHOWN)} logos />
+						{rows.length > SHOWN ? (
+							<details className="mt-3 rounded-xl border border-lab-line bg-lab-surface">
+								<summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-lab-soft hover:text-lab-ink">
+									Show the other {rows.length - SHOWN} {GROUP_META[g].peers}
+								</summary>
+								<ValueTable rows={rows.slice(SHOWN)} />
+							</details>
+						) : null}
 					</div>
 				</section>
 			))}

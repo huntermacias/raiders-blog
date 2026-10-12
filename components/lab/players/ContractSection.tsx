@@ -5,6 +5,7 @@ import {
 	type PayRank,
 	type Value,
 	VERDICT_WORD,
+	coverageWords,
 	money,
 	payPool,
 	payRankPhrase,
@@ -187,7 +188,7 @@ export default function ContractSection({
 				) : null}
 
 				<p className="m-0 mt-6 max-w-3xl text-xs leading-relaxed text-lab-muted" data-testid="money-source">
-					Contract figures as of {contracts.asOf}, kept by hand from public cap sites ({contracts.sources.map((s) => s.name).join(" and ")}), for {contracts.teams.length} teams so far. A deal signed or reworked since may differ, and cap hits are rounded to $0.1M.
+					Contract figures as of {contracts.asOf}, read from public cap sites ({contracts.sources.map((s) => s.name).join(" and ")}) into a file we keep by hand, for {coverageWords(contracts)}. A deal signed, cut or reworked since may differ, and cap hits are rounded to $0.1M.
 					{t?.url ? (
 						<>
 							{" "}

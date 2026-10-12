@@ -60,9 +60,9 @@ describe("<MoneyCompare />", () => {
 })
 
 describe("the pay against play page", () => {
-	it("lists only positions with enough players, with a read or an early/too-few chip on every row, and says it is a comparison among tracked teams", () => {
+	it("lists only positions with enough players, with a read or an early/too-few chip on every row, and says what the rank is among", () => {
 		render(<ValuePage />)
-		expect(screen.getByTestId("value-caveat").textContent).toMatch(/not among the league/)
+		expect(screen.getByTestId("value-caveat").textContent).toMatch(/across the league|not among the league/)
 		const rows = screen.getAllByTestId("value-row")
 		expect(rows.length).toBeGreaterThan(0)
 		for (const r of rows) expect(r.textContent).toMatch(/Playing above his pay|About what he is paid|Paid above his play so far|Early read|Too few to call/)

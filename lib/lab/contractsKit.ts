@@ -71,7 +71,18 @@ export function sharePct(x: number): string {
 const SUFFIX = new Set(["jr", "sr", "ii", "iii", "iv", "v"])
 
 /** A name with the things that differ between sources taken out: case, accents, dots, apostrophes, hyphens and Jr./III. */
+/** Names the grades and the cap pages spell differently (a nickname on one side). Keys and values are already in nameKey form. */
+const ALIASES: Record<string, string> = {
+	"sauce gardner": "ahmad gardner",
+	"riq woolen": "tariq woolen",
+}
+
 export function nameKey(name: string): string {
+	const k = plainKey(name)
+	return ALIASES[k] ?? k
+}
+
+function plainKey(name: string): string {
 	const base = name
 		.normalize("NFD")
 		.replace(/[̀-ͯ]/g, "")
@@ -148,6 +159,12 @@ export function dealFor(data: PlayersData, contracts: ContractsData, slug: strin
 }
 
 // ---------------------------------------------------------------------------------------------- pools and ranks
+
+/** "all 32 teams", or how many we hold while the file is partial. */
+export function coverageWords(contracts: ContractsData): string {
+	const n = contracts.teams.length
+	return n >= 32 ? "all 32 teams" : `${n} teams so far`
+}
 
 /** The row that stands for a player when money is compared: his main job, not a return role. */
 export function mainRow(data: PlayersData, slug: string): PlayerRow | null {

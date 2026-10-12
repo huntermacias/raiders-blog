@@ -42,8 +42,22 @@ describe("matching contracts to players", () => {
 		const graded = Array.from(new Map(data.players.filter((p) => contracts.teams.includes(p.team)).map((p) => [p.slug, p])).values())
 		const missing = graded.filter((p) => !deals.has(p.slug))
 		// What is left is a practice-squad name or a returner the cap page does not list.
-		expect(graded.length).toBeGreaterThan(50)
-		expect(missing.length / graded.length).toBeLessThan(0.05)
+		expect(graded.length).toBeGreaterThan(900)
+		expect(missing.length / graded.length).toBeLessThan(0.03)
+	})
+	it("holds a full cap page for every one of the 32 teams", () => {
+		expect(contracts.teams).toHaveLength(32)
+		for (const t of contracts.teams) {
+			const rows = contracts.players.filter((r) => r.team === t)
+			expect(rows.length, t).toBeGreaterThanOrEqual(50)
+			const cap = rows.reduce((n, r) => n + r.cap, 0)
+			// A team's listed cap hits sit under the cap; a total near zero or far over means a bad read.
+			expect(cap, t).toBeGreaterThan(90)
+			expect(cap, t).toBeLessThan(contracts.salaryCap + 10)
+		}
+	})
+	it("matches nicknames between the grades and the cap pages", () => {
+		for (const slug of ["sauce-gardner", "riq-woolen"]) expect(dealFor(data, contracts, slug), slug).not.toBeNull()
 	})
 	it("finds the Raiders who matter", () => {
 		for (const slug of ["maxx-crosby", "brock-bowers", "kolton-miller", "tyler-linderbaum", "ashton-jeanty"]) {

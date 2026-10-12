@@ -290,7 +290,7 @@ export default function PlayersPage() {
 						</ul>
 					</Section>
 
-					<Section id="money" title="Pay against play" tint blurb={<p className="m-0">Contracts and cap hits for the Raiders and the teams they play, set beside how each player has played. Compare two players&apos; money on the compare page, or see every position ranked by who is earning more than his contract and who is not.</p>}>
+					<Section id="money" title="Pay against play" tint blurb={<p className="m-0">Contracts and cap hits for every NFL team, set beside how each player has played. Compare two players&apos; money on the compare page, or see every position ranked by who is earning more than his contract and who is not.</p>}>
 						<ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
 							<li>
 								<Link href="/lab/players/value" className="block rounded-xl border border-lab-line bg-lab-surface p-4 hover:border-lab-ink">
