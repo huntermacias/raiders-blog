@@ -90,7 +90,12 @@
 			"name": "Marvin Harrison Jr.",
 			"pos": "WR",
 			"apy": 8.8,
-			"cap": 9.6
+			"cap": 9.6,
+			"terms": {
+				"total": 35.375,
+				"guaranteed": 35.375,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
@@ -193,14 +198,24 @@
 			"name": "Gardner Minshew",
 			"pos": "QB",
 			"apy": 5.8,
-			"cap": 5.7
+			"cap": 5.7,
+			"terms": {
+				"total": 5.75,
+				"guaranteed": 5.14,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "James Conner",
 			"pos": "RB",
 			"apy": 3.0,
-			"cap": 4.8
+			"cap": 4.8,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 2.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
@@ -267,7 +282,12 @@
 			"name": "Garrett Williams",
 			"pos": "CB",
 			"apy": 1.4,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 5.635,
+				"guaranteed": 1.098,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
@@ -310,14 +330,24 @@
 			"name": "Elijah Higgins",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 4.016,
+				"guaranteed": 0.176,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Andrew Wingard",
 			"pos": "S",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 1.85,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
@@ -336,7 +366,12 @@
 			"name": "Andrew Billings",
 			"pos": "IDL",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 0.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
@@ -379,7 +414,12 @@
 			"name": "Hunter Long",
 			"pos": "TE",
 			"apy": 2.5,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 3.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "ARI",
@@ -422,7 +462,12 @@
 			"name": "Trey Benson",
 			"pos": "RB",
 			"apy": 1.5,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 6.06,
+				"guaranteed": 1.227,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
@@ -441,7 +486,12 @@
 			"name": "Tip Reiman",
 			"pos": "TE",
 			"apy": 1.4,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 5.79,
+				"guaranteed": 1.031,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
@@ -460,63 +510,108 @@
 			"name": "Carson Beck",
 			"pos": "QB",
 			"apy": 1.9,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.406,
+				"guaranteed": 1.846,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Jon Gaines",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.572,
+				"guaranteed": 0.732,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Dadrion Taylor-Demerson",
 			"pos": "S",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.867,
+				"guaranteed": 0.847,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Casey Kreiter",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Simi Fehoko",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Cody Simon",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.205,
+				"guaranteed": 1.005,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Kei'Trel Clark",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.049,
+				"guaranteed": 0.209,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Zonovan Knight",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.195,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Eku Leota",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "ARI",
@@ -547,56 +642,96 @@
 			"name": "Hayden Conner",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.374,
+				"guaranteed": 0.174,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Reggie Virgil",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.936,
+				"guaranteed": 0.556,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Josh Fryar",
 			"pos": "RT",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 0.269,
+				"years": 3
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Karson Sharar",
 			"pos": "ILB",
 			"apy": 1.2,
-			"cap": 0.967
+			"cap": 0.967,
+			"terms": {
+				"total": 4.708,
+				"guaranteed": 0.328,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Kalen King",
 			"pos": "CB",
 			"apy": 0.922,
-			"cap": 0.949
+			"cap": 0.949,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Jayden Williams",
 			"pos": "T",
 			"apy": 1.1,
-			"cap": 0.93
+			"cap": 0.93,
+			"terms": {
+				"total": 4.561,
+				"guaranteed": 0.181,
+				"years": 4
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Wydett Williams Jr.",
 			"pos": "SS",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.11,
+				"years": 3
+			}
 		},
 		{
 			"team": "ARI",
 			"name": "Kitan Crawford",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 0.6
+			"cap": 0.6,
+			"terms": {
+				"total": 4.338,
+				"guaranteed": 0.138,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -711,7 +846,12 @@
 			"name": "Charlie Woerner",
 			"pos": "TE",
 			"apy": 4.0,
-			"cap": 5.8
+			"cap": 5.8,
+			"terms": {
+				"total": 12.0,
+				"guaranteed": 4.16,
+				"years": 3
+			}
 		},
 		{
 			"team": "ATL",
@@ -766,7 +906,12 @@
 			"name": "Jalon Walker",
 			"pos": "ED",
 			"apy": 5.1,
-			"cap": 4.7
+			"cap": 4.7,
+			"terms": {
+				"total": 20.562,
+				"guaranteed": 20.562,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -797,7 +942,12 @@
 			"name": "James Pearce Jr.",
 			"pos": "ED",
 			"apy": 4.2,
-			"cap": 3.4
+			"cap": 3.4,
+			"terms": {
+				"total": 16.779,
+				"guaranteed": 16.779,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -816,14 +966,24 @@
 			"name": "Kyle Hinton",
 			"pos": "RG",
 			"apy": 2.9,
-			"cap": 3.2
+			"cap": 3.2,
+			"terms": {
+				"total": 5.75,
+				"guaranteed": 2.575,
+				"years": 2
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Austin Hooper",
 			"pos": "TE",
 			"apy": 3.2,
-			"cap": 3.2
+			"cap": 3.2,
+			"terms": {
+				"total": 3.25,
+				"guaranteed": 2.74,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -842,7 +1002,12 @@
 			"name": "Da'Shawn Hand",
 			"pos": "ED",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -861,7 +1026,12 @@
 			"name": "Christian Harris",
 			"pos": "LB",
 			"apy": 2.8,
-			"cap": 2.7
+			"cap": 2.7,
+			"terms": {
+				"total": 2.75,
+				"guaranteed": 1.985,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -904,7 +1074,12 @@
 			"name": "Mike Ford",
 			"pos": "CB",
 			"apy": 4.0,
-			"cap": 2.2
+			"cap": 2.2,
+			"terms": {
+				"total": 4.0,
+				"guaranteed": 1.14,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -947,7 +1122,12 @@
 			"name": "Sydney Brown",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 5.749,
+				"guaranteed": 1.181,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -966,7 +1146,12 @@
 			"name": "Liam McCullough",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 5.78,
+				"guaranteed": 1.9,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -1009,7 +1194,12 @@
 			"name": "Corey Levin",
 			"pos": "C",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.485,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -1040,21 +1230,36 @@
 			"name": "Tua Tagovailoa",
 			"pos": "QB",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "DeMarcco Hellams",
 			"pos": "S",
 			"apy": 0.987,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 3.946,
+				"guaranteed": 0.106,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "J.D. Bertrand",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.37,
+				"guaranteed": 0.35,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -1085,21 +1290,36 @@
 			"name": "Nick Muse",
 			"pos": "TE",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.405,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Chris Blair",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Mike Jerrell",
 			"pos": "RT",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.18,
+				"guaranteed": 0.16,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
@@ -1118,7 +1338,12 @@
 			"name": "Josh Woods",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
@@ -1137,56 +1362,96 @@
 			"name": "Ethan Onianwa",
 			"pos": "T",
 			"apy": 1.1,
-			"cap": 0.924
+			"cap": 0.924,
+			"terms": {
+				"total": 4.536,
+				"guaranteed": 0.156,
+				"years": 4
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Malcolm DeWalt IV",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.14,
+				"years": 3
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Jack Strand",
 			"pos": "QB",
 			"apy": 1.0,
-			"cap": 0.89
+			"cap": 0.89,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.263,
+				"years": 3
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Jared Ivey",
 			"pos": "LB",
 			"apy": 0.993,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 2.98,
+				"guaranteed": 0.095,
+				"years": 3
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Storm Norton",
 			"pos": "RT",
 			"apy": 1.5,
-			"cap": 0.715
+			"cap": 0.715,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 0.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "DeAngelo Malone",
 			"pos": "ED",
 			"apy": 1.5,
-			"cap": 0.615
+			"cap": 0.615,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 0.215,
+				"years": 1
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Beaux Collins",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 0.54
+			"cap": 0.54,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "ATL",
 			"name": "Cameron Williams",
 			"pos": "RT",
 			"apy": 1.1,
-			"cap": 0.515
+			"cap": 0.515,
+			"terms": {
+				"total": 4.452,
+				"guaranteed": 0.677,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
@@ -1349,7 +1614,12 @@
 			"name": "Chidobe Awuzie",
 			"pos": "CB",
 			"apy": 5.0,
-			"cap": 5.0
+			"cap": 5.0,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 5.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
@@ -1416,7 +1686,12 @@
 			"name": "Justice Hill",
 			"pos": "RB",
 			"apy": 3.0,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 6.0,
+				"guaranteed": 4.441,
+				"years": 2
+			}
 		},
 		{
 			"team": "BAL",
@@ -1435,7 +1710,12 @@
 			"name": "Ethan Pocic",
 			"pos": "C",
 			"apy": 3.2,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 3.25,
+				"guaranteed": 3.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
@@ -1466,14 +1746,24 @@
 			"name": "Durham Smythe",
 			"pos": "TE",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 2.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Danny Pinter",
 			"pos": "RG",
 			"apy": 2.8,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 2.75,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
@@ -1504,7 +1794,12 @@
 			"name": "John Jenkins",
 			"pos": "IDL",
 			"apy": 2.0,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.345,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
@@ -1523,7 +1818,12 @@
 			"name": "Andrew Vorhees",
 			"pos": "LG",
 			"apy": 1.7,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 1.7,
+				"guaranteed": 1.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
@@ -1566,21 +1866,36 @@
 			"name": "Devontez Walker",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.818,
+				"guaranteed": 0.798,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "T.J. Tampa",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.718,
+				"guaranteed": 0.698,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Teddye Buchanan",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.103,
+				"guaranteed": 0.903,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
@@ -1599,28 +1914,48 @@
 			"name": "Elijah Sarratt",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.564,
+				"guaranteed": 1.184,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Rasheen Ali",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.31,
+				"guaranteed": 0.29,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Carson Vinson",
 			"pos": "LT",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.67,
+				"guaranteed": 0.47,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Matthew Hibner",
 			"pos": "TE",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.169,
+				"guaranteed": 0.789,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
@@ -1651,7 +1986,12 @@
 			"name": "Aeneas Peebles",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.374,
+				"guaranteed": 0.174,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
@@ -1670,7 +2010,12 @@
 			"name": "Jay Higgins",
 			"pos": "LB",
 			"apy": 0.995,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.985,
+				"guaranteed": 0.03,
+				"years": 3
+			}
 		},
 		{
 			"team": "BAL",
@@ -1689,7 +2034,12 @@
 			"name": "Keyon Martin",
 			"pos": "CB",
 			"apy": 0.988,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.965,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "BAL",
@@ -1708,7 +2058,12 @@
 			"name": "Josh Cuevas",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 0.98
+			"cap": 0.98,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.379,
+				"years": 4
+			}
 		},
 		{
 			"team": "BAL",
@@ -1727,28 +2082,48 @@
 			"name": "Ethan Burke",
 			"pos": "OLB",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.02,
+				"years": 3
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Joe Fagnano",
 			"pos": "QB",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.1,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Skylar Thompson",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.59
+			"cap": 0.59,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "BAL",
 			"name": "Bilhal Kone",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 0.584
+			"cap": 0.584,
+			"terms": {
+				"total": 4.477,
+				"guaranteed": 0.277,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
@@ -1803,7 +2178,12 @@
 			"name": "Josh Palmer",
 			"pos": "WR",
 			"apy": 10.0,
-			"cap": 11.8
+			"cap": 11.8,
+			"terms": {
+				"total": 30.0,
+				"guaranteed": 15.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "BUF",
@@ -1822,7 +2202,12 @@
 			"name": "Dawson Knox",
 			"pos": "TE",
 			"apy": 6.7,
-			"cap": 8.6
+			"cap": 8.6,
+			"terms": {
+				"total": 20.0,
+				"guaranteed": 10.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "BUF",
@@ -1973,7 +2358,12 @@
 			"name": "Ty Johnson",
 			"pos": "RB",
 			"apy": 2.5,
-			"cap": 3.3
+			"cap": 3.3,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 2.49,
+				"years": 2
+			}
 		},
 		{
 			"team": "BUF",
@@ -2028,7 +2418,12 @@
 			"name": "T.J. Sanders",
 			"pos": "IDL",
 			"apy": 2.7,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 10.645,
+				"guaranteed": 10.072,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
@@ -2047,14 +2442,24 @@
 			"name": "T.J. Parker",
 			"pos": "OLB",
 			"apy": 3.3,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 13.141,
+				"guaranteed": 13.141,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Sam Franklin",
 			"pos": "S",
 			"apy": 2.3,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 7.0,
+				"guaranteed": 2.53,
+				"years": 3
+			}
 		},
 		{
 			"team": "BUF",
@@ -2085,7 +2490,12 @@
 			"name": "Reid Ferguson",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 6.5,
+				"guaranteed": 2.365,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
@@ -2140,7 +2550,12 @@
 			"name": "Austin Corbett",
 			"pos": "RG",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "BUF",
@@ -2159,91 +2574,156 @@
 			"name": "Lloyd Cushenberry",
 			"pos": "C",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Mike Danna",
 			"pos": "ED",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Ray Davis",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.733,
+				"guaranteed": 0.713,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Jude Bowry",
 			"pos": "T",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.721,
+				"guaranteed": 1.276,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Skyler Bell",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.472,
+				"guaranteed": 1.092,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Kaleb Elarms-Orr",
 			"pos": "ILB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.463,
+				"guaranteed": 1.083,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Javon Solomon",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Damar Hamlin",
 			"pos": "S",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.265,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Tylan Grable",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.19,
+				"guaranteed": 0.17,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Jordan Hancock",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.52,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Jackson Hawes",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.52,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Joe Andreessen",
 			"pos": "LB",
 			"apy": 0.944,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 2.25,
+				"years": 2
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Keleki Latu",
 			"pos": "TE",
 			"apy": 0.988,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.965,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "BUF",
@@ -2257,7 +2737,12 @@
 			"name": "Jalon Kilgore",
 			"pos": "SS",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.843,
+				"guaranteed": 0.463,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
@@ -2276,14 +2761,24 @@
 			"name": "Ar'Maj Reed-Adams",
 			"pos": null,
 			"apy": null,
-			"cap": 0.917
+			"cap": 0.917,
+			"terms": {
+				"total": 4.51,
+				"guaranteed": 0.13,
+				"years": 4
+			}
 		},
 		{
 			"team": "BUF",
 			"name": "Dorian Strong",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 0.221
+			"cap": 0.221,
+			"terms": {
+				"total": 4.485,
+				"guaranteed": 0.285,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2314,7 +2809,12 @@
 			"name": "Taylor Moton",
 			"pos": "RT",
 			"apy": 22.0,
-			"cap": 21.1
+			"cap": 21.1,
+			"terms": {
+				"total": 44.0,
+				"guaranteed": 36.8,
+				"years": 2
+			}
 		},
 		{
 			"team": "CAR",
@@ -2393,7 +2893,12 @@
 			"name": "Tershawn Wharton",
 			"pos": "IDL",
 			"apy": 15.0,
-			"cap": 8.9
+			"cap": 8.9,
+			"terms": {
+				"total": 45.05,
+				"guaranteed": 30.25,
+				"years": 3
+			}
 		},
 		{
 			"team": "CAR",
@@ -2424,7 +2929,12 @@
 			"name": "Michael Jackson Sr.",
 			"pos": "CB",
 			"apy": 5.2,
-			"cap": 7.8
+			"cap": 7.8,
+			"terms": {
+				"total": 10.5,
+				"guaranteed": 5.7,
+				"years": 2
+			}
 		},
 		{
 			"team": "CAR",
@@ -2467,7 +2977,12 @@
 			"name": "Kenny Pickett",
 			"pos": "QB",
 			"apy": 4.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 4.0,
+				"guaranteed": 4.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
@@ -2510,7 +3025,12 @@
 			"name": "Xavier Legette",
 			"pos": "WR",
 			"apy": 3.1,
-			"cap": 3.4
+			"cap": 3.4,
+			"terms": {
+				"total": 12.357,
+				"guaranteed": 12.357,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2529,14 +3049,24 @@
 			"name": "Jonathon Brooks",
 			"pos": "RB",
 			"apy": 2.1,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 8.417,
+				"guaranteed": 6.24,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Thomas Incoom",
 			"pos": "ED",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
@@ -2555,21 +3085,36 @@
 			"name": "Stone Forsythe",
 			"pos": "LT",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.05,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Nic Scourton",
 			"pos": "ED",
 			"apy": 2.2,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 8.614,
+				"guaranteed": 6.66,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "John Metchie III",
 			"pos": "WR",
 			"apy": 1.9,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 1.9,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
@@ -2631,14 +3176,24 @@
 			"name": "Ja'Tavion Sanders",
 			"pos": "TE",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.044,
+				"guaranteed": 0.874,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "J.J. Jansen",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
@@ -2657,7 +3212,12 @@
 			"name": "A.J. Dillon",
 			"pos": "RB",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
@@ -2688,14 +3248,24 @@
 			"name": "Brady Christensen",
 			"pos": "LG",
 			"apy": 2.8,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 2.765,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Chau Smith-Wade",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.344,
+				"guaranteed": 0.324,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2714,14 +3284,24 @@
 			"name": "Feleipe Franks",
 			"pos": "TE",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.265,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Cam'Ron Jackson",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.673,
+				"guaranteed": 0.473,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2752,14 +3332,24 @@
 			"name": "Sam Hecht",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.934,
+				"guaranteed": 0.554,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Zakee Wheatley",
 			"pos": "SS",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.89,
+				"guaranteed": 0.51,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2778,21 +3368,36 @@
 			"name": "Corey Bullock",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Brycen Tremayne",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Jackson Kuwatch",
 			"pos": "ILB",
 			"apy": 1.1,
-			"cap": 0.925
+			"cap": 0.925,
+			"terms": {
+				"total": 4.539,
+				"guaranteed": 0.159,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
@@ -2811,14 +3416,24 @@
 			"name": "Albert Reese IV",
 			"pos": "T",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.145,
+				"years": 3
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Haynes King",
 			"pos": "QB",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.21,
+				"years": 3
+			}
 		},
 		{
 			"team": "CAR",
@@ -2837,14 +3452,24 @@
 			"name": "Trevor Etienne",
 			"pos": "RB",
 			"apy": 1.3,
-			"cap": 0.792
+			"cap": 0.792,
+			"terms": {
+				"total": 5.209,
+				"guaranteed": 1.009,
+				"years": 4
+			}
 		},
 		{
 			"team": "CAR",
 			"name": "Bam Martin-Scott",
 			"pos": "LB",
 			"apy": 0.993,
-			"cap": 0.545
+			"cap": 0.545,
+			"terms": {
+				"total": 2.98,
+				"guaranteed": 0.29,
+				"years": 3
+			}
 		},
 		{
 			"team": "CHI",
@@ -2911,7 +3536,12 @@
 			"name": "Kyler Gordon",
 			"pos": "CB",
 			"apy": 13.3,
-			"cap": 12.9
+			"cap": 12.9,
+			"terms": {
+				"total": 40.0,
+				"guaranteed": 21.256,
+				"years": 3
+			}
 		},
 		{
 			"team": "CHI",
@@ -2954,7 +3584,12 @@
 			"name": "Cole Kmet",
 			"pos": "TE",
 			"apy": 12.5,
-			"cap": 7.8
+			"cap": 7.8,
+			"terms": {
+				"total": 50.0,
+				"guaranteed": 22.893,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
@@ -2997,7 +3632,12 @@
 			"name": "Coby Bryant",
 			"pos": "CB",
 			"apy": 13.3,
-			"cap": 6.0
+			"cap": 6.0,
+			"terms": {
+				"total": 40.0,
+				"guaranteed": 25.75,
+				"years": 3
+			}
 		},
 		{
 			"team": "CHI",
@@ -3076,7 +3716,12 @@
 			"name": "Neville Gallimore",
 			"pos": "IDL",
 			"apy": 5.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 5.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "CHI",
@@ -3131,7 +3776,12 @@
 			"name": "Josh Blackwell",
 			"pos": "CB",
 			"apy": 2.5,
-			"cap": 2.6
+			"cap": 2.6,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 2.45,
+				"years": 2
+			}
 		},
 		{
 			"team": "CHI",
@@ -3150,7 +3800,12 @@
 			"name": "Cameron Lewis",
 			"pos": "CB",
 			"apy": 3.0,
-			"cap": 2.2
+			"cap": 2.2,
+			"terms": {
+				"total": 6.0,
+				"guaranteed": 2.75,
+				"years": 2
+			}
 		},
 		{
 			"team": "CHI",
@@ -3169,28 +3824,48 @@
 			"name": "Clark Phillips III",
 			"pos": "CB",
 			"apy": 2.2,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 2.249,
+				"guaranteed": 2.079,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Daniel Hardy",
 			"pos": "ED",
 			"apy": 2.5,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 4.97,
+				"guaranteed": 2.45,
+				"years": 2
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Ozzy Trapilo",
 			"pos": "RT",
 			"apy": 1.9,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 7.718,
+				"guaranteed": 5.394,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Shemar Turner",
 			"pos": "IDL",
 			"apy": 1.8,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 7.22,
+				"guaranteed": 4.423,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
@@ -3209,7 +3884,12 @@
 			"name": "Elijah Hicks",
 			"pos": "S",
 			"apy": 2.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 2.6,
+				"guaranteed": 1.688,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
@@ -3228,7 +3908,12 @@
 			"name": "Sam Roush",
 			"pos": "TE",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.337,
+				"guaranteed": 1.796,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
@@ -3259,7 +3944,12 @@
 			"name": "Jordan McFadden",
 			"pos": "LG",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
@@ -3302,28 +3992,48 @@
 			"name": "Xavier Woods",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.35,
+				"guaranteed": 0.05,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "James Lynch",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Jack Sanborn",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Luke Newman",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.43,
+				"guaranteed": 0.23,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
@@ -3342,14 +4052,24 @@
 			"name": "Jahdae Walker",
 			"pos": "WR",
 			"apy": 0.995,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.985,
+				"guaranteed": 0.17,
+				"years": 3
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Jamree Kromah",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CHI",
@@ -3368,21 +4088,36 @@
 			"name": "Keyshaun Elliott",
 			"pos": "ILB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.848,
+				"guaranteed": 0.468,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Jordan van den Berg",
 			"pos": "DT",
 			"apy": 1.2,
-			"cap": 0.943
+			"cap": 0.943,
+			"terms": {
+				"total": 4.612,
+				"guaranteed": 0.232,
+				"years": 4
+			}
 		},
 		{
 			"team": "CHI",
 			"name": "Jayden Loving",
 			"pos": "DT",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.245,
+				"years": 3
+			}
 		},
 		{
 			"team": "CHI",
@@ -3408,7 +4143,12 @@
 			"name": "Ruben Hyppolite II",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 0.76
+			"cap": 0.76,
+			"terms": {
+				"total": 5.08,
+				"guaranteed": 0.88,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
@@ -3511,7 +4251,12 @@
 			"name": "Bryan Cook",
 			"pos": "S",
 			"apy": 13.4,
-			"cap": 10.7
+			"cap": 10.7,
+			"terms": {
+				"total": 40.25,
+				"guaranteed": 14.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "CIN",
@@ -3578,7 +4323,12 @@
 			"name": "Shemar Stewart",
 			"pos": "ED",
 			"apy": 4.7,
-			"cap": 4.3
+			"cap": 4.3,
+			"terms": {
+				"total": 18.969,
+				"guaranteed": 18.969,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
@@ -3657,28 +4407,48 @@
 			"name": "Andrei Iosivas",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 3.999,
+				"guaranteed": 0.159,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Joe Flacco",
 			"pos": "QB",
 			"apy": 6.0,
-			"cap": 3.3
+			"cap": 3.3,
+			"terms": {
+				"total": 6.0,
+				"guaranteed": 4.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Drew Sample",
 			"pos": "TE",
 			"apy": 3.5,
-			"cap": 2.9
+			"cap": 2.9,
+			"terms": {
+				"total": 10.5,
+				"guaranteed": 2.35,
+				"years": 3
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Oren Burks",
 			"pos": "LB",
 			"apy": 2.5,
-			"cap": 2.7
+			"cap": 2.7,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 0.75,
+				"years": 2
+			}
 		},
 		{
 			"team": "CIN",
@@ -3697,7 +4467,12 @@
 			"name": "Kris Jenkins Jr.",
 			"pos": "IDL",
 			"apy": 2.0,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 7.86,
+				"guaranteed": 5.48,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
@@ -3764,14 +4539,24 @@
 			"name": "Erick All",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.813,
+				"guaranteed": 0.793,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Kyle Dugger",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.075,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
@@ -3790,42 +4575,72 @@
 			"name": "D.J. Ivey",
 			"pos": "CB",
 			"apy": 0.98,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 3.921,
+				"guaranteed": 0.081,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Josh Newton",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.357,
+				"guaranteed": 0.337,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Connor Lew",
 			"pos": "C",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.444,
+				"guaranteed": 1.064,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Jalen Rivers",
 			"pos": "LT",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.621,
+				"guaranteed": 0.421,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Cedric Johnson",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.158,
+				"guaranteed": 0.138,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Colbie Young",
 			"pos": "WR",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.169,
+				"guaranteed": 0.789,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
@@ -3844,35 +4659,60 @@
 			"name": "Swayze Bozeman",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Tahj Brooks",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.431,
+				"guaranteed": 0.231,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "William Wagner",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.975,
+				"guaranteed": 0.01,
+				"years": 3
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Javon Foster",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "P.J. Jules",
 			"pos": "S",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
@@ -3886,14 +4726,24 @@
 			"name": "Jack Endries",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 0.928
+			"cap": 0.928,
+			"terms": {
+				"total": 4.551,
+				"guaranteed": 0.171,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Landon Robinson",
 			"pos": "DT",
 			"apy": 1.1,
-			"cap": 0.926
+			"cap": 0.926,
+			"terms": {
+				"total": 4.542,
+				"guaranteed": 0.162,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
@@ -3912,21 +4762,36 @@
 			"name": "Jacob Bayer",
 			"pos": "C",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Myles Hinton",
 			"pos": "LT",
 			"apy": 1.1,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 4.433,
+				"guaranteed": 0.233,
+				"years": 4
+			}
 		},
 		{
 			"team": "CIN",
 			"name": "Ja'Sir Taylor",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4053,14 +4918,24 @@
 			"name": "Jeremiah Owusu-Koramoah",
 			"pos": "LB",
 			"apy": 12.5,
-			"cap": 4.8
+			"cap": 4.8,
+			"terms": {
+				"total": 37.5,
+				"guaranteed": 20.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Alex Wright",
 			"pos": "ED",
 			"apy": 11.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 33.0,
+				"guaranteed": 12.305,
+				"years": 3
+			}
 		},
 		{
 			"team": "CLE",
@@ -4187,7 +5062,12 @@
 			"name": "Kalia Davis",
 			"pos": "IDL",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.745,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4218,7 +5098,12 @@
 			"name": "Zak Zinter",
 			"pos": "LG",
 			"apy": 1.4,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 5.735,
+				"guaranteed": 0.991,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
@@ -4237,14 +5122,24 @@
 			"name": "Emmanuel McNeil-Warren",
 			"pos": "FS",
 			"apy": 2.1,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 8.35,
+				"guaranteed": 6.527,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Dawand Jones",
 			"pos": "RT",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 1.145,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4263,14 +5158,24 @@
 			"name": "Dillon Gabriel",
 			"pos": "QB",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.226,
+				"guaranteed": 1.168,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Daniel Thomas",
 			"pos": "S",
 			"apy": 1.5,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 1.085,
+				"years": 2
+			}
 		},
 		{
 			"team": "CLE",
@@ -4289,7 +5194,12 @@
 			"name": "Tylan Wallace",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.125,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4308,7 +5218,12 @@
 			"name": "Luke Wypler",
 			"pos": "RG",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.02,
+				"guaranteed": 0.18,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
@@ -4327,14 +5242,24 @@
 			"name": "Blake Whiteheart",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Michael Burton",
 			"pos": "FB",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.4,
+				"guaranteed": 0.06,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4365,21 +5290,36 @@
 			"name": "Jaleel McLaughlin",
 			"pos": "RB",
 			"apy": 0.903,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Noah Igbinoghene",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Rex Sunahara",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4398,14 +5338,24 @@
 			"name": "Isaiah Bond",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 3.018,
+				"guaranteed": 3.018,
+				"years": 3
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Parker Brailsford",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.91,
+				"guaranteed": 0.53,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
@@ -4424,14 +5374,24 @@
 			"name": "Donovan McMillon",
 			"pos": "S",
 			"apy": 0.992,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.975,
+				"guaranteed": 0.21,
+				"years": 3
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Easton Mascarenas-Arnold",
 			"pos": "LB",
 			"apy": 0.992,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.975,
+				"guaranteed": 0.11,
+				"years": 3
+			}
 		},
 		{
 			"team": "CLE",
@@ -4450,7 +5410,12 @@
 			"name": "Winston Reid",
 			"pos": "LB",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
@@ -4469,42 +5434,72 @@
 			"name": "Taylen Green",
 			"pos": "QB",
 			"apy": 1.2,
-			"cap": 0.97
+			"cap": 0.97,
+			"terms": {
+				"total": 4.718,
+				"guaranteed": 0.338,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Carsen Ryan",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 0.915
+			"cap": 0.915,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 0.12,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Toriano Pride Jr.",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 4.556,
+				"guaranteed": 0.176,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Dylan Sampson",
 			"pos": "RB",
 			"apy": 1.3,
-			"cap": 0.798
+			"cap": 0.798,
+			"terms": {
+				"total": 5.131,
+				"guaranteed": 0.931,
+				"years": 4
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Damarri Mathis",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 0.59
+			"cap": 0.59,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "CLE",
 			"name": "Elijah Chatman",
 			"pos": "IDL",
 			"apy": 1.0,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 2.035,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "DAL",
@@ -4547,7 +5542,12 @@
 			"name": "Tyler Smith",
 			"pos": "LG",
 			"apy": 24.0,
-			"cap": 10.3
+			"cap": 10.3,
+			"terms": {
+				"total": 96.0,
+				"guaranteed": 41.661,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
@@ -4602,7 +5602,12 @@
 			"name": "Malik Hooker",
 			"pos": "S",
 			"apy": 5.0,
-			"cap": 6.6
+			"cap": 6.6,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 3.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
@@ -4681,7 +5686,12 @@
 			"name": "Jalen Thompson",
 			"pos": "S",
 			"apy": 11.0,
-			"cap": 4.6
+			"cap": 4.6,
+			"terms": {
+				"total": 33.0,
+				"guaranteed": 22.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "DAL",
@@ -4700,14 +5710,24 @@
 			"name": "Cobie Durant",
 			"pos": "CB",
 			"apy": 4.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 4.0,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "P.J. Locke",
 			"pos": "S",
 			"apy": 4.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 4.0,
+				"guaranteed": 3.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
@@ -4774,28 +5794,48 @@
 			"name": "Von Miller",
 			"pos": "ED",
 			"apy": 5.5,
-			"cap": 3.1
+			"cap": 3.1,
+			"terms": {
+				"total": 5.5,
+				"guaranteed": 3.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Hunter Luepke",
 			"pos": "RB",
 			"apy": 3.5,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 7.0,
+				"guaranteed": 5.03,
+				"years": 2
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Markquese Bell",
 			"pos": "S",
 			"apy": 3.0,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 9.0,
+				"guaranteed": 6.2,
+				"years": 3
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Sam Howell",
 			"pos": "QB",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 2.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
@@ -4826,28 +5866,48 @@
 			"name": "Luke Schoonmaker",
 			"pos": "TE",
 			"apy": 1.6,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 6.267,
+				"guaranteed": 3.342,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Jonathan Bullard",
 			"pos": "IDL",
 			"apy": 2.0,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Brevyn Spann-Ford",
 			"pos": "TE",
 			"apy": 0.95,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 18.0,
+				"guaranteed": 8.825,
+				"years": 3
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "DeMarvion Overshown",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 5.39,
+				"guaranteed": 0.92,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
@@ -4878,21 +5938,36 @@
 			"name": "Broderick Jones",
 			"pos": "LT",
 			"apy": 4.2,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 16.626,
+				"guaranteed": 16.626,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Marist Liufau",
 			"pos": "LB",
 			"apy": 1.4,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 5.692,
+				"guaranteed": 0.959,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Trent Sieg",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 4.45,
+				"guaranteed": 1.805,
+				"years": 3
+			}
 		},
 		{
 			"team": "DAL",
@@ -4911,14 +5986,24 @@
 			"name": "Matt Hennessy",
 			"pos": "C",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Tyrus Wheat",
 			"pos": "ED",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.245,
+				"guaranteed": 0.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
@@ -4944,42 +6029,72 @@
 			"name": "Drew Shelton",
 			"pos": "T",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.575,
+				"guaranteed": 1.195,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Jonathan Mingo",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "James Houston",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.175,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Ameer Speed",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.405,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Caelen Carson",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Shemar James",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.623,
+				"guaranteed": 0.423,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
@@ -4998,21 +6113,36 @@
 			"name": "Tyler Goodson",
 			"pos": "RB",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Nick Leverett",
 			"pos": "LG",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DAL",
 			"name": "Ajani Cornelius",
 			"pos": "RT",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.414,
+				"guaranteed": 0.214,
+				"years": 4
+			}
 		},
 		{
 			"team": "DAL",
@@ -5031,7 +6161,12 @@
 			"name": "Camden Brown",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 0.89
+			"cap": 0.89,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.105,
+				"years": 3
+			}
 		},
 		{
 			"team": "DEN",
@@ -5182,7 +6317,12 @@
 			"name": "Jarrett Stidham",
 			"pos": "QB",
 			"apy": 6.0,
-			"cap": 8.0
+			"cap": 8.0,
+			"terms": {
+				"total": 12.0,
+				"guaranteed": 6.99,
+				"years": 2
+			}
 		},
 		{
 			"team": "DEN",
@@ -5225,7 +6365,12 @@
 			"name": "Jonathon Cooper",
 			"pos": "ED",
 			"apy": 13.5,
-			"cap": 5.8
+			"cap": 5.8,
+			"terms": {
+				"total": 54.0,
+				"guaranteed": 16.731,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
@@ -5268,7 +6413,12 @@
 			"name": "Jahdae Barron",
 			"pos": "CB",
 			"apy": 4.5,
-			"cap": 4.1
+			"cap": 4.1,
+			"terms": {
+				"total": 18.073,
+				"guaranteed": 18.073,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
@@ -5299,7 +6449,12 @@
 			"name": "Adam Trautman",
 			"pos": "TE",
 			"apy": 5.7,
-			"cap": 3.3
+			"cap": 3.3,
+			"terms": {
+				"total": 17.0,
+				"guaranteed": 9.5,
+				"years": 3
+			}
 		},
 		{
 			"team": "DEN",
@@ -5318,7 +6473,12 @@
 			"name": "Alex Palczewski",
 			"pos": "LT",
 			"apy": 4.8,
-			"cap": 3.2
+			"cap": 3.2,
+			"terms": {
+				"total": 9.5,
+				"guaranteed": 5.575,
+				"years": 2
+			}
 		},
 		{
 			"team": "DEN",
@@ -5349,14 +6509,24 @@
 			"name": "Matt Peart",
 			"pos": "RT",
 			"apy": 2.0,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.755,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Sam Ehlinger",
 			"pos": "QB",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
@@ -5387,14 +6557,24 @@
 			"name": "Nate Adkins",
 			"pos": "TE",
 			"apy": 1.6,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 1.635,
+				"guaranteed": 0.3,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Tycen Anderson",
 			"pos": "S",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 0.65,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
@@ -5425,14 +6605,24 @@
 			"name": "Tyler Onyedim",
 			"pos": "DT",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.385,
+				"guaranteed": 1.831,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Troy Franklin",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.89,
+				"guaranteed": 0.855,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
@@ -5451,35 +6641,60 @@
 			"name": "J.L. Skinner",
 			"pos": "S",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.036,
+				"guaranteed": 0.196,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Jonah Coleman",
 			"pos": "RB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.614,
+				"guaranteed": 1.234,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Kage Casey",
 			"pos": "G",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.578,
+				"guaranteed": 1.198,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Alex Forsyth",
 			"pos": "C",
 			"apy": 0.979,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 3.918,
+				"guaranteed": 0.078,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Kris Abrams-Draine",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.368,
+				"guaranteed": 0.348,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
@@ -5498,35 +6713,60 @@
 			"name": "Devon Key",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Tyler Badie",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Jordan Jackson",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Dondrea Tillman",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Lil'Jordan Humphrey",
 			"pos": "WR",
 			"apy": 1.5,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DEN",
@@ -5545,28 +6785,48 @@
 			"name": "Karene Reid",
 			"pos": "LB",
 			"apy": 0.993,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.98,
+				"guaranteed": 0.249,
+				"years": 3
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Jordan Turner",
 			"pos": "LB",
 			"apy": 0.988,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.965,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Dallen Bentley",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 0.915
+			"cap": 0.915,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 0.12,
+				"years": 4
+			}
 		},
 		{
 			"team": "DEN",
 			"name": "Matt Henningsen",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 0.59
+			"cap": 0.59,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
@@ -5693,14 +6953,24 @@
 			"name": "Kerby Joseph",
 			"pos": "S",
 			"apy": 21.2,
-			"cap": 5.5
+			"cap": 5.5,
+			"terms": {
+				"total": 85.0,
+				"guaranteed": 23.121,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Larry Borom",
 			"pos": "RT",
 			"apy": 5.0,
-			"cap": 5.0
+			"cap": 5.0,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 4.9,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
@@ -5719,7 +6989,12 @@
 			"name": "Brock Wright",
 			"pos": "TE",
 			"apy": 4.0,
-			"cap": 4.7
+			"cap": 4.7,
+			"terms": {
+				"total": 12.0,
+				"guaranteed": 4.6,
+				"years": 3
+			}
 		},
 		{
 			"team": "DET",
@@ -5786,14 +7061,24 @@
 			"name": "Cade Mays",
 			"pos": "LG",
 			"apy": 8.3,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 25.0,
+				"guaranteed": 14.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Derrick Moore",
 			"pos": "OLB",
 			"apy": 2.9,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 11.427,
+				"guaranteed": 11.427,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
@@ -5812,14 +7097,24 @@
 			"name": "Isiah Pacheco",
 			"pos": "RB",
 			"apy": 1.8,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 1.81,
+				"guaranteed": 1.81,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Ennis Rakestraw",
 			"pos": "CB",
 			"apy": 1.6,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 6.485,
+				"guaranteed": 3.421,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
@@ -5838,7 +7133,12 @@
 			"name": "Khalil Dorsey",
 			"pos": "CB",
 			"apy": 1.6,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 3.3,
+				"guaranteed": 0.3,
+				"years": 2
+			}
 		},
 		{
 			"team": "DET",
@@ -5929,21 +7229,36 @@
 			"name": "Sione Vaki",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.549,
+				"guaranteed": 0.529,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Joshua Dobbs",
 			"pos": "QB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.425,
+				"guaranteed": 0.475,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Jimmy Rolder",
 			"pos": "ILB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.533,
+				"guaranteed": 1.153,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
@@ -5962,7 +7277,12 @@
 			"name": "Mekhi Wingo",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.207,
+				"guaranteed": 0.187,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
@@ -5981,35 +7301,60 @@
 			"name": "Miles Frazier",
 			"pos": "RG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.52,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Hogan Hatten",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.831,
+				"guaranteed": 0.001,
+				"years": 3
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Thomas Harper",
 			"pos": "CB",
 			"apy": 0.947,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.84,
+				"guaranteed": 0.03,
+				"years": 3
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Devin White",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Tyler Conklin",
 			"pos": "TE",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
@@ -6059,7 +7404,12 @@
 			"name": "Keith Abney II",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.879,
+				"guaranteed": 0.499,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
@@ -6078,14 +7428,24 @@
 			"name": "Tay Martin",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Ahmed Hassanein",
 			"pos": "ED",
 			"apy": 0.985,
-			"cap": 0.985
+			"cap": 0.985,
+			"terms": {
+				"total": 0.985,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
@@ -6104,14 +7464,24 @@
 			"name": "Eric O'Neill",
 			"pos": "DE",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.06,
+				"years": 3
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Jackson Meeks",
 			"pos": "WR",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
@@ -6130,21 +7500,36 @@
 			"name": "Payton Turner",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 0.59
+			"cap": 0.59,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Giovanni Manu",
 			"pos": "LT",
 			"apy": 1.2,
-			"cap": 0.429
+			"cap": 0.429,
+			"terms": {
+				"total": 4.746,
+				"guaranteed": 0.726,
+				"years": 4
+			}
 		},
 		{
 			"team": "DET",
 			"name": "Levi Onwuzurike",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 0.33
+			"cap": 0.33,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
@@ -6163,28 +7548,48 @@
 			"name": "Micah Parsons",
 			"pos": "ED",
 			"apy": 46.5,
-			"cap": 19.2
+			"cap": 19.2,
+			"terms": {
+				"total": 186.0,
+				"guaranteed": 120.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Josh Jacobs",
 			"pos": "RB",
 			"apy": 12.0,
-			"cap": 14.5
+			"cap": 14.5,
+			"terms": {
+				"total": 48.0,
+				"guaranteed": 12.5,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Aaron Banks",
 			"pos": "LG",
 			"apy": 19.2,
-			"cap": 12.0
+			"cap": 12.0,
+			"terms": {
+				"total": 77.0,
+				"guaranteed": 27.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Zach Bako-Bewele",
 			"pos": "T",
 			"apy": 22.0,
-			"cap": 11.8
+			"cap": 11.8,
+			"terms": {
+				"total": 88.0,
+				"guaranteed": 30.2,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
@@ -6275,7 +7680,12 @@
 			"name": "Jayden Reed",
 			"pos": "WR",
 			"apy": 16.8,
-			"cap": 6.8
+			"cap": 6.8,
+			"terms": {
+				"total": 50.25,
+				"guaranteed": 20.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "GB",
@@ -6306,7 +7716,12 @@
 			"name": "Isaiah McDuffie",
 			"pos": "LB",
 			"apy": 4.8,
-			"cap": 4.7
+			"cap": 4.7,
+			"terms": {
+				"total": 4.85,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
@@ -6349,21 +7764,36 @@
 			"name": "Carrington Valentine",
 			"pos": "CB",
 			"apy": 0.985,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 3.941,
+				"guaranteed": 0.101,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Benjamin St-Juste",
 			"pos": "CB",
 			"apy": 5.0,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 3.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Tyrod Taylor",
 			"pos": "QB",
 			"apy": 2.5,
-			"cap": 2.9
+			"cap": 2.9,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 0.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
@@ -6406,21 +7836,36 @@
 			"name": "Nick Niemann",
 			"pos": "LB",
 			"apy": 2.2,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 2.25,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Jonnu Smith",
 			"pos": "TE",
 			"apy": 12.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.35,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Josh Whyle",
 			"pos": "TE",
 			"apy": 2.0,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.37,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
@@ -6487,14 +7932,24 @@
 			"name": "Ty'Ron Hopper",
 			"pos": "LB",
 			"apy": 1.4,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 5.678,
+				"guaranteed": 0.949,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Matt Orzech",
 			"pos": "LS",
 			"apy": 1.6,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 4.83,
+				"guaranteed": 0.75,
+				"years": 3
+			}
 		},
 		{
 			"team": "GB",
@@ -6597,7 +8052,12 @@
 			"name": "Kitan Oladapo",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
@@ -6616,7 +8076,12 @@
 			"name": "Travis Glover",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.191,
+				"guaranteed": 0.171,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
@@ -6635,7 +8100,12 @@
 			"name": "Warren Brinson",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.426,
+				"guaranteed": 0.226,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
@@ -6654,21 +8124,36 @@
 			"name": "Jager Burton",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.884,
+				"guaranteed": 0.504,
+				"years": 4
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Kamal Hadden",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Donovan Jennings",
 			"pos": "RT",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
@@ -6687,28 +8172,48 @@
 			"name": "J. Michael Sturdivant",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 0.89
+			"cap": 0.89,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.215,
+				"years": 3
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Anthony Campbell",
 			"pos": "IDL",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Mark Redman",
 			"pos": "TE",
 			"apy": 0.968,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 1.935,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "GB",
 			"name": "Collin Oliver",
 			"pos": "ED",
 			"apy": 1.2,
-			"cap": 0.641
+			"cap": 0.641,
+			"terms": {
+				"total": 4.604,
+				"guaranteed": 0.404,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -6799,7 +8304,12 @@
 			"name": "Davis Mills",
 			"pos": "QB",
 			"apy": 7.0,
-			"cap": 8.1
+			"cap": 8.1,
+			"terms": {
+				"total": 7.0,
+				"guaranteed": 10.25,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
@@ -6830,7 +8340,12 @@
 			"name": "Jadeveon Clowney",
 			"pos": "ED",
 			"apy": 5.5,
-			"cap": 5.3
+			"cap": 5.3,
+			"terms": {
+				"total": 5.5,
+				"guaranteed": 4.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
@@ -6897,7 +8412,12 @@
 			"name": "E.J. Speed",
 			"pos": "LB",
 			"apy": 5.0,
-			"cap": 4.0
+			"cap": 4.0,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 7.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "HOU",
@@ -6916,7 +8436,12 @@
 			"name": "Jake Andrews",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 4.648,
+				"guaranteed": 0.808,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -6935,7 +8460,12 @@
 			"name": "Wyatt Teller",
 			"pos": "G",
 			"apy": 8.0,
-			"cap": 3.6
+			"cap": 3.6,
+			"terms": {
+				"total": 16.0,
+				"guaranteed": 8.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "HOU",
@@ -6966,7 +8496,12 @@
 			"name": "Henry To'oTo'o",
 			"pos": "LB",
 			"apy": 8.0,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 16.0,
+				"guaranteed": 12.424,
+				"years": 2
+			}
 		},
 		{
 			"team": "HOU",
@@ -6997,7 +8532,12 @@
 			"name": "Jayden Higgins",
 			"pos": "WR",
 			"apy": 2.9,
-			"cap": 2.7
+			"cap": 2.7,
+			"terms": {
+				"total": 11.701,
+				"guaranteed": 11.701,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -7028,7 +8568,12 @@
 			"name": "M.J. Stewart",
 			"pos": "S",
 			"apy": 2.7,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 2.7,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
@@ -7083,28 +8628,48 @@
 			"name": "Jake Hummel",
 			"pos": "LB",
 			"apy": 2.4,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 4.75,
+				"guaranteed": 2.15,
+				"years": 2
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Tank Dell",
 			"pos": "WR",
 			"apy": 1.7,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.195,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Dominique Robinson",
 			"pos": "ED",
 			"apy": 2.0,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 2.025,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Blake Fisher",
 			"pos": "RT",
 			"apy": 1.6,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 6.595,
+				"guaranteed": 3.562,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -7123,14 +8688,24 @@
 			"name": "Marlin Klein",
 			"pos": "TE",
 			"apy": 2.0,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 8.185,
+				"guaranteed": 6.244,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Mario Edwards Jr.",
 			"pos": "IDL",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.488,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
@@ -7161,7 +8736,12 @@
 			"name": "Cade Stover",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.739,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -7180,63 +8760,108 @@
 			"name": "Febechi Nwaiwu",
 			"pos": "G",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.625,
+				"guaranteed": 1.245,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Brevin Jordan",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.17,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Wade Woodaz",
 			"pos": "OLB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.483,
+				"guaranteed": 1.103,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "British Brooks",
 			"pos": "RB",
 			"apy": 0.948,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.845,
+				"guaranteed": 0.24,
+				"years": 3
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Jaden Crumedy",
 			"pos": "IDL",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Kamari Ramsey",
 			"pos": "FS",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.946,
+				"guaranteed": 0.566,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Jamal Hill",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Austin Brinkman",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.975,
+				"guaranteed": 0.11,
+				"years": 3
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Jared Wayne",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "HOU",
@@ -7255,35 +8880,60 @@
 			"name": "Nathan Thomas",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.126,
+				"guaranteed": 0.106,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Aiden Fisher",
 			"pos": "ILB",
 			"apy": 1.1,
-			"cap": 0.917
+			"cap": 0.917,
+			"terms": {
+				"total": 4.508,
+				"guaranteed": 0.128,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Collin Wright",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.893
+			"cap": 0.893,
+			"terms": {
+				"total": 3.125,
+				"guaranteed": 0.263,
+				"years": 3
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Sabastian Harsh",
 			"pos": "DE",
 			"apy": 1.0,
-			"cap": 0.89
+			"cap": 0.89,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.165,
+				"years": 3
+			}
 		},
 		{
 			"team": "HOU",
 			"name": "Graham Mertz",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.597
+			"cap": 0.597,
+			"terms": {
+				"total": 4.428,
+				"guaranteed": 0.228,
+				"years": 4
+			}
 		},
 		{
 			"team": "HOU",
@@ -7302,7 +8952,12 @@
 			"name": "Ali Gaye",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 2.035,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "IND",
@@ -7393,7 +9048,12 @@
 			"name": "Anthony Richardson",
 			"pos": "QB",
 			"apy": 8.5,
-			"cap": 10.8
+			"cap": 10.8,
+			"terms": {
+				"total": 33.994,
+				"guaranteed": 33.994,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
@@ -7424,7 +9084,12 @@
 			"name": "Alec Pierce",
 			"pos": "WR",
 			"apy": 28.5,
-			"cap": 9.2
+			"cap": 9.2,
+			"terms": {
+				"total": 114.0,
+				"guaranteed": 60.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
@@ -7467,7 +9132,12 @@
 			"name": "Micheal Clemons",
 			"pos": "ED",
 			"apy": 5.7,
-			"cap": 4.5
+			"cap": 4.5,
+			"terms": {
+				"total": 17.0,
+				"guaranteed": 5.99,
+				"years": 3
+			}
 		},
 		{
 			"team": "IND",
@@ -7486,7 +9156,12 @@
 			"name": "Ashton Dulin",
 			"pos": "WR",
 			"apy": 3.2,
-			"cap": 3.6
+			"cap": 3.6,
+			"terms": {
+				"total": 6.5,
+				"guaranteed": 2.94,
+				"years": 2
+			}
 		},
 		{
 			"team": "IND",
@@ -7541,7 +9216,12 @@
 			"name": "Andrew Ogletree",
 			"pos": "TE",
 			"apy": 2.2,
-			"cap": 2.2
+			"cap": 2.2,
+			"terms": {
+				"total": 2.25,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
@@ -7560,7 +9240,12 @@
 			"name": "Luke Rhodes",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 6.465,
+				"guaranteed": 2.5,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
@@ -7579,7 +9264,12 @@
 			"name": "Mo Alie-Cox",
 			"pos": "TE",
 			"apy": 2.7,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 2.688,
+				"guaranteed": 2.188,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
@@ -7670,7 +9360,12 @@
 			"name": "Jonathan Owens",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.188,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
@@ -7689,21 +9384,36 @@
 			"name": "Cameron Mitchell",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.22,
+				"guaranteed": 0.025,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Cam Taylor-Britt",
 			"pos": "CB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.688,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Jalen Farmer",
 			"pos": "G",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.571,
+				"guaranteed": 1.191,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
@@ -7722,21 +9432,36 @@
 			"name": "Luke Tenuta",
 			"pos": "LT",
 			"apy": 0.96,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.155,
+				"guaranteed": 0.3,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
 			"name": "DJ Giddens",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.625,
+				"guaranteed": 0.425,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Dalton Tucker",
 			"pos": "RG",
 			"apy": 0.957,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.87,
+				"guaranteed": 0.24,
+				"years": 3
+			}
 		},
 		{
 			"team": "IND",
@@ -7755,35 +9480,60 @@
 			"name": "Sedrick Van Pran-Granger",
 			"pos": "C",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.375,
+				"guaranteed": 0.355,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Riley Leonard",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.435,
+				"guaranteed": 0.235,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "George Gumbs",
 			"pos": null,
 			"apy": null,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.882,
+				"guaranteed": 0.502,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Austin Ajiake",
 			"pos": "LB",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Caden Curry",
 			"pos": "DE",
 			"apy": 1.1,
-			"cap": 0.937
+			"cap": 0.937,
+			"terms": {
+				"total": 4.587,
+				"guaranteed": 0.207,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
@@ -7802,42 +9552,72 @@
 			"name": "Hunter Wohler",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 0.918
+			"cap": 0.918,
+			"terms": {
+				"total": 4.331,
+				"guaranteed": 0.131,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Deion Burks",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 0.915
+			"cap": 0.915,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 0.12,
+				"years": 4
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Tahj Chambers",
 			"pos": "ILB",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.02,
+				"years": 3
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Tim Smith",
 			"pos": "IDL",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "IND",
 			"name": "Kapena Gushiken",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.125,
+				"guaranteed": 0.273,
+				"years": 3
+			}
 		},
 		{
 			"team": "IND",
 			"name": "D.J. Montgomery",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
@@ -7928,14 +9708,24 @@
 			"name": "Travis Hunter",
 			"pos": "WR",
 			"apy": 11.7,
-			"cap": 10.6
+			"cap": 10.6,
+			"terms": {
+				"total": 46.649,
+				"guaranteed": 46.649,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Patrick Mekari",
 			"pos": "RG",
 			"apy": 12.5,
-			"cap": 7.4
+			"cap": 7.4,
+			"terms": {
+				"total": 37.5,
+				"guaranteed": 20.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "JAX",
@@ -8002,7 +9792,12 @@
 			"name": "Eric Murray",
 			"pos": "S",
 			"apy": 6.5,
-			"cap": 4.2
+			"cap": 4.2,
+			"terms": {
+				"total": 19.5,
+				"guaranteed": 10.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "JAX",
@@ -8117,7 +9912,12 @@
 			"name": "Quintin Morris",
 			"pos": "TE",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
@@ -8136,14 +9936,24 @@
 			"name": "Ross Matiscik",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 3.8,
+				"guaranteed": 3.425,
+				"years": 2
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Nate Boerkircher",
 			"pos": "TE",
 			"apy": 2.1,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 8.539,
+				"guaranteed": 6.738,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
@@ -8162,14 +9972,24 @@
 			"name": "Caleb Ransaw",
 			"pos": "S",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.281,
+				"guaranteed": 1.208,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Wyatt Milum",
 			"pos": "LT",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.277,
+				"guaranteed": 1.205,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
@@ -8200,7 +10020,12 @@
 			"name": "Albert Regis",
 			"pos": "DT",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.002,
+				"guaranteed": 1.552,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
@@ -8219,21 +10044,36 @@
 			"name": "Matt Dickerson",
 			"pos": "IDL",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.45,
+				"guaranteed": 0.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Jalen Huskey",
 			"pos": "FS",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.694,
+				"guaranteed": 1.328,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Wesley Williams",
 			"pos": "DE",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.522,
+				"guaranteed": 1.142,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
@@ -8247,7 +10087,12 @@
 			"name": "Jahlani Tavai",
 			"pos": "LB",
 			"apy": 1.4,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.35,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
@@ -8278,56 +10123,96 @@
 			"name": "Daniel Faalele",
 			"pos": "RG",
 			"apy": 1.4,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.688,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Rayuan Lane III",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.422,
+				"guaranteed": 0.222,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Jonah Monheim",
 			"pos": "C",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.344,
+				"guaranteed": 0.144,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "LeQuint Allen",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.319,
+				"guaranteed": 0.119,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Danny Striggow",
 			"pos": "ED",
 			"apy": 0.995,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.985,
+				"guaranteed": 0.254,
+				"years": 3
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Branson Combs",
 			"pos": "LB",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Quinn Ewers",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.332,
+				"guaranteed": 0.132,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Tanner Koziol",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.857,
+				"guaranteed": 0.477,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
@@ -8346,14 +10231,24 @@
 			"name": "C.J. Williams",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 0.952
+			"cap": 0.952,
+			"terms": {
+				"total": 4.648,
+				"guaranteed": 0.268,
+				"years": 4
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Jack Kiser",
 			"pos": "LB",
 			"apy": 1.3,
-			"cap": 0.949
+			"cap": 0.949,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "JAX",
@@ -8372,14 +10267,24 @@
 			"name": "B.J. Green II",
 			"pos": "IDL",
 			"apy": 0.989,
-			"cap": 0.567
+			"cap": 0.567,
+			"terms": {
+				"total": 2.967,
+				"guaranteed": 0.083,
+				"years": 3
+			}
 		},
 		{
 			"team": "JAX",
 			"name": "Sam Mustipher",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
@@ -8446,7 +10351,12 @@
 			"name": "Kristian Fulton",
 			"pos": "CB",
 			"apy": 10.0,
-			"cap": 13.0
+			"cap": 13.0,
+			"terms": {
+				"total": 20.0,
+				"guaranteed": 15.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "KC",
@@ -8501,7 +10411,12 @@
 			"name": "Noah Gray",
 			"pos": "TE",
 			"apy": 6.0,
-			"cap": 7.0
+			"cap": 7.0,
+			"terms": {
+				"total": 18.0,
+				"guaranteed": 10.016,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
@@ -8544,7 +10459,12 @@
 			"name": "Chamarri Conner",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 4.591,
+				"guaranteed": 0.751,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
@@ -8599,7 +10519,12 @@
 			"name": "Josh Simmons",
 			"pos": "LT",
 			"apy": 3.7,
-			"cap": 3.3
+			"cap": 3.3,
+			"terms": {
+				"total": 14.675,
+				"guaranteed": 14.675,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
@@ -8630,7 +10555,12 @@
 			"name": "Justin Fields",
 			"pos": "QB",
 			"apy": 11.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 11.0,
+				"guaranteed": 11.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
@@ -8673,14 +10603,24 @@
 			"name": "James Winchester",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 1.7,
+				"guaranteed": 1.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Omarr Norman-Lott",
 			"pos": "IDL",
 			"apy": 1.8,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 7.2,
+				"guaranteed": 4.317,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
@@ -8723,21 +10663,36 @@
 			"name": "Mike Caliendo",
 			"pos": "LG",
 			"apy": 1.4,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.35,
+				"guaranteed": 0.65,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Jared Wiley",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.709,
+				"guaranteed": 0.689,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Jalen Royals",
 			"pos": "WR",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.067,
+				"guaranteed": 0.867,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
@@ -8768,35 +10723,60 @@
 			"name": "Jadon Canady",
 			"pos": "CB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.607,
+				"guaranteed": 1.227,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Hunter Nourzad",
 			"pos": "C",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.34,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Joshua Ezeudu",
 			"pos": "LT",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.41,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Jeffrey Bassa",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.614,
+				"guaranteed": 0.414,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Christian Roland-Wallace",
 			"pos": "CB",
 			"apy": 0.945,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.835,
+				"guaranteed": 0.155,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
@@ -8839,49 +10819,84 @@
 			"name": "Ben VanSumeren",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Emmett Johnson",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.866,
+				"guaranteed": 0.486,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Cyrus Allen",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 0.98
+			"cap": 0.98,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.379,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Garrett Nussmeier",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.915
+			"cap": 0.915,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 0.12,
+				"years": 4
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Jake Briningstool",
 			"pos": "TE",
 			"apy": 0.998,
-			"cap": 0.895
+			"cap": 0.895,
+			"terms": {
+				"total": 2.995,
+				"guaranteed": 0.264,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Xavier Nwankpa",
 			"pos": "FS",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.268,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Jack Pyburn",
 			"pos": "OLB",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.115,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
@@ -8900,21 +10915,36 @@
 			"name": "Bryson Eason",
 			"pos": "DT",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.125,
+				"guaranteed": 0.273,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Diego Pounds",
 			"pos": "T",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.125,
+				"guaranteed": 0.04,
+				"years": 3
+			}
 		},
 		{
 			"team": "KC",
 			"name": "Cooper McDonald",
 			"pos": "LB",
 			"apy": 0.988,
-			"cap": 0.566
+			"cap": 0.566,
+			"terms": {
+				"total": 2.965,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
@@ -8981,21 +11011,36 @@
 			"name": "Donte Jackson",
 			"pos": "CB",
 			"apy": 6.5,
-			"cap": 8.5
+			"cap": 8.5,
+			"terms": {
+				"total": 13.0,
+				"guaranteed": 7.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Elijah Molden",
 			"pos": "S",
 			"apy": 6.2,
-			"cap": 7.9
+			"cap": 7.9,
+			"terms": {
+				"total": 18.75,
+				"guaranteed": 11.625,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Dalvin Tomlinson",
 			"pos": "IDL",
 			"apy": 6.5,
-			"cap": 6.8
+			"cap": 6.8,
+			"terms": {
+				"total": 6.5,
+				"guaranteed": 5.69,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9062,14 +11107,24 @@
 			"name": "Charlie Kolar",
 			"pos": "TE",
 			"apy": 8.1,
-			"cap": 4.3
+			"cap": 4.3,
+			"terms": {
+				"total": 24.3,
+				"guaranteed": 17.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Tyler Biadasz",
 			"pos": "C",
 			"apy": 10.0,
-			"cap": 4.2
+			"cap": 4.2,
+			"terms": {
+				"total": 30.0,
+				"guaranteed": 15.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
@@ -9100,14 +11155,24 @@
 			"name": "Trey Pipkins",
 			"pos": "RT",
 			"apy": 5.0,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 4.575,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Bud Dupree",
 			"pos": "ED",
 			"apy": 4.0,
-			"cap": 3.7
+			"cap": 3.7,
+			"terms": {
+				"total": 4.005,
+				"guaranteed": 2.495,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9150,7 +11215,12 @@
 			"name": "Alec Ingold",
 			"pos": "FB",
 			"apy": 3.8,
-			"cap": 3.3
+			"cap": 3.3,
+			"terms": {
+				"total": 7.5,
+				"guaranteed": 3.56,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAC",
@@ -9169,7 +11239,12 @@
 			"name": "David Njoku",
 			"pos": "TE",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 0.85,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9200,7 +11275,12 @@
 			"name": "Trey Lance",
 			"pos": "QB",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 2.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9219,7 +11299,12 @@
 			"name": "Denzel Perryman",
 			"pos": "LB",
 			"apy": 2.8,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 2.79,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9250,7 +11335,12 @@
 			"name": "Tony Jefferson",
 			"pos": "S",
 			"apy": 1.5,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 1.4,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9293,7 +11383,12 @@
 			"name": "Deane Leonard",
 			"pos": "CB",
 			"apy": 2.0,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.215,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9324,14 +11419,24 @@
 			"name": "Brenen Thompson",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.632,
+				"guaranteed": 1.252,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Travis Burke",
 			"pos": "T",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.544,
+				"guaranteed": 1.164,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
@@ -9362,7 +11467,12 @@
 			"name": "Genesis Smith",
 			"pos": "SS",
 			"apy": 1.4,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.408,
+				"guaranteed": 1.028,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
@@ -9381,7 +11491,12 @@
 			"name": "Kendall Williamson",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAC",
@@ -9400,35 +11515,60 @@
 			"name": "R.J. Mickens",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.374,
+				"guaranteed": 0.174,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Nick Barrett",
 			"pos": "DT",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.923,
+				"guaranteed": 0.543,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Marlowe Wax",
 			"pos": "LB",
 			"apy": 0.989,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.968,
+				"guaranteed": 0.003,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Logan Taylor",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 0.953
+			"cap": 0.953,
+			"terms": {
+				"total": 4.651,
+				"guaranteed": 0.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Alex Harkey",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 0.95
+			"cap": 0.95,
+			"terms": {
+				"total": 4.64,
+				"guaranteed": 0.26,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAC",
@@ -9442,21 +11582,36 @@
 			"name": "Jacob Spomer",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.01,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "Rodney Shelley",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.887
+			"cap": 0.887,
+			"terms": {
+				"total": 3.105,
+				"guaranteed": 0.005,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAC",
 			"name": "KeAndre Lambert-Smith",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 0.668
+			"cap": 0.668,
+			"terms": {
+				"total": 4.608,
+				"guaranteed": 0.408,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9559,14 +11714,24 @@
 			"name": "Colby Parkinson",
 			"pos": "TE",
 			"apy": 7.5,
-			"cap": 9.1
+			"cap": 9.1,
+			"terms": {
+				"total": 22.5,
+				"guaranteed": 10.25,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Myles Garrett",
 			"pos": "ED",
 			"apy": 40.0,
-			"cap": 8.4
+			"cap": 8.4,
+			"terms": {
+				"total": 160.0,
+				"guaranteed": 88.8,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9645,7 +11810,12 @@
 			"name": "Aaron Donald",
 			"pos": "DT",
 			"apy": 20.0,
-			"cap": 5.8
+			"cap": 5.8,
+			"terms": {
+				"total": 20.0,
+				"guaranteed": 10.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
@@ -9664,7 +11834,12 @@
 			"name": "Ty Simpson",
 			"pos": "QB",
 			"apy": 6.4,
-			"cap": 4.6
+			"cap": 4.6,
+			"terms": {
+				"total": 25.412,
+				"guaranteed": 25.412,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9695,7 +11870,12 @@
 			"name": "Emmanuel Forbes",
 			"pos": "CB",
 			"apy": 3.9,
-			"cap": 2.9
+			"cap": 2.9,
+			"terms": {
+				"total": 15.408,
+				"guaranteed": 15.408,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9726,14 +11906,24 @@
 			"name": "Grant Stuard",
 			"pos": "LB",
 			"apy": 2.2,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 4.45,
+				"guaranteed": 1.8,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Joe Cardona",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 3.45,
+				"guaranteed": 2.05,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAR",
@@ -9752,21 +11942,36 @@
 			"name": "Kamren Kinchens",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 5.596,
+				"guaranteed": 0.89,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "David Quessenberry",
 			"pos": "RT",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Max Klare",
 			"pos": "TE",
 			"apy": 2.0,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 8.02,
+				"guaranteed": 5.977,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9785,21 +11990,36 @@
 			"name": "Stetson Bennett",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.539,
+				"guaranteed": 0.699,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Warren McClendon",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.085,
+				"guaranteed": 0.245,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Davis Allen",
 			"pos": "TE",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.085,
+				"guaranteed": 0.245,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9818,7 +12038,12 @@
 			"name": "Desjuan Johnson",
 			"pos": "IDL",
 			"apy": 0.979,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 3.918,
+				"guaranteed": 0.078,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
@@ -9837,35 +12062,60 @@
 			"name": "Ty Hamilton",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.639,
+				"guaranteed": 0.439,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Jordan Whittington",
 			"pos": "WR",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.158,
+				"guaranteed": 0.138,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Beaux Limmer",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.158,
+				"guaranteed": 0.138,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Josh Wallace",
 			"pos": "CB",
 			"apy": 0.963,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.89,
+				"guaranteed": 0.06,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Jaylen McCollough",
 			"pos": "S",
 			"apy": 0.948,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.845,
+				"guaranteed": 0.015,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAR",
@@ -9884,21 +12134,36 @@
 			"name": "Ronnie Rivers",
 			"pos": "RB",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.251,
+				"guaranteed": 0.33,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Tutu Atwell",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.075,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Bill Murray",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
@@ -9912,7 +12177,12 @@
 			"name": "Justin Dedich",
 			"pos": "C",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LAR",
@@ -9931,14 +12201,24 @@
 			"name": "Shaun Dolac",
 			"pos": "LB",
 			"apy": 0.997,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.99,
+				"guaranteed": 0.025,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Dylan McMahon",
 			"pos": "C",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "LAR",
@@ -9957,21 +12237,36 @@
 			"name": "C.J. Daniels",
 			"pos": null,
 			"apy": null,
-			"cap": 0.954
+			"cap": 0.954,
+			"terms": {
+				"total": 4.655,
+				"guaranteed": 0.275,
+				"years": 4
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Wesley Bailey",
 			"pos": "OLB",
 			"apy": 1.0,
-			"cap": 0.897
+			"cap": 0.897,
+			"terms": {
+				"total": 3.135,
+				"guaranteed": 0.035,
+				"years": 3
+			}
 		},
 		{
 			"team": "LAR",
 			"name": "Keir Thomas",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LV",
@@ -10076,7 +12371,12 @@
 			"name": "Jeremy Chinn",
 			"pos": "S",
 			"apy": 8.1,
-			"cap": 9.6
+			"cap": 9.6,
+			"terms": {
+				"total": 16.258,
+				"guaranteed": 12.25,
+				"years": 2
+			}
 		},
 		{
 			"team": "LV",
@@ -10209,7 +12509,12 @@
 			"name": "Isaiah Pola-Mao",
 			"pos": "S",
 			"apy": 3.7,
-			"cap": 4.9
+			"cap": 4.9,
+			"terms": {
+				"total": 7.45,
+				"guaranteed": 3.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "LV",
@@ -10228,7 +12533,12 @@
 			"name": "Jalen Nailor",
 			"pos": "WR",
 			"apy": 11.7,
-			"cap": 4.6
+			"cap": 4.6,
+			"terms": {
+				"total": 35.03,
+				"guaranteed": 18.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "LV",
@@ -10247,7 +12557,12 @@
 			"name": "Aidan O'Connell",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 4.349,
+				"guaranteed": 0.509,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10326,21 +12641,36 @@
 			"name": "Connor Heyward",
 			"pos": "TE",
 			"apy": 2.2,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 2.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Jack Bech",
 			"pos": "WR",
 			"apy": 1.9,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 7.559,
+				"guaranteed": 5.077,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Ian Thomas",
 			"pos": "TE",
 			"apy": 1.6,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 1.615,
+				"guaranteed": 0.613,
+				"years": 1
+			}
 		},
 		{
 			"team": "LV",
@@ -10359,21 +12689,36 @@
 			"name": "Darien Porter",
 			"pos": "CB",
 			"apy": 1.7,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 6.724,
+				"guaranteed": 1.53,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Caleb Rogers",
 			"pos": "RT",
 			"apy": 1.5,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.161,
+				"guaranteed": 1.121,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Charles Grant",
 			"pos": "LT",
 			"apy": 1.5,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.161,
+				"guaranteed": 1.121,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10392,14 +12737,24 @@
 			"name": "Trey Zuhn III",
 			"pos": "C",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.827,
+				"guaranteed": 1.425,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Jermod McCoy",
 			"pos": "CB",
 			"apy": 1.5,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.81,
+				"guaranteed": 1.305,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10430,35 +12785,60 @@
 			"name": "Segun Olubi",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.16,
+				"guaranteed": 0.015,
+				"years": 1
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Tommy Eichenberg",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.358,
+				"guaranteed": 0.338,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Alex Ward",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Tristin McCollum",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Darrell Luter Jr.",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.154,
+				"guaranteed": 0.314,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10477,14 +12857,24 @@
 			"name": "Jonah Laulu",
 			"pos": "IDL",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.125,
+				"guaranteed": 0.105,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Brennan Jackson",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.349,
+				"guaranteed": 0.329,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10515,14 +12905,24 @@
 			"name": "JJ Pegues",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.467,
+				"guaranteed": 0.267,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
 			"name": "Cody Lindenberg",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.341,
+				"guaranteed": 0.141,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10541,7 +12941,12 @@
 			"name": "Bryce Cabeldue",
 			"pos": "RT",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.432,
+				"guaranteed": 0.232,
+				"years": 4
+			}
 		},
 		{
 			"team": "LV",
@@ -10572,7 +12977,12 @@
 			"name": "Dont'e Thornton Jr.",
 			"pos": "WR",
 			"apy": 1.3,
-			"cap": 0.803
+			"cap": 0.803,
+			"terms": {
+				"total": 5.251,
+				"guaranteed": 1.051,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
@@ -10639,7 +13049,12 @@
 			"name": "Kenneth Grant",
 			"pos": "IDL",
 			"apy": 5.5,
-			"cap": 5.0
+			"cap": 5.0,
+			"terms": {
+				"total": 21.956,
+				"guaranteed": 21.956,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
@@ -10742,14 +13157,24 @@
 			"name": "Caedan Wallace",
 			"pos": "LT",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 6.043,
+				"guaranteed": 1.215,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Caleb Douglas",
 			"pos": "WR",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.168,
+				"guaranteed": 1.673,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
@@ -10792,7 +13217,12 @@
 			"name": "Zayne Anderson",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.752,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
@@ -10811,7 +13241,12 @@
 			"name": "Jalen Tolbert",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
@@ -10830,21 +13265,36 @@
 			"name": "Darrell Baker Jr.",
 			"pos": "CB",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Will Kacmarek",
 			"pos": "TE",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.849,
+				"guaranteed": 1.441,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Julius Brents",
 			"pos": "CB",
 			"apy": 2.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 8.197,
+				"guaranteed": 5.976,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
@@ -10863,21 +13313,36 @@
 			"name": "Robert Beal Jr.",
 			"pos": "ED",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.195,
+				"guaranteed": 0.05,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Ronnie Harrison",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.4,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Tucker Addington",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
@@ -10920,7 +13385,12 @@
 			"name": "Dante Trader Jr.",
 			"pos": "S",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.615,
+				"guaranteed": 0.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
@@ -10939,21 +13409,36 @@
 			"name": "Jarrett Kingston",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.1,
+				"guaranteed": 0.015,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Marcellas Dial",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.232,
+				"guaranteed": 0.212,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Ryan Miller",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
@@ -10984,7 +13469,12 @@
 			"name": "Andrew Meyer",
 			"pos": "C",
 			"apy": 0.948,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.845,
+				"guaranteed": 0.09,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIA",
@@ -11003,28 +13493,48 @@
 			"name": "Jackson Woodard",
 			"pos": "LB",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Chukwuebuka Godrick",
 			"pos": "RT",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Julius Wood",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Reese Taylor",
 			"pos": "CB",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIA",
@@ -11050,21 +13560,36 @@
 			"name": "Seydou Traore",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 0.98
+			"cap": 0.98,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.379,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "D.J. Campbell",
 			"pos": null,
 			"apy": null,
-			"cap": 0.953
+			"cap": 0.953,
+			"terms": {
+				"total": 4.653,
+				"guaranteed": 0.273,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Jaylin Simpson",
 			"pos": "S",
 			"apy": 1.0,
-			"cap": 0.949
+			"cap": 0.949,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIA",
@@ -11078,21 +13603,36 @@
 			"name": "Kyle McCord",
 			"pos": "QB",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "D.J. Herman",
 			"pos": null,
 			"apy": null,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.1,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIA",
 			"name": "Justin Joly",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 4.886,
+				"guaranteed": 0.506,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11183,14 +13723,24 @@
 			"name": "Josh Oliver",
 			"pos": "TE",
 			"apy": 7.8,
-			"cap": 9.9
+			"cap": 9.9,
+			"terms": {
+				"total": 23.25,
+				"guaranteed": 15.645,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Jauan Jennings",
 			"pos": "WR",
 			"apy": 8.0,
-			"cap": 9.5
+			"cap": 9.5,
+			"terms": {
+				"total": 8.0,
+				"guaranteed": 6.13,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
@@ -11233,7 +13783,12 @@
 			"name": "J.J. McCarthy",
 			"pos": "QB",
 			"apy": 5.5,
-			"cap": 6.0
+			"cap": 6.0,
+			"terms": {
+				"total": 21.855,
+				"guaranteed": 21.855,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11252,7 +13807,12 @@
 			"name": "Jordan Mason",
 			"pos": "RB",
 			"apy": 5.2,
-			"cap": 5.8
+			"cap": 5.8,
+			"terms": {
+				"total": 10.5,
+				"guaranteed": 7.23,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIN",
@@ -11295,7 +13855,12 @@
 			"name": "Ryan Van Demark",
 			"pos": "RT",
 			"apy": 4.3,
-			"cap": 4.3
+			"cap": 4.3,
+			"terms": {
+				"total": 4.27,
+				"guaranteed": 4.145,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
@@ -11326,21 +13891,36 @@
 			"name": "Caleb Banks",
 			"pos": "DE",
 			"apy": 5.3,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 21.282,
+				"guaranteed": 21.282,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Ivan Pace Jr.",
 			"pos": "LB",
 			"apy": 3.5,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 3.52,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Harrison Smith",
 			"pos": "S",
 			"apy": 10.2,
-			"cap": 3.4
+			"cap": 3.4,
+			"terms": {
+				"total": 12.25,
+				"guaranteed": 6.95,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
@@ -11383,28 +13963,48 @@
 			"name": "Jake Golday",
 			"pos": "ILB",
 			"apy": 2.4,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 9.601,
+				"guaranteed": 8.394,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Andrew DePaola",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.725,
+				"guaranteed": 1.725,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Tai Felton",
 			"pos": "WR",
 			"apy": 1.5,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.161,
+				"guaranteed": 1.121,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Jay Ward",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.494,
+				"guaranteed": 0.654,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11423,21 +14023,36 @@
 			"name": "Domonique Orange",
 			"pos": "NT",
 			"apy": 1.7,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 6.983,
+				"guaranteed": 1.538,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Jakobe Thomas",
 			"pos": "SS",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.694,
+				"guaranteed": 1.328,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Caleb Tiernan",
 			"pos": "T",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.694,
+				"guaranteed": 1.328,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11468,7 +14083,12 @@
 			"name": "Michael Jurgens",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.129,
+				"guaranteed": 0.109,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11487,14 +14107,24 @@
 			"name": "Trevor Keegan",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Nick Samac",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.035,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIN",
@@ -11513,42 +14143,72 @@
 			"name": "Bo Richter",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Gavin Bartholomew",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.416,
+				"guaranteed": 0.216,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "DeeJay Dallas",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Chaz Chambliss",
 			"pos": "ED",
 			"apy": 0.995,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.985,
+				"guaranteed": 0.22,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Joe Huber",
 			"pos": "RG",
 			"apy": 0.992,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.975,
+				"guaranteed": 0.21,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Max Bredeson",
 			"pos": "FB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.872,
+				"guaranteed": 0.492,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11567,21 +14227,36 @@
 			"name": "Elijah Williams",
 			"pos": "ED",
 			"apy": 0.988,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.965,
+				"guaranteed": 0.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Charles Demmings",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.859,
+				"guaranteed": 0.479,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Demond Claiborne",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 0.953
+			"cap": 0.953,
+			"terms": {
+				"total": 4.654,
+				"guaranteed": 0.274,
+				"years": 4
+			}
 		},
 		{
 			"team": "MIN",
@@ -11600,35 +14275,60 @@
 			"name": "Jacob Thomas",
 			"pos": "SS",
 			"apy": 1.0,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.16,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Zemaiah Vaughn",
 			"pos": "CB",
 			"apy": 0.922,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Jamal Adams",
 			"pos": "LB",
 			"apy": 1.4,
-			"cap": 0.675
+			"cap": 0.675,
+			"terms": {
+				"total": 1.41,
+				"guaranteed": 0.06,
+				"years": 1
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Tyler Batty",
 			"pos": "ED",
 			"apy": 0.997,
-			"cap": 0.548
+			"cap": 0.548,
+			"terms": {
+				"total": 2.99,
+				"guaranteed": 0.259,
+				"years": 3
+			}
 		},
 		{
 			"team": "MIN",
 			"name": "Ben Yurosek",
 			"pos": "TE",
 			"apy": 0.995,
-			"cap": 0.547
+			"cap": 0.547,
+			"terms": {
+				"total": 2.985,
+				"guaranteed": 0.254,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
@@ -11659,7 +14359,12 @@
 			"name": "Michael Onwenu",
 			"pos": "RT",
 			"apy": 10.0,
-			"cap": 17.5
+			"cap": 17.5,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 8.95,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
@@ -11678,7 +14383,12 @@
 			"name": "Harold Landry",
 			"pos": "ED",
 			"apy": 14.5,
-			"cap": 16.4
+			"cap": 16.4,
+			"terms": {
+				"total": 43.5,
+				"guaranteed": 26.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
@@ -11757,7 +14467,12 @@
 			"name": "Kevin Byard",
 			"pos": "S",
 			"apy": 7.0,
-			"cap": 9.0
+			"cap": 9.0,
+			"terms": {
+				"total": 7.0,
+				"guaranteed": 6.17,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
@@ -11812,7 +14527,12 @@
 			"name": "A.J. Brown",
 			"pos": "WR",
 			"apy": 32.0,
-			"cap": 7.0
+			"cap": 7.0,
+			"terms": {
+				"total": 96.0,
+				"guaranteed": 51.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
@@ -11855,7 +14575,12 @@
 			"name": "Greg Van Roten",
 			"pos": "RG",
 			"apy": 3.0,
-			"cap": 4.5
+			"cap": 4.5,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
@@ -11886,28 +14611,48 @@
 			"name": "Julian Hill",
 			"pos": "TE",
 			"apy": 5.0,
-			"cap": 3.6
+			"cap": 3.6,
+			"terms": {
+				"total": 15.0,
+				"guaranteed": 7.5,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Caleb Lomu",
 			"pos": "T",
 			"apy": 4.7,
-			"cap": 3.4
+			"cap": 3.4,
+			"terms": {
+				"total": 18.922,
+				"guaranteed": 18.922,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Brenden Schooler",
 			"pos": "S",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 9.0,
+				"guaranteed": 2.6,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Reggie Gilliam",
 			"pos": "FB",
 			"apy": 3.6,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 10.8,
+				"guaranteed": 6.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
@@ -11938,7 +14683,12 @@
 			"name": "Tommy DeVito",
 			"pos": "QB",
 			"apy": 2.2,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 4.4,
+				"guaranteed": 2.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NE",
@@ -11969,28 +14719,48 @@
 			"name": "Ben Brown",
 			"pos": "C",
 			"apy": 1.9,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 3.84,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Craig Woodson",
 			"pos": "S",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.266,
+				"guaranteed": 1.066,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Eli Raridon",
 			"pos": "TE",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.749,
+				"guaranteed": 1.368,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Joshua Farmer",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.866,
+				"guaranteed": 0.666,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
@@ -12009,7 +14779,12 @@
 			"name": "Dell Pettus",
 			"pos": "S",
 			"apy": 0.946,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.839,
+				"guaranteed": 0.009,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
@@ -12028,21 +14803,36 @@
 			"name": "Leonard Taylor",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Walter Rouse",
 			"pos": "LT",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.247,
+				"guaranteed": 0.227,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Darius Muasau",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.221,
+				"guaranteed": 0.201,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
@@ -12061,7 +14851,12 @@
 			"name": "Julian Ashby",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.302,
+				"guaranteed": 0.102,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
@@ -12092,84 +14887,144 @@
 			"name": "Cameron Latu",
 			"pos": "TE",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Corey Kiner",
 			"pos": "RB",
 			"apy": 1.8,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Jaylen Reed",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.444,
+				"guaranteed": 0.244,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Karon Prunty",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 0.992
+			"cap": 0.992,
+			"terms": {
+				"total": 4.807,
+				"guaranteed": 0.427,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Dametrious Crownover",
 			"pos": "T",
 			"apy": 1.2,
-			"cap": 0.954
+			"cap": 0.954,
+			"terms": {
+				"total": 4.656,
+				"guaranteed": 0.276,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Namdi Obiazor",
 			"pos": "ILB",
 			"apy": 1.2,
-			"cap": 0.945
+			"cap": 0.945,
+			"terms": {
+				"total": 4.619,
+				"guaranteed": 0.239,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Behren Morton",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.922
+			"cap": 0.922,
+			"terms": {
+				"total": 4.529,
+				"guaranteed": 0.149,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Quintayvious Hutchins",
 			"pos": "OLB",
 			"apy": 1.1,
-			"cap": 0.916
+			"cap": 0.916,
+			"terms": {
+				"total": 4.502,
+				"guaranteed": 0.122,
+				"years": 4
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Channing Canada",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.268,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Tanner Arkin",
 			"pos": "TE",
 			"apy": 1.0,
-			"cap": 0.891
+			"cap": 0.891,
+			"terms": {
+				"total": 3.118,
+				"guaranteed": 0.163,
+				"years": 3
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Erick Hunter",
 			"pos": "OLB",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NE",
 			"name": "Marcus Bryant",
 			"pos": "LT",
 			"apy": 1.1,
-			"cap": 0.577
+			"cap": 0.577,
+			"terms": {
+				"total": 4.348,
+				"guaranteed": 0.148,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12260,7 +15115,12 @@
 			"name": "Kelvin Banks Jr.",
 			"pos": "LT",
 			"apy": 6.9,
-			"cap": 6.3
+			"cap": 6.3,
+			"terms": {
+				"total": 27.731,
+				"guaranteed": 27.731,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12339,7 +15199,12 @@
 			"name": "Tyree Wilson",
 			"pos": "ED",
 			"apy": 6.3,
-			"cap": 4.2
+			"cap": 4.2,
+			"terms": {
+				"total": 25.006,
+				"guaranteed": 25.006,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12358,14 +15223,24 @@
 			"name": "Bryan Bresee",
 			"pos": "IDL",
 			"apy": 3.1,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 12.264,
+				"guaranteed": 12.264,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Jordan Howden",
 			"pos": "S",
 			"apy": 1.0,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 4.167,
+				"guaranteed": 0.327,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12432,7 +15307,12 @@
 			"name": "Dillon Radunz",
 			"pos": "RT",
 			"apy": 3.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 7.0,
+				"guaranteed": 4.2,
+				"years": 2
+			}
 		},
 		{
 			"team": "NO",
@@ -12451,14 +15331,24 @@
 			"name": "John Ridgeway",
 			"pos": "IDL",
 			"apy": 2.9,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 5.715,
+				"guaranteed": 1.65,
+				"years": 2
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Chris Rumph II",
 			"pos": "ED",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 2.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
@@ -12489,21 +15379,36 @@
 			"name": "Zach Wood",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 6.31,
+				"guaranteed": 2.3,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Julian Blackmon",
 			"pos": "S",
 			"apy": 2.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 2.535,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Martin Emerson",
 			"pos": "CB",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.515,
+				"guaranteed": 0.65,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
@@ -12534,14 +15439,24 @@
 			"name": "Anfernee Jennings",
 			"pos": "ED",
 			"apy": 1.4,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.188,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Oscar Delp",
 			"pos": "TE",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.206,
+				"guaranteed": 1.701,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12560,7 +15475,12 @@
 			"name": "Zach Wilson",
 			"pos": "QB",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.599,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
@@ -12591,7 +15511,12 @@
 			"name": "Spencer Rattler",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.356,
+				"guaranteed": 0.336,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12610,14 +15535,24 @@
 			"name": "Colby Wooden",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.608,
+				"guaranteed": 0.768,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
 			"name": "Jaylan Ford",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12636,7 +15571,12 @@
 			"name": "Khristian Boyd",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.199,
+				"guaranteed": 0.179,
+				"years": 4
+			}
 		},
 		{
 			"team": "NO",
@@ -12655,7 +15595,12 @@
 			"name": "Isaiah Stalbird",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
@@ -12681,14 +15626,24 @@
 			"name": "Treyton Welch",
 			"pos": "TE",
 			"apy": 0.988,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NO",
 			"name": "William Sherman",
 			"pos": "LG",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NO",
@@ -12719,7 +15674,12 @@
 			"name": "Mason Murphy",
 			"pos": "T",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.268,
+				"years": 3
+			}
 		},
 		{
 			"team": "NO",
@@ -12738,7 +15698,12 @@
 			"name": "Ty Chandler",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NO",
@@ -12757,7 +15722,12 @@
 			"name": "Paulson Adebo",
 			"pos": "CB",
 			"apy": 18.0,
-			"cap": 24.2
+			"cap": 24.2,
+			"terms": {
+				"total": 54.0,
+				"guaranteed": 34.75,
+				"years": 3
+			}
 		},
 		{
 			"team": "NYG",
@@ -12860,7 +15830,12 @@
 			"name": "Jon Runyan Jr.",
 			"pos": "LG",
 			"apy": 10.0,
-			"cap": 7.0
+			"cap": 7.0,
+			"terms": {
+				"total": 22.0,
+				"guaranteed": 19.25,
+				"years": 2
+			}
 		},
 		{
 			"team": "NYG",
@@ -12963,7 +15938,12 @@
 			"name": "Jaxson Dart",
 			"pos": "QB",
 			"apy": 4.2,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 16.978,
+				"guaranteed": 16.978,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
@@ -12982,7 +15962,12 @@
 			"name": "Micah McFadden",
 			"pos": "LB",
 			"apy": 3.8,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.75,
+				"guaranteed": 2.9,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
@@ -13013,7 +15998,12 @@
 			"name": "Patrick Ricard",
 			"pos": "FB",
 			"apy": null,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 7.63,
+				"guaranteed": 3.54,
+				"years": 2
+			}
 		},
 		{
 			"team": "NYG",
@@ -13032,14 +16022,24 @@
 			"name": "Ar'Darius Washington",
 			"pos": "S",
 			"apy": 3.0,
-			"cap": 2.6
+			"cap": 2.6,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 1.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Devin Singletary",
 			"pos": "RB",
 			"apy": 1.3,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
@@ -13082,14 +16082,24 @@
 			"name": "Darius Alexander",
 			"pos": "IDL",
 			"apy": 1.7,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 6.762,
+				"guaranteed": 1.558,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Calvin Austin III",
 			"pos": "WR",
 			"apy": 1.5,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 0.45,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
@@ -13108,7 +16118,12 @@
 			"name": "Theo Johnson",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.851,
+				"guaranteed": 0.831,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
@@ -13127,56 +16142,96 @@
 			"name": "Aaron Stinnie",
 			"pos": "LG",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 0.063,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Chris Manhertz",
 			"pos": "TE",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 0.263,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Jason Pinnock",
 			"pos": "S",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.2,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Elijah Campbell",
 			"pos": "CB",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.05,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Gunner Olszewski",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.3,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Zaire Barnes",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.15,
+				"guaranteed": 0.25,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Tyrone Tracy Jr.",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.306,
+				"guaranteed": 0.286,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Marcus Mbow",
 			"pos": "RT",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.618,
+				"guaranteed": 0.418,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
@@ -13214,7 +16269,12 @@
 			"name": "Thomas Fidone II",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.35,
+				"guaranteed": 0.15,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
@@ -13228,28 +16288,48 @@
 			"name": "Basil Okoye",
 			"pos": "IDL",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Bobby Jamison-Travis",
 			"pos": "DT",
 			"apy": 1.2,
-			"cap": 0.962
+			"cap": 0.962,
+			"terms": {
+				"total": 4.69,
+				"guaranteed": 0.31,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "J.C. Davis",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 0.957
+			"cap": 0.957,
+			"terms": {
+				"total": 4.669,
+				"guaranteed": 0.289,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Jack Kelly",
 			"pos": "ILB",
 			"apy": 1.2,
-			"cap": 0.956
+			"cap": 0.956,
+			"terms": {
+				"total": 4.663,
+				"guaranteed": 0.283,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYG",
@@ -13268,14 +16348,24 @@
 			"name": "Ben Mann",
 			"pos": "LS",
 			"apy": null,
-			"cap": 0.888
+			"cap": 0.888,
+			"terms": {
+				"total": 3.11,
+				"guaranteed": 0.01,
+				"years": 3
+			}
 		},
 		{
 			"team": "NYG",
 			"name": "Bryan Hudson",
 			"pos": "C",
 			"apy": 0.922,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13354,7 +16444,12 @@
 			"name": "Minkah Fitzpatrick",
 			"pos": "S",
 			"apy": 13.3,
-			"cap": 7.4
+			"cap": 7.4,
+			"terms": {
+				"total": 40.0,
+				"guaranteed": 20.5,
+				"years": 3
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13433,7 +16528,12 @@
 			"name": "David Onyemata",
 			"pos": "IDL",
 			"apy": 10.5,
-			"cap": 4.5
+			"cap": 4.5,
+			"terms": {
+				"total": 10.5,
+				"guaranteed": 9.65,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13500,14 +16600,24 @@
 			"name": "Jeremy Ruckert",
 			"pos": "TE",
 			"apy": 5.0,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 10.0,
+				"guaranteed": 4.972,
+				"years": 2
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Nahshon Wright",
 			"pos": "CB",
 			"apy": 3.5,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 3.5,
+				"guaranteed": 3.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13526,21 +16636,36 @@
 			"name": "Omar Cooper",
 			"pos": null,
 			"apy": null,
-			"cap": 3.2
+			"cap": 3.2,
+			"terms": {
+				"total": 17.474,
+				"guaranteed": 17.474,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Mason Taylor",
 			"pos": "TE",
 			"apy": 2.6,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 10.466,
+				"guaranteed": 9.559,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Jordan Meredith",
 			"pos": "C",
 			"apy": 2.0,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.9,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13559,7 +16684,12 @@
 			"name": "Tim Patrick",
 			"pos": "WR",
 			"apy": 2.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13578,7 +16708,12 @@
 			"name": "D'Angelo Ponds",
 			"pos": "CB",
 			"apy": 2.5,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 9.837,
+				"guaranteed": 8.946,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13609,7 +16744,12 @@
 			"name": "Thomas Hennessy",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 5.97,
+				"guaranteed": 1.955,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13652,28 +16792,48 @@
 			"name": "Andrew Beck",
 			"pos": "TE",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Chukwuma Okorafor",
 			"pos": "RT",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.1,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Trevin Wallace",
 			"pos": "LB",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.96,
+				"guaranteed": 1.154,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Malachi Moore",
 			"pos": "S",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.098,
+				"guaranteed": 0.898,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13711,21 +16871,36 @@
 			"name": "Cade Klubnik",
 			"pos": "QB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.599,
+				"guaranteed": 1.219,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Marcelino McCrary-Ball",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Qwan'Tez Stiggers",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.274,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13744,21 +16919,36 @@
 			"name": "Jelani Woods",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.175,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Francisco Mauigoa",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.595,
+				"guaranteed": 0.395,
+				"years": 4
+			}
 		},
 		{
 			"team": "NYJ",
 			"name": "Braiden McGregor",
 			"pos": "ED",
 			"apy": 0.95,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.85,
+				"guaranteed": 0.22,
+				"years": 3
+			}
 		},
 		{
 			"team": "NYJ",
@@ -13820,7 +17010,12 @@
 			"name": "Tyler Baron",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 0.62
+			"cap": 0.62,
+			"terms": {
+				"total": 4.52,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
@@ -13875,7 +17070,12 @@
 			"name": "Landon Dickerson",
 			"pos": "LG",
 			"apy": 21.0,
-			"cap": 10.3
+			"cap": 10.3,
+			"terms": {
+				"total": 84.0,
+				"guaranteed": 28.89,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
@@ -13930,14 +17130,24 @@
 			"name": "Jonathan Greenard",
 			"pos": "ED",
 			"apy": 30.0,
-			"cap": 6.3
+			"cap": 6.3,
+			"terms": {
+				"total": 60.0,
+				"guaranteed": 50.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Cam Jurgens",
 			"pos": "C",
 			"apy": 17.0,
-			"cap": 5.5
+			"cap": 5.5,
+			"terms": {
+				"total": 68.0,
+				"guaranteed": 23.346,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
@@ -13956,7 +17166,12 @@
 			"name": "Jake Elliott",
 			"pos": "K",
 			"apy": null,
-			"cap": 4.7
+			"cap": 4.7,
+			"terms": {
+				"total": 17.0,
+				"guaranteed": 5.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "PHI",
@@ -14071,7 +17286,12 @@
 			"name": "Marquise Brown",
 			"pos": "WR",
 			"apy": 5.0,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 5.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
@@ -14102,7 +17322,12 @@
 			"name": "Andrew Mukuba",
 			"pos": "S",
 			"apy": 1.8,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 7.161,
+				"guaranteed": 4.196,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
@@ -14152,14 +17377,24 @@
 			"name": "Marcus Epps",
 			"pos": "S",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.55,
+				"guaranteed": 0.125,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Jonathan Jones",
 			"pos": "CB",
 			"apy": 2.0,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 2.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
@@ -14178,42 +17413,72 @@
 			"name": "Grant Calcaterra",
 			"pos": "TE",
 			"apy": 2.0,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.7,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Kelee Ringo",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 4.661,
+				"guaranteed": 0.821,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Johnny Mundt",
 			"pos": "TE",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.5,
+				"guaranteed": 0.75,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Markel Bell",
 			"pos": "T",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.361,
+				"guaranteed": 1.813,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Ty Robinson",
 			"pos": "IDL",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.236,
+				"guaranteed": 1.036,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "A.J. Epenesa",
 			"pos": "ED",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.688,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
@@ -14232,14 +17497,24 @@
 			"name": "Tanner McKee",
 			"pos": "QB",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.027,
+				"guaranteed": 0.187,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Elijah Moore",
 			"pos": "WR",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.315,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "PHI",
@@ -14258,14 +17533,24 @@
 			"name": "Mac McWilliams",
 			"pos": "CB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.644,
+				"guaranteed": 0.444,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Smael Mondon Jr.",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.595,
+				"guaranteed": 0.395,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
@@ -14284,7 +17569,12 @@
 			"name": "E.J. Jenkins",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.165,
+				"guaranteed": 0.04,
+				"years": 2
+			}
 		},
 		{
 			"team": "PHI",
@@ -14315,42 +17605,72 @@
 			"name": "Cole Payton",
 			"pos": "QB",
 			"apy": 1.2,
-			"cap": 0.98
+			"cap": 0.98,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.379,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Micah Morris",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 0.949
+			"cap": 0.949,
+			"terms": {
+				"total": 4.636,
+				"guaranteed": 0.256,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Rocco Underwood",
 			"pos": "LS",
 			"apy": null,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.02,
+				"years": 3
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Willie Lampkin",
 			"pos": "RG",
 			"apy": 0.998,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 2.995,
+				"guaranteed": 0.03,
+				"years": 3
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Johnny Wilson",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 0.589
+			"cap": 0.589,
+			"terms": {
+				"total": 4.217,
+				"guaranteed": 0.197,
+				"years": 4
+			}
 		},
 		{
 			"team": "PHI",
 			"name": "Andre' Sam",
 			"pos": "S",
 			"apy": 1.1,
-			"cap": 0.54
+			"cap": 0.54,
+			"terms": {
+				"total": 2.125,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14441,7 +17761,12 @@
 			"name": "Michael Pittman Jr.",
 			"pos": "WR",
 			"apy": 17.5,
-			"cap": 8.9
+			"cap": 8.9,
+			"terms": {
+				"total": 35.0,
+				"guaranteed": 24.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14472,7 +17797,12 @@
 			"name": "DeShon Elliott",
 			"pos": "S",
 			"apy": 6.2,
-			"cap": 6.1
+			"cap": 6.1,
+			"terms": {
+				"total": 12.5,
+				"guaranteed": 7.17,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14515,7 +17845,12 @@
 			"name": "Joey Porter Jr.",
 			"pos": "CB",
 			"apy": 2.4,
-			"cap": 4.9
+			"cap": 4.9,
+			"terms": {
+				"total": 9.618,
+				"guaranteed": 9.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
@@ -14534,7 +17869,12 @@
 			"name": "Mason Rudolph",
 			"pos": "QB",
 			"apy": 3.8,
-			"cap": 4.6
+			"cap": 4.6,
+			"terms": {
+				"total": 7.5,
+				"guaranteed": 3.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14589,28 +17929,48 @@
 			"name": "Brandin Echols",
 			"pos": "CB",
 			"apy": 3.0,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 6.0,
+				"guaranteed": 1.83,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Max Iheanachor",
 			"pos": "T",
 			"apy": 5.2,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 20.692,
+				"guaranteed": 20.692,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Rico Dowdle",
 			"pos": "RB",
 			"apy": 6.1,
-			"cap": 3.8
+			"cap": 3.8,
+			"terms": {
+				"total": 12.25,
+				"guaranteed": 5.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Sebastian Joseph-Day",
 			"pos": "IDL",
 			"apy": 5.5,
-			"cap": 3.6
+			"cap": 3.6,
+			"terms": {
+				"total": 11.0,
+				"guaranteed": 4.7,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14629,14 +17989,24 @@
 			"name": "Bennett Skowronek",
 			"pos": "WR",
 			"apy": 2.2,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 4.5,
+				"guaranteed": 1.08,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Brock Hoffman",
 			"pos": "RG",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 0.75,
+				"years": 1
+			}
 		},
 		{
 			"team": "PIT",
@@ -14655,7 +18025,12 @@
 			"name": "Cole Holcomb",
 			"pos": "LB",
 			"apy": 2.5,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 0.625,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14698,21 +18073,36 @@
 			"name": "Ryan McCollum",
 			"pos": "C",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.333,
+				"guaranteed": 0.075,
+				"years": 1
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Christian Kuntz",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 3.765,
+				"guaranteed": 0.325,
+				"years": 3
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Drew Allar",
 			"pos": "QB",
 			"apy": 1.8,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 7.103,
+				"guaranteed": 1.626,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
@@ -14731,28 +18121,48 @@
 			"name": "Jack Driscoll",
 			"pos": "RT",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.188,
+				"years": 1
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Daylen Everette",
 			"pos": "CB",
 			"apy": 1.7,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 6.9,
+				"guaranteed": 1.479,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Jack Sawyer",
 			"pos": "ED",
 			"apy": 1.3,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.151,
+				"guaranteed": 0.951,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Gennings Dunker",
 			"pos": "G",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.726,
+				"guaranteed": 1.352,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
@@ -14771,14 +18181,24 @@
 			"name": "Spencer Anderson",
 			"pos": "RG",
 			"apy": 0.979,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 3.918,
+				"guaranteed": 0.078,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Logan Lee",
 			"pos": "IDL",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.24,
+				"guaranteed": 0.22,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
@@ -14797,7 +18217,12 @@
 			"name": "Dylan Cook",
 			"pos": "LT",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.035,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "PIT",
@@ -14816,70 +18241,120 @@
 			"name": "Robert Tonyan",
 			"pos": "TE",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Rayshawn Jenkins",
 			"pos": "S",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Will Howard",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.448,
+				"guaranteed": 0.248,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Carson Bruener",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.337,
+				"guaranteed": 0.137,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Riley Nowakowski",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 0.996
+			"cap": 0.996,
+			"terms": {
+				"total": 4.823,
+				"guaranteed": 0.443,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Gabriel Rubio",
 			"pos": "DE",
 			"apy": 1.2,
-			"cap": 0.947
+			"cap": 0.947,
+			"terms": {
+				"total": 4.627,
+				"guaranteed": 0.247,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Robert Spears-Jennings",
 			"pos": "FS",
 			"apy": 1.1,
-			"cap": 0.926
+			"cap": 0.926,
+			"terms": {
+				"total": 4.544,
+				"guaranteed": 0.164,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Eli Heidenreich",
 			"pos": "RB",
 			"apy": 1.1,
-			"cap": 0.924
+			"cap": 0.924,
+			"terms": {
+				"total": 4.536,
+				"guaranteed": 0.156,
+				"years": 4
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Kevin Jobity Jr.",
 			"pos": "DE",
 			"apy": 1.0,
-			"cap": 0.895
+			"cap": 0.895,
+			"terms": {
+				"total": 3.13,
+				"guaranteed": 0.03,
+				"years": 3
+			}
 		},
 		{
 			"team": "PIT",
 			"name": "Donte Kent",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 0.548
+			"cap": 0.548,
+			"terms": {
+				"total": 4.333,
+				"guaranteed": 0.133,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
@@ -14946,7 +18421,12 @@
 			"name": "Julian Love",
 			"pos": "S",
 			"apy": 11.0,
-			"cap": 12.9
+			"cap": 12.9,
+			"terms": {
+				"total": 33.0,
+				"guaranteed": 11.965,
+				"years": 3
+			}
 		},
 		{
 			"team": "SEA",
@@ -15109,7 +18589,12 @@
 			"name": "Anthony Bradford",
 			"pos": "RG",
 			"apy": 1.2,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 4.644,
+				"guaranteed": 0.804,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
@@ -15164,49 +18649,84 @@
 			"name": "Nick Emmanwori",
 			"pos": "S",
 			"apy": 2.9,
-			"cap": 2.6
+			"cap": 2.6,
+			"terms": {
+				"total": 11.601,
+				"guaranteed": 11.601,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Dante Fowler Jr.",
 			"pos": "ED",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Jake Bobo",
 			"pos": "WR",
 			"apy": 2.8,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 5.5,
+				"guaranteed": 4.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Brady Russell",
 			"pos": "TE",
 			"apy": 2.4,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 4.8,
+				"guaranteed": 2.145,
+				"years": 2
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Eric Saubert",
 			"pos": "TE",
 			"apy": 2.5,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 0.789,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Elijah Arroyo",
 			"pos": "TE",
 			"apy": 2.2,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 8.813,
+				"guaranteed": 6.873,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Brandon Pili",
 			"pos": "IDL",
 			"apy": 1.8,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 1.765,
+				"guaranteed": 0.75,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
@@ -15237,21 +18757,36 @@
 			"name": "Jalen Milroe",
 			"pos": "QB",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 6.264,
+				"guaranteed": 1.196,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Chris Stoll",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 2.905,
+				"guaranteed": 1.2,
+				"years": 2
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Tyrice Knight",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.793,
+				"guaranteed": 0.773,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
@@ -15270,28 +18805,48 @@
 			"name": "Chazz Surratt",
 			"pos": "LB",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 1.4,
+				"guaranteed": 0.35,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Mike Morris",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.162,
+				"guaranteed": 0.322,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Olusegun Oluwatimi",
 			"pos": "C",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.156,
+				"guaranteed": 0.316,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Julian Neal",
 			"pos": "CB",
 			"apy": 1.7,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 6.694,
+				"guaranteed": 1.328,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
@@ -15310,35 +18865,60 @@
 			"name": "Patrick O'Connell",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.175,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Ty Okada",
 			"pos": "CB",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Irvin Charles",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Rylie Mills",
 			"pos": "IDL",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.668,
+				"guaranteed": 0.468,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Tory Horton",
 			"pos": "WR",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.565,
+				"guaranteed": 0.365,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
@@ -15376,56 +18956,96 @@
 			"name": "Terrion Arnold",
 			"pos": "CB",
 			"apy": 3.6,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Beau Stephens",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.902,
+				"guaranteed": 0.522,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Connor O'Toole",
 			"pos": "IDL",
 			"apy": 0.998,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.995,
+				"guaranteed": 0.264,
+				"years": 3
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Nick Kallerup",
 			"pos": "TE",
 			"apy": 0.997,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.99,
+				"guaranteed": 0.259,
+				"years": 3
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Montorie Foster",
 			"pos": "WR",
 			"apy": 0.885,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 0.885,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Avery Smith",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.885
+			"cap": 0.885,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.268,
+				"years": 3
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Robbie Ouzts",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 0.62
+			"cap": 0.62,
+			"terms": {
+				"total": 4.52,
+				"guaranteed": 0.32,
+				"years": 4
+			}
 		},
 		{
 			"team": "SEA",
 			"name": "Mason Richman",
 			"pos": "LT",
 			"apy": 1.1,
-			"cap": 0.571
+			"cap": 0.571,
+			"terms": {
+				"total": 4.326,
+				"guaranteed": 0.126,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
@@ -15444,7 +19064,12 @@
 			"name": "Nick Bosa",
 			"pos": "ED",
 			"apy": 34.0,
-			"cap": 23.0
+			"cap": 23.0,
+			"terms": {
+				"total": 170.0,
+				"guaranteed": 88.0,
+				"years": 5
+			}
 		},
 		{
 			"team": "SF",
@@ -15487,7 +19112,12 @@
 			"name": "Brandon Aiyuk",
 			"pos": "WR",
 			"apy": 30.0,
-			"cap": 13.7
+			"cap": 13.7,
+			"terms": {
+				"total": 120.0,
+				"guaranteed": 45.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
@@ -15602,14 +19232,24 @@
 			"name": "Luke Farrell",
 			"pos": "TE",
 			"apy": 4.0,
-			"cap": 3.5
+			"cap": 3.5,
+			"terms": {
+				"total": 8.0,
+				"guaranteed": 3.59,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Ricky Pearsall",
 			"pos": "WR",
 			"apy": 3.1,
-			"cap": 3.4
+			"cap": 3.4,
+			"terms": {
+				"total": 12.538,
+				"guaranteed": 12.538,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
@@ -15640,70 +19280,120 @@
 			"name": "Christian Kirk",
 			"pos": "WR",
 			"apy": 3.0,
-			"cap": 3.0
+			"cap": 3.0,
+			"terms": {
+				"total": 3.0,
+				"guaranteed": 2.78,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Kyle Juszczyk",
 			"pos": "FB",
 			"apy": null,
-			"cap": 2.9
+			"cap": 2.9,
+			"terms": {
+				"total": 7.5,
+				"guaranteed": 7.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Demarcus Robinson",
 			"pos": "WR",
 			"apy": 4.0,
-			"cap": 2.7
+			"cap": 2.7,
+			"terms": {
+				"total": 8.0,
+				"guaranteed": 6.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Brett Toth",
 			"pos": "LT",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 2.215,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
 			"name": "De'Zhaun Stribling",
 			"pos": "WR",
 			"apy": 3.3,
-			"cap": 2.4
+			"cap": 2.4,
+			"terms": {
+				"total": 13.377,
+				"guaranteed": 13.377,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Alfred Collins",
 			"pos": "IDL",
 			"apy": 2.6,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 10.307,
+				"guaranteed": 9.072,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Vederian Lowe",
 			"pos": "LT",
 			"apy": 4.6,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 9.25,
+				"guaranteed": 5.75,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Sam Okuayinonu",
 			"pos": "ED",
 			"apy": 2.3,
-			"cap": 2.3
+			"cap": 2.3,
+			"terms": {
+				"total": 2.3,
+				"guaranteed": 1.8,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Jake Tonges",
 			"pos": "TE",
 			"apy": 4.0,
-			"cap": 2.1
+			"cap": 2.1,
+			"terms": {
+				"total": 8.0,
+				"guaranteed": 5.5,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Luke Gifford",
 			"pos": "LB",
 			"apy": 2.5,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 5.0,
+				"guaranteed": 2.01,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
@@ -15734,7 +19424,12 @@
 			"name": "Siran Neal",
 			"pos": "CB",
 			"apy": 2.0,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 4.0,
+				"guaranteed": 2.255,
+				"years": 2
+			}
 		},
 		{
 			"team": "SF",
@@ -15765,14 +19460,24 @@
 			"name": "Nick Martin",
 			"pos": "LB",
 			"apy": 1.6,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 6.562,
+				"guaranteed": 1.412,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Ashtyn Davis",
 			"pos": "S",
 			"apy": 1.5,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.465,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
@@ -15791,7 +19496,12 @@
 			"name": "Jarrett Patterson",
 			"pos": "C",
 			"apy": 1.8,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.795,
+				"guaranteed": 1.545,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
@@ -15810,21 +19520,36 @@
 			"name": "Malik Mustapha",
 			"pos": "S",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.739,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "C.J. West",
 			"pos": "IDL",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 5.211,
+				"guaranteed": 1.011,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Isaac Guerendo",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 4.725,
+				"guaranteed": 0.705,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
@@ -15867,63 +19592,108 @@
 			"name": "Jordan Watkins",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.866,
+				"guaranteed": 0.666,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Carver Willis",
 			"pos": "G",
 			"apy": 1.4,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 5.45,
+				"guaranteed": 1.067,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Jordan James",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.64,
+				"guaranteed": 0.44,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Marques Sigle",
 			"pos": "S",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.602,
+				"guaranteed": 0.402,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Tatum Bethune",
 			"pos": "LB",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.102,
+				"guaranteed": 0.082,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Ephesians Prysock",
 			"pos": "CB",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.169,
+				"guaranteed": 0.789,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Brayden Willis",
 			"pos": "TE",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.145,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Jon Weeks",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Garret Wallow",
 			"pos": "LB",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.24,
+				"guaranteed": 0.33,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
@@ -15966,7 +19736,12 @@
 			"name": "Austen Pleasants",
 			"pos": "RT",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "SF",
@@ -16004,21 +19779,36 @@
 			"name": "Enrique Cruz Jr.",
 			"pos": "T",
 			"apy": 1.2,
-			"cap": 0.98
+			"cap": 0.98,
+			"terms": {
+				"total": 4.759,
+				"guaranteed": 0.379,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "Kurtis Rourke",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.919
+			"cap": 0.919,
+			"terms": {
+				"total": 4.334,
+				"guaranteed": 0.134,
+				"years": 4
+			}
 		},
 		{
 			"team": "SF",
 			"name": "James Thompson Jr.",
 			"pos": "DT",
 			"apy": 1.0,
-			"cap": 0.895
+			"cap": 0.895,
+			"terms": {
+				"total": 3.13,
+				"guaranteed": 0.278,
+				"years": 3
+			}
 		},
 		{
 			"team": "TB",
@@ -16061,7 +19851,12 @@
 			"name": "Antoine Winfield Jr.",
 			"pos": "S",
 			"apy": 21.0,
-			"cap": 27.5
+			"cap": 27.5,
+			"terms": {
+				"total": 84.1,
+				"guaranteed": 45.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
@@ -16284,7 +20079,12 @@
 			"name": "Sean Tucker",
 			"pos": "RB",
 			"apy": 2.5,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 2.5,
+				"guaranteed": 2.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
@@ -16315,7 +20115,12 @@
 			"name": "Miles Killebrew",
 			"pos": "S",
 			"apy": 1.8,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 1.79,
+				"guaranteed": 0.49,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
@@ -16334,14 +20139,24 @@
 			"name": "Christian Rozeboom",
 			"pos": "LB",
 			"apy": 1.6,
-			"cap": 1.6
+			"cap": 1.6,
+			"terms": {
+				"total": 1.55,
+				"guaranteed": 0.95,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Jalen McMillan",
 			"pos": "WR",
 			"apy": 1.4,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 5.663,
+				"guaranteed": 0.939,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
@@ -16360,28 +20175,48 @@
 			"name": "Ko Kieft",
 			"pos": "TE",
 			"apy": 1.6,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.65,
+				"guaranteed": 0.6,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Justin Skule",
 			"pos": "LT",
 			"apy": 1.4,
-			"cap": 1.4
+			"cap": 1.4,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Rakeem Nunez-Roches",
 			"pos": "IDL",
 			"apy": 1.3,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.3,
+				"guaranteed": 0.3,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Dan Feeney",
 			"pos": "LG",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
@@ -16412,14 +20247,24 @@
 			"name": "SirVocea Dennis",
 			"pos": "LB",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.157,
+				"guaranteed": 0.317,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Payne Durham",
 			"pos": "TE",
 			"apy": 1.0,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.085,
+				"guaranteed": 0.245,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
@@ -16438,14 +20283,24 @@
 			"name": "David Walker",
 			"pos": "ED",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 5.163,
+				"guaranteed": 0.963,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Elijah Roberts",
 			"pos": "ED",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.61,
+				"guaranteed": 0.41,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
@@ -16464,14 +20319,24 @@
 			"name": "Evan Deckers",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.075,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
 			"name": "David Sills",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TB",
@@ -16490,49 +20355,84 @@
 			"name": "Ben Chukwuma",
 			"pos": "RT",
 			"apy": 1.0,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 3.02,
+				"guaranteed": 0.3,
+				"years": 3
+			}
 		},
 		{
 			"team": "TB",
 			"name": "DeMonte Capehart",
 			"pos": "DT",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.882,
+				"guaranteed": 0.502,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Billy Schrauth",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.87,
+				"guaranteed": 0.49,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Elijah Simmons",
 			"pos": "IDL",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Luke Haggard",
 			"pos": "LT",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Kevin Knowles II",
 			"pos": "CB",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Bauer Sharp",
 			"pos": "TE",
 			"apy": 1.2,
-			"cap": 0.964
+			"cap": 0.964,
+			"terms": {
+				"total": 4.697,
+				"guaranteed": 0.317,
+				"years": 4
+			}
 		},
 		{
 			"team": "TB",
@@ -16551,21 +20451,36 @@
 			"name": "Ayden Garnes",
 			"pos": "CB",
 			"apy": 1.0,
-			"cap": 0.892
+			"cap": 0.892,
+			"terms": {
+				"total": 3.12,
+				"guaranteed": 0.12,
+				"years": 3
+			}
 		},
 		{
 			"team": "TB",
 			"name": "Mohamed Kamara",
 			"pos": "ED",
 			"apy": 1.1,
-			"cap": 0.565
+			"cap": 0.565,
+			"terms": {
+				"total": 2.265,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Dan Moore Jr.",
 			"pos": "LT",
 			"apy": 20.5,
-			"cap": 26.3
+			"cap": 26.3,
+			"terms": {
+				"total": 82.0,
+				"guaranteed": 42.51,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
@@ -16584,7 +20499,12 @@
 			"name": "Calvin Ridley",
 			"pos": "WR",
 			"apy": 17.6,
-			"cap": 15.2
+			"cap": 15.2,
+			"terms": {
+				"total": 35.25,
+				"guaranteed": 12.49,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
@@ -16675,7 +20595,12 @@
 			"name": "Cordale Flott",
 			"pos": "CB",
 			"apy": 15.0,
-			"cap": 10.7
+			"cap": 10.7,
+			"terms": {
+				"total": 45.0,
+				"guaranteed": 32.0,
+				"years": 3
+			}
 		},
 		{
 			"team": "TEN",
@@ -16730,21 +20655,36 @@
 			"name": "Daniel Bellinger",
 			"pos": "TE",
 			"apy": 7.0,
-			"cap": 5.1
+			"cap": 5.1,
+			"terms": {
+				"total": 21.0,
+				"guaranteed": 14.01,
+				"years": 3
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Mitchell Trubisky",
 			"pos": "QB",
 			"apy": 5.2,
-			"cap": 4.2
+			"cap": 4.2,
+			"terms": {
+				"total": 10.5,
+				"guaranteed": 6.825,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Tyjae Spears",
 			"pos": "RB",
 			"apy": 1.4,
-			"cap": 3.9
+			"cap": 3.9,
+			"terms": {
+				"total": 5.491,
+				"guaranteed": 0.993,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
@@ -16775,7 +20715,12 @@
 			"name": "Joshua Williams",
 			"pos": "CB",
 			"apy": 4.0,
-			"cap": 3.1
+			"cap": 3.1,
+			"terms": {
+				"total": 8.0,
+				"guaranteed": 3.24,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
@@ -16806,7 +20751,12 @@
 			"name": "Solomon Thomas",
 			"pos": "IDL",
 			"apy": 3.0,
-			"cap": 2.5
+			"cap": 2.5,
+			"terms": {
+				"total": 6.0,
+				"guaranteed": 3.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
@@ -16825,7 +20775,12 @@
 			"name": "Tony Adams",
 			"pos": "S",
 			"apy": 2.1,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.14,
+				"guaranteed": 1.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
@@ -16844,14 +20799,24 @@
 			"name": "Oluwafemi Oladejo",
 			"pos": "ED",
 			"apy": 2.1,
-			"cap": 1.9
+			"cap": 1.9,
+			"terms": {
+				"total": 8.415,
+				"guaranteed": 6.428,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Jaylon Jones",
 			"pos": "CB",
 			"apy": 0.988,
-			"cap": 1.8
+			"cap": 1.8,
+			"terms": {
+				"total": 2.0,
+				"guaranteed": 0.5,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
@@ -16870,7 +20835,12 @@
 			"name": "Kevin Winston Jr.",
 			"pos": "S",
 			"apy": 1.6,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 6.405,
+				"guaranteed": 1.298,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
@@ -16901,21 +20871,36 @@
 			"name": "Morgan Cox",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 1.262,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Julius Chestnut",
 			"pos": "RB",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.102,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Kylen Granson",
 			"pos": "TE",
 			"apy": 1.4,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.403,
+				"guaranteed": 0.625,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
@@ -16934,14 +20919,24 @@
 			"name": "Elic Ayomanor",
 			"pos": "WR",
 			"apy": 1.2,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.866,
+				"guaranteed": 0.666,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Atonio Mafi",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.175,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
@@ -16955,42 +20950,72 @@
 			"name": "James Williams",
 			"pos": "LB",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.109,
+				"guaranteed": 0.089,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Jaylen Harrell",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.101,
+				"guaranteed": 0.081,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Jackson Slater",
 			"pos": "LG",
 			"apy": 1.1,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.561,
+				"guaranteed": 0.361,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "David Martin-Robinson",
 			"pos": "TE",
 			"apy": 0.946,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.837,
+				"guaranteed": 0.018,
+				"years": 3
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "James Hudson",
 			"pos": "RT",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Terrell Burgess",
 			"pos": "S",
 			"apy": 1.2,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.215,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "TEN",
@@ -17009,14 +21034,24 @@
 			"name": "Fernando Carmona",
 			"pos": "G",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.941,
+				"guaranteed": 0.561,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Brandon Crenshaw-Dickson",
 			"pos": "RT",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
@@ -17035,42 +21070,72 @@
 			"name": "Truman Jones",
 			"pos": "ED",
 			"apy": 0.922,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 1.845,
+				"guaranteed": 0.0,
+				"years": 2
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Nazir Stackhouse",
 			"pos": "IDL",
 			"apy": 0.993,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 2.98,
+				"guaranteed": 0.165,
+				"years": 3
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Nick Singleton",
 			"pos": null,
 			"apy": null,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.849,
+				"guaranteed": 0.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Jackie Marshall",
 			"pos": "DT",
 			"apy": 1.2,
-			"cap": 0.966
+			"cap": 0.966,
+			"terms": {
+				"total": 4.703,
+				"guaranteed": 0.0,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Pat Coogan",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 0.955
+			"cap": 0.955,
+			"terms": {
+				"total": 4.659,
+				"guaranteed": 0.279,
+				"years": 4
+			}
 		},
 		{
 			"team": "TEN",
 			"name": "Dorian Mausi",
 			"pos": "LB",
 			"apy": 0.99,
-			"cap": 0.54
+			"cap": 0.54,
+			"terms": {
+				"total": 2.97,
+				"guaranteed": 0.05,
+				"years": 3
+			}
 		},
 		{
 			"team": "TEN",
@@ -17084,7 +21149,12 @@
 			"name": "Garrett Dellinger",
 			"pos": "LG",
 			"apy": 1.0,
-			"cap": 0.234
+			"cap": 0.234,
+			"terms": {
+				"total": 1.005,
+				"guaranteed": 0.0,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",
@@ -17139,7 +21209,12 @@
 			"name": "Laremy Tunsil",
 			"pos": "LT",
 			"apy": 30.1,
-			"cap": 11.9
+			"cap": 11.9,
+			"terms": {
+				"total": 60.2,
+				"guaranteed": 52.665,
+				"years": 2
+			}
 		},
 		{
 			"team": "WAS",
@@ -17170,7 +21245,12 @@
 			"name": "Frankie Luvu",
 			"pos": "ED",
 			"apy": 10.3,
-			"cap": 11.3
+			"cap": 11.3,
+			"terms": {
+				"total": 31.0,
+				"guaranteed": 14.625,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
@@ -17237,7 +21317,12 @@
 			"name": "John Bates",
 			"pos": "TE",
 			"apy": 7.0,
-			"cap": 5.8
+			"cap": 5.8,
+			"terms": {
+				"total": 21.0,
+				"guaranteed": 11.52,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
@@ -17256,7 +21341,12 @@
 			"name": "Nick Cross",
 			"pos": "S",
 			"apy": 6.5,
-			"cap": 5.2
+			"cap": 5.2,
+			"terms": {
+				"total": 13.0,
+				"guaranteed": 6.05,
+				"years": 2
+			}
 		},
 		{
 			"team": "WAS",
@@ -17287,7 +21377,12 @@
 			"name": "Quan Martin",
 			"pos": "S",
 			"apy": 1.9,
-			"cap": 4.3
+			"cap": 4.3,
+			"terms": {
+				"total": 7.638,
+				"guaranteed": 5.112,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17330,7 +21425,12 @@
 			"name": "Josh Conerly Jr.",
 			"pos": "LT",
 			"apy": 3.9,
-			"cap": 3.6
+			"cap": 3.6,
+			"terms": {
+				"total": 15.681,
+				"guaranteed": 15.681,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17349,7 +21449,12 @@
 			"name": "Andrew Wylie",
 			"pos": "RT",
 			"apy": 3.8,
-			"cap": 3.2
+			"cap": 3.2,
+			"terms": {
+				"total": 7.5,
+				"guaranteed": 3.7,
+				"years": 2
+			}
 		},
 		{
 			"team": "WAS",
@@ -17368,14 +21473,24 @@
 			"name": "Percy Butler",
 			"pos": "S",
 			"apy": 2.1,
-			"cap": 2.8
+			"cap": 2.8,
+			"terms": {
+				"total": 2.15,
+				"guaranteed": 3.406,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Jer'Zhan Newton",
 			"pos": "IDL",
 			"apy": 2.4,
-			"cap": 2.7
+			"cap": 2.7,
+			"terms": {
+				"total": 9.758,
+				"guaranteed": 8.432,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17406,7 +21521,12 @@
 			"name": "Treylon Burks",
 			"pos": "WR",
 			"apy": 2.4,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 2.35,
+				"guaranteed": 0.4,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",
@@ -17425,7 +21545,12 @@
 			"name": "Ben Sinnott",
 			"pos": "TE",
 			"apy": 1.8,
-			"cap": 2.0
+			"cap": 2.0,
+			"terms": {
+				"total": 7.228,
+				"guaranteed": 4.598,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17444,7 +21569,12 @@
 			"name": "Trey Amos",
 			"pos": "CB",
 			"apy": 1.8,
-			"cap": 1.7
+			"cap": 1.7,
+			"terms": {
+				"total": 7.28,
+				"guaranteed": 4.569,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17475,7 +21605,12 @@
 			"name": "Tyler Ott",
 			"pos": "LS",
 			"apy": null,
-			"cap": 1.5
+			"cap": 1.5,
+			"terms": {
+				"total": 4.39,
+				"guaranteed": 1.61,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
@@ -17506,7 +21641,12 @@
 			"name": "Jeremy McNichols",
 			"pos": "RB",
 			"apy": 1.5,
-			"cap": 1.3
+			"cap": 1.3,
+			"terms": {
+				"total": 1.488,
+				"guaranteed": 0.563,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",
@@ -17525,35 +21665,60 @@
 			"name": "Jordan Magee",
 			"pos": "LB",
 			"apy": 1.1,
-			"cap": 1.2
+			"cap": 1.2,
+			"terms": {
+				"total": 4.391,
+				"guaranteed": 0.371,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Fabian Moreau",
 			"pos": "CB",
 			"apy": 1.3,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 1.337,
+				"guaranteed": 0.037,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Javontae Jean-Baptiste",
 			"pos": "ED",
 			"apy": 1.0,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 4.141,
+				"guaranteed": 0.121,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Tyler Owens",
 			"pos": "S",
 			"apy": 0.95,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.85,
+				"guaranteed": 0.245,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Colson Yankoff",
 			"pos": "RB",
 			"apy": 0.947,
-			"cap": 1.1
+			"cap": 1.1,
+			"terms": {
+				"total": 2.84,
+				"guaranteed": 0.05,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
@@ -17596,7 +21761,12 @@
 			"name": "Joshua Josephs",
 			"pos": "OLB",
 			"apy": 1.2,
-			"cap": 1.0
+			"cap": 1.0,
+			"terms": {
+				"total": 4.906,
+				"guaranteed": 0.526,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
@@ -17615,28 +21785,48 @@
 			"name": "Kaytron Allen",
 			"pos": "RB",
 			"apy": 1.2,
-			"cap": 0.961
+			"cap": 0.961,
+			"terms": {
+				"total": 4.684,
+				"guaranteed": 0.304,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Matt Gulbin",
 			"pos": "C",
 			"apy": 1.2,
-			"cap": 0.948
+			"cap": 0.948,
+			"terms": {
+				"total": 4.634,
+				"guaranteed": 0.254,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Athan Kaliakmanis",
 			"pos": "QB",
 			"apy": 1.1,
-			"cap": 0.926
+			"cap": 0.926,
+			"terms": {
+				"total": 4.545,
+				"guaranteed": 0.165,
+				"years": 4
+			}
 		},
 		{
 			"team": "WAS",
 			"name": "Tanoa Togiai",
 			"pos": "G",
 			"apy": 1.0,
-			"cap": 0.89
+			"cap": 0.89,
+			"terms": {
+				"total": 3.115,
+				"guaranteed": 0.14,
+				"years": 3
+			}
 		},
 		{
 			"team": "WAS",
@@ -17655,7 +21845,12 @@
 			"name": "Deatrich Wise",
 			"pos": "ED",
 			"apy": 1.4,
-			"cap": 0.715
+			"cap": 0.715,
+			"terms": {
+				"total": 1.45,
+				"guaranteed": 0.075,
+				"years": 1
+			}
 		},
 		{
 			"team": "WAS",

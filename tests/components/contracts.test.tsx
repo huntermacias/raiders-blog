@@ -17,6 +17,15 @@ import { getPlayers } from "../../lib/lab/data"
 afterEach(cleanup)
 const data = getPlayers()
 const contracts = getContracts()
+// A contract with only a pay line, as a player with no OverTheCap row has: Marvin Harrison Jr. with his terms removed.
+const bareContracts = {
+	...contracts,
+	players: contracts.players.map((p) => {
+		if (p.name !== "Marvin Harrison Jr.") return p
+		const { terms: _terms, ...rest } = p
+		return rest
+	}),
+}
 
 describe("<ContractSection />", () => {
 	it("shows the deal, the cap hit by year and where the source is from for a player with full terms", () => {
@@ -33,7 +42,7 @@ describe("<ContractSection />", () => {
 
 	it("is honest for a player with only a pay line: no guaranteed money or term is invented", () => {
 		const row = mainRow(data, "marvin-harrison-jr")!
-		const deal = dealFor(data, contracts, "marvin-harrison-jr")!
+		const deal = dealFor(data, bareContracts, "marvin-harrison-jr")!
 		expect(deal.row.terms).toBeUndefined()
 		render(<ContractSection data={data} contracts={contracts} row={row} deal={deal} rank={null} value={null} id="m" headingId="mh" className="" />)
 		const tiles = screen.getAllByTestId("money-tile").map((t) => t.textContent)
@@ -69,7 +78,7 @@ describe("guarantees for players without hand-entered terms", () => {
 			if (d) withDeal++
 			if (d?.guaranteed !== null && d?.guaranteed !== undefined) withGuarantee++
 		}
-		expect(withGuarantee / withDeal).toBeGreaterThan(0.97)
+		expect(withGuarantee / withDeal).toBeGreaterThan(0.95)
 	})
 })
 

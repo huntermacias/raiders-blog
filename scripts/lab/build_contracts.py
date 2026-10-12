@@ -110,6 +110,9 @@ def attach_guarantees(rows: list[dict], guarantees: list[dict]) -> int:
     for g in guarantees:
         by_team.setdefault(g["nick"], {}).setdefault(name_key(g["name"]), []).append(g)
         by_short.setdefault(g["nick"], {}).setdefault(short_key(g["name"]), []).append(g)
+    by_name: dict[str, list[dict]] = {}
+    for g in guarantees:
+        by_name.setdefault(name_key(g["name"]), []).append(g)
     n = 0
     for r in rows:
         if "terms" in r:
@@ -120,6 +123,10 @@ def attach_guarantees(rows: list[dict], guarantees: list[dict]) -> int:
             cands = by_short.get(nick, {}).get(short_key(r["name"]), []) if not cands else cands
         if len(cands) > 1 and r["apy"]:
             cands = [c for c in cands if abs(c["apy"] - r["apy"]) < 0.2]
+        if not cands and r["apy"]:
+            # Traded or re-signed since one of the two lists was made: take a league-wide match only when
+            # exactly one player has this name and the APY agrees.
+            cands = [c for c in by_name.get(name_key(r["name"]), []) if abs(c["apy"] - r["apy"]) < 0.2]
         if len(cands) == 1:
             r["terms"] = terms_from_list(cands[0])
             n += 1

@@ -18,6 +18,15 @@ import {
 
 const data = getPlayers()
 const contracts = getContracts()
+// Marvin Harrison Jr. with his terms removed: a contract that has only a pay line.
+const bareContracts = {
+	...contracts,
+	players: contracts.players.map((p) => {
+		if (p.name !== "Marvin Harrison Jr.") return p
+		const { terms: _terms, ...rest } = p
+		return rest
+	}),
+}
 
 describe("money and names", () => {
 	it("shows $0.1M precision, K below a million, and no false cents", () => {
@@ -132,7 +141,7 @@ describe("compare rows", () => {
 		expect(rows.find((r) => r.key === "apy")!.b).toBe("not tracked")
 		expect(moneyRows(null, null, null, null)).toEqual([])
 		// A tracked player missing one number says so, instead of looking like he is not tracked at all.
-		const tucker = dealFor(data, contracts, "marvin-harrison-jr")!
+		const tucker = dealFor(data, bareContracts, "marvin-harrison-jr")!
 		expect(moneyRows(a, tucker, null, null).find((r) => r.key === "guaranteed")!.b).toBe("not on file")
 	})
 })
