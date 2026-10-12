@@ -1,4 +1,5 @@
 import { DOWN, EarlyChip, UP } from "@/components/lab/players/Bits"
+import SectionHead from "@/components/lab/players/SectionHead"
 import {
 	type ContractsData,
 	type Deal,
@@ -23,7 +24,7 @@ const MARK: Record<NonNullable<Value["verdict"]>, { mark: string; cls: string }>
 
 export function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
 	return (
-		<div className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3" data-testid="money-tile">
+		<div className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3" style={{ borderTop: "3px solid var(--pc-accent)" }} data-testid="money-tile">
 			<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{label}</p>
 			<p className="m-0 mt-1 font-mono text-2xl font-bold tabular-nums text-lab-ink">{value}</p>
 			{sub ? <p className="m-0 mt-0.5 text-xs text-lab-muted">{sub}</p> : null}
@@ -119,6 +120,7 @@ export default function ContractSection({
 	value,
 	id,
 	headingId,
+	step,
 	className,
 }: {
 	data: PlayersData
@@ -129,19 +131,14 @@ export default function ContractSection({
 	value: Value | null
 	id: string
 	headingId: string
+	step?: { n: number; of: number }
 	className: string
 }) {
 	const t = deal.row.terms
 	return (
 		<section className={className} aria-labelledby={headingId} id={id}>
 			<div className="container py-8 sm:py-10">
-				<h2 id={headingId} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold">
-					<span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />
-					Contract &amp; cap
-				</h2>
-				<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft" data-testid="deal-sentence">
-					{dealSentence(row.name, deal)}
-				</p>
+				<SectionHead id={headingId} icon="money" step={step} title={<>Contract &amp; cap</>} blurb={<span data-testid="deal-sentence">{dealSentence(row.name, deal)}</span>} className="mb-1" />
 
 				<div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
 					<Tile label="Per year" value={deal.apy !== null ? money(deal.apy) : "–"} sub={deal.apy !== null ? "average over the deal" : "no average given"} />

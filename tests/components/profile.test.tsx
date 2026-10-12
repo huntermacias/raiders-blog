@@ -48,6 +48,17 @@ describe("<SectionNav />", () => {
 		render(<SectionNav items={items.slice(0, 2)} />)
 		expect(screen.queryByTestId("section-nav")).toBeNull()
 	})
+
+	it("fills the current chip in the team's color, gives each chip an icon, and says where you are", () => {
+		const items = [{ id: "read-qb", label: "The read" }, { id: "team-qb", label: "His team" }, { id: "money-qb", label: "Contract" }]
+		render(<SectionNav items={items} />)
+		const nav = screen.getByTestId("section-nav")
+		const on = within(nav).getByText("The read").closest("a")!
+		expect(on.getAttribute("style") ?? "").toMatch(/--pc-accent/)
+		expect(within(nav).getByText("His team").closest("a")!.getAttribute("style") ?? "").not.toMatch(/--pc-accent/)
+		for (const a of Array.from(nav.querySelectorAll("a"))) expect(a.querySelector("svg")).not.toBeNull()
+		expect(nav.textContent).toMatch(/01\s*\/\s*03/)
+	})
 })
 
 describe("profile extras", () => {

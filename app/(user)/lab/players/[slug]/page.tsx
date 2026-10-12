@@ -17,6 +17,7 @@ import ProfileShare from "@/components/lab/players/ProfileShare"
 import TeamContext, { TeamStrip } from "@/components/lab/players/TeamContext"
 import TrackView from "@/components/lab/players/TrackView"
 import ProgressExplorer, { type ExplorerStat } from "@/components/lab/players/ProgressExplorer"
+import SectionHead from "@/components/lab/players/SectionHead"
 import SectionNav, { type NavItem } from "@/components/lab/players/SectionNav"
 import Situations from "@/components/lab/players/Situations"
 import SnapStrip from "@/components/lab/players/SnapStrip"
@@ -144,7 +145,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const g = row.group
 	// Sections take turns being plain and tinted, whichever of them a player has.
 	let band = 0
-	const tone = () => ((band += 1) % 2 === 0 ? "bg-lab-tint" : "")
+	const tone = () => `pc-sheen ${(band += 1) % 2 === 0 ? "bg-lab-tint" : ""}`
 
 	// The people just above and below him on the boards where he does best (his headline stat first), with the whole league's worth of
 	// context in the map below them.
@@ -192,6 +193,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		...(boxKeys.length ? [{ id: `box-${g}`, label: "Box score" }] : []),
 		...(row.like.length ? [{ id: `like-${g}`, label: "Similar players" }] : []),
 	]
+	const step = (key: string) => ({ n: navItems.findIndex((i) => i.id === `${key}-${g}`) + 1, of: navItems.length })
 	return (
 		<div className="lab-opp" style={cardStyle(row.team)} id={sectionId}>
 			{primary ? <SectionNav items={navItems} /> : null}
@@ -212,27 +214,31 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{read.length ? (
-				<section className="container scroll-mt-32 py-8" aria-label="The read" id={`read-${row.group}`}>
-					<h2 className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />The read</h2>
-					<div className="mt-3 grid max-w-3xl gap-2 text-base leading-relaxed text-lab-soft">
-						{read.map((r, i) => (
-							<p key={i} className="m-0">
-								{r}
-							</p>
-						))}
+				<section className="pc-sheen scroll-mt-32" aria-labelledby={`read-h-${row.group}`} id={`read-${row.group}`}>
+					<div className="container py-8 sm:py-10">
+						<SectionHead id={`read-h-${row.group}`} icon="read" step={step("read")} title="The read" className="mb-1" />
+						<p className="m-0 mt-4 max-w-3xl font-serif text-xl leading-snug text-lab-ink sm:text-2xl sm:leading-snug" data-testid="read-lead">
+							{read[0]}
+						</p>
+						{read.length > 1 ? (
+							<ul className="m-0 mt-5 list-none gap-3 p-0 md:columns-2 [&>li]:mb-3" data-testid="read-cards">
+								{read.slice(1).map((r, i) => (
+									<li key={i} className="relative break-inside-avoid overflow-hidden rounded-xl border border-lab-line bg-lab-surface py-3.5 pl-5 pr-4 text-[15px] leading-relaxed text-lab-soft shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+										<span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5" style={{ background: "var(--pc-accent)" }} />
+										{r}
+									</li>
+								))}
+							</ul>
+						) : null}
+						<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">Written from his numbers, not from film. {row.games} {row.games === 1 ? "game" : "games"} are behind the season figures.</p>
 					</div>
-					<p className="m-0 mt-3 max-w-3xl text-xs leading-relaxed text-lab-muted">Written from his numbers, not from film. {row.games} {row.games === 1 ? "game" : "games"} are behind the season figures.</p>
 				</section>
 			) : null}
 
 			{team && (team.unit || team.room.length > 1) ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`team-h-${row.group}`} id={`team-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`team-h-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold">
-							<span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />
-							His team
-						</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">A player is part of a unit. Here is how the {teamName(row.team)} do at his job, and who he shares the room with.</p>
+						<SectionHead id={`team-h-${row.group}`} icon="team" step={step("team")} title="His team" blurb={<>A player is part of a unit. Here is how the {teamName(row.team)} do at his job, and who he shares the room with.</>} className="mb-1" />
 						<div className="mt-5">
 							<TeamContext view={team} player={row} />
 						</div>
@@ -242,8 +248,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 
 			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`pct-${row.group}`} id={`stack-${row.group}`}>
 				<div className="container py-8 sm:py-10">
-					<h2 id={`pct-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />How he stacks up</h2>
-					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every graded stat at a glance, against all the {meta.peers} in the league.</p>
+					<SectionHead id={`pct-${row.group}`} icon="stack" step={step("stack")} title="How he stacks up" blurb={<>Every graded stat at a glance, against all the {meta.peers} in the league.</>} className="mb-1" />
 					<div className="mt-5 max-w-4xl">
 						<PercentileProfile data={data} player={row} />
 					</div>
@@ -252,8 +257,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 
 			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`league-h-${row.group}`} id={`league-${row.group}`}>
 				<div className="container py-8 sm:py-10">
-					<h2 id={`league-h-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />In the league</h2>
-					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every {meta.single.toLowerCase()} in the league as a dot: pick any two stats and see where he sits, who is around him, and who is ahead.</p>
+					<SectionHead id={`league-h-${row.group}`} icon="league" step={step("league")} title="In the league" blurb={<>Every {meta.single.toLowerCase()} in the league as a dot: pick any two stats and see where he sits, who is around him, and who is ahead.</>} className="mb-1" />
 					<div className="mt-5">
 						<LeagueMap group={row.group} focal={[row.slug]} headline={HEADLINE[row.group]} peers={meta.peers} initialX={mapX} initialY={mapY} />
 					</div>
@@ -277,8 +281,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{explorerStats.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`prog-${row.group}`} id={`progress-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`prog-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />How he has progressed</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Where he has ranked among {meta.peers} after each week, and every game behind it.</p>
+						<SectionHead id={`prog-${row.group}`} icon="progress" step={step("progress")} title="How he has progressed" blurb={<>Where he has ranked among {meta.peers} after each week, and every game behind it.</>} className="mb-1" />
 						<div className="mt-5">
 							<ProgressExplorer group={row.group} name={row.name} stats={explorerStats} trails={trails} weeks={data.weeks} formWeeks={finished} opp={opp} initial={HEADLINE[row.group]} per={per} />
 						</div>
@@ -289,8 +292,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{situations.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`sit-${row.group}`} id={`situations-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`sit-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />Situational football</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">How he does on each down and at each distance, and every play of every game as a success or a failure.</p>
+						<SectionHead id={`sit-${row.group}`} icon="situations" step={step("situations")} title="Situational football" blurb={<>How he does on each down and at each distance, and every play of every game as a success or a failure.</>} className="mb-1" />
 						<div className="mt-5">
 							<Situations name={row.name} views={situations} />
 							{situations.map((v) => {
@@ -310,8 +312,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 
 			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`grades-${row.group}`} id={`numbers-${row.group}`}>
 				<div className="container py-8 sm:py-10">
-					<h2 id={`grades-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />The numbers, in context</h2>
-					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Each one against every {meta.single.toLowerCase()} with at least {meta.need}. Right on the strip is better.</p>
+					<SectionHead id={`grades-${row.group}`} icon="numbers" step={step("numbers")} title="The numbers, in context" blurb={<>Each one against every {meta.single.toLowerCase()} with at least {meta.need}. Right on the strip is better.</>} className="mb-1" />
 					<div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 						{headFirst.map((s) => (
 							<StatTile key={s.k} data={data} player={row} stat={s} showBox win={winSentence(wins[s.k], meta.single, statInfo(row.group, s.k)?.label ?? "")} />
@@ -323,8 +324,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{style.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`style-${row.group}`} id={`style-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`style-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />How he plays</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Tendencies: how his game differs from the {meta.peers} around him. These are not better or worse, only different, and often say as much about the offense or defense he plays in as about him.</p>
+						<SectionHead id={`style-${row.group}`} icon="style" step={step("style")} title="How he plays" blurb={<>Tendencies: how his game differs from the {meta.peers} around him. These are not better or worse, only different, and often say as much about the offense or defense he plays in as about him.</>} className="mb-1" />
 						<div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 							{style.map((s) => (
 								<StatTile key={s.k} data={data} player={row} stat={s} showTrend={false} />
@@ -344,6 +344,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 					value={valueFor(data, contracts, row.slug)}
 					id={`money-${row.group}`}
 					headingId={`money-h-${row.group}`}
+					step={step("money")}
 					className={`scroll-mt-32 border-t border-lab-line ${tone()}`}
 				/>
 			) : null}
@@ -351,8 +352,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{side !== "special" ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`time-${row.group}`} id={`time-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`time-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />Playing time</h2>
-						{row.snaps.season ? (
+						<SectionHead id={`time-${row.group}`} icon="time" step={step("time")} title="Playing time" className="mb-1" />{row.snaps.season ? (
 							<p className="m-0 mt-1 max-w-3xl text-sm leading-relaxed text-lab-soft">
 								He has played in {row.snaps.season[1]} of his team&apos;s {row.snaps.season[2]} {row.snaps.season[2] === 1 ? "game" : "games"} with snap counts, on the field for about {Math.round(((row.snaps.season[0] * row.snaps.season[2]) / Math.max(1, row.snaps.season[1])) * 100)}% of the team&apos;s {side === "offense" ? "offensive" : "defensive"} plays when he plays.
 							</p>
@@ -377,8 +377,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{games.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`log-${row.group}`} id={`log-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`log-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />Game by game</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every game this season: how it ended for his team, how much he played, his box score, and the advanced numbers from that one game. One game is a small sample, so read the right-hand columns as a snapshot, not his level.</p>
+						<SectionHead id={`log-${row.group}`} icon="log" step={step("log")} title="Game by game" blurb={<>Every game this season: how it ended for his team, how much he played, his box score, and the advanced numbers from that one game. One game is a small sample, so read the right-hand columns as a snapshot, not his level.</>} className="mb-1" />
 						{calls.length ? (
 							<div className="mt-5">
 								<BestWorst group={row.group} calls={calls} />
@@ -394,8 +393,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{boxKeys.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`box-${row.group}`} id={`box-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`box-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />The box score</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">The traditional totals, with where each ranks among {meta.peers}. A total rewards volume, which is why the advanced numbers above matter.</p>
+						<SectionHead id={`box-${row.group}`} icon="box" step={step("box")} title="The box score" blurb={<>The traditional totals, with where each ranks among {meta.peers}. A total rewards volume, which is why the advanced numbers above matter.</>} className="mb-1" />
 						<div className="mt-4 max-w-2xl overflow-hidden rounded-xl border border-lab-line">
 							<table className="w-full border-collapse text-left text-sm">
 								<caption className="sr-only">{row.name} box score totals</caption>
@@ -431,15 +429,14 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{row.like.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`like-${row.group}`} id={`like-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<h2 id={`like-${row.group}`} className="m-0 flex items-center gap-3 font-serif text-2xl font-bold"><span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-sm" style={{ background: "var(--pc-accent)" }} />Players with a similar profile</h2>
-						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">The {meta.peers} whose grades are closest to his across the same stats. Similar means similar numbers, not the same style of play.</p>
+						<SectionHead id={`like-${row.group}`} icon="like" step={step("like")} title="Players with a similar profile" blurb={<>The {meta.peers} whose grades are closest to his across the same stats. Similar means similar numbers, not the same style of play.</>} className="mb-1" />
 						<ul className="m-0 mt-4 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
 							{row.like.map((slug) => {
 								const q = data.players.find((x) => x.slug === slug && x.group === row.group)
 								if (!q) return null
 								const o = overall(q)
 								return (
-									<li key={slug} className="lab-opp rounded-xl border border-lab-line bg-lab-surface p-3" style={cardStyle(q.team)}>
+									<li key={slug} className="lab-opp relative rounded-xl border border-lab-line bg-lab-surface p-3 transition-shadow hover:shadow-md" style={{ ...cardStyle(q.team), borderTop: "4px solid var(--pc-accent)" }}>
 										<p className="m-0 flex items-center gap-2 text-xs text-lab-muted">
 											<TeamPill team={q.team} /> {q.pos}
 										</p>
@@ -448,6 +445,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 												{q.name}
 											</Link>
 										</p>
+										<span aria-hidden="true" className="absolute right-3 top-3 font-mono text-2xl font-bold tabular-nums text-lab-muted" style={{ opacity: 0.6 }}>{o === null ? "" : Math.round(o)}</span>
 										<p className="m-0 mt-1 text-xs text-lab-soft">
 											Overall {o === null ? "–" : Math.round(o)} &middot; {formatStat(q.group, HEADLINE[q.group], q.stats.find((s) => s.k === HEADLINE[q.group])?.season.v)}
 										</p>
@@ -512,8 +510,11 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 			<TrackView event="player_view" props={{ slug, group: p.group, team: p.team }} />
-			<section className="lab-opp relative overflow-hidden border-b border-lab-line" style={{ ...cardStyle(p.team), backgroundImage: "linear-gradient(115deg, color-mix(in srgb, var(--pc-accent) 15%, transparent) 0%, transparent 58%)" }}>
-				<div className="h-2 w-full" style={{ background: "var(--pc-accent)" }} aria-hidden="true" />
+			<section className="lab-opp pc-sheen relative overflow-hidden border-b border-lab-line" style={{ ...cardStyle(p.team), backgroundImage: "linear-gradient(115deg, color-mix(in srgb, var(--pc-accent) 15%, transparent) 0%, transparent 58%)" }}>
+				<div className="w-full" aria-hidden="true">
+					<div className="h-1.5" style={{ background: "var(--pc-accent)" }} />
+					<div className="h-1.5" style={{ backgroundImage: "repeating-linear-gradient(135deg, var(--pc-accent) 0 8px, transparent 8px 16px)", opacity: 0.55 }} />
+				</div>
 				{bio?.no !== undefined ? (
 					<span aria-hidden="true" className="pointer-events-none absolute -top-8 right-2 select-none font-serif text-[13rem] font-black leading-none sm:right-10 sm:text-[22rem]" style={{ color: "var(--pc-accent)", opacity: 0.07 }}>
 						{bio.no}
@@ -531,7 +532,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 					</nav>
 					<div className="mt-4 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
 						<div className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-5 gap-y-4 sm:gap-x-7">
-							<div className="relative shrink-0 sm:row-span-2 sm:self-center">
+							<div className="relative shrink-0 rounded-full p-[5px] shadow-lg sm:row-span-2 sm:self-center" style={{ background: "linear-gradient(140deg, var(--pc-accent), color-mix(in srgb, var(--pc-accent) 35%, transparent))" }}>
 								<Headshot espn={p.espn} shot={p.shot} name={p.name} size={128} className="ring-4 ring-lab-surface" />
 								<span className="absolute -bottom-1 -right-1 grid h-10 w-10 place-items-center rounded-full border border-lab-line bg-lab-surface">
 									<TeamLogo team={p.team} size={28} />
@@ -595,10 +596,10 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 							</div>
 						</div>
 						<div className="flex items-center gap-5 rounded-2xl border border-lab-line bg-lab-surface/90 p-4 backdrop-blur lg:flex-col lg:p-5 lg:text-center" data-testid="overall">
-							<GradeRing grade={o} size={124}>
+							<div className="shrink-0"><GradeRing grade={o} size={124}>
 								<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{o === null ? "–" : Math.round(o)}</p>
 								<p className="m-0 mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
-							</GradeRing>
+							</GradeRing></div>
 							<div>
 								{rank ? (
 									<p className="m-0 text-sm text-lab-soft">

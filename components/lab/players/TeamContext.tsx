@@ -8,13 +8,24 @@ import { matchupPath, ordinal } from "@/lib/lab/unitsKit"
 // The team around a player, in two server-rendered pieces: a one-line strip for the top of his page, and a section with his unit's
 // league rank and the teammates in his room. All of the thinking is in lib/lab/playerTeam.ts.
 
+/** All the clubs in a row, best on the left, with this one picked out. Decoration for the rank printed beside it. */
+function RankStrip({ rank, of, className = "" }: { rank: number; of: number; className?: string }) {
+	return (
+		<span aria-hidden="true" className={`flex h-3 items-end gap-[2px] ${className}`}>
+			{Array.from({ length: of }, (_, i) => (
+				<span key={i} className={`block flex-1 rounded-[1px] ${i + 1 === rank ? "h-3" : "h-1.5 bg-lab-line-strong"}`} style={i + 1 === rank ? { background: "var(--pc-accent)" } : undefined} />
+			))}
+		</span>
+	)
+}
+
 /** A line under his name: the club's record, how its offense and defense rank, and who it plays next. */
 export function TeamStrip({ view, team }: { view: TeamView; team: string }) {
 	return (
-		<p className="m-0 mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-lab-soft" data-testid="team-strip">
+		<p className="m-0 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-lab-line bg-lab-surface/80 py-2 pl-3 pr-4 text-sm text-lab-soft backdrop-blur" style={{ borderLeft: "4px solid var(--pc-accent)" }} data-testid="team-strip">
 			<span className="inline-flex items-center gap-1.5 font-semibold text-lab-ink">
-				<TeamLogo team={team} size={20} />
-				{teamNick(team)} <span className="font-mono tabular-nums">{view.record}</span>
+				<TeamLogo team={team} size={22} />
+				{teamNick(team)} <span className="font-mono text-base tabular-nums">{view.record}</span>
 			</span>
 			{view.off ? (
 				<span>
@@ -44,18 +55,30 @@ export default function TeamContext({ view, player }: { view: TeamView; player: 
 			{sentence ? <p className="m-0 max-w-3xl text-base leading-relaxed text-lab-soft">{sentence}</p> : null}
 			<div className="mt-5 grid gap-4 md:grid-cols-2">
 				{view.unit ? (
-					<div className="rounded-2xl border border-lab-line bg-lab-surface p-4" data-testid="unit-card">
-						<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{nick} unit</p>
-						<h3 className="m-0 mt-1 font-serif text-xl font-bold">
-							{view.unit.label}: <span className="font-mono">{ordinal(view.unit.rank)}</span> of {view.teams}
-						</h3>
+					<div className="relative overflow-hidden rounded-2xl border border-lab-line bg-lab-surface p-4 pt-5" data-testid="unit-card">
+						<span aria-hidden="true" className="absolute inset-x-0 top-0 h-1" style={{ background: "var(--pc-accent)" }} />
+						<div className="flex items-start justify-between gap-3">
+							<div className="min-w-0">
+								<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{nick} unit</p>
+								<h3 className="m-0 mt-1 font-serif text-xl font-bold">
+									{view.unit.label}: <span className="font-mono">{ordinal(view.unit.rank)}</span> of {view.teams}
+								</h3>
+							</div>
+							<span aria-hidden="true" className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-center leading-none shadow-sm" style={{ background: "var(--pc-accent)", color: "var(--pc-on)" }}>
+								<span className="font-serif text-2xl font-black">{view.unit.rank}</span>
+								<span className="-mt-3 text-[9px] font-semibold uppercase tracking-[0.12em]">of {view.teams}</span>
+							</span>
+						</div>
 						<ul className="m-0 mt-3 list-none divide-y divide-lab-line p-0">
 							{view.unit.lines.map((l) => (
-								<li key={l.label} className="flex items-baseline justify-between gap-3 py-2 text-sm">
-									<span className="text-lab-soft">{l.label}</span>
-									<span className="shrink-0 font-mono tabular-nums">
-										<span className="font-bold text-lab-ink">{l.value}</span> <span className="text-xs text-lab-muted">{ordinal(l.rank)}</span>
-									</span>
+								<li key={l.label} className="py-2 text-sm">
+									<div className="flex items-baseline justify-between gap-3">
+										<span className="text-lab-soft">{l.label}</span>
+										<span className="shrink-0 font-mono tabular-nums">
+											<span className="font-bold text-lab-ink">{l.value}</span> <span className="text-xs text-lab-muted">{ordinal(l.rank)}</span>
+										</span>
+									</div>
+									<RankStrip rank={l.rank} of={view.teams} className="mt-1.5 opacity-80" />
 								</li>
 							))}
 						</ul>
@@ -69,7 +92,8 @@ export default function TeamContext({ view, player }: { view: TeamView; player: 
 					</div>
 				) : null}
 				{view.room.length > 1 ? (
-					<div className="rounded-2xl border border-lab-line bg-lab-surface p-4" data-testid="room-card">
+					<div className="relative overflow-hidden rounded-2xl border border-lab-line bg-lab-surface p-4 pt-5" data-testid="room-card">
+						<span aria-hidden="true" className="absolute inset-x-0 top-0 h-1" style={{ background: "var(--pc-accent)" }} />
 						<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
 							{teamName(player.team)} {meta.peers}
 						</p>
@@ -88,7 +112,10 @@ export default function TeamContext({ view, player }: { view: TeamView; player: 
 										)}{" "}
 										<span className="text-xs font-normal text-lab-muted">{m.pos}</span>
 									</span>
-									<span className="shrink-0 font-mono tabular-nums">{m.grade === null ? "–" : m.grade}</span>
+									<span aria-hidden="true" className="hidden h-2 w-20 shrink-0 overflow-hidden rounded-full bg-lab-line sm:block">
+										{m.grade === null ? null : <span className="block h-full rounded-full" style={{ width: `${Math.max(6, Math.min(100, ((m.grade - 20) / 60) * 100))}%`, background: m.me ? "var(--pc-accent)" : "var(--lab-ink-muted)", opacity: m.me ? 1 : 0.55 }} />}
+									</span>
+									<span className="w-7 shrink-0 text-right font-mono tabular-nums">{m.grade === null ? "–" : m.grade}</span>
 								</li>
 							))}
 						</ol>

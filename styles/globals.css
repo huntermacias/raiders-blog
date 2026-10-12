@@ -401,3 +401,57 @@
 		animation: rr-rise 0.5s ease-out 1 both;
 	}
 }
+
+/* A profile section in the player's team color: a soft glow in the corner and faint yard lines that fade out toward the bottom. Pure paint. */
+.pc-sheen {
+	position: relative;
+	isolation: isolate;
+}
+.pc-sheen::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image: radial-gradient(46rem 18rem at 100% 0%, color-mix(in srgb, var(--pc-accent) 10%, transparent), transparent 70%),
+		repeating-linear-gradient(90deg, transparent 0 87px, color-mix(in srgb, var(--pc-accent) 6%, transparent) 87px 88px);
+	-webkit-mask-image: linear-gradient(to bottom, #000, transparent 80%);
+	mask-image: linear-gradient(to bottom, #000, transparent 80%);
+}
+
+/* Rise-in for a group of cards, each a beat after the last. */
+@media (prefers-reduced-motion: no-preference) {
+	.rr-stagger > * {
+		animation: rr-rise 0.45s ease-out 1 both;
+	}
+	.rr-stagger > *:nth-child(2) {
+		animation-delay: 70ms;
+	}
+	.rr-stagger > *:nth-child(3) {
+		animation-delay: 140ms;
+	}
+	.rr-stagger > *:nth-child(4) {
+		animation-delay: 210ms;
+	}
+}
+
+/* Percentile bars fill from the left on load and the bubble lands after them. Skipped entirely for people who ask for less motion. */
+@keyframes rr-grow {
+	from {
+		transform: scaleX(0);
+	}
+}
+@keyframes rr-fade {
+	from {
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.rr-grow {
+		transform-origin: left;
+		animation: rr-grow 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) 1 both;
+	}
+	.rr-bubble {
+		animation: rr-fade 0.3s ease-out 0.5s 1 both;
+	}
+}
