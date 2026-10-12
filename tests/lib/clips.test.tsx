@@ -97,7 +97,8 @@ describe("manifest", () => {
 	it("redraws only what is missing, out of date, or from an older look", () => {
 		const entry = (g: (typeof games)[number]) => ({ week: g.week, hash: clipHash(g), seconds: 13, files: {} as never, bytes: {} as never })
 		const manifest: ClipManifest = { version: CLIP_VERSION, generatedAt: "", games: { "1": entry(games[0]), "2": { ...entry(games[1]), hash: "old" } } }
-		expect(staleGames(games, manifest).map((g) => g.week)).toEqual([2, 3, 4])
+		// Game 1 is drawn and current, game 2 is out of date, and every later game is missing, however many have been played.
+		expect(staleGames(games, manifest).map((g) => g.week)).toEqual(games.slice(1).map((g) => g.week))
 		expect(staleGames(games, null)).toHaveLength(games.length)
 		expect(staleGames(games, { ...manifest, version: CLIP_VERSION - 1 })).toHaveLength(games.length)
 	})
