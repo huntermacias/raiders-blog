@@ -107,6 +107,8 @@ class Stat:
     counts       False when the stat is shown and graded but left out of the mover score (it is mostly zeros)
     gate         a column to measure the volume by instead of `den`, when `den` is not what a reader would call the sample
                  (a receiver's share of the team's passes is over the team's attempts, but it is his targets that make it a sample)
+    calc         a name in CALC for a stat that is not num / den. Passer rating has caps on each part, so a season's rating is the
+                 rating of the season's summed line, never an average of the weekly ratings
     se           how to size the uncertainty: "binom" (a rate), "poisson" (a count per opportunity), or a number, the
                  standard deviation of one play, so the standard error is that over the square root of the volume
     """
@@ -119,6 +121,7 @@ class Stat:
     counts: bool = True
     se: object = "binom"
     gate: str | None = None
+    calc: str | None = None
 
 
 @dataclass(frozen=True)
@@ -170,7 +173,7 @@ def _edge_stats() -> dict:
 def _db_stats() -> dict:
     return {
         "yardsTgt": Stat("yds", "tgts", False, TGT_V, se=9.5),
-        "rating": Stat("rating_num", "tgts", False, TGT_V, se=55.0),
+        "rating": Stat("tgts", "tgts", False, TGT_V, se=55.0, calc="rating"),
         "compPct": Stat("cmp", "tgts", False, TGT_V),
         "pbuRate": Stat("pbu_p", "tgts", True, TGT_V),
         "missedPct": Stat("missed", "tackle_chances", False, MISS_V),
@@ -322,6 +325,11 @@ def passer_rating(att: float, cmp_: float, yds: float, td: float, ints: float) -
     c = clamp(td / att * 20)
     d = clamp(2.375 - ints / att * 25)
     return (a + b + c + d) / 6 * 100
+
+
+# Stats that are a function of several summed components. Each takes a mapping with those columns and returns the value or None.
+CALC: dict = {"rating": lambda r: passer_rating(r["tgts"], r["cmp"], r["yds"], r["td"], r["ints"])}
+CALC_COLS: dict = {"rating": ("tgts", "cmp", "yds", "td", "ints")}
 
 
 def percentiles(values: dict[str, float], higher: bool) -> dict[str, float]:
@@ -728,8 +736,7 @@ def defense_components(pbp: pd.DataFrame, pfr_def: pd.DataFrame, snaps: pd.DataF
         tgts=("def_targets", "sum"), cmp=("def_completions_allowed", "sum"), yds=("def_yards_allowed", "sum"),
         td=("def_receiving_td_allowed", "sum"), ints=("def_ints", "sum"), adot_sum=("adot_sum", "sum"))
     out["tackle_chances"] = out["tackles"] + out["missed"]
-    # The passer rating against him is not a sum. It is stored as a rating times targets, so a slice of games still divides back out.
-    out["rating_num"] = [(passer_rating(r.tgts, r.cmp, r.yds, r.td, r.ints) or 0.0) * r.tgts for r in out.itertuples()]
+    # The passer rating against him is not a sum, so it is not stored: the stat (calc="rating") makes it from the summed line of any slice.
     sn = snaps.dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False).agg(snaps=("defense_snaps", "sum"))
     # What play-by-play charges to a defender: tackles for loss and passes defended.
     ev = []
@@ -854,6 +861,16 @@ def standard_error(st: Stat, num: float, den: float) -> float | None:
 
 def slice_values(tot: pd.DataFrame, st: Stat) -> dict[str, tuple[float, float, float, float]]:
     """{id: (value, volume, numerator, denominator)} for one stat over one slice's summed components."""
+    if st.calc:
+        need = CALC_COLS[st.calc]
+        if any(c not in tot for c in need):
+            return {}
+        out = {}
+        for pid, row in tot[list(need)].astype(float).iterrows():
+            v = CALC[st.calc](row)
+            if row["tgts"] > 0 and v is not None:
+                out[pid] = (v * st.scale, row["tgts"], v * row["tgts"], row["tgts"])
+        return out
     if st.num not in tot or st.den not in tot:
         return {}
     num = tot[st.num].to_numpy(dtype=float)
@@ -925,7 +942,7 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
     win = side_windows["def" if side == "def" else "off"]
     df["slice"] = ["form" if w in win.get(t, (set(), set()))[0] else "earlier" for t, w in zip(df["team"], df["week"])]
     box_cols = BOX.get(g, {})
-    cols = sorted({c for s in stats.values() for c in (s.num, s.den, s.gate) if c and c in df.columns} | {c for c in box_cols.values() if c in df.columns})
+    cols = sorted({c for s in stats.values() for c in (s.num, s.den, s.gate, *CALC_COLS.get(s.calc or "", ())) if c and c in df.columns} | {c for c in box_cols.values() if c in df.columns})
     tot = {sl: (df if sl == "season" else df[df["slice"] == sl]).groupby("id")[cols].sum() for sl in SLICES}
     latest = df.sort_values("week").groupby("id")["team"].last()
 
@@ -1063,11 +1080,15 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                 for w, vals in mine.iterrows():
                     if st.num not in vals or st.den not in vals or vals[st.den] <= 0:
                         continue
+                    if st.calc:
+                        one = CALC[st.calc](vals)
+                        if one is None:
+                            continue
                     pct = cum_pct.get(key, {}).get(pid, {}).get(int(w))
                     # The volume is what a reader would call the sample (a receiver's targets), not necessarily the stat's denominator
                     # (his team's pass attempts, for target share).
                     vol = vals[st.gate] if st.gate and st.gate in vals else vals[st.den]
-                    pts.append([int(w), r4(vals[st.num] / vals[st.den] * st.scale), r1(vol), None if pct is None else r1(pct)])
+                    pts.append([int(w), r4((one if st.calc else vals[st.num] / vals[st.den]) * st.scale), r1(vol), None if pct is None else r1(pct)])
                     if week_team.get((pid, w)) != last_team:
                         moved[int(w)] = week_team.get((pid, w))
                 if pts:

@@ -569,3 +569,16 @@ def test_a_game_pfr_has_not_posted_is_not_in_yet_rather_than_a_zero():
     assert b.posted(weeks_of, "LV", 4) and not b.posted(weeks_of, "LV", 5)
     assert not b.posted(weeks_of, "KC", 1)
     assert b.PFR_BOX == {"sacks", "press", "ints", "missed"}
+
+
+def test_a_defenders_passer_rating_is_the_rating_of_his_season_line_not_an_average_of_weekly_ratings():
+    # Hezekiah Masses, 2026 weeks 1-4: 1, 5, 8 and 6 targets. Weekly ratings are 39.6, 9.2, 33.3 and 120.8 (an average weighted by
+    # targets is 53.9), but the four weeks together are 20 targets, 9 catches, 126 yards, 1 touchdown and 3 interceptions: 42.9.
+    weeks = pd.DataFrame(
+        {"tgts": [1, 5, 8, 6], "cmp": [0, 2, 4, 3], "yds": [0, 16, 56, 54], "td": [0, 0, 0, 1], "ints": [0, 2, 1, 0]}, index=["m"] * 4
+    )
+    tot = weeks.groupby(level=0).sum()
+    value, volume, _, _ = b.slice_values(tot, b.Stat("tgts", "tgts", False, (10, 5, 5), calc="rating"))["m"]
+    assert round(value, 1) == 42.9 and volume == 20
+    weekly = [b.passer_rating(*r) for r in weeks[["tgts", "cmp", "yds", "td", "ints"]].itertuples(index=False)]
+    assert round(sum(w * t for w, t in zip(weekly, weeks["tgts"])) / 20, 1) == 53.9
