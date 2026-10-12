@@ -17,6 +17,7 @@ import {
 	boards,
 	buildVsPeers,
 	extremeGames,
+	gameDetail,
 	fingerprint,
 	ladder,
 	scoutingRead,
@@ -334,11 +335,22 @@ describe("the profile hero", () => {
 			expect(b.length).toBeLessThanOrEqual(6)
 			for (let i = 0; i < b.length; i++) {
 				expect(b[i].rank).toBeLessThanOrEqual(5)
-				expect(b[i].text).toMatch(/^(Best|Top [2-5]) in /)
+				expect(b[i].text).toMatch(/^((Best|Top [2-5]) in |Lowest |(2nd|3rd|4th|5th) lowest )/)
+				// More-is-worse totals (missed tackles, picks thrown, penalties) are never an honor.
+				if (b[i].kind === "box") expect(BOX[p.group][b[i].key].bad).toBeUndefined()
 				if (i) expect(b[i].rank).toBeGreaterThanOrEqual(b[i - 1].rank)
 				if (b[i].kind === "stat") expect(statInfo(p.group, b[i].key)?.counts).not.toBe(false)
 			}
 		}
+	})
+
+	it("words a fewer-is-better badge as the lowest, never as the best", () => {
+		const texts = data.players.flatMap((p) => badgesFor(data, p, 5, 20)).filter((b) => b.kind === "stat" && statInfo("lb", b.key)?.higher === false).map((b) => b.text)
+		for (const t of texts) expect(t).not.toMatch(/^(Best|Top \d) in /)
+		expect(BOX.lb.missed.bad).toBe(true)
+		expect(BOX.qb.int.bad).toBe(true)
+		expect(BOX.ol.pen.bad).toBe(true)
+		expect(BOX.wr.yds.bad).toBeUndefined()
 	})
 
 	it("describes style only for stats far from the middle and never grades it", () => {
@@ -399,5 +411,34 @@ describe("where he sits around the league", () => {
 		expect(extremeGames(log, "x", null, 5)).toBeNull()
 		expect(extremeGames(log, "x", true, 11)).toBeNull()
 		expect(extremeGames(undefined, "x", true, 1)).toBeNull()
+	})
+})
+
+describe("what a per-game number counts", () => {
+	it("says per-100 numbers are rates over snaps, never a count of plays", () => {
+		const g = gameDetail("edge", "tflRate", 3.6, 56)
+		expect(g?.unit).toBe("per 100 snaps")
+		expect(g?.detail).toMatch(/in 56 snaps/)
+		expect(g?.detail).toMatch(/^2 tackles for loss|^2 /)
+	})
+	it("says a missed-tackle share is a share of his tackle chances", () => {
+		const g = gameDetail("lb", "missedPct", 0.14, 7)
+		expect(g?.unit).toMatch(/tackle chances missed/)
+		expect(g?.detail).toMatch(/1 missed tackle on 7 tackle chances/)
+		expect(gameDetail("lb", "missedPct", 0, 5)?.detail).toMatch(/^0 missed tackles on 5 tackle chances/)
+	})
+	it("has nothing to say for stats that are not counted", () => {
+		expect(gameDetail("wr", "epaTgt", 0.3, 8)).toBeNull()
+	})
+})
+
+describe("stacking and see-through headers", () => {
+	const css = require("node:fs").readFileSync("styles/globals.css", "utf8") as string
+	it("never isolates the profile sections, which would trap the share popup under the next section", () => {
+		const block = css.slice(css.indexOf(".pc-sheen {"), css.indexOf("}", css.indexOf(".pc-sheen {")))
+		expect(block).not.toMatch(/isolation/)
+	})
+	it("paints sticky table headers over an opaque surface", () => {
+		expect(css).toMatch(/\.lab-solid-tint\s*{[^}]*background-color: var\(--lab-surface\)/)
 	})
 })

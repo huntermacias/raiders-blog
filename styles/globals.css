@@ -402,21 +402,12 @@
 	}
 }
 
-/* A profile section in the player's team color: a soft glow in the corner and faint yard lines that fade out toward the bottom. Pure paint. */
+/* A profile section in the player's team color: a soft glow in the corner and faint yard lines. Painted as the section's own background
+   layers, not as a pseudo-element or a stacking context, so a popup opened from inside the page (the share card) can sit above every section. */
 .pc-sheen {
-	position: relative;
-	isolation: isolate;
-}
-.pc-sheen::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	pointer-events: none;
-	background-image: radial-gradient(46rem 18rem at 100% 0%, color-mix(in srgb, var(--pc-accent) 10%, transparent), transparent 70%),
-		repeating-linear-gradient(90deg, transparent 0 87px, color-mix(in srgb, var(--pc-accent) 6%, transparent) 87px 88px);
-	-webkit-mask-image: linear-gradient(to bottom, #000, transparent 80%);
-	mask-image: linear-gradient(to bottom, #000, transparent 80%);
+	--pc-sheen: radial-gradient(46rem 18rem at 100% 0%, color-mix(in srgb, var(--pc-accent) 10%, transparent), transparent 70%),
+		repeating-linear-gradient(90deg, transparent 0 87px, color-mix(in srgb, var(--pc-accent) 5%, transparent) 87px 88px);
+	background-image: var(--pc-sheen);
 }
 
 /* Rise-in for a group of cards, each a beat after the last. */
@@ -454,4 +445,10 @@
 	.rr-bubble {
 		animation: rr-fade 0.3s ease-out 0.5s 1 both;
 	}
+}
+
+/* A sticky cell must hide what scrolls under it, but --lab-tint is a see-through wash. Paint it over the opaque surface instead. */
+.lab-solid-tint {
+	background-color: var(--lab-surface);
+	background-image: linear-gradient(var(--lab-tint), var(--lab-tint));
 }

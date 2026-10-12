@@ -23,7 +23,7 @@ describe("<Situations />", () => {
 		const rows = screen.getAllByRole("row")
 		expect(rows.some((r) => /3rd down/.test(r.textContent ?? ""))).toBe(true)
 		expect(rows.some((r) => /Inside the 20/.test(r.textContent ?? ""))).toBe(true)
-		expect(screen.getAllByText(/^lg /).length).toBeGreaterThan(5)
+		expect(screen.getAllByText(/^league /).length).toBeGreaterThan(5)
 		const grid = screen.getByTestId("situation-grid")
 		expect(within(grid).getAllByRole("button").length).toBe(16)
 	})

@@ -15,7 +15,7 @@ export default function GameLog({ name, group, rows, boxKeys, statKeys, snaps }:
 				<caption className="sr-only">{name} game by game</caption>
 				<thead>
 					<tr className="bg-lab-tint text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:text-[11px]">
-						<th scope="col" className="sticky left-0 bg-lab-tint px-3 py-2">Game</th>
+						<th scope="col" className="sticky left-0 z-10 lab-solid-tint px-3 py-2">Game</th>
 						<th scope="col" className="px-2 py-2">Result</th>
 						{snaps ? <th scope="col" className="px-2 py-2 text-right">Snaps</th> : null}
 						{boxes.map((k) => (

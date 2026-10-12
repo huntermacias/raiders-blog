@@ -175,7 +175,7 @@ export default function SituationBoard({
 					<thead>
 						<tr className="bg-lab-tint text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:text-[11px]">
 							<th scope="col" className="w-10 px-2 py-2">#</th>
-							<th scope="col" className="sticky left-0 bg-lab-tint px-2 py-2">Player</th>
+							<th scope="col" className="sticky left-0 z-10 lab-solid-tint px-2 py-2">Player</th>
 							<th scope="col" className="px-2 py-2 text-right">{meta.nouns.replace(/^\w/, (c) => c.toUpperCase())}</th>
 							{METRICS.map((m) => (
 								<th key={m} scope="col" className={`whitespace-nowrap px-2 py-2 text-right ${m === metric ? "text-lab-ink" : ""}`} aria-sort={m === metric ? (higherIsBetter(role, m) ? "descending" : "ascending") : "none"}>
@@ -189,7 +189,7 @@ export default function SituationBoard({
 						{lg ? (
 							<tr className="border-t border-lab-line bg-lab-tint/60 text-lab-soft">
 								<td className="px-2 py-2" />
-								<th scope="row" className="sticky left-0 bg-lab-tint px-2 py-2 text-left font-normal italic">
+								<th scope="row" className="sticky left-0 z-10 lab-solid-tint px-2 py-2 text-left font-normal italic">
 									League average
 								</th>
 								<td className="px-2 py-2 text-right font-mono tabular-nums">{lg.n}</td>

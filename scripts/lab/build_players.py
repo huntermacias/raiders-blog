@@ -902,6 +902,16 @@ class Grouped:
     qualifiers: int = 0
 
 
+# Defensive box totals that come from Pro Football Reference's table, which posts a day or two after play-by-play. For a game it has not
+# posted, a missing line is "not in yet", not a zero, so the game log leaves the cell blank instead of printing a 0 that never happened.
+PFR_BOX = {"sacks", "press", "ints", "missed"}
+
+
+def posted(weeks_of: dict[str, dict[int, str]], team: str, week: int) -> bool:
+    """True when the PFR table for this team's game that week has been posted (for defense, `weeks_of` holds only those weeks)."""
+    return week in weeks_of.get(team, {})
+
+
 def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[int], names: dict, pos: dict, snaps: pd.DataFrame,
                 weeks_of: dict[str, dict[int, str]], last_week: int) -> Grouped:
     """Everything for one group: every player's slices, grades, ranks, uncertainty, movers, the yardstick and the game-by-game trail."""
@@ -1070,7 +1080,8 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                 bx = {}
                 for k, c in box_cols.items():
                     if c in mine.columns:
-                        bx[k] = [[int(w), int(v) if float(v).is_integer() else round(float(v), 1)] for w, v in mine[c].items()]
+                        bx[k] = [[int(w), int(v) if float(v).is_integer() else round(float(v), 1)] for w, v in mine[c].items()
+                                 if not (side == "def" and k in PFR_BOX and not posted(weeks_of, week_team.get((pid, w), row["team"]), int(w)))]
                 if bx:
                     entry["b"] = bx
                 if side != "st":

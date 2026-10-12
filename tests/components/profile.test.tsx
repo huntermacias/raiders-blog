@@ -102,6 +102,31 @@ describe("profile extras", () => {
 	})
 })
 
+describe("<BestWorst /> wording", () => {
+	it("labels the unit, the direction and the workload, and says a missing week is not in yet", () => {
+		render(
+			<BestWorst
+				group="lb"
+				calls={[
+					{
+						key: "missedPct",
+						label: "Missed tackle rate",
+						per: "tackle chances",
+						best: { week: 1, value: 0.14, volume: 7, opp: "MIA", result: "W 27–13", won: true },
+						worst: { week: 2, value: 0.4, volume: 5, opp: "LAC", result: "L 10–20", won: false },
+						pending: 5,
+					},
+				]}
+			/>,
+		)
+		const box = screen.getByTestId("best-worst")
+		expect(within(box).getByText(/Lower is better/)).toBeTruthy()
+		expect(within(box).getByText(/\(lowest\)/)).toBeTruthy()
+		expect(within(box).getByText(/1 missed tackle on 7 tackle chances/)).toBeTruthy()
+		expect(within(box).getByText(/Week 5 is not counted here yet/i)).toBeTruthy()
+	})
+})
+
 describe("<LeagueMap />", () => {
 	const wr = data.players.filter((p) => p.group === "wr").sort((a, b) => b.games - a.games)[0]
 	beforeEach(() => {

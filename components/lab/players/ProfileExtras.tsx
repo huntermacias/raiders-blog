@@ -2,7 +2,7 @@ import { DOWN, UP } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
 import Link from "@/components/SiteLink"
 import { boardHref, cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
-import { singular, type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
+import { BOX, gameDetail, singular, type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
 
 // Three server-rendered pieces of a profile: the people just above and below him on a leaderboard, his build against his position, and his
 // best and worst game on a stat. All of the thinking is in playersKit.ts; these only lay it out.
@@ -23,6 +23,7 @@ export function Ladders({ group, items, peers }: { group: PlayerGroup; items: { 
 						</h3>
 						<p className="m-0 mt-0.5 text-xs text-lab-muted">
 							{info?.higher === false ? "Lower is better. " : ""}
+							{board.kind === "box" && BOX[group]?.[board.key]?.bad ? "More is worse here, and first place has the most. " : ""}
 							The {peers} just above and below him
 						</p>
 						<ol className="m-0 mt-3 list-none divide-y divide-lab-line p-0">
@@ -68,38 +69,52 @@ export function BuildAgainstPeers({ lines, peers, name }: { lines: BuildLine[]; 
 	)
 }
 
-export type GameCall = { key: string; label: string; best: GamePick & { opp: string; result: string | null; won: boolean | null }; worst: GamePick & { opp: string; result: string | null; won: boolean | null }; per: string }
+export type GameCall = { key: string; label: string; best: GamePick & { opp: string; result: string | null; won: boolean | null }; worst: GamePick & { opp: string; result: string | null; won: boolean | null }; per: string; /** The week of his latest game when this stat does not have it yet. */ pending?: number }
 
 export function BestWorst({ group, calls }: { group: PlayerGroup; calls: GameCall[] }) {
 	const on = (g: GameCall["best"], per: string) => `on ${g.volume} ${g.volume === 1 ? singular(per) : per}`
 	return (
 		<div className="grid gap-3 md:grid-cols-2" data-testid="best-worst">
-			{calls.map((c) => (
-				<div key={c.key} className="rounded-2xl border border-lab-line bg-lab-surface p-4">
-					<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{c.label}</p>
-					<dl className="m-0 mt-2 grid grid-cols-2 gap-3">
-						{[
-							{ tag: "Best game", g: c.best, mark: "▲", cls: UP },
-							{ tag: "Worst game", g: c.worst, mark: "▼", cls: DOWN },
-						].map((x) => (
-							<div key={x.tag}>
-								<dt className={`text-xs font-semibold ${x.cls}`}>
-									{x.mark} {x.tag}
-								</dt>
-								<dd className="m-0 mt-0.5">
-									<span className="block font-mono text-lg font-bold tabular-nums">{formatStat(group, c.key, x.g.value)}</span>
-									<span className="block text-xs text-lab-soft">
-										Week {x.g.week}
-										{x.g.opp ? ` ${x.g.opp}` : ""}
-										{x.g.result ? `, ${x.g.result}` : ""}
-									</span>
-									<span className="block text-xs text-lab-muted">{on(x.g, c.per)}</span>
-								</dd>
-							</div>
-						))}
-					</dl>
-				</div>
-			))}
+			{calls.map((c) => {
+				const higher = statInfo(group, c.key)?.higher
+				return (
+					<div key={c.key} className="rounded-2xl border border-lab-line bg-lab-surface p-4">
+						<p className="m-0 flex flex-wrap items-baseline justify-between gap-x-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
+							<span>{c.label}</span>
+							{higher === true || higher === false ? <span className="font-medium normal-case tracking-normal">{higher ? "Higher is better" : "Lower is better"}</span> : null}
+						</p>
+						<dl className="m-0 mt-2 grid grid-cols-2 gap-3">
+							{[
+								{ tag: "Best game", g: c.best, mark: "▲", cls: UP },
+								{ tag: "Worst game", g: c.worst, mark: "▼", cls: DOWN },
+							].map((x) => {
+								const d = gameDetail(group, c.key, x.g.value, x.g.volume)
+								return (
+									<div key={x.tag}>
+										<dt className={`text-xs font-semibold ${x.cls}`}>
+											{x.mark} {x.tag}
+											{higher === false ? (x.tag === "Best game" ? " (lowest)" : " (highest)") : ""}
+										</dt>
+										<dd className="m-0 mt-0.5">
+											<span className="block font-mono text-lg font-bold tabular-nums">
+												{formatStat(group, c.key, x.g.value)}
+												{d ? <span className="ml-1.5 font-sans text-xs font-medium text-lab-muted">{d.unit}</span> : null}
+											</span>
+											<span className="block text-xs text-lab-soft">
+												Week {x.g.week}
+												{x.g.opp ? ` ${x.g.opp}` : ""}
+												{x.g.result ? `, ${x.g.result}` : ""}
+											</span>
+											<span className="block text-xs text-lab-muted">{d ? d.detail : on(x.g, c.per)}</span>
+										</dd>
+									</div>
+								)
+							})}
+						</dl>
+						{c.pending ? <p className="m-0 mt-3 border-t border-lab-line pt-2 text-xs leading-snug text-lab-muted">Week {c.pending} is not counted here yet. The charting and snap counts behind this number post a day or two after the game.</p> : null}
+					</div>
+				)
+			})}
 		</div>
 	)
 }

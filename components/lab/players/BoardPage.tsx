@@ -110,6 +110,7 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 						) : null}
 						{info ? `Players need at least ${meta.need} to qualify, so nobody is ranked on a handful of plays.` : null}
 						{info?.higher === false ? " Lower is better." : null}
+						{board.kind === "box" && BOX[group][board.key]?.bad ? " This is a total where more is worse, so first place has the most of it. It is listed for completeness, never as an honor." : null}
 					</p>
 					<TrackView event="board_view" props={{ group, board: board.path }} />
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />

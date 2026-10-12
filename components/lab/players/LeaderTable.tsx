@@ -137,7 +137,7 @@ export default function LeaderTable({
 					<thead>
 						<tr className="bg-lab-tint text-[10px] sm:text-[11px]">
 							{head("rank", "#", "w-10")}
-							<th scope="col" className="sticky left-0 bg-lab-tint px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:text-[11px]">Player</th>
+							<th scope="col" className="sticky left-0 z-10 lab-solid-tint px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:text-[11px]">Player</th>
 							{head("v", valueLabel, "text-right")}
 							<th scope="col" className="hidden w-56 px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:table-cell sm:text-[11px]">Against the league</th>
 							{stat ? head("n", perLabel, "text-right") : null}

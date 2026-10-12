@@ -178,11 +178,11 @@ const EDGE: Record<string, StatInfo> = {
 	pressRate: { label: "Pressures per 100 snaps", short: "Pressures/100", path: "pressures-per-100-snaps", what: "Sacks, hits and hurries as Pro Football Reference charts them, for every 100 snaps he plays. A pass rusher is doing his job on plays that never become a sack.", box: "A sack total misses most of what a rusher does and depends on how many snaps he plays.", fmt: (v) => v.toFixed(1), higher: true, per: "snaps" },
 	sackRate: { label: "Sacks per 100 snaps", short: "Sacks/100", path: "sacks-per-100-snaps", what: "Sacks for every 100 snaps he plays. Rare, so it swings fast; pressures are the steadier read.", box: "A sack total ignores how many snaps he played.", fmt: (v) => v.toFixed(1), higher: true, per: "snaps", counts: false },
 	tflRate: { label: "Tackles for loss per 100 snaps", short: "TFL/100", path: "tackles-for-loss-per-100-snaps", what: "Plays he ends behind the line of scrimmage, for every 100 snaps.", box: "Tackles for loss are counted, but never against the snaps he played.", fmt: (v) => v.toFixed(1), higher: true, per: "snaps" },
-	missedPct: { label: "Missed tackles", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
+	missedPct: { label: "Missed tackle rate", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
 }
 
 const LB: Record<string, StatInfo> = {
-	missedPct: { label: "Missed tackles", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
+	missedPct: { label: "Missed tackle rate", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
 	tackleRate: { label: "Tackles per 100 snaps", short: "Tackles/100", path: "tackles-per-100-snaps", what: "Tackles for every 100 snaps he plays. It shows how often the ball is finding him, which is partly the scheme.", box: "A tackle total ignores snaps.", fmt: (v) => v.toFixed(1), higher: true, per: "snaps" },
 	tflRate: { label: "Tackles for loss per 100 snaps", short: "TFL/100", path: "tackles-for-loss-per-100-snaps", what: "Plays he ends behind the line of scrimmage, for every 100 snaps.", box: "Tackles for loss are counted, but never against the snaps he played.", fmt: (v) => v.toFixed(1), higher: true, per: "snaps" },
 	pressRate: { label: "Pressures per 100 snaps", short: "Pressures/100", path: "pressures-per-100-snaps", what: "How often he gets after the quarterback, for every 100 snaps. For a linebacker it describes his job more than his quality, so it is shown, not graded.", box: "Not in the box score.", fmt: (v) => v.toFixed(1), higher: null, per: "snaps", lean: ["stays home", "rushes often"] },
@@ -194,7 +194,7 @@ const DB: Record<string, StatInfo> = {
 	rating: { label: "Passer rating allowed", short: "Rating against", path: "passer-rating-allowed", what: "The passer rating of quarterbacks throwing at him. 158.3 is perfect for the passer, so lower is better for the defender.", box: "Not in the box score.", fmt: (v) => v.toFixed(0), higher: false, per: "targets" },
 	compPct: { label: "Completion rate allowed", short: "Comp % against", path: "completion-rate-allowed", what: "The share of passes thrown at him that are completed. Fewer is better.", box: "Not in the box score.", fmt: pct0, higher: false, per: "targets" },
 	pbuRate: { label: "Passes defended per target", short: "PBU/target", path: "passes-defended-per-target", what: "How often a pass thrown at him ends with him breaking it up. A cornerback does this far more often than he intercepts.", box: "Passes defended are counted, but never against how often he was tested.", fmt: pct0, higher: true, per: "targets" },
-	missedPct: { label: "Missed tackles", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
+	missedPct: { label: "Missed tackle rate", short: "Missed", path: "missed-tackles", what: "The share of his tackle chances he missed. Fewer is better.", box: "Tackle totals reward the player who gets the most chances, not the one who finishes them.", fmt: pct0, higher: false, per: "tackle chances" },
 	adotAgainst: { label: "Depth of passes at him", short: "Depth against", path: "depth-of-passes-against", what: "How far downfield the passes thrown at him travel on average. It shows whether he is tested deep or underneath, which is a role, not a grade.", box: "Not in the box score.", fmt: yds1, higher: null, per: "targets", lean: ["is thrown at underneath", "is tested deep"] },
 }
 
@@ -245,7 +245,8 @@ export const STAT: Record<PlayerGroup, Record<string, StatInfo>> = {
 /** The stat a card, a leaderboard and the progression chart open on. Mirrors HEADLINE in build_players.py. */
 export const HEADLINE: Record<PlayerGroup, string> = { qb: "epaDb", rb: "epaRush", wr: "epaTgt", te: "epaTgt", ol: "runSucc", edge: "pressRate", idl: "pressRate", lb: "missedPct", cb: "yardsTgt", saf: "yardsTgt", k: "fgOe", p: "epaPunt", pr: "epaRet", kr: "epaRet" }
 
-export type BoxInfo = { label: string; short: string; path: string; fmt?: (v: number) => string }
+/** `bad`: a total where more is worse (missed tackles, interceptions thrown, penalties). It still ranks most-first on its board, but it never earns a badge. */
+export type BoxInfo = { label: string; short: string; path: string; fmt?: (v: number) => string; bad?: true }
 const int = (v: number) => String(Math.round(v))
 const DEF_BOX: Record<string, BoxInfo> = {
 	tackles: { label: "Tackles", short: "Tkl", path: "tackles" },
@@ -256,15 +257,15 @@ const DEF_BOX: Record<string, BoxInfo> = {
 	press: { label: "Pressures", short: "Press", path: "pressures" },
 	pbu: { label: "Passes defended", short: "PBU", path: "passes-defended" },
 	ints: { label: "Interceptions", short: "Int", path: "interceptions" },
-	missed: { label: "Missed tackles", short: "Missed", path: "missed-tackle-total" },
+	missed: { label: "Missed tackles", short: "Missed", path: "missed-tackle-total", bad: true },
 }
 /** The box score, kept beside the advanced numbers so a reader can sort by either. Mirrors BOX in build_players.py. */
 export const BOX: Record<PlayerGroup, Record<string, BoxInfo>> = {
-	qb: { att: { label: "Pass attempts", short: "Att", path: "pass-attempts" }, cmp: { label: "Completions", short: "Cmp", path: "completions" }, yds: { label: "Passing yards", short: "Yds", path: "passing-yards" }, td: { label: "Passing touchdowns", short: "TD", path: "passing-touchdowns" }, int: { label: "Interceptions thrown", short: "Int", path: "interceptions-thrown" }, sacks: { label: "Times sacked", short: "Sacked", path: "times-sacked" } },
+	qb: { att: { label: "Pass attempts", short: "Att", path: "pass-attempts" }, cmp: { label: "Completions", short: "Cmp", path: "completions" }, yds: { label: "Passing yards", short: "Yds", path: "passing-yards" }, td: { label: "Passing touchdowns", short: "TD", path: "passing-touchdowns" }, int: { label: "Interceptions thrown", short: "Int", path: "interceptions-thrown", bad: true }, sacks: { label: "Times sacked", short: "Sacked", path: "times-sacked", bad: true } },
 	rb: { car: { label: "Carries", short: "Car", path: "carries" }, yds: { label: "Rushing yards", short: "Yds", path: "rushing-yards" }, td: { label: "Rushing touchdowns", short: "TD", path: "rushing-touchdowns" } },
 	wr: { tgt: { label: "Targets", short: "Tgt", path: "targets" }, rec: { label: "Receptions", short: "Rec", path: "receptions" }, yds: { label: "Receiving yards", short: "Yds", path: "receiving-yards" }, td: { label: "Receiving touchdowns", short: "TD", path: "receiving-touchdowns" } },
 	te: { tgt: { label: "Targets", short: "Tgt", path: "targets" }, rec: { label: "Receptions", short: "Rec", path: "receptions" }, yds: { label: "Receiving yards", short: "Yds", path: "receiving-yards" }, td: { label: "Receiving touchdowns", short: "TD", path: "receiving-touchdowns" } },
-	ol: { snaps: { label: "Offensive snaps", short: "Snaps", path: "offensive-snaps" }, gs: { label: "Games started", short: "GS", path: "games-started" }, pen: { label: "Penalties", short: "Pen", path: "penalties" }, hold: { label: "Holding penalties", short: "Hold", path: "holding-penalties" }, fs: { label: "False starts", short: "FS", path: "false-starts" } },
+	ol: { snaps: { label: "Offensive snaps", short: "Snaps", path: "offensive-snaps" }, gs: { label: "Games started", short: "GS", path: "games-started" }, pen: { label: "Penalties", short: "Pen", path: "penalties", bad: true }, hold: { label: "Holding penalties", short: "Hold", path: "holding-penalties", bad: true }, fs: { label: "False starts", short: "FS", path: "false-starts", bad: true } },
 	edge: DEF_BOX, idl: DEF_BOX, lb: DEF_BOX, cb: DEF_BOX, saf: DEF_BOX,
 	k: { fga: { label: "Field goal tries", short: "FGA", path: "field-goal-tries" }, fgm: { label: "Field goals made", short: "FGM", path: "field-goals-made" }, xpa: { label: "Extra point tries", short: "XPA", path: "extra-point-tries" }, xpm: { label: "Extra points made", short: "XPM", path: "extra-points-made" } },
 	p: { punts: { label: "Punts", short: "Punts", path: "punts" }, in20: { label: "Punts inside the 20", short: "In 20", path: "punts-inside-20-total" } },
@@ -1212,10 +1213,12 @@ export function badgesFor(data: PlayersData, p: PlayerRow, top = 5, limit = 6): 
 	for (const s of p.stats) {
 		const info = statInfo(p.group, s.k)
 		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top || signalOf(yardOf(data, p.group, s.k)) === "luck") continue
-		out.push({ text: `${nth(s.season.r)} in ${lc(info.label)}`, rank: s.season.r, kind: "stat", key: s.k, path: info.path })
+		// A stat where fewer is better ranks lowest-first, so "Best in missed tackle rate" must say it is the lowest, not the highest.
+		const text = info.higher === false ? (s.season.r === 1 ? `Lowest ${lc(info.label)}` : `${ordinal(s.season.r)} lowest ${lc(info.label)}`) : `${nth(s.season.r)} in ${lc(info.label)}`
+		out.push({ text, rank: s.season.r, kind: "stat", key: s.k, path: info.path })
 	}
 	for (const k of Object.keys(BOX[p.group])) {
-		if (p.box[k] === undefined || !(p.box[k] > 0)) continue
+		if (p.box[k] === undefined || !(p.box[k] > 0) || BOX[p.group][k].bad) continue
 		const r = boxRank(data, p, k)
 		if (!r || r.rank > top) continue
 		out.push({ text: `${nth(r.rank)} in ${lc(BOX[p.group][k].label)}`, rank: r.rank, kind: "box", key: k, path: BOX[p.group][k].path })
@@ -1293,6 +1296,31 @@ export function buildVsPeers(p: PlayerRow, bio: PlayerBio | undefined, peers: (P
 // ---------------------------------------------------------------------------------------------- best and worst game
 
 export type GamePick = { week: number; value: number; volume: number }
+
+const DEF_GROUPS: PlayerGroup[] = ["edge", "idl", "lb", "cb", "saf"]
+const COUNTED: Record<string, { kind: "per100" | "share"; one: string; many: string }> = {
+	missedPct: { kind: "share", one: "missed tackle", many: "missed tackles" },
+	tackleRate: { kind: "per100", one: "tackle", many: "tackles" },
+	tflRate: { kind: "per100", one: "tackle for loss", many: "tackles for loss" },
+	pressRate: { kind: "per100", one: "pressure", many: "pressures" },
+	sackRate: { kind: "per100", one: "sack", many: "sacks" },
+}
+
+/**
+ * Plain words for one game's number on a defender's rate, so "3.6" cannot be read as 3.6 tackles: the unit beside it ("per 100 snaps",
+ * "missed") and the whole numbers behind it ("2 tackles for loss in 56 snaps"). Null for a stat that needs neither.
+ */
+export function gameDetail(group: PlayerGroup, key: string, value: number, volume: number): { unit: string; detail: string } | null {
+	const c = COUNTED[key]
+	if (!c || !DEF_GROUPS.includes(group)) return null
+	if (c.kind === "per100") {
+		const raw = (value * volume) / 100
+		const n = key === "sackRate" ? Math.round(raw * 2) / 2 : Math.round(raw)
+		return { unit: "per 100 snaps", detail: `${n} ${n === 1 ? c.one : c.many} in ${volume} ${volume === 1 ? "snap" : "snaps"}` }
+	}
+	const n = Math.round(value * volume)
+	return { unit: "of his tackle chances missed", detail: `${n} ${n === 1 ? c.one : c.many} on ${volume} tackle ${volume === 1 ? "chance" : "chances"}` }
+}
 
 /** His best and worst game on a stat among games with enough plays to mean something, by what the stat counts as better. */
 export function extremeGames(log: PlayerLog | undefined, key: string, higher: boolean | null, minVolume: number): { best: GamePick; worst: GamePick } | null {

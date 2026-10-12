@@ -560,3 +560,12 @@ def test_linemen_are_graded_as_their_own_group_with_the_line_stats_marked_as_sha
     assert "ol" in b.GROUP_ORDER and b.SIDE_OF["ol"] == "off"
     assert b.GROUPS["ol"].headline == "runSucc"
     assert b.GROUPS["ol"].stats["sackRate"].higher is False and b.GROUPS["ol"].stats["snapShare"].higher is None
+
+
+def test_a_game_pfr_has_not_posted_is_not_in_yet_rather_than_a_zero():
+    # Sacks, pressures, interceptions and missed tackles come from PFR's table, which posts after play-by-play. For a game it has not
+    # posted the box score leaves them out (the game log prints a dash) instead of showing a 0 the player never had.
+    weeks_of = {"LV": {1: "a", 2: "b", 4: "c"}}
+    assert b.posted(weeks_of, "LV", 4) and not b.posted(weeks_of, "LV", 5)
+    assert not b.posted(weeks_of, "KC", 1)
+    assert b.PFR_BOX == {"sacks", "press", "ints", "missed"}

@@ -145,7 +145,7 @@ function DownTable({ view }: { view: SituationView }) {
 				<caption className="sr-only">By down, against the average {view.single.toLowerCase()}</caption>
 				<thead>
 					<tr className="bg-lab-tint text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted sm:text-[11px]">
-						<th scope="col" className="sticky left-0 bg-lab-tint px-3 py-2">Spot</th>
+						<th scope="col" className="sticky left-0 z-10 lab-solid-tint px-3 py-2">Spot</th>
 						<th scope="col" className="px-2 py-2 text-right">{meta.nouns.replace(/^\w/, (c) => c.toUpperCase())}</th>
 						{METRICS.map((m) => (
 							<th key={m} scope="col" className="whitespace-nowrap px-2 py-2 text-right">
@@ -177,7 +177,7 @@ function DownRow({ row, role }: { row: SplitRow; role: Role }) {
 				return (
 					<td key={m} className="whitespace-nowrap px-2 py-2 text-right font-mono tabular-nums">
 						<span className="font-bold text-lab-ink">{formatMetric(m, row.mine[m])}</span>
-						{row.lg ? <span className="block text-[10px] font-normal text-lab-muted">lg {formatMetric(m, row.lg[m])}</span> : null}
+						{row.lg ? <span className="block text-[10px] font-normal text-lab-muted">league {formatMetric(m, row.lg[m])}</span> : null}
 					</td>
 				)
 			})}

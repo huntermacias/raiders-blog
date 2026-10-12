@@ -7,6 +7,7 @@ import ProgressLine from "@/components/lab/players/ProgressLine"
 import {
 	type LogPoint,
 	type PlayerGroup,
+	GROUP_META,
 	formatStat,
 	ordinal,
 	shownPct,
@@ -101,12 +102,17 @@ export default function ProgressExplorer({
 								<td className="px-2 py-2 text-lab-soft">{opp[String(p[0])] ? `vs ${opp[String(p[0])]}` : ""}</td>
 								<td className="px-2 py-2 text-right font-mono tabular-nums text-lab-ink">{formatStat(group, stat.k, p[1])}</td>
 								<td className="px-2 py-2 text-right font-mono tabular-nums text-lab-muted">{Math.round(p[2])}</td>
-								{stat.graded ? <td className="whitespace-nowrap px-3 py-2 text-right font-mono tabular-nums">{p[3] === null ? <span className="text-lab-muted" title="Too few plays to rank yet">–</span> : `${ordinal(shownPct(p[3]))} pct`}</td> : null}
+								{stat.graded ? <td className="whitespace-nowrap px-3 py-2 text-right font-mono tabular-nums">{p[3] === null ? <span className="text-lab-muted" title="Too few plays behind his season so far to rank him fairly">Not yet</span> : `${ordinal(shownPct(p[3]))} pct`}</td> : null}
 							</tr>
 						))}
 					</tbody>
 				</table>
 			</div>
+			{stat.graded && pts.some((p) => p[3] === null) ? (
+				<p className="m-0 mt-2 text-[11px] leading-relaxed text-lab-muted" data-testid="not-yet-note">
+					&ldquo;Not yet&rdquo; means too little of the season was behind him to rank him fairly against {GROUP_META[group].peers}. A week-by-week rank needs most of the {GROUP_META[group].need} that grade a full season, so early weeks stay blank for players who see few plays, like kickers. It says nothing about how he played.
+				</p>
+			) : null}
 			<p className="m-0 mt-2 text-[11px] leading-relaxed text-lab-muted">
 				{stat.lower ? "Lower is better for this stat. " : ""}
 				One game is a small sample: a single stat over {pts.length ? Math.round(pts.reduce((a, p) => a + p[2], 0) / pts.length) : 0} {per[stat.k] ?? "plays"} can swing on a handful of plays. Shaded rows are the recent stretch.

@@ -176,7 +176,9 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			const r = games.find((x) => x.week === w)
 			return { opp: opponentFor(data, row.team, w, log), result: r?.result ?? null, won: r?.won ?? null }
 		}
-		calls.push({ key: s.k, label: info.label, per: info.per, best: { ...ex.best, ...tag(ex.best.week) }, worst: { ...ex.worst, ...tag(ex.worst.week) } })
+		const latest = games.length ? Math.max(...games.map((x) => x.week)) : 0
+		const seen = new Set((log?.g[s.k] ?? []).map((p) => p[0]))
+		calls.push({ key: s.k, label: info.label, per: info.per, best: { ...ex.best, ...tag(ex.best.week) }, worst: { ...ex.worst, ...tag(ex.worst.week) }, ...(latest && !seen.has(latest) ? { pending: latest } : {}) })
 	}
 	const navItems: NavItem[] = [
 		...(read.length ? [{ id: `read-${g}`, label: "The read" }] : []),
@@ -377,7 +379,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{games.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`log-${row.group}`} id={`log-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<SectionHead id={`log-${row.group}`} icon="log" step={step("log")} title="Game by game" blurb={<>Every game this season: how it ended for his team, how much he played, his box score, and the advanced numbers from that one game. One game is a small sample, so read the right-hand columns as a snapshot, not his level.</>} className="mb-1" />
+						<SectionHead id={`log-${row.group}`} icon="log" step={step("log")} title="Game by game" blurb={<>Every game this season: how it ended for his team, how much he played, his box score, and the advanced numbers from that one game. One game is a small sample, so read the right-hand columns as a snapshot, not his level. A dash means that number is not in yet (charting posts a day or two after a game), not a zero.</>} className="mb-1" />
 						{calls.length ? (
 							<div className="mt-5">
 								<BestWorst group={row.group} calls={calls} />
@@ -415,7 +417,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 													</Link>
 												</th>
 												<td className="px-3 py-2 text-right font-mono font-bold tabular-nums">{formatBox(row.group, k, row.box[k])}</td>
-												<td className="px-3 py-2 text-right text-xs text-lab-muted">{r ? rankPhrase(r.rank, r.of) : "–"}</td>
+												<td className="px-3 py-2 text-right text-xs text-lab-muted">{r ? rankPhrase(r.rank, r.of) : "–"}{r && BOX[row.group][k].bad ? " (most)" : ""}</td>
 											</tr>
 										)
 									})}
@@ -510,7 +512,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 			<TrackView event="player_view" props={{ slug, group: p.group, team: p.team }} />
-			<section className="lab-opp pc-sheen relative overflow-hidden border-b border-lab-line" style={{ ...cardStyle(p.team), backgroundImage: "linear-gradient(115deg, color-mix(in srgb, var(--pc-accent) 15%, transparent) 0%, transparent 58%)" }}>
+			<section className="lab-opp pc-sheen relative overflow-hidden border-b border-lab-line" style={{ ...cardStyle(p.team), backgroundImage: "linear-gradient(115deg, color-mix(in srgb, var(--pc-accent) 15%, transparent) 0%, transparent 58%), var(--pc-sheen)" }}>
 				<div className="w-full" aria-hidden="true">
 					<div className="h-1.5" style={{ background: "var(--pc-accent)" }} />
 					<div className="h-1.5" style={{ backgroundImage: "repeating-linear-gradient(135deg, var(--pc-accent) 0 8px, transparent 8px 16px)", opacity: 0.55 }} />

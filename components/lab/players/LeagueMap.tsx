@@ -264,10 +264,10 @@ export default function LeagueMap({ group, focal, headline, peers, initialX, ini
 									{xs.label} and {ys.label}, {peers}, best first on {xs.label}
 								</caption>
 								<thead>
-									<tr className="sticky top-0 bg-lab-tint text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
-										<th scope="col" className="px-3 py-2">Player</th>
-										<th scope="col" className="px-3 py-2 text-right">{xs.short}</th>
-										<th scope="col" className="px-3 py-2 text-right">{ys.short}</th>
+									<tr className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
+										<th scope="col" className="sticky top-0 z-10 lab-solid-tint px-3 py-2">Player</th>
+										<th scope="col" className="sticky top-0 z-10 lab-solid-tint px-3 py-2 text-right">{xs.short}</th>
+										<th scope="col" className="sticky top-0 z-10 lab-solid-tint px-3 py-2 text-right">{ys.short}</th>
 									</tr>
 								</thead>
 								<tbody>
