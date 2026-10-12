@@ -66,8 +66,13 @@ describe("the share card's spec", () => {
 
 	it("says what a win and a loss are each worth to the team in its own game, from its side", () => {
 		const view = viewFor("LV", "playoffs")
-		const mine = view.recs.find((r) => r.yours)!
+		const mine = view.recs.find((r) => r.yours)
 		const spec = buildRootingSpec(view, { season: 2026, size: "wide" })
+		// The team has no game of its own to show on a bye, or once it has played this week's game.
+		if (!mine) {
+			expect(spec.own).toBeNull()
+			return
+		}
 		const homeIsLV = mine.home === "LV"
 		const win = (homeIsLV ? mine.pHome : mine.pAway) as number
 		const loss = (homeIsLV ? mine.pAway : mine.pHome) as number

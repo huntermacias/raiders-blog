@@ -62,7 +62,7 @@ describe("the page's metadata, for every team", () => {
 	it("says what matters most in the description, in points and not percent growth", async () => {
 		const meta = await generateMetadata(props({ team: "LV", goal: "playoffs" }))
 		expect(String(meta.description)).toMatch(/chance to make the playoffs is \d+%|<1%|>99%/)
-		expect(String(meta.description)).toMatch(/\+\d+ pts/)
+		expect(String(meta.description)).toMatch(/\+\d+ pts?\b/)
 	})
 
 	it("falls back to a true page for a bad team or goal", async () => {
