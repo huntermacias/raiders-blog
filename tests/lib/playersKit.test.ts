@@ -141,7 +141,7 @@ describe("who he is", () => {
 		const slugs = Array.from(new Set(data.players.map((p) => p.slug)))
 		const withBio = slugs.filter((s) => logs.bio[s])
 		expect(withBio.length / slugs.length).toBeGreaterThan(0.9)
-		const withPhoto = data.players.filter((p) => p.espn)
+		const withPhoto = data.players.filter((p) => p.espn || p.shot)
 		expect(withPhoto.length / data.players.length).toBeGreaterThan(0.9)
 	})
 })
@@ -277,7 +277,9 @@ describe("context on one number", () => {
 			} else {
 				expect(c.rank).toBeGreaterThan(0)
 				expect(c.of).toBeGreaterThanOrEqual(c.rank!)
-				expect(c.tier).not.toBeNull()
+				// A stat that is still mostly luck is ranked but never called elite or poor.
+				if (c.signal === "luck") expect(c.tier).toBeNull()
+				else expect(c.tier).not.toBeNull()
 			}
 		}
 	})

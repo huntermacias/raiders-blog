@@ -5,6 +5,7 @@ import MoreFromLab from "@/components/lab/MoreFromLab"
 import PlayerCard from "@/components/lab/players/PlayerCard"
 import PlayerSearch from "@/components/lab/players/PlayerSearch"
 import { BoardIndex, GroupLeaderCard, HowToRead, RoleCard } from "@/components/lab/players/Sections"
+import SeasonArcs, { arcRows } from "@/components/lab/players/SeasonArcs"
 import StatTile from "@/components/lab/players/StatTile"
 import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -64,6 +65,7 @@ export default function PlayersPage() {
 		return p ? { player: p, key: HEADLINE[p.group] } : undefined
 	})()
 	const logOf = (p: { slug: string; group: (typeof GROUP_ORDER)[number] }) => logs[p.slug]?.[p.group]
+	const arcs = arcRows(roster, logOf)
 
 	return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink">
@@ -108,11 +110,11 @@ export default function PlayersPage() {
 
 					<Section
 						id="raiders-moving"
-						title="Raiders on the move"
+						title="Raiders on the move: the season so far"
 						blurb={
 							<p className="m-0">
-								Who is playing better or worse than he was. We compare each Raider&apos;s last {data.formGames} games with the games before them, against everyone at his position, in grade points ({MOVE_MIN} is a real move and 10 is a full standard deviation). Each card says how sure the change is, because after a few games a stat can swing on a handful of plays.
-							</p>
+								How each Raider&apos;s season has gone. The cards compare his last {data.formGames} games with the games before them, against everyone at his position, in grade points ({MOVE_MIN} is a real move and 10 is a full standard deviation), and a stat that is still mostly luck counts for less. Under the cards, every Raider&apos;s standing is traced week by week. Each card says how sure the change is, because after a few games a stat can swing on a handful of plays.
+								</p>
 						}
 					>
 						{mine.risers.length || mine.fallers.length ? (
@@ -143,13 +145,20 @@ export default function PlayersPage() {
 						) : (
 							<p className="m-0 rounded-2xl border border-dashed border-lab-line-strong p-5 text-sm leading-relaxed text-lab-soft">No Raider has moved by {MOVE_MIN} grade points or more with enough plays behind it. That is normal after a steady stretch.</p>
 						)}
+							{arcs.length ? (
+								<>
+									<h3 className="m-0 mb-1 mt-10 font-serif text-xl font-bold">The whole roster, week by week</h3>
+									<p className="m-0 mb-4 max-w-3xl text-sm leading-relaxed text-lab-soft">Where each Raider has stood among the players at his position after every game, averaged over the stats that make up his grade. A line that climbs means he has passed more and more of them; it moves slowly on purpose, so one big Sunday does not fool it.</p>
+									<SeasonArcs data={data} rows={arcs} />
+								</>
+							) : null}
 						<p className="m-0 mt-6 max-w-3xl text-xs leading-relaxed text-lab-muted">
 							Small samples move fast. After {data.week} {data.week === 1 ? "game" : "games"}, treat a move as a reason to watch, not a verdict. &ldquo;A clear change&rdquo; means the move is bigger than what a few plays would produce by chance.
 						</p>
 					</Section>
 
 					{best.length || worst.length ? (
-						<Section id="box-score-hides" title="What the box score hides" blurb={<p className="m-0">The Raiders&apos; most telling numbers, each set against every player at the position, with what the box score would have shown instead.</p>} tint>
+						<Section id="box-score-hides" title="What the box score hides" blurb={<p className="m-0">The Raiders&apos; most telling numbers, each set against every player at the position, with what the box score would have shown instead. Only numbers that have settled enough to mean something earn a spot: a stat like missed tackles or drops, where a few plays still decide who is on top, stays off this list until the season firms it up.</p>} tint>
 							{best.length ? (
 								<>
 									<h3 className="m-0 mb-3 font-serif text-xl font-bold">Where they stand out</h3>
@@ -298,10 +307,11 @@ export default function PlayersPage() {
 									<li>A grade puts the stat on the scouting scale: 50 is the average of the qualifying players and every 10 points is one standard deviation. For a stat where less is better, like drops, the scale is flipped so a higher grade is always better.</li>
 									<li>The same stat is measured three ways: over the whole season, over the team&apos;s last {data.formGames} games, and over the games before that. A mover score is the average change in grade between the last two, with the main stat counting double and a thin recent sample counting for less. How sure the change is comes from comparing it with the noise a handful of plays creates.</li>
 									<li>Stats that describe a style, like how deep a quarterback throws or how often a back runs to the edge, are shown against the league but never graded. Stats that are mostly zeros, like drop rate, are shown and graded but not counted in the overall grade.</li>
+									<li>Early in a season a rate over a handful of plays, like missed tackles, drops or field goal percentage, is mostly luck. Each stat carries a measure of how much of the gap between players is real so far. Players are ranked on the number pulled toward the league average by how few plays are behind it, a stat that is mostly luck is marked "too early to rank", and none of those earns a tier, a badge, a standout card or a verdict in a read. They firm up as games are played.</li>
 									<li>Field goals are judged against the make rate of every kick of that distance this season, and EPA means expected points added from the down, distance and field position.</li>
 								</ol>
 								<p className="m-0 text-xs leading-relaxed text-lab-muted">
-									These are not film grades. They come from play-by-play, charting and snap-count data, so they cannot see blocking, route running or assignments, and offensive linemen are not included because the data has no stats for them. Box-score totals use the same games as the rest of the page.
+									These are not film grades. They come from play-by-play, charting and snap-count data, so they cannot see blocking, route running or assignments. For that reason offensive linemen are graded on what does exist: how often each is flagged compared with other linemen, and how his whole line does in the games he starts (shared by the five who start together, and labeled that way). Box-score totals use the same games as the rest of the page.
 								</p>
 							</details>
 						</div>

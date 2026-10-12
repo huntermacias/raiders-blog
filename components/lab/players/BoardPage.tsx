@@ -18,6 +18,10 @@ import {
 	leaders,
 	statInfo,
 	STAT,
+	SIGNAL_HELP,
+	SIGNAL_WORD,
+	signalOf,
+	UNIT_NOTE,
 } from "@/lib/lab/playersKit"
 import { boardHref } from "@/lib/lab/playerView"
 import { labWeeks } from "@/lib/lab/toolsData"
@@ -31,12 +35,14 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 	const info = board.kind === "stat" ? statInfo(group, board.key) : null
 	const rows = leaders(data, board)
 	const yard = board.kind === "stat" ? (data.yard[group]?.[board.key] ?? null) : null
+	const signal = info && info.higher !== null ? signalOf(yard) : null
 	const slim: LeaderRowSlim[] = rows.map((r) => ({
 		slug: r.player.slug,
 		name: r.player.name,
 		team: r.player.team,
 		pos: r.player.pos,
 		espn: r.player.espn,
+		shot: r.player.shot,
 		v: r.value,
 		rank: r.rank,
 		n: r.volume,
@@ -83,8 +89,21 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 							{info.box}
 						</p>
 					) : null}
+					{info?.unit ? (
+						<p className="m-0 mt-4 max-w-3xl rounded-xl border border-lab-line-strong bg-lab-tint px-4 py-3 text-sm leading-relaxed text-lab-soft" data-testid="unit-note">
+							<span className="font-semibold text-lab-ink">A line stat, not one man&apos;s. </span>
+							{UNIT_NOTE} Linemen who start together are tied here and ordered by snaps played.
+						</p>
+					) : null}
+					{signal && signal !== "real" ? (
+						<p className="m-0 mt-4 max-w-3xl rounded-xl border border-dashed border-lab-line-strong bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft" data-testid="signal-note">
+							<span className="font-semibold text-lab-ink">{SIGNAL_WORD[signal]}. </span>
+							{SIGNAL_HELP[signal]}
+							{signal === "luck" ? " Players are still ordered below, but nobody is called elite or poor on it yet." : ""}
+						</p>
+					) : null}
 					<p className="m-0 mt-4 text-sm text-lab-soft">
-						{first && yard && info ? (
+						{first && yard && info && signal !== "luck" ? (
 							<>
 								Best so far: <span className="font-semibold text-lab-ink">{first.player.name}</span> ({first.player.team}), {formatStat(group, board.key, first.value)}. A typical {meta.single.toLowerCase()} is {formatStat(group, board.key, yard.q[2])}.{" "}
 							</>
@@ -126,6 +145,7 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 							defaultTeam=""
 							valueLabel={info ? info.short : (BOX[group][board.key]?.short ?? board.label)}
 							perLabel={info ? info.per.replace(/^\w/, (c) => c.toUpperCase()) : "Plays"}
+							lean={info?.lean}
 						/>
 					) : (
 						<p className="m-0 rounded-2xl border border-dashed border-lab-line-strong p-5 text-sm text-lab-soft">Nobody qualifies yet. This fills in as the season goes on.</p>
@@ -135,7 +155,7 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 				<details className="mt-8 max-w-3xl rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm text-lab-soft">
 					<summary className="cursor-pointer text-sm font-semibold text-lab-ink">How to read this table</summary>
 					<ul className="mb-2 mt-3 list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-lab-muted">
-						<li>The number on the left is the league rank among {meta.peers}, even when the list is filtered to one team.</li>
+						<li>The number on the left is the league rank among {meta.peers}, even when the list is filtered to one team. On a graded stat the rank allows for how many plays are behind each number: a player with a few plays has his number pulled toward the middle, so he cannot jump ahead of a player who did the same over many more.</li>
 						<li>&ldquo;Against the league&rdquo; draws each player on the same strip: the ends are the 10th-best and 90th-best player, the shaded stretch is the middle half, and the tick is the median. Right is always better.</li>
 						<li>&ldquo;Lately&rdquo; is the change in grade between a player&apos;s last {data.formGames} games and the games before them. The tag says whether the change is bigger than what a few plays could cause.</li>
 						<li>Tick &ldquo;Show the box score&rdquo; to put the traditional totals next to the advanced number and sort by either.</li>

@@ -3,12 +3,12 @@
 import * as React from "react"
 
 import Link from "@/components/SiteLink"
-import { ConfidenceChip, Delta, TierChip } from "@/components/lab/players/Bits"
+import { ConfidenceChip, Delta, EarlyChip, TierChip } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
 import { useTeamFilter } from "@/components/lab/players/useTeamFilter"
 import { Headshot } from "@/components/lab/players/Media"
 import { cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
-import { type PlayerGroup, type Yard, confidenceOf, formatBox, formatStat, pctFromRank, tierOf, GROUP_META } from "@/lib/lab/playersKit"
+import { type PlayerGroup, type Yard, confidenceOf, formatBox, formatStat, pctFromRank, signalOf, tierOf, valuePct, GROUP_META } from "@/lib/lab/playersKit"
 
 export type LeaderRowSlim = {
 	slug: string
@@ -16,6 +16,7 @@ export type LeaderRowSlim = {
 	team: string
 	pos: string
 	espn?: number
+	shot?: string
 	v: number
 	rank: number
 	n: number | null
@@ -44,6 +45,7 @@ export default function LeaderTable({
 	defaultTeam = "",
 	valueLabel,
 	perLabel,
+	lean,
 }: {
 	group: PlayerGroup
 	statKey: string
@@ -56,6 +58,8 @@ export default function LeaderTable({
 	defaultTeam?: string
 	valueLabel: string
 	perLabel: string
+	/** For a style stat: what a low and a high value say about how he plays. */
+	lean?: [string, string]
 }) {
 	const [urlTeam, setTeam] = useTeamFilter()
 	const team = urlTeam || defaultTeam
@@ -66,6 +70,8 @@ export default function LeaderTable({
 	const styles = React.useMemo(() => Object.fromEntries(teams.map((t) => [t, cardStyle(t)])), [teams])
 	const meta = GROUP_META[group]
 	const stat = kind === "stat"
+	const graded = stat && higher !== null
+	const luck = graded && signalOf(yard) === "luck"
 
 	const shown = React.useMemo(() => {
 		const needle = q.trim().toLowerCase()
@@ -141,13 +147,14 @@ export default function LeaderTable({
 					</thead>
 					<tbody>
 						{shown.slice(0, limit).map((r) => {
-							const pct = stat && yard ? pctFromRank(r.rank, yard.n) : null
+							const pct = graded && yard && !luck ? pctFromRank(r.rank, yard.n) : null
+							const word = stat && higher === null && yard && lean ? (valuePct(r.v, yard) >= 65 ? lean[1] : valuePct(r.v, yard) <= 35 ? lean[0] : "About typical") : null
 							return (
 								<tr key={r.slug} className="border-t border-lab-line align-middle" data-testid="leader-row">
 									<td className="px-2 py-2 font-mono tabular-nums text-lab-muted">{r.rank}</td>
 									<th scope="row" className="sticky left-0 bg-lab-surface px-2 py-2 font-normal">
 										<div className="lab-opp flex items-center gap-2.5" style={styles[r.team]}>
-											<Headshot espn={r.espn} name={r.name} size={36} className="hidden sm:inline-flex" />
+											<Headshot espn={r.espn} shot={r.shot} name={r.name} size={36} className="hidden sm:inline-flex" />
 											<div>
 												<Link href={profileHref(r.slug)} className="font-serif text-sm font-bold text-lab-ink hover:underline sm:text-base">
 													{r.name}
@@ -155,7 +162,7 @@ export default function LeaderTable({
 												<span className="block text-[11px] text-lab-muted">
 													{r.pos} &middot; {r.team}
 												</span>
-												{pct !== null && stat ? <TierChip tier={tierOf(pct)} className="sm:hidden" /> : null}
+												{pct !== null ? <TierChip tier={tierOf(pct)} className="sm:hidden" /> : null}
 											</div>
 										</div>
 									</th>
@@ -165,6 +172,8 @@ export default function LeaderTable({
 											<div className="lab-opp" style={styles[r.team]}>
 												<Yardstick compact marks={[{ v: r.v, name: r.name }]} yard={yard} higher={higher} fmt={(v) => formatStat(group, statKey, v)} peers={meta.peers} />
 												{pct !== null ? <TierChip tier={tierOf(pct)} className="mt-0.5" /> : null}
+												{luck ? <EarlyChip className="mt-0.5" /> : null}
+												{word ? <span className="mt-0.5 block text-[11px] leading-tight text-lab-muted">{word.charAt(0).toUpperCase() + word.slice(1)}</span> : null}
 											</div>
 										) : null}
 									</td>

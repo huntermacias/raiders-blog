@@ -36,6 +36,11 @@ export function ConfidenceChip({ conf, className = "" }: { conf: Confidence; cla
 	)
 }
 
+/** For a stat that is mostly luck so far: not a grade, so not colored like one. */
+export function EarlyChip({ className = "", label = "Mostly luck so far" }: { className?: string; label?: string }) {
+	return <span className={`inline-flex items-center rounded-full border border-dashed border-lab-line-strong whitespace-nowrap px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-lab-muted ${className}`}>{label}</span>
+}
+
 export function TeamPill({ team }: { team: string }) {
 	return (
 		<span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ background: "var(--pc-accent)", color: "var(--pc-on)" }}>

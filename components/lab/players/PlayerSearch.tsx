@@ -96,7 +96,7 @@ export default function PlayerSearch({
 								onClick={() => pick(r)}
 								className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${i === active ? "bg-lab-hover" : ""} hover:bg-lab-hover`}
 							>
-								<Headshot espn={r.espn} name={r.name} size={32} />
+								<Headshot espn={r.espn} shot={r.shot} name={r.name} size={32} />
 								<span className="min-w-0 flex-1 truncate font-semibold text-lab-ink">{r.name}</span>
 								<span className="shrink-0 text-xs text-lab-muted">
 									{r.team} &middot; {r.pos || GROUP_META[r.group].single}

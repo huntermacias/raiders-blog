@@ -10,7 +10,7 @@ import { ordinal } from "./unitsKit"
 
 export { ordinal }
 
-export type PlayerGroup = "qb" | "rb" | "wr" | "te" | "edge" | "idl" | "lb" | "cb" | "saf" | "k" | "p" | "pr" | "kr"
+export type PlayerGroup = "qb" | "rb" | "wr" | "te" | "ol" | "edge" | "idl" | "lb" | "cb" | "saf" | "k" | "p" | "pr" | "kr"
 export type Side = "offense" | "defense" | "special"
 export type Slice = { v: number; n: number; se?: number | null; g?: number | null; r?: number | null }
 export type PlayerStat = { k: string; season: Slice; form: Slice | null; earlier: Slice | null; delta?: number; z?: number }
@@ -32,8 +32,11 @@ export type PlayerRow = {
 	like: string[]
 	/** His ESPN id, which is all that is needed to find his headshot. */
 	espn?: number
+	/** The league's own headshot id, for a player with no ESPN id (most offensive linemen). */
+	shot?: string
 }
-export type Yard = { n: number; mean: number; sd: number; q: [number, number, number, number, number] }
+/** `rel` is the share of the differences between players on this stat that is real rather than luck so far (0 to 1); style stats have none. */
+export type Yard = { n: number; mean: number; sd: number; q: [number, number, number, number, number]; rel?: number }
 export type PlayersData = {
 	season: number
 	week: number
@@ -68,9 +71,9 @@ export type PlayerLogs = {
 	win: Partial<Record<PlayerGroup, Record<string, WinSplit>>>
 }
 
-export const GROUP_ORDER: PlayerGroup[] = ["qb", "rb", "wr", "te", "edge", "idl", "lb", "cb", "saf", "k", "p", "pr", "kr"]
+export const GROUP_ORDER: PlayerGroup[] = ["qb", "rb", "wr", "te", "ol", "edge", "idl", "lb", "cb", "saf", "k", "p", "pr", "kr"]
 export const SIDES: { id: Side; title: string; groups: PlayerGroup[] }[] = [
-	{ id: "offense", title: "Offense", groups: ["qb", "rb", "wr", "te"] },
+	{ id: "offense", title: "Offense", groups: ["qb", "rb", "wr", "te", "ol"] },
 	{ id: "defense", title: "Defense", groups: ["edge", "idl", "lb", "cb", "saf"] },
 	{ id: "special", title: "Special teams", groups: ["k", "p", "pr", "kr"] },
 ]
@@ -87,6 +90,7 @@ export const GROUP_META: Record<PlayerGroup, GroupMeta> = {
 	qb: { title: "Quarterbacks", single: "Quarterback", peers: "quarterbacks", side: "offense", need: "40 dropbacks", blurb: "Efficiency on every dropback, accuracy against the difficulty of the throw, and the style of the offense he runs." },
 	rb: { title: "Running backs", single: "Running back", peers: "running backs", side: "offense", need: "20 carries", blurb: "Points added per carry, the yards he makes himself after contact, and where the offense runs him." },
 	wr: { title: "Wide receivers", single: "Wide receiver", peers: "wide receivers", side: "offense", need: "12 targets", blurb: "Points added per target, catches beyond what the throw allowed, yards after the catch, and how he is used." },
+	ol: { title: "Offensive linemen", single: "Offensive lineman", peers: "offensive linemen", side: "offense", need: "150 snaps", blurb: "No public data credits one lineman with a block, so this is what exists: how often he is flagged, and how his whole line does in the games he starts. The line's numbers are shared by the five who start together." },
 	te: { title: "Tight ends", single: "Tight end", peers: "tight ends", side: "offense", need: "12 targets", blurb: "The same receiving numbers as wide receivers, graded against other tight ends only." },
 	edge: { title: "Edge rushers", single: "Edge rusher", peers: "edge rushers", side: "defense", need: "80 snaps", blurb: "Pressures, sacks and tackles for loss per snap, which says more about a pass rusher than a sack total." },
 	idl: { title: "Interior linemen", single: "Interior lineman", peers: "interior linemen", side: "defense", need: "80 snaps", blurb: "Pressure and disruption from the tackles and nose tackles, graded against the inside rushers who play beside them." },
@@ -125,6 +129,10 @@ export type StatInfo = {
 	counts?: boolean
 	/** For a style stat: what a low value and a high value say about how he plays. */
 	lean?: [string, string]
+	/** True when the number belongs to his whole unit (an offensive line's sack rate), so every lineman who starts beside him shares it. */
+	unit?: true
+	/** For a style stat that is a share of something he does, what the share counts, so it reads "12 tries, 1 of them from 50+ yards". */
+	part?: string
 }
 
 const EPA = "Expected points added: how many points the play added to (or took from) the offense's scoring chances, given the down, the distance and the field position."
@@ -136,10 +144,10 @@ const QB: Record<string, StatInfo> = {
 	badThrow: { label: "Bad throws", short: "Bad throws", path: "bad-throws", what: "The share of his attempts that Pro Football Reference's charters called a bad throw: off target, not just incomplete. Fewer is better.", box: "An incompletion also blames him for a drop or a throwaway.", fmt: pct1, higher: false, per: "attempts" },
 	sackRate: { label: "Sack rate", short: "Sack rate", path: "sack-rate", what: "Sacks as a share of his dropbacks. It is the quarterback and the line together. Fewer is better.", box: "A sack total depends on how often he drops back.", fmt: pct1, higher: false, per: "dropbacks", counts: false },
 	adot: { label: "Average depth of throw", short: "Depth", path: "average-depth-of-throw", what: "How far past the line of scrimmage the ball travels, on average. It is a style, not a skill.", box: "Yards per attempt blends depth with everything else.", fmt: yds1, higher: null, per: "throws", lean: ["throws it short", "throws it deep"] },
-	deepRate: { label: "Deep throws", short: "Deep %", path: "deep-throws", what: "The share of his throws that travel 20 or more yards in the air.", box: "A long touchdown looks the same however rarely he tries it.", fmt: pct0, higher: null, per: "throws", lean: ["rarely throws deep", "throws deep often"] },
-	paRate: { label: "Play-action dropbacks", short: "Play-action", path: "play-action", what: "How often a dropback starts with a fake handoff.", box: "The box score does not record the fake.", fmt: pct0, higher: null, per: "dropbacks", lean: ["rarely uses play-action", "leans on play-action"] },
-	blitzSeen: { label: "Blitzed", short: "Blitzed", path: "blitzed", what: "How often defenses send an extra rusher at him.", box: "Not in the box score.", fmt: pct0, higher: null, per: "dropbacks", lean: ["is rarely blitzed", "is blitzed often"] },
-	oopRate: { label: "Leaves the pocket", short: "Off-platform", path: "leaves-the-pocket", what: "How often he is outside the pocket when he throws or is sacked.", box: "Not in the box score.", fmt: pct0, higher: null, per: "dropbacks", lean: ["stays in the pocket", "plays outside the pocket"] },
+	deepRate: { label: "Deep throws", short: "Deep %", path: "deep-throws", what: "The share of his throws that travel 20 or more yards in the air.", box: "A long touchdown looks the same however rarely he tries it.", fmt: pct0, higher: null, per: "throws", lean: ["rarely throws deep", "throws deep often"], part: "20+ yards in the air" },
+	paRate: { label: "Play-action dropbacks", short: "Play-action", path: "play-action", what: "How often a dropback starts with a fake handoff.", box: "The box score does not record the fake.", fmt: pct0, higher: null, per: "dropbacks", lean: ["rarely uses play-action", "leans on play-action"], part: "off a play-action fake" },
+	blitzSeen: { label: "Blitzed", short: "Blitzed", path: "blitzed", what: "How often defenses send an extra rusher at him.", box: "Not in the box score.", fmt: pct0, higher: null, per: "dropbacks", lean: ["is rarely blitzed", "is blitzed often"], part: "against a blitz" },
+	oopRate: { label: "Leaves the pocket", short: "Off-platform", path: "leaves-the-pocket", what: "How often he is outside the pocket when he throws or is sacked.", box: "Not in the box score.", fmt: pct0, higher: null, per: "dropbacks", lean: ["stays in the pocket", "plays outside the pocket"], part: "outside the pocket" },
 }
 
 const RB: Record<string, StatInfo> = {
@@ -150,8 +158,8 @@ const RB: Record<string, StatInfo> = {
 	broken: { label: "Broken tackles", short: "Broken/100", path: "broken-tackles", what: "Tackles he breaks per 100 carries, as charted by Pro Football Reference.", box: "A broken tackle is not recorded anywhere in the box score.", fmt: (v) => `${(v * 100).toFixed(1)} per 100`, higher: true, per: "carries" },
 	stuffRate: { label: "Stuffed runs", short: "Stuffed", path: "stuffed-runs", what: "The share of his carries that gain nothing or lose yards. Fewer is better, and the line shares the blame.", box: "Hidden inside the yards per carry.", fmt: pct0, higher: false, per: "carries", counts: false },
 	ybc: { label: "Yards before contact", short: "Yds before", path: "yards-before-contact", what: "Yards per carry before a defender touches him. That is mostly the line and the scheme, so it is shown, not graded.", box: "Not in the box score.", fmt: yds1, higher: null, per: "carries", lean: ["gets little room", "gets big lanes"] },
-	edgeRate: { label: "Runs to the edge", short: "Edge runs", path: "runs-to-the-edge", what: "The share of his carries run around the end instead of between the tackles.", box: "Not in the box score.", fmt: pct0, higher: null, per: "carries", lean: ["runs between the tackles", "gets to the edge"] },
-	gunRate: { label: "Carries from shotgun", short: "Shotgun", path: "shotgun-carries", what: "The share of his carries that start with the quarterback in shotgun, a sign of what kind of run game he lives in.", box: "Not in the box score.", fmt: pct0, higher: null, per: "carries", lean: ["runs from under center", "runs from shotgun"] },
+	edgeRate: { label: "Runs to the edge", short: "Edge runs", path: "runs-to-the-edge", what: "The share of his carries run around the end instead of between the tackles.", box: "Not in the box score.", fmt: pct0, higher: null, per: "carries", lean: ["runs between the tackles", "gets to the edge"], part: "around the edge" },
+	gunRate: { label: "Carries from shotgun", short: "Shotgun", path: "shotgun-carries", what: "The share of his carries that start with the quarterback in shotgun, a sign of what kind of run game he lives in.", box: "Not in the box score.", fmt: pct0, higher: null, per: "carries", lean: ["runs from under center", "runs from shotgun"], part: "from shotgun" },
 }
 
 const REC: Record<string, StatInfo> = {
@@ -161,9 +169,9 @@ const REC: Record<string, StatInfo> = {
 	drop: { label: "Drop rate", short: "Drops", path: "drop-rate", what: "Passes charted as drops, per target. Fewer is better. Almost everyone has few, so it is shown but not counted in his overall grade.", box: "Drops are not an official stat.", fmt: pct1, higher: false, per: "targets", counts: false },
 	share: { label: "Share of the team's passes", short: "Target share", path: "target-share", what: "The portion of his team's pass attempts that were thrown to him, in the games he was targeted. It shows whether he is the focus of the offense.", box: "Targets and receptions do not say how big the offense's passing game was.", fmt: pct0, higher: true, per: "targets" },
 	adot: { label: "Average depth of target", short: "Depth", path: "average-depth-of-target", what: "How far downfield his targets are, on average. It is a role, not a grade.", box: "Receiving yards blend depth with everything else.", fmt: yds1, higher: null, per: "targets", lean: ["works the short game", "works downfield"] },
-	deepRate: { label: "Deep targets", short: "Deep %", path: "deep-targets", what: "The share of his targets that are 20 or more yards downfield.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["rarely goes deep", "goes deep often"] },
-	contested: { label: "Contested targets", short: "Contested", path: "contested-targets", what: "The share of his targets charted as contested: a defender is on him at the catch point. It says how he is used, not whether he wins.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["gets targeted in open space", "gets targeted in tight coverage"] },
-	screen: { label: "Screen targets", short: "Screens", path: "screen-targets", what: "The share of his targets that are screen passes, a sign his yards come from the offense's design.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["is rarely a screen target", "is a screen target often"] },
+	deepRate: { label: "Deep targets", short: "Deep %", path: "deep-targets", what: "The share of his targets that are 20 or more yards downfield.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["rarely goes deep", "goes deep often"], part: "20+ yards downfield" },
+	contested: { label: "Contested targets", short: "Contested", path: "contested-targets", what: "The share of his targets charted as contested: a defender is on him at the catch point. It says how he is used, not whether he wins.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["gets targeted in open space", "gets targeted in tight coverage"], part: "contested" },
+	screen: { label: "Screen targets", short: "Screens", path: "screen-targets", what: "The share of his targets that are screen passes, a sign his yards come from the offense's design.", box: "Not in the box score.", fmt: pct0, higher: null, per: "targets", lean: ["is rarely a screen target", "is a screen target often"], part: "screens" },
 }
 
 const EDGE: Record<string, StatInfo> = {
@@ -196,8 +204,8 @@ const KICK: Record<string, StatInfo> = {
 	xpPct: { label: "Extra point percentage", short: "XP %", path: "extra-point-percentage", what: "Extra points made over tries. Nearly everyone makes nearly all of them, so it is shown but not counted in his overall grade.", box: "This is the box score number.", fmt: pct0, higher: true, per: "tries", counts: false },
 	koEpa: { label: "EPA per kickoff", short: "Kickoff EPA", path: "epa-per-kickoff", what: `${EPA} Measured from the kicking team's side, so a higher number means his kickoffs leave the opponent with a worse start.`, box: "Touchbacks are counted, but not what the kick was worth.", fmt: (v) => signed(v, 2), higher: true, per: "kickoffs" },
 	fgDist: { label: "Average try distance", short: "Distance", path: "average-try-distance", what: "The average length of his field goal tries. It shows how far his coaches trust him, which is a role, not a grade.", box: "Not in the box score.", fmt: yds1, higher: null, per: "tries", lean: ["kicks from close in", "is trusted from long range"] },
-	longRate: { label: "Tries from 50+", short: "50+ tries", path: "tries-from-50", what: "The share of his field goal tries from 50 yards or more.", box: "Not in the box score.", fmt: pct0, higher: null, per: "tries", lean: ["rarely kicks from long range", "is sent out from 50+ often"] },
-	koTb: { label: "Kickoff touchbacks", short: "Touchbacks", path: "kickoff-touchbacks", what: "The share of his kickoffs that are touchbacks.", box: "Counted, but without saying what the alternative was worth.", fmt: pct0, higher: null, per: "kickoffs", lean: ["kicks to the field", "kicks it out of the end zone"] },
+	longRate: { label: "Tries from 50+", short: "50+ tries", path: "tries-from-50", what: "The share of his field goal tries from 50 yards or more.", box: "Not in the box score.", fmt: pct0, higher: null, per: "tries", lean: ["rarely kicks from long range", "is sent out from 50+ often"], part: "from 50+ yards" },
+	koTb: { label: "Kickoff touchbacks", short: "Touchbacks", path: "kickoff-touchbacks", what: "The share of his kickoffs that are touchbacks.", box: "Counted, but without saying what the alternative was worth.", fmt: pct0, higher: null, per: "kickoffs", lean: ["kicks to the field", "kicks it out of the end zone"], part: "touchbacks" },
 }
 
 const PUNT: Record<string, StatInfo> = {
@@ -206,13 +214,13 @@ const PUNT: Record<string, StatInfo> = {
 	in20: { label: "Punts inside the 20", short: "Inside 20", path: "punts-inside-the-20", what: "The share of his punts that land inside the 20-yard line.", box: "Counted, but not against how many punts were close enough to try.", fmt: pct0, higher: true, per: "punts" },
 	tbRate: { label: "Touchbacks", short: "Touchbacks", path: "punt-touchbacks", what: "The share of his punts that are touchbacks, which waste the distance. Fewer is better.", box: "Counted, but not against attempts.", fmt: pct0, higher: false, per: "punts" },
 	gross: { label: "Gross punt average", short: "Gross", path: "gross-punt-average", what: "Average punt distance before the return. It is the box score number, shown beside net yards for comparison.", box: "This is the box score number.", fmt: yds1, higher: null, per: "punts", lean: ["kicks shorter", "kicks longer"] },
-	fcRate: { label: "Fair catches", short: "Fair catch", path: "fair-catches", what: "The share of his punts that are fair caught, a sign of directional kicking and hang time.", box: "Not in the box score.", fmt: pct0, higher: null, per: "punts", lean: ["lets returners run", "forces fair catches"] },
+	fcRate: { label: "Fair catches", short: "Fair catch", path: "fair-catches", what: "The share of his punts that are fair caught, a sign of directional kicking and hang time.", box: "Not in the box score.", fmt: pct0, higher: null, per: "punts", lean: ["lets returners run", "forces fair catches"], part: "fair caught" },
 }
 
 const PRET: Record<string, StatInfo> = {
 	epaRet: { label: "EPA per punt fielded", short: "EPA/punt", path: "epa-per-punt-fielded", what: `${EPA} From his team's side, for every punt he fields, fair catches included.`, box: "Return average ignores fair catches and the starting field position.", fmt: (v) => signed(v, 2), higher: true, per: "punts" },
 	retAvg: { label: "Yards per return", short: "Yds/return", path: "yards-per-return", what: "Average yards when he returns the punt (fair catches excluded).", box: "This is the box score number.", fmt: yds1, higher: true, per: "returns" },
-	fcRate: { label: "Fair catch rate", short: "Fair catch", path: "fair-catch-rate", what: "How often he fair catches instead of returning, a choice about risk.", box: "Not in the box score.", fmt: pct0, higher: null, per: "punts", lean: ["returns almost everything", "fair catches often"] },
+	fcRate: { label: "Fair catch rate", short: "Fair catch", path: "fair-catch-rate", what: "How often he fair catches instead of returning, a choice about risk.", box: "Not in the box score.", fmt: pct0, higher: null, per: "punts", lean: ["returns almost everything", "fair catches often"], part: "fair caught" },
 }
 
 const KRET: Record<string, StatInfo> = {
@@ -220,13 +228,22 @@ const KRET: Record<string, StatInfo> = {
 	retAvg: { label: "Yards per return", short: "Yds/return", path: "yards-per-return", what: "Average yards per kickoff return.", box: "This is the box score number.", fmt: yds1, higher: true, per: "returns" },
 }
 
+const OL: Record<string, StatInfo> = {
+	runSucc: { label: "Line run success", short: "Line runs", path: "line-run-success", what: "How often the team's designed runs gain enough to keep the offense on schedule, in the games he started. It is the line, the backs and the scheme together, and the five linemen who start together share it.", box: "Team rushing yards ignore the down and the distance.", fmt: pct0, higher: true, per: "runs", unit: true },
+	sackRate: { label: "Sacks allowed by his line", short: "Line sack rate", path: "line-sack-rate", what: "Sacks as a share of the team's dropbacks in the games he started. It is the line and the quarterback together, and every lineman who starts beside him shares it. Fewer is better.", box: "No sack is charged to a single lineman in the box score.", fmt: pct1, higher: false, per: "dropbacks", unit: true },
+	penRate: { label: "Penalties per 1,000 snaps", short: "Penalties/1,000", path: "penalties-per-1000-snaps", what: "Accepted penalties called on him (holding, false starts and the rest) for every 1,000 snaps he plays. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps" },
+	holdRate: { label: "Holding per 1,000 snaps", short: "Holding/1,000", path: "holding-per-1000-snaps", what: "Offensive holding penalties for every 1,000 snaps. It is part of the penalty rate, shown on its own because holding is the penalty that blocking causes. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps", counts: false },
+	fsRate: { label: "False starts per 1,000 snaps", short: "False starts/1,000", path: "false-starts-per-1000-snaps", what: "False starts for every 1,000 snaps: a lapse in focus rather than in blocking. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps", counts: false },
+	snapShare: { label: "Share of snaps when he plays", short: "Snap share", path: "share-of-snaps", what: "The share of the offense's snaps he is on the field for in the games he plays. It says whether he is a full-time starter or a part of a rotation.", box: "Not in the box score.", fmt: pct0, higher: null, per: "snaps", lean: ["rotates in and out", "plays nearly every snap"] },
+}
+
 /** The stat catalogs, one per kind of job. build_players.py keeps the same keys, in the same groups. */
-export const STAT_SETS = { QB, RB, REC, EDGE, LB, DB, KICK, PUNT, PRET, KRET }
+export const STAT_SETS = { QB, RB, OL, REC, EDGE, LB, DB, KICK, PUNT, PRET, KRET }
 export const STAT: Record<PlayerGroup, Record<string, StatInfo>> = {
-	qb: QB, rb: RB, wr: REC, te: REC, edge: EDGE, idl: EDGE, lb: LB, cb: DB, saf: DB, k: KICK, p: PUNT, pr: PRET, kr: KRET,
+	qb: QB, rb: RB, wr: REC, te: REC, ol: OL, edge: EDGE, idl: EDGE, lb: LB, cb: DB, saf: DB, k: KICK, p: PUNT, pr: PRET, kr: KRET,
 }
 /** The stat a card, a leaderboard and the progression chart open on. Mirrors HEADLINE in build_players.py. */
-export const HEADLINE: Record<PlayerGroup, string> = { qb: "epaDb", rb: "epaRush", wr: "epaTgt", te: "epaTgt", edge: "pressRate", idl: "pressRate", lb: "missedPct", cb: "yardsTgt", saf: "yardsTgt", k: "fgOe", p: "epaPunt", pr: "epaRet", kr: "epaRet" }
+export const HEADLINE: Record<PlayerGroup, string> = { qb: "epaDb", rb: "epaRush", wr: "epaTgt", te: "epaTgt", ol: "runSucc", edge: "pressRate", idl: "pressRate", lb: "missedPct", cb: "yardsTgt", saf: "yardsTgt", k: "fgOe", p: "epaPunt", pr: "epaRet", kr: "epaRet" }
 
 export type BoxInfo = { label: string; short: string; path: string; fmt?: (v: number) => string }
 const int = (v: number) => String(Math.round(v))
@@ -247,6 +264,7 @@ export const BOX: Record<PlayerGroup, Record<string, BoxInfo>> = {
 	rb: { car: { label: "Carries", short: "Car", path: "carries" }, yds: { label: "Rushing yards", short: "Yds", path: "rushing-yards" }, td: { label: "Rushing touchdowns", short: "TD", path: "rushing-touchdowns" } },
 	wr: { tgt: { label: "Targets", short: "Tgt", path: "targets" }, rec: { label: "Receptions", short: "Rec", path: "receptions" }, yds: { label: "Receiving yards", short: "Yds", path: "receiving-yards" }, td: { label: "Receiving touchdowns", short: "TD", path: "receiving-touchdowns" } },
 	te: { tgt: { label: "Targets", short: "Tgt", path: "targets" }, rec: { label: "Receptions", short: "Rec", path: "receptions" }, yds: { label: "Receiving yards", short: "Yds", path: "receiving-yards" }, td: { label: "Receiving touchdowns", short: "TD", path: "receiving-touchdowns" } },
+	ol: { snaps: { label: "Offensive snaps", short: "Snaps", path: "offensive-snaps" }, gs: { label: "Games started", short: "GS", path: "games-started" }, pen: { label: "Penalties", short: "Pen", path: "penalties" }, hold: { label: "Holding penalties", short: "Hold", path: "holding-penalties" }, fs: { label: "False starts", short: "FS", path: "false-starts" } },
 	edge: DEF_BOX, idl: DEF_BOX, lb: DEF_BOX, cb: DEF_BOX, saf: DEF_BOX,
 	k: { fga: { label: "Field goal tries", short: "FGA", path: "field-goal-tries" }, fgm: { label: "Field goals made", short: "FGM", path: "field-goals-made" }, xpa: { label: "Extra point tries", short: "XPA", path: "extra-point-tries" }, xpm: { label: "Extra points made", short: "XPM", path: "extra-points-made" } },
 	p: { punts: { label: "Punts", short: "Punts", path: "punts" }, in20: { label: "Punts inside the 20", short: "In 20", path: "punts-inside-20-total" } },
@@ -390,6 +408,30 @@ export const SURE_WORD: Record<Sureness, string> = {
 	thin: "Small sample: could move a lot",
 }
 
+/**
+ * How much of what separates players on a stat is real so far. Early in a season, a rate over a handful of plays (missed tackles,
+ * drops, field goal percentage) is mostly luck, and ranking players on it says little. "luck" stats are shown, and still ranked, but
+ * are never called elite or poor, never earn a badge, and never drive a read.
+ */
+export type Signal = "luck" | "partial" | "real"
+export function signalOf(y: Yard | null | undefined): Signal {
+	if (!y || y.rel === undefined) return "partial"
+	return y.rel < 0.15 ? "luck" : y.rel < 0.45 ? "partial" : "real"
+}
+export const SIGNAL_WORD: Record<Signal, string> = {
+	luck: "Mostly luck so far",
+	partial: "Partly signal, partly luck",
+	real: "A real signal",
+}
+export const SIGNAL_HELP: Record<Signal, string> = {
+	luck: "At this point in the season the differences between players on this stat are mostly chance: on this few plays, a good number and a bad one look alike. It firms up as games are played.",
+	partial: "Some of the differences between players on this stat are real and some are still chance.",
+	real: "Most of the differences between players on this stat are real, not chance.",
+}
+
+/** Said wherever a line-level number is shown, so nobody reads a unit's result as one man's. */
+export const UNIT_NOTE = "This is his whole line's number: every lineman who starts beside him shares it, so it says how the unit is doing more than how he is."
+
 export type StatContext = {
 	info: StatInfo
 	key: string
@@ -403,9 +445,22 @@ export type StatContext = {
 	/** The 90% range his true level likely sits in, as values. */
 	range: [number, number] | null
 	sure: Sureness
+	/** How much of the spread between players on this stat is real rather than luck. */
+	signal: Signal
 	yard: Yard | null
 	/** For a style stat, where he sits from "least" to "most" of the league, 0 to 100. */
 	stylePct: number | null
+}
+
+/** The 90% range for his true level, kept inside what the stat can be: a rate cannot be below 0% or above 100%, a count per play cannot be negative. */
+function boundedRange(info: StatInfo, y: Yard | null, v: number, se: number): [number, number] {
+	let lo = v - 1.645 * se
+	let hi = v + 1.645 * se
+	if (info.fmt === pct0 || info.fmt === pct1) {
+		lo = Math.max(0, lo)
+		hi = Math.min(1, hi)
+	} else if (y && y.q[0] >= 0 && v >= 0) lo = Math.max(0, lo)
+	return [lo, hi]
 }
 
 export function contextOf(data: PlayersData, p: PlayerRow, s: PlayerStat): StatContext | null {
@@ -424,10 +479,11 @@ export function contextOf(data: PlayersData, p: PlayerRow, s: PlayerStat): StatC
 		rank: r,
 		of,
 		pct,
-		tier: pct === null ? null : tierOf(pct),
+		tier: pct === null || signalOf(y) === "luck" ? null : tierOf(pct),
 		grade: s.season.g ?? null,
-		range: se === null ? null : [s.season.v - 1.645 * se, s.season.v + 1.645 * se],
+		range: se === null ? null : boundedRange(info, y, s.season.v, se),
 		sure: sureness(se, y),
+		signal: info.higher === null ? "partial" : signalOf(y),
 		yard: y,
 		stylePct: info.higher === null && y ? valuePct(s.season.v, y) : null,
 	}
@@ -446,18 +502,47 @@ export function contextLine(data: PlayersData, p: PlayerRow, s: PlayerStat): str
 	return ""
 }
 
-/** For a style stat: how he compares with the league, in words that do not judge. */
+/** "tries" to "try", "targets" to "target". */
+export const singular = (word: string) => (/ies$/.test(word) ? word.replace(/ies$/, "y") : word.replace(/s$/, ""))
+
+/** "about 1 in 4" for a share under a third, "about 6 in 10" above it, so a percentage becomes something a fan can picture. */
+export function oneIn(v: number): string {
+	if (!(v > 0)) return "none"
+	if (v >= 0.95) return "nearly all"
+	if (v < 0.34) return `about 1 in ${Math.max(2, Math.round(1 / v))}`
+	return `about ${Math.round(v * 10)} in 10`
+}
+
+/** "12 tries, 1 of them from 50+ yards": the plain count behind a share, or "" when the stat is not a share. */
+export function shareCount(info: StatInfo, v: number, n: number): string {
+	if (!info.part || (info.fmt !== pct0 && info.fmt !== pct1) || !(n > 0)) return ""
+	const total = Math.round(n)
+	const k = Math.min(total, Math.round(v * total))
+	const per = total === 1 ? singular(info.per) : info.per
+	return `${total} ${per}, ${k} of them ${info.part}`
+}
+
+/**
+ * For a style stat: the count behind the number, how he compares with the league, and what a typical player looks like. None of it
+ * judges: a style is not a grade.
+ */
 export function styleLine(data: PlayersData, p: PlayerRow, s: PlayerStat): string {
 	const c = contextOf(data, p, s)
 	const lean = c?.info.lean
 	if (!c || c.stylePct === null || !lean) return ""
+	const single = GROUP_META[p.group].single.toLowerCase()
+	const pctStat = c.info.fmt === pct0 || c.info.fmt === pct1
 	const typical = c.yard ? formatStat(p.group, s.k, c.yard.q[2]) : ""
-	const peers = GROUP_META[p.group].peers
-	if (c.stylePct >= 85) return `${cap(lean[1])}, and more so than almost any of the ${peers}. A typical one is ${typical}.`
-	if (c.stylePct >= 65) return `${cap(lean[1])}, more than most ${peers}. A typical one is ${typical}.`
-	if (c.stylePct <= 15) return `${cap(lean[0])}, and more so than almost any of the ${peers}. A typical one is ${typical}.`
-	if (c.stylePct <= 35) return `${cap(lean[0])}, more than most ${peers}. A typical one is ${typical}.`
-	return `Right around the middle of ${peers}: a typical one is ${typical}.`
+	const odds = pctStat && c.yard ? ` (${oneIn(c.yard.q[2])})` : ""
+	const count = shareCount(c.info, c.value, c.n)
+	const lead = count ? `${cap(count)}. ` : ""
+	let verdict: string
+	if (c.stylePct >= 85) verdict = `${cap(lean[1])}. His number is higher than almost any other ${single}'s.`
+	else if (c.stylePct >= 65) verdict = `${cap(lean[1])}. His number is higher than most ${GROUP_META[p.group].peers}'.`
+	else if (c.stylePct <= 15) verdict = `${cap(lean[0])}. His number is lower than almost any other ${single}'s.`
+	else if (c.stylePct <= 35) verdict = `${cap(lean[0])}. His number is lower than most ${GROUP_META[p.group].peers}'.`
+	else verdict = `Right in line with the typical ${single}.`
+	return `${lead}${verdict} The typical ${single} is at ${typical}${odds}.`
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -471,6 +556,20 @@ export function overall(p: PlayerRow, slice: "season" | "form" | "earlier" = "se
 	const gs = p.stats.filter((s) => isCore(p.group, s.k) && typeof s[slice]?.g === "number").map((s) => s[slice]!.g as number)
 	if (!gs.length) return null
 	return gs.reduce((a, b) => a + b, 0) / gs.length
+}
+
+/**
+ * True when fewer than two of the stats behind his grade have settled (not mostly luck, not a thin sample). His grade and rank are
+ * still shown, but as an early read: calling him elite or poor on numbers that are mostly chance would contradict the stats under it.
+ */
+export function isEarly(data: PlayersData, p: PlayerRow): boolean {
+	let solid = 0
+	for (const s of p.stats) {
+		if (!isCore(p.group, s.k)) continue
+		const c = contextOf(data, p, s)
+		if (c && c.signal !== "luck" && c.sure !== "thin") solid += 1
+	}
+	return solid < 2
 }
 
 const overallCache = new WeakMap<PlayersData, Map<PlayerGroup, Map<string, number>>>()
@@ -611,7 +710,7 @@ export function standouts(data: PlayersData, opts: { team?: string; top?: number
 			// Drop rate and the like are mostly zeros, which makes everyone with none a "best in the league".
 			if (!info || info.higher === null || info.counts === false) continue
 			const ctx = contextOf(data, p, s)
-			if (!ctx || ctx.pct === null || !ok(ctx.sure)) continue
+			if (!ctx || ctx.pct === null || !ok(ctx.sure) || ctx.signal === "luck") continue
 			all.push({ player: p, stat: s, ctx })
 		}
 	}
@@ -718,14 +817,43 @@ export function trailOf(log: PlayerLog | undefined, key: string): LogPoint[] {
 
 /** Season-to-date percentile after the first and the latest week he has one, as a sentence about direction. */
 export function trailLine(points: LogPoint[]): string {
-	const ranked = points.filter((p) => p[3] !== null)
-	if (ranked.length < 2) return ""
-	const first = ranked[0]
-	const last = ranked[ranked.length - 1]
-	const a = shownPct(first[3]!)
-	const b = shownPct(last[3]!)
-	if (Math.abs(b - a) < 8) return `Season rank holding near the ${ordinal(b)} percentile since Wk ${first[0]}.`
-	return `Season rank ${b > a ? "climbed" : "slipped"}: ${ordinal(a)} to ${ordinal(b)} percentile since Wk ${first[0]}.`
+	return arcLine(points.filter((p) => p[3] !== null).map((p) => ({ w: p[0], pct: p[3]! })))
+}
+
+export type ArcPoint = { w: number; pct: number }
+
+/**
+ * Where he has stood among his peers after each week of the season, averaged over the stats that make up his grade, so one stat's
+ * hot or cold week does not stand for him. Each point is season-to-date (100 is the best at his job), which means the line moves
+ * slowly and a rise is a player passing others over many games, not one good Sunday. This is the season-long picture of growth or slide.
+ */
+export function arcOf(p: PlayerRow, log: PlayerLog | undefined): ArcPoint[] {
+	const byWeek = new Map<number, number[]>()
+	for (const s of p.stats) {
+		if (!isCore(p.group, s.k)) continue
+		for (const t of trailOf(log, s.k)) if (t[3] !== null) byWeek.set(t[0], [...(byWeek.get(t[0]) ?? []), t[3]])
+	}
+	return Array.from(byWeek.entries())
+		.sort((a, b) => a[0] - b[0])
+		.map(([w, v]) => ({ w, pct: v.reduce((x, y) => x + y, 0) / v.length }))
+}
+
+/** How far his standing moved from the first week he had one to the latest, in percentile points. */
+export function arcChange(points: ArcPoint[]): { first: ArcPoint; last: ArcPoint; delta: number; weeks: number } | null {
+	if (points.length < 2) return null
+	const first = points[0]
+	const last = points[points.length - 1]
+	return { first, last, delta: shownPct(last.pct) - shownPct(first.pct), weeks: points.length }
+}
+
+/** The arc as a sentence: climbing, slipping or holding, with the percentile at each end. */
+export function arcLine(points: ArcPoint[]): string {
+	const c = arcChange(points)
+	if (!c) return ""
+	const a = shownPct(c.first.pct)
+	const b = shownPct(c.last.pct)
+	if (Math.abs(c.delta) < 8) return `Season rank holding near the ${ordinal(b)} percentile since Wk ${c.first.w}.`
+	return `Season rank ${c.delta > 0 ? "climbed" : "slipped"}: ${ordinal(a)} to ${ordinal(b)} percentile since Wk ${c.first.w}.`
 }
 
 export function opponentFor(data: PlayersData, team: string, week: number, log?: PlayerLog): string {
@@ -735,48 +863,96 @@ export function opponentFor(data: PlayersData, team: string, week: number, log?:
 
 // ---------------------------------------------------------------------------------------------- the read
 
-/** A few sentences on a player, written from his numbers: what he is good at, where he is not, what is changing. */
-export function scoutingRead(data: PlayersData, p: PlayerRow): string[] {
+/** What the read can also draw on when it is handed the player's game-by-game log. */
+export type ReadExtra = { log?: PlayerLog }
+
+/** The box-score caveat for a stat, as a sentence, or nothing when the caveat is just "it is not there". */
+const boxGap = (box: string) => (box.length > 40 && !/^(not in|this is|counted)/i.test(box) ? ` Where the box score falls short: ${lc(box)}` : "")
+
+const list = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
+
+/**
+ * A few short paragraphs on a player, written from his numbers and always with the numbers in them: the box-score line, what he does
+ * best and worst against the typical player at his job, how steady he has been game to game, which way the season is going, and what
+ * is still too early to call. A stat that is mostly luck so far is named as such and never drives a verdict.
+ */
+export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra = {}): string[] {
 	const out: string[] = []
 	const first = p.name.split(" ")[0]
-	const ctxs = p.stats
-		.map((s) => ({ s, c: contextOf(data, p, s) }))
-		.filter((x): x is { s: PlayerStat; c: StatContext } => Boolean(x.c && x.c.pct !== null && x.c.info.counts !== false && x.c.sure !== "thin"))
-	const best = ctxs.slice().sort((a, b) => b.c.pct! - a.c.pct!)[0]
-	const worst = ctxs.slice().sort((a, b) => a.c.pct! - b.c.pct!)[0]
-	const peers = GROUP_META[p.group].peers
-	if (best && best.c.pct! >= 70) {
-		out.push(`${first}'s best number is ${lc(best.c.info.label)}: ${formatStat(p.group, best.s.k, best.c.value)}, ${rankPhrase(best.c.rank!, best.c.of!)} among ${peers}.`)
+	const meta = GROUP_META[p.group]
+	const peers = meta.peers
+	const single = meta.single.toLowerCase()
+	const all = p.stats.map((s) => ({ s, c: contextOf(data, p, s) })).filter((x): x is { s: PlayerStat; c: StatContext } => Boolean(x.c && x.c.pct !== null && x.c.rank !== null && x.c.of !== null && x.c.info.counts !== false))
+	const solid = all.filter((x) => x.c.signal !== "luck" && x.c.sure !== "thin")
+	const luck = all.filter((x) => x.c.signal === "luck")
+	const typical = (x: { s: PlayerStat; c: StatContext }) => (x.c.yard ? `the typical ${single} is ${formatStat(p.group, x.s.k, x.c.yard.q[2])}` : "")
+	const cite = (x: { s: PlayerStat; c: StatContext }) => `${lc(x.c.info.label)} is ${formatStat(p.group, x.s.k, x.c.value)} on ${Math.round(x.c.n)} ${x.c.info.per}, ${rankPhrase(x.c.rank!, x.c.of!)} among ${peers}${typical(x) ? ` (${typical(x)})` : ""}`
+
+	// 1. The headline: the grade, and the box score behind it.
+	const o = overall(p)
+	const rk = overallRank(data, p)
+	const box = Object.keys(BOX[p.group])
+		.filter((k) => (p.box[k] ?? 0) > 0)
+		.slice(0, 3)
+		.map((k) => `${formatBox(p.group, k, p.box[k])} ${lc(BOX[p.group][k].label)}`)
+	const games = `${p.games} ${p.games === 1 ? "game" : "games"}`
+	if (o !== null && rk && solid.length) {
+		out.push(`${first} grades ${gradeWord(o)} among ${peers}: ${rankPhrase(rk.rank, rk.of)} on the average of ${solid.length} settled advanced ${solid.length === 1 ? "stat" : "stats"} over ${games}.${box.length ? ` The box score reads ${list(box)}.` : ""}`)
+	} else if (o !== null) {
+		out.push(`${first} has played ${games}${box.length ? ` for ${list(box)}` : ""}, but every advanced number is still mostly luck at this point, so his grade of ${Math.round(o)} is a placeholder rather than a verdict.`)
 	}
-	if (worst && worst !== best && worst.c.pct! <= 30) {
-		out.push(`The number holding him back is ${lc(worst.c.info.label)}: ${formatStat(p.group, worst.s.k, worst.c.value)}, ${rankPhrase(worst.c.rank!, worst.c.of!)}.`)
+
+	// 2. What he does best, with the evidence; 3. what holds him back.
+	const byPct = solid.slice().sort((a, b) => b.c.pct! - a.c.pct!)
+	const top = byPct.filter((x) => x.c.pct! >= 65).slice(0, 2)
+	const low = byPct.filter((x) => x.c.pct! <= 35).slice(-1)
+	if (top.length) {
+		out.push(`His strength: ${cite(top[0])}.${top[1] ? ` It backs up ${lc(top[1].c.info.label)}, ${formatStat(p.group, top[1].s.k, top[1].c.value)}, ${rankPhrase(top[1].c.rank!, top[1].c.of!)}.` : ""}${boxGap(top[0].c.info.box)}`.replace(/\.\.$/, "."))
+	} else if (byPct[0]) {
+		out.push(`His highest-ranked settled number is only ${byPct[0].c.pct! >= 50 ? "a little above" : "below"} the middle: ${cite(byPct[0])}. Nothing he does stands out from the ${peers} yet.`)
 	}
-	if (!out.length) {
-		const o = overall(p)
-		// Every number is still a small sample, or none is far from the middle. Say which, so a quiet read is never read as "average".
-		const early = p.stats
-			.map((s) => ({ s, c: contextOf(data, p, s) }))
-			.filter((x): x is { s: PlayerStat; c: StatContext } => Boolean(x.c && x.c.pct !== null && x.c.info.counts !== false))
-		const hi = early.slice().sort((a, b) => b.c.pct! - a.c.pct!)[0]
-		const lo = early.slice().sort((a, b) => a.c.pct! - b.c.pct!)[0]
-		if (hi && hi.c.pct! >= 70) {
-			out.push(`${first}'s best number so far is ${lc(hi.c.info.label)}: ${formatStat(p.group, hi.s.k, hi.c.value)}, ${rankPhrase(hi.c.rank!, hi.c.of!)} among ${peers}. It rests on ${Math.round(hi.c.n)} ${hi.c.info.per}, so it is an early read.`)
-		} else if (lo && lo.c.pct! <= 30) {
-			out.push(`${first}'s weakest number so far is ${lc(lo.c.info.label)}: ${formatStat(p.group, lo.s.k, lo.c.value)}, ${rankPhrase(lo.c.rank!, lo.c.of!)} among ${peers}. It rests on ${Math.round(lo.c.n)} ${lo.c.info.per}, so it is an early read.`)
-		} else if (ctxs.length && o !== null) {
-			out.push(`${first} grades ${gradeWord(o)} among ${peers} so far, with none of his advanced numbers far from the middle.`)
-		} else if (o !== null) {
-			out.push(`${first} grades ${gradeWord(o)} among ${peers} so far, but every number rests on a small sample, so it is an early read.`)
+	if (low.length && low[0] !== top[0]) out.push(`What holds him back: ${cite(low[0])}.`)
+
+	// 4. Game to game, when the log is at hand.
+	const key = HEADLINE[p.group]
+	const info = statInfo(p.group, key)
+	const pts = extra.log?.g[key] ?? []
+	if (info && info.higher !== null && pts.length >= 3) {
+		const ex = extremeGames(extra.log, key, info.higher, 3)
+		const y = yardOf(data, p.group, key)
+		const opp = ex ? opponentFor(data, p.team, ex.best.week, extra.log) : ""
+		const line: string[] = []
+		if (ex) line.push(`Game to game on ${lc(info.label)}: best ${formatStat(p.group, key, ex.best.value)} in Week ${ex.best.week}${opp ? ` against ${opp}` : ""}, worst ${formatStat(p.group, key, ex.worst.value)} in Week ${ex.worst.week}.`)
+		if (y) {
+			const played = pts.filter((t) => t[2] > 0)
+			const beat = played.filter((t) => (info.higher ? t[1] > y.q[2] : t[1] < y.q[2])).length
+			if (played.length >= 3) line.push(`He beat the typical ${single}'s ${lc(info.label)} in ${beat} of ${played.length} games.`)
 		}
+		if (line.length) out.push(line.join(" "))
 	}
+
+	// 5. Which way the season is going: the whole arc first, then the recent stretch.
+	const arc = arcLine(arcOf(p, extra.log))
+	if (arc) out.push(arc)
 	if (p.mover && moverTier(p) !== "steady") {
 		const conf = confidenceOf(p.mover.z)
 		const dir = p.mover.score > 0 ? "better" : "worse"
 		const d = describeMove(data, p)
 		out.push(`Lately he is playing ${dir}. ${d} ${CONFIDENCE_HELP[conf]}`.trim())
 	}
+
+	// 6. Playing time.
 	const role = roleOf(p)
 	if (role) out.push(`${role.headline}: ${role.detail}`)
+	else {
+		const share = meta.side === "special" ? null : activeShare(p.snaps.season)
+		if (share !== null && share > 0) out.push(`When he plays he is on the field for ${snapsOutOf10(share)}.`)
+	}
+
+	// 7. What it is too early to say.
+	if (luck.length) {
+		out.push(`Too early to call: ${list(luck.slice(0, 3).map((x) => lc(x.c.info.label)))}. After ${data.week} ${data.week === 1 ? "game" : "games"} the gaps between ${peers} on ${luck.length === 1 ? "that stat are" : "those stats are"} still mostly chance, so we show ${luck.length === 1 ? "it" : "them"} without ranking.`)
+	}
 	return out
 }
 
@@ -825,19 +1001,28 @@ export function leaders(data: PlayersData, board: Board, opts: { team?: string }
 		}
 	}
 	const higher = board.kind === "box" ? true : statInfo(board.group, board.key)?.higher
-	rows.sort((a, b) => (higher === false ? a.value - b.value : b.value - a.value) || a.player.name.localeCompare(b.player.name))
-	// The rank is among everyone, before any filter, so a team's list still says "3rd in the league".
-	let last = 0
-	rows.forEach((r, i) => {
-		r.rank = i > 0 && r.value === rows[i - 1].value ? last : i + 1
-		last = r.rank
-	})
+	const ranked = board.kind === "stat" && higher !== null && higher !== undefined && rows.every((r) => statOf(r.player, board.key)?.season.r != null)
+	if (ranked) {
+		// A graded stat is ordered by his rank, which is made on the value stabilized for how few plays are behind it, not on the
+		// raw number alone: that is what keeps nine players with a 0% on a handful of plays from all being "first".
+		const rk = (r: LeaderRow) => statOf(r.player, board.key)!.season.r!
+		rows.sort((a, b) => rk(a) - rk(b) || a.player.name.localeCompare(b.player.name))
+		rows.forEach((r) => (r.rank = rk(r)))
+	} else {
+		rows.sort((a, b) => (higher === false ? a.value - b.value : b.value - a.value) || a.player.name.localeCompare(b.player.name))
+		// The rank is among everyone, before any filter, so a team's list still says "3rd in the league".
+		let last = 0
+		rows.forEach((r, i) => {
+			r.rank = i > 0 && r.value === rows[i - 1].value ? last : i + 1
+			last = r.rank
+		})
+	}
 	return opts.team ? rows.filter((r) => r.player.team === opts.team) : rows
 }
 
 // ---------------------------------------------------------------------------------------------- finding people
 
-export type SearchEntry = { slug: string; name: string; team: string; pos: string; group: PlayerGroup; espn?: number }
+export type SearchEntry = { slug: string; name: string; team: string; pos: string; group: PlayerGroup; espn?: number; shot?: string }
 
 /** One entry per person, with his main role, for the search box. */
 export function searchIndex(data: PlayersData): SearchEntry[] {
@@ -845,7 +1030,7 @@ export function searchIndex(data: PlayersData): SearchEntry[] {
 	for (const p of data.players) {
 		const have = seen.get(p.slug)
 		// A receiver who also returns punts is a receiver first.
-		if (!have || GROUP_ORDER.indexOf(p.group) < GROUP_ORDER.indexOf(have.group)) seen.set(p.slug, { slug: p.slug, name: p.name, team: p.team, pos: p.pos, group: p.group, espn: p.espn })
+		if (!have || GROUP_ORDER.indexOf(p.group) < GROUP_ORDER.indexOf(have.group)) seen.set(p.slug, { slug: p.slug, name: p.name, team: p.team, pos: p.pos, group: p.group, espn: p.espn, shot: p.shot })
 	}
 	return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
@@ -905,6 +1090,7 @@ const ESPN_TEAM: Record<string, string> = { WAS: "wsh" }
 
 export const logoUrl = (team: string) => `https://a.espncdn.com/i/teamlogos/nfl/500/${ESPN_TEAM[team] ?? team.toLowerCase()}.png`
 export const headshotUrl = (espn: number) => `https://a.espncdn.com/i/headshots/nfl/players/full/${espn}.png`
+export const shotUrl = (id: string) => `https://static.www.nfl.com/image/upload/f_auto,q_auto/league/${id}`
 
 /** "6'3\"" from inches. */
 export function heightText(inches: number | undefined): string | null {
@@ -997,7 +1183,7 @@ export function gameLog(data: PlayersData, row: PlayerRow, log: PlayerLog | unde
 
 // ---------------------------------------------------------------------------------------------- the percentile profile
 
-export type Bar = { k: string; label: string; pct: number; value: string; rank: string; sure: Sureness }
+export type Bar = { k: string; label: string; pct: number; value: string; rank: string; sure: Sureness; signal: Signal; unit?: true }
 
 /** Every graded stat as a bar from worst (0) to best (100) among the players at his job, best first. */
 export function percentileBars(data: PlayersData, p: PlayerRow): Bar[] {
@@ -1005,7 +1191,7 @@ export function percentileBars(data: PlayersData, p: PlayerRow): Bar[] {
 	for (const s of p.stats) {
 		const c = contextOf(data, p, s)
 		if (!c || c.pct === null || c.rank === null || c.of === null) continue
-		out.push({ k: s.k, label: c.info.label, pct: c.pct, value: formatStat(p.group, s.k, c.value), rank: rankPhrase(c.rank, c.of), sure: c.sure })
+		out.push({ k: s.k, label: c.info.label, pct: c.pct, value: formatStat(p.group, s.k, c.value), rank: rankPhrase(c.rank, c.of), sure: c.sure, signal: c.signal, ...(c.info.unit ? { unit: true as const } : {}) })
 	}
 	return out.sort((a, b) => b.pct - a.pct)
 }
@@ -1025,7 +1211,7 @@ export function badgesFor(data: PlayersData, p: PlayerRow, top = 5, limit = 6): 
 	const out: Badge[] = []
 	for (const s of p.stats) {
 		const info = statInfo(p.group, s.k)
-		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top) continue
+		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top || signalOf(yardOf(data, p.group, s.k)) === "luck") continue
 		out.push({ text: `${nth(s.season.r)} in ${lc(info.label)}`, rank: s.season.r, kind: "stat", key: s.k, path: info.path })
 	}
 	for (const k of Object.keys(BOX[p.group])) {

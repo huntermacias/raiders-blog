@@ -11,7 +11,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { teamName } from "../lab/playerView"
-import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
+import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, isEarly, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
 import { SOURCES, sourceLine } from "./basis"
 import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -56,10 +56,12 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 	const o = overall(p)
 	const r = overallRank(data, p)
 	const all = percentileBars(data, p).filter((b) => statInfo(p.group, b.k)?.counts !== false)
-	const firm = all.filter((b) => b.sure !== "thin")
+	// A stat that is still mostly luck is never shown as a strength, however it ranks.
+	const real = all.filter((b) => b.signal !== "luck")
+	const firm = real.filter((b) => b.sure !== "thin")
 	// With fewer than three solid numbers, show what there is and say it is early rather than leave the panel empty.
-	const early = firm.length < 3
-	const bars = (early ? all : firm).slice(0, 5)
+	const early = firm.length < 3 || isEarly(data, p)
+	const bars = (early ? real : firm).slice(0, 5)
 	const color = p.team === "LV" ? WHITE : accent(opponentColors(p.team).dark)
 	return {
 		type: "player",
@@ -72,8 +74,8 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 		no: bio?.no ?? null,
 		grade: o === null ? null : Math.round(o),
 		gradeWord: gradeWord(o),
-		tier: r ? TIER_WORD[tierOf(((r.of - r.rank) / Math.max(1, r.of - 1)) * 100)] : "",
-		rank: r ? `${ordinal(r.rank)} of ${r.of} ${meta.peers}` : null,
+		tier: r && !isEarly(data, p) ? TIER_WORD[tierOf(((r.of - r.rank) / Math.max(1, r.of - 1)) * 100)] : "",
+		rank: r ? `${ordinal(r.rank)} of ${r.of} ${meta.peers}${isEarly(data, p) ? " so far" : ""}` : null,
 		badges: badgesFor(data, p, 5, 3).map((b) => b.text),
 		early,
 		bars: bars.map((b) => ({ label: b.label, value: b.value, pct: shownPct(b.pct), rank: b.rank })),

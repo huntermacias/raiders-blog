@@ -2,7 +2,7 @@ import { DOWN, UP } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
 import Link from "@/components/SiteLink"
 import { boardHref, cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
-import { type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
+import { singular, type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
 
 // Three server-rendered pieces of a profile: the people just above and below him on a leaderboard, his build against his position, and his
 // best and worst game on a stat. All of the thinking is in playersKit.ts; these only lay it out.
@@ -71,7 +71,7 @@ export function BuildAgainstPeers({ lines, peers, name }: { lines: BuildLine[]; 
 export type GameCall = { key: string; label: string; best: GamePick & { opp: string; result: string | null; won: boolean | null }; worst: GamePick & { opp: string; result: string | null; won: boolean | null }; per: string }
 
 export function BestWorst({ group, calls }: { group: PlayerGroup; calls: GameCall[] }) {
-	const on = (g: GameCall["best"], per: string) => `on ${g.volume} ${g.volume === 1 ? per.replace(/s$/, "") : per}`
+	const on = (g: GameCall["best"], per: string) => `on ${g.volume} ${g.volume === 1 ? singular(per) : per}`
 	return (
 		<div className="grid gap-3 md:grid-cols-2" data-testid="best-worst">
 			{calls.map((c) => (

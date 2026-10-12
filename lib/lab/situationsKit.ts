@@ -399,16 +399,16 @@ export const SPLIT_CHOICES: { key: string; label: string }[] = [
 	{ key: "1.L", label: "1st and 10" },
 ]
 
-export type SitBoardRow = { slug: string; name: string; team: string; pos: string; espn?: number; c: Record<string, Cell>; rz?: Cell }
+export type SitBoardRow = { slug: string; name: string; team: string; pos: string; espn?: number; shot?: string; c: Record<string, Cell>; rz?: Cell }
 
 /** Everyone with plays in this job and position, with their cells, for the leaderboard to rank on any split. */
-export function sitBoardRows(sit: SitData, players: { slug: string; name: string; team: string; pos: string; group: string; espn?: number }[], def: SitBoardDef): SitBoardRow[] {
+export function sitBoardRows(sit: SitData, players: { slug: string; name: string; team: string; pos: string; group: string; espn?: number; shot?: string }[], def: SitBoardDef): SitBoardRow[] {
 	const out: SitBoardRow[] = []
 	for (const p of players) {
 		if (p.group !== def.group) continue
 		const e = sit.players[p.slug]?.[def.role]
 		if (!e || e.g !== def.group) continue
-		out.push({ slug: p.slug, name: p.name, team: p.team, pos: p.pos, ...(p.espn ? { espn: p.espn } : {}), c: e.c, ...(e.rz ? { rz: e.rz } : {}) })
+		out.push({ slug: p.slug, name: p.name, team: p.team, pos: p.pos, ...(p.espn ? { espn: p.espn } : {}), ...(p.shot ? { shot: p.shot } : {}), c: e.c, ...(e.rz ? { rz: e.rz } : {}) })
 	}
 	return out
 }

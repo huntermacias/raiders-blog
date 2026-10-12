@@ -31,7 +31,7 @@ export function RoleCard({ data, player, role, log }: { data: PlayersData; playe
 		<article className="lab-opp rounded-2xl border border-lab-line bg-lab-surface p-4" style={cardStyle(player.team)} data-testid="role-card">
 			<header className="flex items-start justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-3">
-					<Headshot espn={player.espn} name={player.name} size={44} />
+					<Headshot espn={player.espn} shot={player.shot} name={player.name} size={44} />
 					<div className="min-w-0">
 						<p className="m-0 flex items-center gap-1.5 text-xs text-lab-muted">
 							<TeamLogo team={player.team} size={16} />

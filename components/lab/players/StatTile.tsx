@@ -1,4 +1,4 @@
-import { ConfidenceChip, Delta, TierChip } from "@/components/lab/players/Bits"
+import { ConfidenceChip, Delta, EarlyChip, TierChip } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
 import { cardStyle } from "@/lib/lab/playerView"
 import {
@@ -7,6 +7,7 @@ import {
 	type PlayerStat,
 	type PlayersData,
 	SURE_WORD,
+	UNIT_NOTE,
 	confidenceOf,
 	contextOf,
 	formName,
@@ -22,13 +23,21 @@ export function TrendLine({ data, player, stat }: { data: PlayersData; player: P
 	const f = formatStat(player.group, stat.k, stat.form.v)
 	const e = formatStat(player.group, stat.k, stat.earlier.v)
 	const conf = confidenceOf(stat.z)
+	// Two numbers that print the same are not a change, whatever the grade points say.
+	const same = f === e || (stat.delta !== undefined && Math.abs(stat.delta) < 1)
 	return (
 		<p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-snug text-lab-soft">
 			<span>
-				{formName(data, player.group)}: <span className="font-mono font-semibold text-lab-ink">{f}</span> <span className="text-lab-muted">({Math.round(stat.form.n)})</span> vs <span className="font-mono">{e}</span> before
+				{formName(data, player.group)}: <span className="font-mono font-semibold text-lab-ink">{f}</span> <span className="text-lab-muted">({Math.round(stat.form.n)})</span> vs <span className="font-mono">{e}</span> before.
 			</span>
-			{stat.delta !== undefined ? <Delta v={stat.delta} /> : null}
-			{stat.delta !== undefined ? <ConfidenceChip conf={conf} /> : null}
+			{same ? (
+				<span className="text-lab-muted">No change worth reading.</span>
+			) : (
+				<>
+					{stat.delta !== undefined ? <Delta v={stat.delta} /> : null}{" "}
+					{stat.delta !== undefined ? <ConfidenceChip conf={conf} /> : null}
+				</>
+			)}
 		</p>
 	)
 }
@@ -43,18 +52,23 @@ export default function StatTile({ data, player, stat, showBox = false, showTren
 	const { info } = ctx
 	const peers = GROUP_META[player.group].peers
 	const style = info.higher === null
+	const luck = !style && ctx.signal === "luck"
 	return (
 		<article className={`lab-opp flex h-full flex-col rounded-2xl border border-lab-line bg-lab-surface p-4 ${className}`} style={cardStyle(player.team)} data-testid="stat-tile">
 			<header className="flex items-start justify-between gap-3">
 				<h3 className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{info.label}</h3>
-				{ctx.tier ? <TierChip tier={ctx.tier} /> : <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-lab-muted">Style</span>}
+				{ctx.tier ? <TierChip tier={ctx.tier} /> : luck ? <EarlyChip /> : <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-lab-muted">Style</span>}
 			</header>
 			<p className="m-0 mt-2 flex items-baseline gap-2">
 				<span className="font-mono text-3xl font-bold tabular-nums leading-none text-lab-ink">{formatStat(player.group, stat.k, ctx.value)}</span>
 				{ctx.info.higher === false ? <span className="text-[11px] text-lab-muted">lower is better</span> : null}
 			</p>
 			<p className="m-0 mt-1 text-sm text-lab-soft">
-				{ctx.rank !== null && ctx.of !== null ? (
+				{luck ? (
+					<>
+						<span className="font-semibold text-lab-ink">Too early to rank.</span> On {Math.round(ctx.n)} {info.per}, luck still decides who is on top of {peers}.
+					</>
+				) : ctx.rank !== null && ctx.of !== null ? (
 					<>
 						<span className="font-semibold text-lab-ink">{rankPhrase(ctx.rank, ctx.of)}</span> {peers} <span className="text-lab-muted">&middot; {topPhrase(ctx.rank, ctx.of).toLowerCase()}</span>
 					</>
@@ -67,6 +81,7 @@ export default function StatTile({ data, player, stat, showBox = false, showTren
 					<Yardstick marks={[{ v: ctx.value, se: stat.season.se, name: player.name }]} yard={ctx.yard} higher={info.higher} fmt={(v) => formatStat(player.group, stat.k, v)} peers={peers} />
 				</div>
 			) : null}
+			{info.unit ? <p className="m-0 mt-2 rounded-lg border border-lab-line-strong bg-lab-tint px-2.5 py-1.5 text-xs leading-snug text-lab-soft">{UNIT_NOTE}</p> : null}
 			<p className="m-0 mt-3 text-[13px] leading-relaxed text-lab-soft">{info.what}</p>
 			{showBox ? (
 				<p className="m-0 mt-2 border-l-2 border-lab-line-strong pl-3 text-xs leading-relaxed text-lab-muted">
@@ -84,7 +99,7 @@ export default function StatTile({ data, player, stat, showBox = false, showTren
 				{showTrend && !style ? <TrendLine data={data} player={player} stat={stat} /> : null}
 				<p className="m-0 text-[11px] text-lab-muted">
 					{SURE_WORD[ctx.sure]} &middot; {Math.round(ctx.n)} {info.per}
-					{ctx.range && !style ? (
+					{ctx.range && !style && !luck ? (
 						<>
 							{" "}
 							&middot; true level likely {formatStat(player.group, stat.k, Math.min(...ctx.range))} to {formatStat(player.group, stat.k, Math.max(...ctx.range))}

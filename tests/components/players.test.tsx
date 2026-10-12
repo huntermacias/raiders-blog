@@ -55,7 +55,8 @@ describe("<PercentileProfile />", () => {
 		render(<PercentileProfile data={data} player={te} />)
 		const bars = screen.getAllByRole("img")
 		expect(bars.length).toBeGreaterThan(2)
-		for (const b of bars) expect(b.getAttribute("aria-label")).toMatch(/percentile/)
+		// A stat that is still mostly luck is not given a percentile; it says so instead.
+		for (const b of bars) expect(b.getAttribute("aria-label")).toMatch(/percentile|too early to rank/)
 		expect(screen.getByText(/Left is the worst at his job/)).toBeTruthy()
 	})
 })

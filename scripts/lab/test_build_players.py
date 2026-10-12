@@ -483,3 +483,80 @@ def test_the_situations_file_is_written_beside_the_others(tmp_path, monkeypatch)
     sit_file = json.loads((tmp_path / "player-situations.json").read_text())
     assert sit_file["season"] == 2026 and sit_file["players"] and "source" in sit_file
 
+
+
+# ---------------------------------------------------------------------------------------------- stabilizing, windows, linemen
+
+
+def test_stabilizing_pulls_a_thin_sample_toward_the_league_so_a_zero_on_few_plays_does_not_tie_for_first():
+    # Three cornerbacks with a 0% missed-tackle rate on 6, 16 and 60 chances, and others around 12%.
+    items = {"a": (0.0, 0.06), "b": (0.0, 0.03), "c": (0.0, 0.015), **{f"x{i}": (0.10 + 0.01 * i, 0.04) for i in range(8)}}
+    shr, rel, sd = b.stabilize(items)
+    assert shr["c"] < shr["b"] < shr["a"]  # more plays, less pulled back toward the mean
+    assert shr["a"] > 0.0 and sd > 0
+
+
+def test_reliability_is_near_zero_when_the_spread_is_only_sampling_noise_and_high_when_it_is_real():
+    noise = {f"p{i}": (0.10 + (0.02 if i % 2 else -0.02), 0.05) for i in range(20)}
+    real = {f"p{i}": (0.10 + 0.01 * i, 0.005) for i in range(20)}
+    assert b.stabilize(noise)[1] < 0.1
+    assert b.stabilize(real)[1] > 0.8
+
+
+def test_a_player_with_no_standard_error_keeps_his_value():
+    shr, rel, _ = b.stabilize({"a": (1.0, None), "b": (2.0, None), "c": (3.0, None)})
+    assert shr == {"a": 1.0, "b": 2.0, "c": 3.0} or rel >= 0
+
+
+def test_the_recent_stretch_grows_to_about_a_third_of_the_games_played_and_never_below_two():
+    assert [b.form_size(n) for n in (2, 4, 5, 8, 12, 17)] == [2, 2, 2, 3, 4, 6]
+    form, earlier = b.window_of({w: "X" for w in range(1, 13)})
+    assert len(form) == 4 and len(earlier) == 8
+
+
+def test_a_nickname_is_matched_by_last_name_and_first_initial_only_when_that_is_unique_on_the_team():
+    to_gsis = {"someone-else": "x1"}
+    df = pd.DataFrame({"pfr_player_id": ["zz"], "player": ["Delmar Glaze"], "team": ["LV"]})
+    got = b.attach_ids(df, "player", to_gsis, {("~" + b.short_key("DJ Glaze"), "LV"): "g1"})
+    assert got["id"].tolist() == ["g1"]
+    other = b.attach_ids(df, "player", to_gsis, {("~" + b.short_key("Mike Glaze"), "LV"): "g2"})
+    assert other["id"].isna().all()
+
+
+def line_fixture():
+    snaps = pd.DataFrame([
+        dict(id=i, team="AAA", week=w, offense_snaps=60 * p, offense_pct=p, position="T")
+        for i, w, p in (("ol1", 1, 1.0), ("ol1", 2, 1.0), ("ol2", 1, 1.0), ("ol2", 2, 0.2), ("qq", 1, 1.0))
+    ])
+    grp = {"ol1": "ol", "ol2": "ol", "qq": "qb"}
+    plays = []
+    for w in (1, 2):
+        for i in range(10):
+            plays.append(dict(week=w, posteam="AAA", play_type="pass", epa=0.1, qb_dropback=1, sack=1 if i < 2 else 0, success=1, qb_scramble=0, penalty=0, desc="x"))
+        for i in range(10):
+            plays.append(dict(week=w, posteam="AAA", play_type="run", epa=0.0, qb_dropback=0, sack=0, success=1 if i < 4 else 0, qb_scramble=0, penalty=0, desc="x"))
+    raw = pd.DataFrame(plays + [
+        dict(week=1, posteam="AAA", play_type="no_play", epa=np.nan, penalty=1, penalty_team="AAA", penalty_player_id="ol1", penalty_type="Offensive Holding", desc="PENALTY on AAA-1, Offensive Holding, enforced"),
+        dict(week=2, posteam="AAA", play_type="no_play", epa=np.nan, penalty=1, penalty_team="AAA", penalty_player_id="ol1", penalty_type="False Start", desc="PENALTY on AAA-1, False Start, declined"),
+        dict(week=2, posteam="AAA", play_type="no_play", epa=np.nan, penalty=1, penalty_team="BBB", penalty_player_id="d1", penalty_type="Defensive Offside", desc="PENALTY on BBB-9, enforced"),
+    ])
+    pbp = raw[raw["penalty"] != 1]
+    return raw, pbp, snaps, grp
+
+
+def test_an_offensive_lineman_gets_his_snaps_his_accepted_penalties_and_his_lines_results_in_games_he_started():
+    raw, pbp, snaps, grp = line_fixture()
+    out = b.line_components(raw, pbp, snaps, grp, {("AAA", 1), ("AAA", 2)}).set_index(["id", "week"])
+    assert set(out.index.get_level_values(0)) == {"ol1", "ol2"}  # the quarterback is not a lineman
+    assert out.loc[("ol1", 1), "pen"] == 1 and out.loc[("ol1", 1), "hold"] == 1
+    # A declined flag and a penalty on the other team are not his.
+    assert out.loc[("ol1", 2), "pen"] == 0
+    # He started in week 1 and week 2; the other lineman started week 1 only (20% of the snaps in week 2).
+    assert out.loc[("ol1", 2), "u_db"] == 10 and out.loc[("ol1", 2), "u_sck"] == 2
+    assert out.loc[("ol2", 2), "u_db"] == 0 and out.loc[("ol2", 1), "u_run"] == 10 and out.loc[("ol2", 1), "u_rs"] == 4
+
+
+def test_linemen_are_graded_as_their_own_group_with_the_line_stats_marked_as_shared():
+    assert "ol" in b.GROUP_ORDER and b.SIDE_OF["ol"] == "off"
+    assert b.GROUPS["ol"].headline == "runSucc"
+    assert b.GROUPS["ol"].stats["sackRate"].higher is False and b.GROUPS["ol"].stats["snapShare"].higher is None

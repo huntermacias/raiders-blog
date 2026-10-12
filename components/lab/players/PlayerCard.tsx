@@ -1,5 +1,5 @@
 import Link from "@/components/SiteLink"
-import { ConfidenceChip, Delta, TierChip } from "@/components/lab/players/Bits"
+import { ConfidenceChip, Delta, EarlyChip, TierChip } from "@/components/lab/players/Bits"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import ProgressLine from "@/components/lab/players/ProgressLine"
 import Yardstick from "@/components/lab/players/Yardstick"
@@ -15,6 +15,7 @@ import {
 	formatStat,
 	HEADLINE,
 	isCore,
+	isEarly,
 	moveText,
 	moverTier,
 	overall,
@@ -23,8 +24,8 @@ import {
 	statInfo,
 	statOf,
 	tierOf,
-	trailLine,
-	trailOf,
+	arcLine,
+	arcOf,
 } from "@/lib/lab/playersKit"
 
 /** The stat besides the headline that says the most about him: the furthest from the middle among those whose sample is not thin. */
@@ -33,7 +34,7 @@ export function featuredStat(data: PlayersData, p: PlayerRow) {
 	const rest = p.stats
 		.filter((s) => s.k !== HEADLINE[p.group] && isCore(p.group, s.k))
 		.map((s) => ({ s, c: contextOf(data, p, s) }))
-		.filter((x) => x.c && x.c.pct !== null && x.c.sure !== "thin")
+		.filter((x) => x.c && x.c.pct !== null && x.c.sure !== "thin" && x.c.signal !== "luck")
 		.sort((a, b) => Math.abs(b.c!.pct! - 50) - Math.abs(a.c!.pct! - 50))
 	return [head, rest[0]?.s ?? null].filter((s): s is NonNullable<typeof s> => Boolean(s))
 }
@@ -48,8 +49,8 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 	const meta = GROUP_META[player.group]
 	const tier = rank ? tierOf(((rank.of - rank.rank) / Math.max(1, rank.of - 1)) * 100) : null
 	const picks = featuredStat(data, player)
-	const head = statOf(player, HEADLINE[player.group])
-	const points = (head ? trailOf(log, head.k) : []).map((t) => ({ w: t[0], pct: t[3] }))
+	const arc = arcOf(player, log)
+	const points = arc.map((t) => ({ w: t.w, pct: t.pct as number | null }))
 	const mover = player.mover
 	const tierMove = moverTier(player)
 	return (
@@ -58,7 +59,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 			<div className="flex flex-1 flex-col p-4">
 				<header className="flex items-start justify-between gap-3">
 					<div className="flex min-w-0 items-center gap-3">
-						<Headshot espn={player.espn} name={player.name} size={52} />
+						<Headshot espn={player.espn} shot={player.shot} name={player.name} size={52} />
 						<div className="min-w-0">
 							<p className="m-0 flex items-center gap-1.5 text-xs text-lab-muted">
 								<TeamLogo team={player.team} size={16} />
@@ -86,7 +87,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 					) : (
 						"Not enough plays to rank yet"
 					)}
-					{tier ? <span> &middot; <TierChip tier={tier} /></span> : null}
+					{isEarly(data, player) ? <span> &middot; <EarlyChip label="Early read" /></span> : tier ? <span> &middot; <TierChip tier={tier} /></span> : null}
 				</p>
 				{note ? <p className="m-0 mt-2 text-sm leading-snug text-lab-soft">{note}</p> : null}
 
@@ -103,7 +104,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 								</p>
 								<Yardstick compact marks={[{ v: c.value, se: s.season.se, name: info.label }]} yard={c.yard} higher={info.higher} fmt={(v) => formatStat(player.group, s.k, v)} peers={meta.peers} />
 								<p className="m-0 text-[11px] text-lab-muted">
-									{c.rank !== null && c.of !== null ? `${rankPhrase(c.rank, c.of)} among ${meta.peers}` : ""}
+									{c.signal === "luck" ? "Too early to rank: mostly luck so far" : c.rank !== null && c.of !== null ? `${rankPhrase(c.rank, c.of)} among ${meta.peers}` : ""}
 								</p>
 							</div>
 						)
@@ -114,9 +115,9 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 					{points.filter((p) => p.pct !== null).length >= 2 ? (
 						<div className="flex items-center gap-3 border-t border-lab-line pt-3">
 							<div className="w-24 shrink-0">
-								<ProgressLine compact weeks={data.weeks} points={points} formWeeks={data.formWeeks} label={`${player.name}: ${trailLine(head ? trailOf(log, head.k) : [])}`} />
+								<ProgressLine compact weeks={data.weeks} points={points} formWeeks={data.formWeeks} label={`${player.name}, overall standing by week: ${arcLine(arc)}`} />
 							</div>
-							<p className="m-0 text-[11px] leading-snug text-lab-muted">{trailLine(head ? trailOf(log, head.k) : [])}</p>
+							<p className="m-0 text-[11px] leading-snug text-lab-muted">{arcLine(arc)}</p>
 						</div>
 					) : null}
 					{mover && tierMove !== "steady" ? (

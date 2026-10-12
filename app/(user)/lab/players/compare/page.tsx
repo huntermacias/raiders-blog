@@ -66,7 +66,7 @@ function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 	return (
 		<div className="lab-opp rounded-2xl border border-lab-line bg-lab-surface p-4" style={cardStyle(p.team)}>
 			<div className="flex items-center gap-3">
-				<Headshot espn={p.espn} name={p.name} size={64} />
+				<Headshot espn={p.espn} shot={p.shot} name={p.name} size={64} />
 				<div className="min-w-0">
 					<p className="m-0 flex items-center gap-2 text-xs text-lab-muted">
 						<span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-lab-ink text-[10px] font-bold text-lab-ink">{letter}</span>

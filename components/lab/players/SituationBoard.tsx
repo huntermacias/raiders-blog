@@ -209,7 +209,7 @@ export default function SituationBoard({
 									<td className="px-2 py-2 font-mono tabular-nums text-lab-muted">{rankOf.get(r.slug)}</td>
 									<th scope="row" className="sticky left-0 bg-lab-surface px-2 py-2 font-normal">
 										<div className="lab-opp flex items-center gap-2.5" style={styles[r.team]}>
-											<Headshot espn={r.espn} name={r.name} size={36} className="hidden sm:inline-flex" />
+											<Headshot espn={r.espn} shot={r.shot} name={r.name} size={36} className="hidden sm:inline-flex" />
 											<div>
 												<Link href={profileHref(r.slug)} className="font-serif text-sm font-bold text-lab-ink hover:underline sm:text-base">
 													{r.name}

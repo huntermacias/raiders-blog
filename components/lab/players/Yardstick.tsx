@@ -59,7 +59,7 @@ export default function Yardstick({
 			{compact ? null : (
 				<div className="mt-0.5 flex items-baseline justify-between font-mono text-[10px] tabular-nums text-lab-muted">
 					<span>{fmt(left)}</span>
-					<span className="font-sans">{higher === null ? "low to high" : "worse to better"}</span>
+					<span className="font-sans">{higher === null ? `low to high · typical ${fmt(yard.q[2])}` : "worse to better"}</span>
 					<span>{fmt(right)}</span>
 				</div>
 			)}
