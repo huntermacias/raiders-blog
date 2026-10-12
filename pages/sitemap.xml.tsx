@@ -46,6 +46,7 @@ ${url(`${SITE_URL}/lab/top-plays`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/scouting`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/players`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/playoff-machine`, undefined, "0.8", "weekly")}

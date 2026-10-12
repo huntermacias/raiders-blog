@@ -1,7 +1,7 @@
 name: Refresh team grades
 
-# How every team stacks up (/lab/teams), the matchup reports and the scouting numbers are built from nflverse's play-by-play, FTN
-# charting, PFR advanced stats, snap counts and the games file. The weekly Lab job (lab-data.yml) rebuilds them on Monday and
+# How every team stacks up (/lab/teams), the matchup reports, the scouting numbers and the player movers (/lab/players) are built from
+# nflverse's play-by-play, FTN charting, PFR advanced stats, snap counts and the games file. The weekly Lab job (lab-data.yml) rebuilds them on Monday and
 # Tuesday along with the replays and clips, which is too slow for numbers that change every time a game's data lands.
 #
 # This rebuilds just those files, often. Each build downloads the files and takes about fifteen seconds. A file is written only when
@@ -41,7 +41,7 @@ jobs:
         run: pip install pandas numpy pytest
 
       - name: Test the scripts
-        run: python -m pytest scripts/lab/test_build_units.py scripts/lab/test_build_scouting.py scripts/lab/test_refresh_injuries.py -q
+        run: python -m pytest scripts/lab/test_build_units.py scripts/lab/test_build_scouting.py scripts/lab/test_build_players.py scripts/lab/test_refresh_injuries.py -q
 
       - name: Build the position-group grades
         # Keeps each player's practice trail, and leaves the file alone when no finished game has its plays yet.
@@ -50,16 +50,20 @@ jobs:
       - name: Build the scouting numbers
         run: python scripts/lab/build_scouting.py --season "$SEASON" --out data/lab/scouting.json
 
+      - name: Build the player movers
+        # Each Raiders player's advanced stats against the league, over the season, the last two games and the games before.
+        run: python scripts/lab/build_players.py --season "$SEASON" --out data/lab/players.json
+
       - name: Commit if changed
         run: |
-          git add data/lab/units.json data/lab/scouting.json
+          git add data/lab/units.json data/lab/scouting.json data/lab/players.json
           if git diff --cached --quiet; then
             echo "Nothing new."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "data: refresh team grades and scouting"
+          git commit -m "data: refresh team grades, scouting and player movers"
           for i in 1 2 3; do
             git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
             sleep 5

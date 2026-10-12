@@ -63,6 +63,15 @@ export const LAB_TOOLS: LabTool[] = [
 		group: "raiders",
 	},
 	{
+		id: "players",
+		href: "/lab/players",
+		title: "Player movers",
+		short: "Which Raiders are playing better or worse, in stats the box score hides.",
+		text: "Which Raiders are rising and which are slipping, in the numbers the box score leaves out: points added per target, catches over expected, pressures per snap. Every stat is graded against the league's players at his position.",
+		group: "raiders",
+		isNew: true,
+	},
+	{
 		id: "scouting",
 		href: "/lab/scouting",
 		title: "Scouting reports",

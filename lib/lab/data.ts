@@ -2,15 +2,22 @@ import seasonJson from "@/data/lab/season.json"
 import scoutingJson from "@/data/lab/scouting.json"
 import historyJson from "@/data/lab/history.json"
 import unitsJson from "@/data/lab/units.json"
+import playersJson from "@/data/lab/players.json"
 import type { LabGame, LabSeason } from "./types"
 import type { ScoutingData } from "./scouting"
 import type { HistoryData } from "./history"
 import type { UnitsData } from "./unitsKit"
+import type { PlayersData } from "./playersKit"
 
 const season = seasonJson as unknown as LabSeason
 const scouting = scoutingJson as unknown as ScoutingData
 const history = historyJson as unknown as HistoryData
 const units = unitsJson as unknown as UnitsData
+const players = playersJson as unknown as PlayersData
+
+export function getPlayers(): PlayersData {
+	return players
+}
 
 export function getUnits(): UnitsData {
 	return units

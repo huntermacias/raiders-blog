@@ -15,6 +15,7 @@ describe("the Lab pages that carry a stamp", () => {
 		["scouting/[abbr]/page.tsx", "data.generatedAt", "grades"],
 		["will-it-last/page.tsx", "scouting.generatedAt", "grades"],
 		["season-twins/page.tsx", "scouting.generatedAt", "grades"],
+		["players/page.tsx", "data.generatedAt", "grades"],
 		["playoff-machine/page.tsx", "schedule.generatedAt", "results"],
 		["rooting-guide/page.tsx", "data.generatedAt", "odds"],
 		["top-plays/page.tsx", "season.generatedAt", "replays"],
