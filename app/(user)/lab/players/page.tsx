@@ -11,6 +11,7 @@ import UnitsCredit from "@/components/lab/UnitsCredit"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { teamNick } from "@/lib/lab/playerView"
+import { SIT_BOARDS, sitBoardHref } from "@/lib/lab/situationsKit"
 import { GROUP_META, GROUP_ORDER, HEADLINE, MOVE_MIN, SIDES, overall, players, profileSlugs, risersFallers, roleMovers, searchIndex, standouts } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
@@ -234,6 +235,19 @@ export default function PlayersPage() {
 								<GroupLeaderCard key={g} data={data} group={g} />
 							))}
 						</div>
+					</Section>
+
+					<Section id="situations" title="Situational football: who delivers when it counts" blurb={<p className="m-0">Success on 3rd down, on 3rd and short, inside the 20. Rank every quarterback, back, receiver and tight end in the spot you pick, and open any player to see every play of every game as a success or a failure.</p>}>
+						<ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+							{SIT_BOARDS.map((b) => (
+								<li key={b.slug}>
+									<Link href={sitBoardHref(b.slug)} className="block rounded-xl border border-lab-line bg-lab-surface p-4 hover:border-lab-ink">
+										<span className="block font-serif text-lg font-bold text-lab-ink">{b.title}</span>
+										<span className="mt-1 block text-xs leading-relaxed text-lab-muted">By down, by distance and in the red zone, against the league average.</span>
+									</Link>
+								</li>
+							))}
+						</ul>
 					</Section>
 
 					<Section id="all-boards" title="Every leaderboard" blurb={<p className="m-0">One page per stat. Solid pills are advanced stats, graded against the league. Dashed pills are box-score totals.</p>}>

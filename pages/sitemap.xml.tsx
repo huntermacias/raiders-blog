@@ -4,6 +4,7 @@ import { groq } from "next-sanity"
 import { readClient as client } from "../lib/sanity.client"
 import { gameSlug, getGames, getPlayers, getUnits } from "../lib/lab/data"
 import { GROUP_ORDER, boards, profileSlugs } from "../lib/lab/playersKit"
+import { SIT_BOARDS, sitBoardHref } from "../lib/lab/situationsKit"
 import { matchupPath } from "../lib/lab/unitsKit"
 import { TEAMS } from "../lib/nfl"
 
@@ -33,7 +34,7 @@ function matchupPaths(): string[] {
 function playerPaths(): string[] {
 	const data = getPlayers()
 	const groups = GROUP_ORDER.filter((g) => data.players.some((p) => p.group === g))
-	return [...groups.flatMap((g) => boards(g).map((b) => `/lab/players/leaders/${g}/${b.path}`)), ...profileSlugs(data).map((s) => `/lab/players/${s}`)]
+	return [...groups.flatMap((g) => boards(g).map((b) => `/lab/players/leaders/${g}/${b.path}`)), ...SIT_BOARDS.map((b) => sitBoardHref(b.slug)), ...profileSlugs(data).map((s) => `/lab/players/${s}`)]
 }
 
 function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {

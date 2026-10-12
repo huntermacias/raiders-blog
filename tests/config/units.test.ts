@@ -29,7 +29,7 @@ describe("the team grades refresh", () => {
 		expect(wf).toContain("scripts/lab/build_scouting.py")
 		expect(wf).toContain("scripts/lab/test_build_players.py")
 		expect(wf).toContain("scripts/lab/build_players.py")
-		expect(wf).toMatch(/git add data\/lab\/units\.json data\/lab\/scouting\.json data\/lab\/players\.json data\/lab\/player-logs\.json\n/)
+		expect(wf).toMatch(/git add data\/lab\/units\.json data\/lab\/scouting\.json data\/lab\/players\.json data\/lab\/player-logs\.json data\/lab\/player-situations\.json\n/)
 		expect(wf).not.toMatch(/git add (-A|\.)/)
 		expect(wf).toContain("git diff --cached --quiet")
 	})

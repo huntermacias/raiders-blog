@@ -43,6 +43,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from situations import build_situations
+
 BASE = "https://github.com/nflverse/nflverse-data/releases/download"
 URLS = {
     "pbp": BASE + "/pbp/play_by_play_{season}.csv.gz",
@@ -257,6 +259,7 @@ PBP_COLS = [
     "pass_defense_2_player_id", "pass_touchdown", "rush_touchdown", "solo_tackle_1_player_id", "solo_tackle_2_player_id",
     "assist_tackle_1_player_id", "assist_tackle_2_player_id", "assist_tackle_3_player_id", "assist_tackle_4_player_id",
     "home_team", "away_team", "total_home_score", "total_away_score",
+    "down", "ydstogo", "yardline_100", "qtr", "first_down", "touchdown", "fumble_lost",
 ]
 FTN_COLS = ["nflverse_game_id", "nflverse_play_id", "is_play_action", "is_screen_pass", "is_qb_out_of_pocket", "is_contested_ball", "n_blitzers"]
 
@@ -1089,6 +1092,10 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
     for b in people.values():
         b.pop("espn", None)
     win = win_translation(logs, rows, results)
+    groups_of: dict[str, set[str]] = {}
+    for r in rows:
+        groups_of.setdefault(r["id"], set()).add(r["group"])
+    sit = build_situations(pbp, groups_of, slug_of)
 
     off_form, _ = windows["off"].get(team, (set(), set()))
     def_form, _ = windows["def"].get(team, (set(), set()))
@@ -1109,6 +1116,7 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
         "players": rows,
         "_logs": {"season": season, "week": last_off, "logs": _logs_by_slug(logs, rows, slug_of), "bio": people,
                   "res": {t: {str(w): v for w, v in sorted(ws.items())} for t, ws in sorted(results.items())}, "win": win},
+        "_sit": {"season": season, "week": last_off, **sit},
     }
 
 
@@ -1178,10 +1186,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     logs = result.pop("_logs")
     logs["generatedAt"] = result["generatedAt"]
+    sit = result.pop("_sit")
+    sit["generatedAt"] = result["generatedAt"]
+    sit["source"] = LICENSE
     out = Path(args.out)
     logs_out = Path(args.logs_out) if args.logs_out else out.with_name("player-logs.json")
     changed = _write_if_changed(out, result)
     changed = _write_if_changed(logs_out, logs) or changed
+    changed = _write_if_changed(out.with_name("player-situations.json"), sit) or changed
     if not changed:
         print("data unchanged")
     return 0

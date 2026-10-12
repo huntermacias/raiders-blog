@@ -7,6 +7,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 import build_players as b  # noqa: E402
+import situations as sit  # noqa: E402
 
 TEAMS = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"]
 # (week, home, away). AAA has a bye in week 3, and week 6 is still in progress.
@@ -29,6 +30,12 @@ def epa_for(team: str, week: int) -> float:
     return base + (0.30 if team == "AAA" and week >= 4 else 0.0)
 
 
+def situation(i: int, k: int) -> dict:
+    """Where on the field and on what down a play of the fixture happens, in a repeating pattern."""
+    return dict(down=i % 4 + 1, ydstogo=(10, 8, 5, 2)[i % 4], yardline_100=75 - (i % k) * 15, qtr=i // 12 + 1,
+                first_down=1 if i % 4 == 3 else 0, touchdown=1 if i % 20 == 19 else 0)
+
+
 def plays(week: int, home: str, away: str, first_id: int):
     gid = f"2026_{week:02d}_{away}_{home}"
     rows, pid = [], first_id
@@ -42,7 +49,7 @@ def plays(week: int, home: str, away: str, first_id: int):
                 pass_attempt=0 if sack else 1, complete_pass=0 if sack else i % 2, qb_dropback=1, qb_scramble=0, interception=0,
                 sack=1 if sack else 0, air_yards=np.nan if sack else 8.0, yards_after_catch=3.0 if (not sack and i % 2) else np.nan,
                 receiver_player_id=None if sack else f"r-{team}", passer_player_id=f"q-{team}", rusher_player_id=None,
-                cpoe=np.nan if sack else 1.0, cp=np.nan if sack else 0.6, xyac_mean_yardage=np.nan if sack else 2.0, penalty=0, desc="x"))
+                cpoe=np.nan if sack else 1.0, cp=np.nan if sack else 0.6, xyac_mean_yardage=np.nan if sack else 2.0, penalty=0, desc="x", **situation(i, 3)))
             pid += 1
         for i in range(20):
             rows.append(dict(
@@ -50,7 +57,7 @@ def plays(week: int, home: str, away: str, first_id: int):
                 epa=epa, success=1 if epa > 0 else 0, yards_gained=12 if i % 5 == 0 else 3, pass_attempt=0, complete_pass=0,
                 qb_dropback=0, qb_scramble=0, interception=0, sack=0, air_yards=np.nan, yards_after_catch=np.nan,
                 receiver_player_id=None, passer_player_id=None, rusher_player_id=f"b-{team}", cpoe=np.nan, cp=np.nan,
-                xyac_mean_yardage=np.nan, penalty=0, desc="x"))
+                xyac_mean_yardage=np.nan, penalty=0, desc="x", **situation(i, 5)))
             pid += 1
     for team, other in ((home, away), (away, home)):
         # Two field goals a game: a short one every kicker makes and a long one only AAA's kicker makes once the team is rolling.
@@ -411,3 +418,68 @@ def test_the_volume_beside_each_game_is_the_sample_and_adds_up_to_the_seasons():
     assert checked > 0
     share = [s for p in out["players"] if p["group"] in ("wr", "te") for s in p["stats"] if s["k"] == "share"]
     assert share, "the fixture should have a receiver with a target share"
+
+
+# ---------------------------------------------------------------------------------------------- situational football
+
+
+def test_a_distance_is_put_in_its_bucket():
+    assert [sit.bucket(d) for d in (1, 3, 4, 6, 7, 10, 11, 25)] == ["S", "S", "M", "M", "L", "L", "X", "X"]
+
+
+def test_every_play_lands_in_one_down_by_distance_cell_and_the_game_by_game_plays_match_them():
+    out = built()
+    s = out["_sit"]
+    assert s["players"]
+    checked = 0
+    for slug, roles in s["players"].items():
+        for role, e in roles.items():
+            cells_n = sum(c[0] for c in e["c"].values())
+            plays_n = sum(len(v) for v in e["p"].values())
+            assert cells_n == plays_n, (slug, role)
+            assert sum(c[2] for c in e["c"].values()) == sum(pl[5] for v in e["p"].values() for pl in v)
+            assert sum(c[1] for c in e["c"].values()) == sum(pl[4] for v in e["p"].values() for pl in v)
+            checked += 1
+    assert checked >= 6
+    rb = s["players"][player(out, "b-AAA")["slug"]]["rush"]
+    assert rb["g"] == "rb"
+    assert {k.split(".")[0] for k in rb["c"]} == {"1", "2", "3", "4"}
+    # the red zone is the plays inside the 20: the fixture's 15-yard line
+    inside = sum(1 for v in rb["p"].values() for pl in v if pl[3] <= sit.RED_ZONE)
+    assert rb["rz"][0] == inside
+
+
+def test_a_quarterbacks_dropbacks_include_his_sacks_and_a_target_is_a_pass_to_a_receiver():
+    out = built()
+    s = out["_sit"]
+    qb = s["players"][player(out, "q-AAA")["slug"]]["pass"]
+    wr = s["players"][player(out, "r-AAA")["slug"]]["rec"]
+    sacks = sum(1 for v in qb["p"].values() for pl in v if pl[7] & sit.SACK)
+    assert sacks > 0
+    assert sum(len(v) for v in qb["p"].values()) > sum(len(v) for v in wr["p"].values())  # a sack has no target
+    assert all(not (pl[7] & sit.SACK) for v in wr["p"].values() for pl in v)
+
+
+def test_the_league_row_is_the_sum_of_its_players_and_the_yardstick_needs_enough_peers():
+    out = built()
+    s = out["_sit"]
+    assert set(s["league"]) <= set(sit.COMBOS)
+    mine = [e for roles in s["players"].values() for r, e in roles.items() if r == "rush" and e["g"] == "rb"]
+    assert s["league"]["rush.rb"]["all"][0] == sum(sum(c[0] for c in e["c"].values()) for e in mine)
+    # six teams are fewer than the eight peers a yardstick needs
+    assert s["yard"] == {}
+
+
+def test_nothing_situational_is_built_without_the_down_and_distance_columns():
+    src = sources()
+    src["pbp"] = src["pbp"].drop(columns=["down", "ydstogo"])
+    out = b.build(src, 2026, "AAA")
+    assert out["_sit"]["players"] == {}
+
+
+def test_the_situations_file_is_written_beside_the_others(tmp_path, monkeypatch):
+    monkeypatch.setattr(b, "load", lambda season, folder: sources())
+    assert b.main(["--season", "2026", "--out", str(tmp_path / "players.json")]) == 0
+    sit_file = json.loads((tmp_path / "player-situations.json").read_text())
+    assert sit_file["season"] == 2026 and sit_file["players"] and "source" in sit_file
+

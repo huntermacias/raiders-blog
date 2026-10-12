@@ -11,10 +11,13 @@ import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import PercentileProfile from "@/components/lab/players/PercentileProfile"
 import TrackView from "@/components/lab/players/TrackView"
 import ProgressExplorer, { type ExplorerStat } from "@/components/lab/players/ProgressExplorer"
+import Situations from "@/components/lab/players/Situations"
 import SnapStrip from "@/components/lab/players/SnapStrip"
 import StatTile from "@/components/lab/players/StatTile"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
+import { getSituations } from "@/lib/lab/situationData"
+import { SIT_BOARDS, type Role, sitBoardHref, situationView } from "@/lib/lab/situationsKit"
 import { boardHref, cardStyle, compareHref, profileHref, teamName } from "@/lib/lab/playerView"
 import {
 	BOX,
@@ -100,6 +103,19 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const finished = windowWeeks(data, row.group)
 	const boxKeys = Object.keys(BOX[row.group]).filter((k) => row.box[k] !== undefined)
 	const games = gameLog(data, row, log, all.res)
+	const sit = getSituations()
+	const situations = (({ qb: ["pass", "rush"], rb: ["rush", "rec"], wr: ["rec"], te: ["rec"] } as Partial<Record<string, Role[]>>)[row.group] ?? [])
+		.map((r) =>
+			situationView(sit, row.slug, r, row.group, {
+				opp: (w) => opponentFor(data, row.team, w, log),
+				result: (w) => {
+					const t = log?.t?.[String(w)] ?? row.team
+					const g = all.res[t]?.[String(w)]
+					return g ? { text: `${g[0] > g[1] ? "W" : g[0] < g[1] ? "L" : "T"} ${g[0]}–${g[1]}`, won: g[0] === g[1] ? null : g[0] > g[1] } : null
+				},
+			}),
+		)
+		.filter((v): v is NonNullable<typeof v> => v !== null)
 	const logStats = headFirst.filter((s) => isCore(row.group, s.k)).slice(0, 4).map((s) => s.k)
 	const sectionId = `${row.group}`
 	return (
@@ -142,6 +158,28 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Where he has ranked among {meta.peers} after each week, and every game behind it.</p>
 						<div className="mt-5">
 							<ProgressExplorer group={row.group} name={row.name} stats={explorerStats} trails={trails} weeks={data.weeks} formWeeks={finished} opp={opp} initial={HEADLINE[row.group]} per={per} />
+						</div>
+					</div>
+				</section>
+			) : null}
+
+			{situations.length ? (
+				<section className="border-t border-lab-line" aria-labelledby={`sit-${row.group}`} id={`situations-${row.group}`}>
+					<div className="container py-8 sm:py-10">
+						<h2 id={`sit-${row.group}`} className="m-0 font-serif text-2xl font-bold">Situational football</h2>
+						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">How he does on each down and at each distance, and every play of every game as a success or a failure.</p>
+						<div className="mt-5">
+							<Situations name={row.name} views={situations} />
+							{situations.map((v) => {
+								const b = SIT_BOARDS.find((x) => x.role === v.role && x.group === row.group)
+								return b ? (
+									<p key={v.role} className="m-0 mt-4 text-sm">
+										<Link href={sitBoardHref(b.slug)} className="font-semibold text-lab-ink underline decoration-lab-line-strong underline-offset-2">
+											See every {meta.single.toLowerCase()} ranked on 3rd down and in the red zone &rarr;
+										</Link>
+									</p>
+								) : null
+							}).slice(0, 1)}
 						</div>
 					</div>
 				</section>

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 // Reads sources, so it runs in the plain node environment.
 const root = join(__dirname, "..", "..")
 const read = (f: string) => readFileSync(join(root, f), "utf8")
-const PAGES = ["page.tsx", "[slug]/page.tsx", "leaders/[group]/page.tsx", "leaders/[group]/[stat]/page.tsx", "compare/page.tsx"].map((f) => `app/(user)/lab/players/${f}`)
+const PAGES = ["page.tsx", "[slug]/page.tsx", "leaders/[group]/page.tsx", "leaders/[group]/[stat]/page.tsx", "compare/page.tsx", "situations/[board]/page.tsx"].map((f) => `app/(user)/lab/players/${f}`)
 const COMPONENTS = readdirSync(join(root, "components/lab/players")).map((f) => `components/lab/players/${f}`)
 
 describe("the Player Lab", () => {
