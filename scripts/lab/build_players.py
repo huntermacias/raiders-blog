@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Build the player movers behind /lab/players: who is playing better or worse than he was, in numbers the box score hides.
+"""Build the player pages behind /lab/players: every qualifying player in the league, measured the same way.
 
-Sources (nflverse, CC BY 4.0): play-by-play, PFR advanced stats, snap counts, rosters.
+Sources (nflverse, CC BY 4.0): play-by-play, FTN charting, PFR advanced stats, snap counts, rosters.
 Run:    python scripts/lab/build_players.py --season 2026 --out data/lab/players.json
 
-Every player in the league is measured the same way, so each Raiders number comes with the league's yardstick next to it.
+Writes two files. `players.json` holds one row per player per role (a quarterback, a punt returner) with everything a card needs:
+the value, how much volume is behind it, how uncertain it is, where it ranks, and the league's yardstick for it. `player-logs.json`
+holds the game-by-game trail for the progression charts, which only the player pages need.
+
+A player is only ever compared with players who do the same job. Every stat is a numerator over a denominator (EPA over dropbacks,
+say), so any slice of games is a sum over a sum and not an average of averages. Three slices:
 
     season   every finished game so far
     form     the player's team's last FORM_GAMES finished games
     earlier  everything before that
 
-A stat is a numerator over a denominator (EPA over targets, say), so any slice of games is a sum over a sum and not an average
-of averages. Each slice is graded against the league's players at the same position who had enough volume in that slice, on the
-scouting scale: 50 is the average, every 10 points is one standard deviation, and for a stat where lower is better the scale is
-flipped so a higher grade is always better. A mover is the average change in grade from `earlier` to `form`. Grading against the
-league means a player has to move against everyone else, not only against himself, and a league-wide quiet week cannot look
-like a collapse. The grade has no ceiling, so a player already at the top can still be seen getting better. The season
-percentile (100 is best) is kept beside it to read a single number against the league.
+Each slice is graded against the league's players in the same group who had enough volume in that slice, on the scouting scale: 50
+is the average, every 10 points is one standard deviation, and for a stat where lower is better the scale is flipped so a higher
+grade is always better. The grade has no ceiling, so a player already at the top can still be seen getting better.
+
+Every number also carries its own uncertainty (a standard error from the kind of stat it is) and every change is tested against
+it, so a swing that a handful of plays could produce is labelled as noise instead of being sold as a trend.
+
+A mover is the volume-weighted average change in grade from `earlier` to `form`. Style stats (how deep he throws, how often he
+runs to the edge) are shown with the same league yardstick but are neither good nor bad, so they never move a player up or down.
 """
 
 from __future__ import annotations
@@ -25,8 +32,11 @@ import argparse
 import gzip
 import io
 import json
+import re
 import sys
+import unicodedata
 import urllib.request
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,89 +52,213 @@ URLS = {
     "rush": BASE + "/pfr_advstats/advstats_week_rush_{season}.csv",
     "rec": BASE + "/pfr_advstats/advstats_week_rec_{season}.csv",
     "defense": BASE + "/pfr_advstats/advstats_week_def_{season}.csv",
+    "ftn": BASE + "/ftn_charting/ftn_charting_{season}.csv",
 }
 FILES = {
     "pbp": "play_by_play_{season}.csv.gz", "roster": "roster_{season}.csv", "snaps": "snap_counts_{season}.csv",
     "pass": "advstats_week_pass_{season}.csv", "rush": "advstats_week_rush_{season}.csv",
     "rec": "advstats_week_rec_{season}.csv", "defense": "advstats_week_def_{season}.csv",
+    "ftn": "ftn_charting_{season}.csv",
 }
-LICENSE = "nflverse data (play-by-play, PFR advanced stats, snap counts, rosters), CC BY 4.0. Calculations by Raiders Rundown."
+# The charting file is a bonus: a tendency or two disappear without it, nothing else does.
+OPTIONAL = {"ftn"}
+LICENSE = "nflverse data (play-by-play, FTN charting, PFR advanced stats, snap counts, rosters), CC BY 4.0. Calculations by Raiders Rundown."
 
 SITE_ABBR = {"LA": "LAR", "STL": "LAR", "OAK": "LV", "SD": "LAC"}
 
 # How many of a team's latest games make up "form".
 FORM_GAMES = 2
+SLICES = ("season", "form", "earlier")
+# Two players this close in grade on the stats they share are "comparable".
+LIKE_N = 4
 
-POS_GROUP = {
-    "QB": "qb",
-    "WR": "rec", "TE": "rec",
-    "RB": "run", "FB": "run", "HB": "run",
-    "DE": "rush", "DT": "rush", "NT": "rush", "DL": "rush", "EDGE": "rush", "OLB": "rush",
-    "LB": "rund", "ILB": "rund", "MLB": "rund",
-    "CB": "cov", "S": "cov", "FS": "cov", "SS": "cov", "DB": "cov",
+# depth-chart position -> group. The depth chart tells a three-technique from an edge rusher; the coarse position does not.
+DEPTH_GROUP = {
+    "QB": "qb", "RB": "rb", "FB": "rb", "HB": "rb", "WR": "wr", "TE": "te",
+    "DE": "edge", "OLB": "edge", "EDGE": "edge", "DT": "idl", "NT": "idl",
+    "ILB": "lb", "MLB": "lb", "LB": "lb", "CB": "cb", "FS": "saf", "SS": "saf", "S": "saf", "K": "k", "P": "p",
 }
-# Offense plays on offense snaps, everyone else on defense snaps.
-SIDE = {"qb": "off", "rec": "off", "run": "off", "rush": "def", "rund": "def", "cov": "def"}
+# The same for the coarse roster/snap-count positions; DL and DB say too little and are left for the snap-count position to settle.
+COARSE_GROUP = {k: v for k, v in DEPTH_GROUP.items()}
 
-# key: (numerator, denominator, higher is better or None for a style stat, volume needed: season, form, earlier, scale, counts)
-# A style stat (how deep he is thrown to) is shown but is neither good nor bad, so it never moves a player up or down.
-# `scale` multiplies the ratio into the number the page shows (a rate per 100 snaps, for instance).
-# `counts` is False for a stat that is shown and graded but left out of the mover score, because it is mostly zeros (drops).
-Stat = tuple
-
-
-def S(num, den, higher, season, form, earlier, scale=1.0, counts=True):
-    return (num, den, higher, season, form, earlier, scale, counts)
-
-
-STATS: dict[str, dict[str, Stat]] = {
-    "qb": {
-        "epaDb": S("epa", "db", True, 40, 25, 20),
-        "success": S("succ", "db", True, 40, 25, 20),
-        "cpoe": S("cpoe", "cpoe_n", True, 40, 25, 20),
-        "badThrow": S("bad", "att_p", False, 40, 25, 20),
-        "adot": S("air", "air_n", None, 40, 25, 20),
-    },
-    "rec": {
-        "epaTgt": S("epa", "tgt", True, 12, 5, 6),
-        "croe": S("croe", "croe_n", True, 12, 5, 6),
-        "yacOe": S("yacoe", "yacoe_n", True, 8, 3, 4),
-        "drop": S("drop", "tgt_p", False, 12, 5, 6, counts=False),
-        "share": S("tgt", "team_att", True, 12, 5, 6),
-        "adot": S("air", "air_n", None, 12, 5, 6),
-    },
-    "run": {
-        "epaRush": S("epa", "car", True, 20, 8, 10),
-        "success": S("succ", "car", True, 20, 8, 10),
-        "explosive": S("expl", "car", True, 20, 8, 10),
-        "yco": S("yco", "pfr_car", True, 20, 8, 10),
-        "broken": S("broken", "pfr_car", True, 20, 8, 10),
-        "ybc": S("ybc", "pfr_car", None, 20, 8, 10),
-    },
-    "rush": {
-        "pressRate": S("press_s", "snaps_s", True, 80, 40, 40, 100.0),
-        "missedPct": S("missed", "tackle_chances", False, 10, 5, 5),
-    },
-    "rund": {
-        "missedPct": S("missed", "tackle_chances", False, 10, 5, 5),
-        "tackleRate": S("tackles_s", "snaps_s", True, 80, 40, 40, 100.0),
-    },
-    "cov": {
-        "yardsTgt": S("yds", "tgts", False, 10, 6, 6),
-        "rating": S("rating_num", "tgts", False, 10, 6, 6),
-        "missedPct": S("missed", "tackle_chances", False, 10, 5, 5),
-    },
+SIDE_OF = {
+    "qb": "off", "rb": "off", "wr": "off", "te": "off",
+    "edge": "def", "idl": "def", "lb": "def", "cb": "def", "saf": "def",
+    "k": "st", "p": "st", "pr": "st", "kr": "st",
 }
-# The stat the weekly line on a player's card follows.
-HEADLINE = {"qb": "epaDb", "rec": "epaTgt", "run": "epaRush", "rush": "pressRate", "rund": "missedPct", "cov": "yardsTgt"}
-# A player needs this many measured stats in both windows before he can be called a riser or a faller.
-MIN_STATS = {"qb": 2, "rec": 2, "run": 2, "rush": 1, "rund": 1, "cov": 2}
+GROUP_ORDER = ["qb", "rb", "wr", "te", "edge", "idl", "lb", "cb", "saf", "k", "p", "pr", "kr"]
+
+
+@dataclass(frozen=True)
+class Stat:
+    """One number on a card.
+
+    num / den    columns of the per-game component table; the stat is sum(num) / sum(den) * scale over any slice of games
+    higher       True when more is better, False when less is better, None for a style stat that is neither
+    need         volume (of `den`) a player needs to be graded: whole season, recent form, earlier games
+    counts       False when the stat is shown and graded but left out of the mover score (it is mostly zeros)
+    gate         a column to measure the volume by instead of `den`, when `den` is not what a reader would call the sample
+                 (a receiver's share of the team's passes is over the team's attempts, but it is his targets that make it a sample)
+    se           how to size the uncertainty: "binom" (a rate), "poisson" (a count per opportunity), or a number, the
+                 standard deviation of one play, so the standard error is that over the square root of the volume
+    """
+
+    num: str
+    den: str
+    higher: bool | None
+    need: tuple[float, float, float]
+    scale: float = 1.0
+    counts: bool = True
+    se: object = "binom"
+    gate: str | None = None
+
+
+@dataclass(frozen=True)
+class Group:
+    stats: dict
+    headline: str
+    min_stats: int
+
+
+QB_V = (40, 25, 20)
+REC_V = (12, 5, 6)
+RUN_V = (20, 8, 10)
+SNAP_V = (80, 40, 40)
+MISS_V = (10, 5, 5)
+TGT_V = (10, 6, 6)
+FGA_V = (6, 3, 3)
+XP_V = (8, 4, 4)
+KO_V = (10, 5, 5)
+PUNT_V = (8, 4, 4)
+RET_V = (5, 3, 3)
+
+
+def _rec_stats() -> dict:
+    return {
+        "epaTgt": Stat("epa", "tgt", True, REC_V, se=1.55),
+        "croe": Stat("croe", "croe_n", True, REC_V, se=0.44),
+        "yacOe": Stat("yacoe", "yacoe_n", True, (8, 3, 4), se=6.0),
+        "drop": Stat("drop", "tgt_p", False, REC_V, counts=False),
+        "share": Stat("tgt", "team_att", True, REC_V, gate="tgt"),
+        "adot": Stat("air", "air_n", None, REC_V, se=10.5),
+        "deepRate": Stat("deep", "air_n", None, REC_V),
+        "contested": Stat("contested", "ftn_t", None, REC_V),
+        "screen": Stat("screen", "ftn_t", None, REC_V),
+    }
+
+
+def _edge_stats() -> dict:
+    return {
+        "pressRate": Stat("press_s", "snaps_s", True, SNAP_V, scale=100.0, se="poisson"),
+        "sackRate": Stat("sacks_s", "snaps_s", True, SNAP_V, scale=100.0, counts=False, se="poisson"),
+        "tflRate": Stat("tfl_s", "snaps_s", True, SNAP_V, scale=100.0, se="poisson"),
+        "missedPct": Stat("missed", "tackle_chances", False, MISS_V),
+    }
+
+
+def _db_stats() -> dict:
+    return {
+        "yardsTgt": Stat("yds", "tgts", False, TGT_V, se=9.5),
+        "rating": Stat("rating_num", "tgts", False, TGT_V, se=55.0),
+        "compPct": Stat("cmp", "tgts", False, TGT_V),
+        "pbuRate": Stat("pbu_p", "tgts", True, TGT_V),
+        "missedPct": Stat("missed", "tackle_chances", False, MISS_V),
+        "adotAgainst": Stat("adot_sum", "tgts", None, TGT_V, se=10.5),
+    }
+
+
+GROUPS: dict[str, Group] = {
+    "qb": Group({
+        "epaDb": Stat("epa", "db", True, QB_V, se=1.54),
+        "success": Stat("succ", "db", True, QB_V),
+        "cpoe": Stat("cpoe", "cpoe_n", True, QB_V, se=43.9),
+        "badThrow": Stat("bad", "att_p", False, QB_V),
+        "sackRate": Stat("sck", "db", False, QB_V, counts=False),
+        "adot": Stat("air", "air_n", None, QB_V, se=10.5),
+        "deepRate": Stat("deep", "air_n", None, QB_V),
+        "paRate": Stat("pa", "ftn_n", None, QB_V),
+        "blitzSeen": Stat("blz", "ftn_n", None, QB_V),
+        "oopRate": Stat("oop", "ftn_n", None, QB_V),
+    }, "epaDb", 2),
+    "rb": Group({
+        "epaRush": Stat("epa", "car", True, RUN_V, se=0.98),
+        "success": Stat("succ", "car", True, RUN_V),
+        "explosive": Stat("expl", "car", True, RUN_V),
+        "yco": Stat("yco", "pfr_car", True, RUN_V, se=3.0),
+        "broken": Stat("broken", "pfr_car", True, RUN_V, se="poisson"),
+        "stuffRate": Stat("stuff", "car", False, RUN_V, counts=False),
+        "ybc": Stat("ybc", "pfr_car", None, RUN_V, se=2.5),
+        "edgeRate": Stat("edge", "gap_n", None, RUN_V),
+        "gunRate": Stat("gun", "car", None, RUN_V),
+    }, "epaRush", 2),
+    "wr": Group(_rec_stats(), "epaTgt", 2),
+    "te": Group(_rec_stats(), "epaTgt", 2),
+    "edge": Group(_edge_stats(), "pressRate", 2),
+    "idl": Group(_edge_stats(), "pressRate", 2),
+    "lb": Group({
+        "missedPct": Stat("missed", "tackle_chances", False, MISS_V),
+        "tackleRate": Stat("tackles_s", "snaps_s", True, SNAP_V, scale=100.0, se="poisson"),
+        "tflRate": Stat("tfl_s", "snaps_s", True, SNAP_V, scale=100.0, se="poisson"),
+        "pressRate": Stat("press_s", "snaps_s", None, SNAP_V, scale=100.0, se="poisson"),
+        "yardsTgt": Stat("yds", "tgts", False, (12, 6, 6), se=9.5),
+    }, "missedPct", 2),
+    "cb": Group(_db_stats(), "yardsTgt", 2),
+    "saf": Group(_db_stats(), "yardsTgt", 2),
+    "k": Group({
+        "fgOe": Stat("fg_oe", "fga", True, FGA_V, scale=100.0, se=0.33),
+        "fgPct": Stat("fgm", "fga", True, FGA_V, counts=False),
+        "xpPct": Stat("xpm", "xpa", True, XP_V, counts=False),
+        "koEpa": Stat("ko_epa", "kos", True, KO_V, se=0.7),
+        "fgDist": Stat("fg_yds", "fga", None, FGA_V, se=9.0),
+        "longRate": Stat("fg50", "fga", None, FGA_V),
+        "koTb": Stat("ko_tb", "kos", None, KO_V),
+    }, "fgOe", 1),
+    "p": Group({
+        "epaPunt": Stat("epa", "pnt", True, PUNT_V, se=0.92),
+        "net": Stat("net", "pnt", True, PUNT_V, se=10.5),
+        "in20": Stat("in20", "pnt", True, PUNT_V),
+        "tbRate": Stat("tb", "pnt", False, PUNT_V),
+        "gross": Stat("gross", "pnt", None, PUNT_V, se=9.0),
+        "fcRate": Stat("fc", "pnt", None, PUNT_V),
+    }, "epaPunt", 2),
+    "pr": Group({
+        "epaRet": Stat("epa_r", "rets", True, RET_V, se=0.8),
+        "retAvg": Stat("ret_yds", "ret_run", True, RET_V, se=8.0),
+        "fcRate": Stat("fc", "rets", None, RET_V),
+    }, "epaRet", 1),
+    "kr": Group({
+        "epaRet": Stat("epa_r", "rets", True, RET_V, se=0.8),
+        "retAvg": Stat("ret_yds", "rets", True, RET_V, se=9.0),
+    }, "epaRet", 1),
+}
+HEADLINE = {g: grp.headline for g, grp in GROUPS.items()}
+
+# The box score, kept beside the advanced stats so a reader can sort by either: key -> the component column to add up over the season.
+_DEF_BOX = {"tackles": "tk", "solo": "solo", "ast": "ast", "tfl": "tfl", "sacks": "sacks", "press": "press", "pbu": "pbu", "ints": "ints", "missed": "missed"}
+BOX: dict[str, dict[str, str]] = {
+    "qb": {"att": "att", "cmp": "cmp", "yds": "pyds", "td": "ptd", "int": "int_t", "sacks": "sck"},
+    "rb": {"car": "car", "yds": "ryds", "td": "rtd"},
+    "wr": {"tgt": "tgt", "rec": "rec", "yds": "ryds", "td": "rtd"},
+    "te": {"tgt": "tgt", "rec": "rec", "yds": "ryds", "td": "rtd"},
+    "edge": _DEF_BOX, "idl": _DEF_BOX, "lb": _DEF_BOX, "cb": _DEF_BOX, "saf": _DEF_BOX,
+    "k": {"fga": "fga", "fgm": "fgm", "xpa": "xpa", "xpm": "xpm"},
+    "p": {"punts": "pnt", "in20": "in20"},
+    "pr": {"rets": "rets", "yds": "ret_yds"},
+    "kr": {"rets": "rets", "yds": "ret_yds"},
+}
 
 PBP_COLS = [
     "game_id", "play_id", "week", "season_type", "posteam", "defteam", "play_type", "epa", "success", "yards_gained",
     "pass_attempt", "complete_pass", "qb_dropback", "qb_scramble", "interception", "sack", "air_yards", "yards_after_catch",
     "receiver_player_id", "passer_player_id", "rusher_player_id", "cpoe", "cp", "xyac_mean_yardage", "penalty", "desc",
+    "run_gap", "shotgun", "kicker_player_id", "punter_player_id", "kickoff_returner_player_id", "punt_returner_player_id",
+    "field_goal_result", "extra_point_result", "kick_distance", "return_yards", "punt_inside_twenty", "punt_fair_catch",
+    "touchback", "tackle_for_loss_1_player_id", "tackle_for_loss_2_player_id", "pass_defense_1_player_id",
+    "pass_defense_2_player_id", "pass_touchdown", "rush_touchdown", "solo_tackle_1_player_id", "solo_tackle_2_player_id",
+    "assist_tackle_1_player_id", "assist_tackle_2_player_id", "assist_tackle_3_player_id", "assist_tackle_4_player_id",
+    "home_team", "away_team", "total_home_score", "total_away_score",
 ]
+FTN_COLS = ["nflverse_game_id", "nflverse_play_id", "is_play_action", "is_screen_pass", "is_qb_out_of_pocket", "is_contested_ball", "n_blitzers"]
 
 
 # ---------------------------------------------------------------------------------------------- small helpers
@@ -136,6 +270,21 @@ def site(df: pd.DataFrame, cols: tuple[str, ...]) -> pd.DataFrame:
         if c in df:
             df[c] = df[c].replace(SITE_ABBR)
     return df
+
+
+def col(df: pd.DataFrame, name: str, default=0) -> pd.Series:
+    """A column, or a constant one when the source file does not have it."""
+    return df[name] if name in df else pd.Series(default, index=df.index)
+
+
+def flag(df: pd.DataFrame, name: str) -> pd.Series:
+    """A 0/1 float column; missing is 0."""
+    return pd.to_numeric(col(df, name, 0), errors="coerce").fillna(0).astype(float)
+
+
+def truthy(s: pd.Series) -> pd.Series:
+    """A charting column that may arrive as TRUE/FALSE text, booleans, 0/1, or NaN where the play was not charted."""
+    return s.map(lambda x: 1.0 if (x is True or str(x).strip().upper() in ("TRUE", "1", "1.0")) else 0.0)
 
 
 def passer_rating(att: float, cmp_: float, yds: float, td: float, ints: float) -> float | None:
@@ -174,14 +323,42 @@ def grades(values: dict[str, float], higher: bool) -> dict[str, float]:
     return {k: round(float(50 + 10 * (v if higher else -v)), 1) for k, v in z.items()}
 
 
-def ratio(num: float, den: float, scale: float = 1.0) -> float | None:
-    if not den or pd.isna(den):
-        return None
-    return float(num) / float(den) * scale
+def ranks(values: dict[str, float], higher: bool) -> dict[str, int]:
+    """{id: 1 = best}. Players tied on a value share the better place."""
+    if not values:
+        return {}
+    s = pd.Series(values, dtype=float)
+    return {k: int(v) for k, v in s.rank(method="min", ascending=not higher).items()}
 
 
-def count(df: pd.DataFrame, keys: list[str], name: str) -> pd.DataFrame:
-    return df.groupby(keys).size().rename(name).reset_index()
+def slugify(name: str) -> str:
+    text = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", text).strip("-") or "player"
+
+
+def name_key(name) -> str:
+    return "".join(ch for ch in str(name).lower() if ch.isalnum())
+
+
+def fit_fg(pbp: pd.DataFrame):
+    """The make probability of a field goal from its distance, fitted on this season's attempts. Without it a kicker's
+    percentage says more about his schedule of kicks than about his leg."""
+    fg = pbp[(pbp["play_type"] == "field_goal") & col(pbp, "kick_distance", np.nan).notna() & col(pbp, "field_goal_result", np.nan).notna()]
+    if len(fg) < 25:
+        base = float((fg["field_goal_result"] == "made").mean()) if len(fg) else 0.84
+        return lambda d: np.full(np.shape(d), base, dtype=float)
+    x = (fg["kick_distance"].astype(float).to_numpy() - 40.0) / 10.0
+    y = (fg["field_goal_result"] == "made").astype(float).to_numpy()
+    X = np.column_stack([np.ones_like(x), x])
+    b = np.zeros(2)
+    for _ in range(30):  # a few Newton steps with a whisper of ridge so a perfect season cannot blow the fit up
+        p = 1 / (1 + np.exp(-(X @ b)))
+        w = p * (1 - p) + 1e-9
+        step = np.linalg.solve((X.T * w) @ X + 0.01 * np.eye(2), X.T @ (y - p) - 0.01 * b)
+        b = b + step
+        if np.max(np.abs(step)) < 1e-8:
+            break
+    return lambda d: 1 / (1 + np.exp(-(b[0] + b[1] * (np.asarray(d, dtype=float) - 40.0) / 10.0)))
 
 
 def merge_all(frames: list[pd.DataFrame], keys: list[str]) -> pd.DataFrame:
@@ -191,7 +368,7 @@ def merge_all(frames: list[pd.DataFrame], keys: list[str]) -> pd.DataFrame:
     return out
 
 
-# ---------------------------------------------------------------------------------------------- weekly components
+# ---------------------------------------------------------------------------------------------- games and weeks
 
 
 def finished_games(pbp: pd.DataFrame) -> pd.DataFrame:
@@ -218,93 +395,95 @@ def team_weeks(games: pd.DataFrame) -> dict[str, dict[int, str]]:
     return out
 
 
-def offense_components(pbp: pd.DataFrame, pos: dict[str, str], pfr: dict[str, pd.DataFrame], pfr_ok: set[tuple[str, int]]) -> dict[str, pd.DataFrame]:
-    """Per player per game for the offensive groups. Play-by-play lands within hours of the final whistle and the PFR tables a day
-    or two later, so a rate that divides a PFR count by a play-by-play count (bad throws per attempt, drops per target) counts a
-    play only in a game PFR has posted. Without that the newest game would dilute the rate."""
-    plays = pbp[pbp["play_type"].isin(["pass", "run"]) & pbp["epa"].notna()].copy()
-    plays["success"] = plays["success"].fillna(0)
-    keys = lambda who: [who, "posteam", "week"]  # noqa: E731
-    out: dict[str, pd.DataFrame] = {}
-
-    # Quarterbacks.
-    drops = plays[(plays["qb_dropback"] == 1) & plays["passer_player_id"].map(pos).eq("QB")]
-    k = keys("passer_player_id")
-    q = merge_all([
-        drops.groupby(k).agg(db=("epa", "size"), epa=("epa", "sum"), succ=("success", "sum")).reset_index(),
-        drops[drops["cpoe"].notna()].groupby(k).agg(cpoe=("cpoe", "sum"), cpoe_n=("cpoe", "size")).reset_index(),
-        drops[(drops["pass_attempt"] == 1)].groupby(k).agg(att=("epa", "size")).reset_index(),
-        drops[(drops["pass_attempt"] == 1) & drops["air_yards"].notna()].groupby(k).agg(air=("air_yards", "sum"), air_n=("air_yards", "size")).reset_index(),
-    ], k).rename(columns={"passer_player_id": "id", "posteam": "team"})
-    bad = pfr["pass"][["id", "team", "week", "passing_bad_throws"]]
-    bad = bad.dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False)["passing_bad_throws"].sum().rename(columns={"passing_bad_throws": "bad"})
-    q = q.merge(bad, on=["id", "team", "week"], how="left")
-    q["att_p"] = np.where([(t, w) in pfr_ok for t, w in zip(q["team"], q["week"])], q["att"], 0)
-    out["qb"] = q
-
-    # Receivers: every target. A completion is measured against the catch the play was expected to be.
-    tg = plays[(plays["pass_attempt"] == 1) & plays["receiver_player_id"].map(pos).isin(["WR", "TE"])].copy()
-    tg["croe_v"] = tg["complete_pass"] - tg["cp"]
-    comp = tg[(tg["complete_pass"] == 1) & tg["yards_after_catch"].notna() & tg["xyac_mean_yardage"].notna()].copy()
-    comp["yacoe_v"] = comp["yards_after_catch"] - comp["xyac_mean_yardage"]
-    k = keys("receiver_player_id")
-    r = merge_all([
-        tg.groupby(k).agg(tgt=("epa", "size"), epa=("epa", "sum")).reset_index(),
-        tg[tg["croe_v"].notna()].groupby(k).agg(croe=("croe_v", "sum"), croe_n=("croe_v", "size")).reset_index(),
-        comp.groupby(k).agg(yacoe=("yacoe_v", "sum"), yacoe_n=("yacoe_v", "size")).reset_index(),
-        tg[tg["air_yards"].notna()].groupby(k).agg(air=("air_yards", "sum"), air_n=("air_yards", "size")).reset_index(),
-    ], k).rename(columns={"receiver_player_id": "id", "posteam": "team"})
-    team_att = plays[plays["pass_attempt"] == 1].groupby(["posteam", "week"]).size().rename("team_att").reset_index().rename(columns={"posteam": "team"})
-    drop = pfr["rec"][["id", "team", "week", "receiving_drop"]]
-    drop = drop.dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False)["receiving_drop"].sum().rename(columns={"receiving_drop": "drop"})
-    r = r.merge(team_att, on=["team", "week"], how="left").merge(drop, on=["id", "team", "week"], how="left")
-    r["tgt_p"] = np.where([(t, w) in pfr_ok for t, w in zip(r["team"], r["week"])], r["tgt"], 0)
-    out["rec"] = r
-
-    # Runners: designed carries, so a scramble is the quarterback's.
-    rn = plays[(plays["play_type"] == "run") & (plays["qb_scramble"].fillna(0) != 1) & plays["rusher_player_id"].map(pos).isin(["RB", "FB", "HB"])].copy()
-    rn["expl"] = (rn["yards_gained"] >= 10).astype(int)
-    k = keys("rusher_player_id")
-    u = rn.groupby(k).agg(car=("epa", "size"), epa=("epa", "sum"), succ=("success", "sum"), expl=("expl", "sum")).reset_index()
-    u = u.rename(columns={"rusher_player_id": "id", "posteam": "team"})
-    pr = pfr["rush"].dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False).agg(
-        pfr_car=("carries", "sum"), ybc=("rushing_yards_before_contact", "sum"), yco=("rushing_yards_after_contact", "sum"),
-        broken=("rushing_broken_tackles", "sum"))
-    out["run"] = u.merge(pr, on=["id", "team", "week"], how="left")
+def game_results(pbp: pd.DataFrame, games: pd.DataFrame) -> dict[str, dict[int, list[int]]]:
+    """{team: {week: [points for, points against]}} for every finished game, read off the last play's running score."""
+    out: dict[str, dict[int, list[int]]] = {}
+    need = {"home_team", "away_team", "total_home_score", "total_away_score"}
+    if not need <= set(pbp.columns) or games.empty:
+        return out
+    last = pbp[pbp["game_id"].isin(set(games["game_id"]))].sort_values("play_id").groupby("game_id").tail(1)
+    for r in last.itertuples():
+        try:
+            h, a = int(r.total_home_score), int(r.total_away_score)
+        except (TypeError, ValueError):
+            continue
+        out.setdefault(r.home_team, {})[int(r.week)] = [h, a]
+        out.setdefault(r.away_team, {})[int(r.week)] = [a, h]
     return out
 
 
-def defense_components(pfr_def: pd.DataFrame, snaps: pd.DataFrame) -> pd.DataFrame:
-    """Per defender per game. `snaps` already carries the player's `id`.
-
-    A rate per snap needs the snap count and the PFR line from the same game. Snap counts for the newest game can arrive a day
-    after the PFR table, so the snap-based numerators are zeroed for a team-week with no snap data, which leaves that game out of
-    those rates and out of nothing else.
-    """
-    d = pfr_def.dropna(subset=["id"]).copy()
-    out = d.groupby(["id", "team", "week"], as_index=False).agg(
-        press=("def_pressures", "sum"), tackles=("def_tackles_combined", "sum"), missed=("def_missed_tackles", "sum"),
-        tgts=("def_targets", "sum"), cmp=("def_completions_allowed", "sum"), yds=("def_yards_allowed", "sum"),
-        td=("def_receiving_td_allowed", "sum"), ints=("def_ints", "sum"))
-    out["tackle_chances"] = out["tackles"] + out["missed"]
-    # The passer rating against him is not a sum. It is stored as a rating times targets, so a slice of games still divides back out.
-    out["rating_num"] = [
-        (passer_rating(r.tgts, r.cmp, r.yds, r.td, r.ints) or 0.0) * r.tgts for r in out.itertuples()
-    ]
-    sn = snaps.dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False).agg(snaps=("defense_snaps", "sum"))
-    out = out.merge(sn, on=["id", "team", "week"], how="outer")
-    for c in out.columns:
-        if c not in ("id", "team"):
-            out[c] = out[c].fillna(0)
-    have = {(t, w) for t, w in zip(snaps["team"], snaps["week"])}
-    ok = np.array([(t, w) in have for t, w in zip(out["team"], out["week"])])
-    out["snaps_s"] = np.where(ok, out["snaps"], 0.0)
-    out["press_s"] = np.where(ok, out["press"], 0.0)
-    out["tackles_s"] = np.where(ok, out["tackles"], 0.0)
+def win_translation(logs: dict, rows: list[dict], results: dict[str, dict[int, list[int]]]) -> dict:
+    """How a good game by a player at one job lines up with his team winning: for each graded stat, the share of games his team won
+    when his number was in the worst, middle and best third of all the games league-wide at that job. {group: {stat: {"n", "t": [lo, mid, hi]}}}."""
+    team_of = {r["id"]: r["team"] for r in rows}
+    out: dict[str, dict] = {}
+    for g in GROUP_ORDER:
+        for key, st in GROUPS[g].stats.items():
+            if st.higher is None:
+                continue
+            games: list[tuple[float, float]] = []
+            for (pid, grp), entry in logs.items():
+                if grp != g:
+                    continue
+                for w, val, vol, _ in entry["g"].get(key, []):
+                    if vol < st.need[2]:
+                        continue
+                    team = entry.get("t", {}).get(w, team_of.get(pid))
+                    pf_pa = results.get(team, {}).get(w)
+                    if not pf_pa:
+                        continue
+                    win = 1.0 if pf_pa[0] > pf_pa[1] else 0.5 if pf_pa[0] == pf_pa[1] else 0.0
+                    games.append((val if st.higher else -val, win))
+            if len(games) < 30:
+                continue
+            games.sort(key=lambda x: x[0])
+            cut = len(games) // 3
+            thirds = [games[:cut], games[cut:len(games) - cut], games[len(games) - cut:]]
+            out.setdefault(g, {})[key] = {"n": len(games), "t": [round(sum(w for _, w in t) / len(t), 3) for t in thirds]}
     return out
 
 
-# ---------------------------------------------------------------------------------------------- the build
+def bios_of(roster: pd.DataFrame, ids: set[str], season: int) -> dict[str, dict]:
+    """What the roster file says about each person: number, size, age, college, draft, years in the league, and his ESPN id."""
+    out: dict[str, dict] = {}
+    now = datetime.now(timezone.utc).date()
+
+    def num(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return None if np.isnan(f) else f
+
+    for r in roster[roster["gsis_id"].isin(ids)].itertuples():
+        b: dict = {}
+        n = num(getattr(r, "jersey_number", None))
+        if n is not None:
+            b["no"] = int(n)
+        h = num(getattr(r, "height", None))
+        if h:
+            b["ht"] = int(h)
+        w = num(getattr(r, "weight", None))
+        if w:
+            b["wt"] = int(w)
+        born = str(getattr(r, "birth_date", "") or "")
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", born):
+            b["born"] = born
+        col_ = getattr(r, "college", None)
+        if isinstance(col_, str) and col_:
+            b["college"] = col_
+        club, pick = getattr(r, "draft_club", None), num(getattr(r, "draft_number", None))
+        if isinstance(club, str) and club and pick:
+            b["draft"] = [club, int(pick), int(num(getattr(r, "entry_year", None)) or 0) or None]
+        exp = num(getattr(r, "years_exp", None))
+        if exp is not None:
+            b["exp"] = int(exp)
+        e = num(getattr(r, "espn_id", None))
+        if e:
+            b["espn"] = int(e)
+        if b:
+            out[r.gsis_id] = b
+    return out
 
 
 def window_of(team_games: dict[int, str]) -> tuple[set[int], set[int]]:
@@ -314,26 +493,275 @@ def window_of(team_games: dict[int, str]) -> tuple[set[int], set[int]]:
     return form, set(weeks) - form
 
 
-def stat_value(rows: pd.DataFrame, stat: Stat) -> tuple[float | None, float]:
-    num, den, _h, _s, _f, _e, scale, _c = stat
-    if rows.empty or num not in rows or den not in rows:
-        return None, 0.0
-    d = float(rows[den].fillna(0).sum())
-    return ratio(float(rows[num].fillna(0).sum()), d, scale), d
+# ---------------------------------------------------------------------------------------------- weekly components
 
 
-def snap_share(snaps: pd.DataFrame, side: str, weeks: list[int], pid: str, team: str) -> float | None:
-    """Mean share of the team's snaps over the `weeks` that have snap counts; a counted game he did not play is zero."""
+def _by(df: pd.DataFrame, who: str, team: str, **sums) -> pd.DataFrame:
+    """Sum the named columns per player per team per week. `sums` maps output name to the column to add up."""
+    spec = {out: (src, "sum") for out, src in sums.items()}
+    g = df.groupby([who, team, "week"]).agg(**spec).reset_index()
+    return g.rename(columns={who: "id", team: "team"})
+
+
+def charted(plays: pd.DataFrame, ftn: pd.DataFrame | None) -> pd.DataFrame:
+    """Join the charting file onto the plays. `ftn_seen` marks the plays it covers, so every charted rate is over charted plays only
+    and a game the charters have not reached yet cannot dilute it."""
+    plays = plays.copy()
+    if ftn is not None and len(ftn):
+        f = ftn[[c for c in FTN_COLS if c in ftn]].rename(columns={"nflverse_game_id": "game_id", "nflverse_play_id": "play_id"})
+        f = f.drop_duplicates(["game_id", "play_id"]).copy()
+        f["ftn_seen"] = 1.0
+        plays = plays.merge(f, on=["game_id", "play_id"], how="left")
+    seen = flag(plays, "ftn_seen")
+    plays["ftn_seen"] = seen
+    plays["f_pa"] = truthy(col(plays, "is_play_action", False)) * seen
+    plays["f_scr"] = truthy(col(plays, "is_screen_pass", False)) * seen
+    plays["f_oop"] = truthy(col(plays, "is_qb_out_of_pocket", False)) * seen
+    plays["f_con"] = truthy(col(plays, "is_contested_ball", False)) * seen
+    plays["f_blz"] = (pd.to_numeric(col(plays, "n_blitzers", 0), errors="coerce").fillna(0) > 0).astype(float) * seen
+    return plays
+
+
+def offense_components(pbp: pd.DataFrame, grp: dict[str, str], pfr: dict[str, pd.DataFrame], pfr_ok: set[tuple[str, int]],
+                       ftn: pd.DataFrame | None = None) -> dict[str, pd.DataFrame]:
+    """Per player per game for the offensive groups. Play-by-play lands within hours of the final whistle and the PFR tables a day
+    or two later, so a rate that divides a PFR count by a play-by-play count (bad throws per attempt, drops per target) counts a
+    play only in a game PFR has posted. Without that the newest game would dilute the rate."""
+    plays = pbp[pbp["play_type"].isin(["pass", "run"]) & pbp["epa"].notna()].copy()
+    plays["succ"] = flag(plays, "success")
+    plays["one"] = 1.0
+    plays = charted(plays, ftn)
+    att = flag(plays, "pass_attempt")
+    air = pd.to_numeric(col(plays, "air_yards", np.nan), errors="coerce")
+    plays["att"] = att
+    plays["air_v"] = air.fillna(0) * att
+    plays["air_n"] = (air.notna() & (att == 1)).astype(float)
+    plays["deep"] = ((air >= 20) & (att == 1)).astype(float)
+    cpoe = pd.to_numeric(col(plays, "cpoe", np.nan), errors="coerce")
+    plays["cpoe_v"] = cpoe.fillna(0)
+    plays["cpoe_n"] = cpoe.notna().astype(float)
+    in_pfr = lambda t, w: np.array([(a, b) in pfr_ok for a, b in zip(t, w)], dtype=bool)  # noqa: E731
+    out: dict[str, pd.DataFrame] = {}
+
+    # Quarterbacks: every dropback, so a sack and a scramble are his as well.
+    q = plays[(flag(plays, "qb_dropback") == 1) & plays["passer_player_id"].map(grp).eq("qb")].copy()
+    q["sck"] = flag(q, "sack")
+    q["cmp"] = flag(q, "complete_pass")
+    q["pyds"] = pd.to_numeric(col(q, "yards_gained", 0), errors="coerce").fillna(0) * q["att"]
+    q["ptd"] = flag(q, "pass_touchdown")
+    q["int_t"] = flag(q, "interception")
+    q["pa"], q["oop"], q["blz"], q["ftn_n"] = q["f_pa"], q["f_oop"], q["f_blz"], q["ftn_seen"]
+    q = _by(q, "passer_player_id", "posteam", db="one", epa="epa", succ="succ", cpoe="cpoe_v", cpoe_n="cpoe_n", att="att", air="air_v",
+            air_n="air_n", deep="deep", sck="sck", pa="pa", oop="oop", blz="blz", ftn_n="ftn_n", cmp="cmp", pyds="pyds", ptd="ptd", int_t="int_t")
+    bad = pfr["pass"][["id", "team", "week", "passing_bad_throws"]].dropna(subset=["id"])
+    bad = bad.groupby(["id", "team", "week"], as_index=False)["passing_bad_throws"].sum().rename(columns={"passing_bad_throws": "bad"})
+    q = q.merge(bad, on=["id", "team", "week"], how="left")
+    q["att_p"] = np.where(in_pfr(q["team"], q["week"]), q["att"], 0)
+    out["qb"] = q
+
+    # Receivers: every target. A completion is measured against the catch the play was expected to be.
+    t = plays[(att == 1) & plays["receiver_player_id"].map(grp).isin(["wr", "te"])].copy()
+    t["croe_v"] = pd.to_numeric(col(t, "complete_pass", np.nan), errors="coerce") - pd.to_numeric(col(t, "cp", np.nan), errors="coerce")
+    t["croe_n"] = t["croe_v"].notna().astype(float)
+    t["croe_v"] = t["croe_v"].fillna(0)
+    caught = (flag(t, "complete_pass") == 1) & col(t, "yards_after_catch", np.nan).notna() & col(t, "xyac_mean_yardage", np.nan).notna()
+    yac = pd.to_numeric(col(t, "yards_after_catch", np.nan), errors="coerce") - pd.to_numeric(col(t, "xyac_mean_yardage", np.nan), errors="coerce")
+    t["yacoe_v"] = yac.where(caught, 0).fillna(0)
+    t["yacoe_n"] = caught.astype(float)
+    t["tgt"] = 1.0
+    t["rec"] = flag(t, "complete_pass")
+    t["ryds"] = pd.to_numeric(col(t, "yards_gained", 0), errors="coerce").fillna(0) * t["rec"]
+    t["rtd"] = flag(t, "pass_touchdown") * t["rec"]
+    t["contested"], t["screen"], t["ftn_t"] = t["f_con"], t["f_scr"], t["ftn_seen"]
+    r = _by(t, "receiver_player_id", "posteam", tgt="tgt", epa="epa", croe="croe_v", croe_n="croe_n", yacoe="yacoe_v", yacoe_n="yacoe_n",
+            air="air_v", air_n="air_n", deep="deep", contested="contested", screen="screen", ftn_t="ftn_t", rec="rec", ryds="ryds", rtd="rtd")
+    team_att = plays[att == 1].groupby(["posteam", "week"]).size().rename("team_att").reset_index().rename(columns={"posteam": "team"})
+    drop = pfr["rec"][["id", "team", "week", "receiving_drop"]].dropna(subset=["id"])
+    drop = drop.groupby(["id", "team", "week"], as_index=False)["receiving_drop"].sum().rename(columns={"receiving_drop": "drop"})
+    r = r.merge(team_att, on=["team", "week"], how="left").merge(drop, on=["id", "team", "week"], how="left")
+    r["tgt_p"] = np.where(in_pfr(r["team"], r["week"]), r["tgt"], 0)
+    r["group"] = r["id"].map(grp)
+    out["wr"], out["te"] = r[r["group"] == "wr"], r[r["group"] == "te"]
+
+    # Runners: designed carries, so a scramble is the quarterback's.
+    n = plays[(plays["play_type"] == "run") & (flag(plays, "qb_scramble") != 1) & plays["rusher_player_id"].map(grp).eq("rb")].copy()
+    n["car"] = 1.0
+    n["expl"] = (pd.to_numeric(col(n, "yards_gained", 0), errors="coerce").fillna(0) >= 10).astype(float)
+    n["stuff"] = (pd.to_numeric(col(n, "yards_gained", 0), errors="coerce").fillna(0) <= 0).astype(float)
+    gap = col(n, "run_gap", np.nan)
+    n["gap_n"] = gap.notna().astype(float)
+    n["edge"] = (gap == "end").astype(float)
+    n["gun"] = flag(n, "shotgun")
+    n["ryds"] = pd.to_numeric(col(n, "yards_gained", 0), errors="coerce").fillna(0)
+    n["rtd"] = flag(n, "rush_touchdown")
+    u = _by(n, "rusher_player_id", "posteam", car="car", epa="epa", succ="succ", expl="expl", stuff="stuff", gap_n="gap_n", edge="edge", gun="gun", ryds="ryds", rtd="rtd")
+    pr = pfr["rush"].dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False).agg(
+        pfr_car=("carries", "sum"), ybc=("rushing_yards_before_contact", "sum"), yco=("rushing_yards_after_contact", "sum"),
+        broken=("rushing_broken_tackles", "sum"))
+    out["rb"] = u.merge(pr, on=["id", "team", "week"], how="left")
+    return out
+
+
+def defense_components(pbp: pd.DataFrame, pfr_def: pd.DataFrame, snaps: pd.DataFrame, pfr_ok: set[tuple[str, int]]) -> pd.DataFrame:
+    """Per defender per game. `snaps` already carries the player's `id`.
+
+    A rate per snap needs the snap count and the PFR line from the same game. Snap counts for the newest game can arrive a day
+    after the PFR table, so the snap-based numerators are zeroed for a team-week with no snap data, which leaves that game out of
+    those rates and out of nothing else. The same goes for the plays play-by-play charges to a defender (tackles for loss, passes
+    defended) when they are divided by something PFR counts.
+    """
+    d = pfr_def.dropna(subset=["id"]).copy()
+    d["adot_sum"] = pd.to_numeric(col(d, "def_adot", 0), errors="coerce").fillna(0) * pd.to_numeric(col(d, "def_targets", 0), errors="coerce").fillna(0)
+    out = d.groupby(["id", "team", "week"], as_index=False).agg(
+        press=("def_pressures", "sum"), sacks=("def_sacks", "sum"), tackles=("def_tackles_combined", "sum"), missed=("def_missed_tackles", "sum"),
+        tgts=("def_targets", "sum"), cmp=("def_completions_allowed", "sum"), yds=("def_yards_allowed", "sum"),
+        td=("def_receiving_td_allowed", "sum"), ints=("def_ints", "sum"), adot_sum=("adot_sum", "sum"))
+    out["tackle_chances"] = out["tackles"] + out["missed"]
+    # The passer rating against him is not a sum. It is stored as a rating times targets, so a slice of games still divides back out.
+    out["rating_num"] = [(passer_rating(r.tgts, r.cmp, r.yds, r.td, r.ints) or 0.0) * r.tgts for r in out.itertuples()]
+    sn = snaps.dropna(subset=["id"]).groupby(["id", "team", "week"], as_index=False).agg(snaps=("defense_snaps", "sum"))
+    # What play-by-play charges to a defender: tackles for loss and passes defended.
+    ev = []
+    for c, name in (("tackle_for_loss_1_player_id", "tfl"), ("tackle_for_loss_2_player_id", "tfl"),
+                    ("pass_defense_1_player_id", "pbu"), ("pass_defense_2_player_id", "pbu")):
+        if c in pbp:
+            e = pbp[pbp[c].notna()][[c, "defteam", "week"]].rename(columns={c: "id", "defteam": "team"})
+            e[name] = 1.0
+            ev.append(e.groupby(["id", "team", "week"], as_index=False)[name].sum())
+    scrim = pbp[pbp["play_type"].isin(["pass", "run"])]
+    for cols_, name in ((("solo_tackle_1_player_id", "solo_tackle_2_player_id"), "solo"),
+                        (("assist_tackle_1_player_id", "assist_tackle_2_player_id", "assist_tackle_3_player_id", "assist_tackle_4_player_id"), "ast")):
+        for c in cols_:
+            if c in scrim:
+                e = scrim[scrim[c].notna()][[c, "defteam", "week"]].rename(columns={c: "id", "defteam": "team"})
+                e[name] = 1.0
+                ev.append(e.groupby(["id", "team", "week"], as_index=False)[name].sum())
+    for name in ("tfl", "pbu", "solo", "ast"):
+        part = [e for e in ev if name in e]
+        if part:
+            out = out.merge(pd.concat(part).groupby(["id", "team", "week"], as_index=False)[name].sum(), on=["id", "team", "week"], how="outer")
+        else:
+            out[name] = 0.0
+    out = out.merge(sn, on=["id", "team", "week"], how="outer")
+    for c in out.columns:
+        if c not in ("id", "team"):
+            out[c] = out[c].fillna(0)
+    out["tk"] = out["solo"] + out["ast"]
+    have = {(t, w) for t, w in zip(snaps["team"], snaps["week"])}
+    ok = np.array([(t, w) in have for t, w in zip(out["team"], out["week"])], dtype=bool)
+    posted = np.array([(t, w) in pfr_ok for t, w in zip(out["team"], out["week"])], dtype=bool)
+    out["snaps_s"] = np.where(ok, out["snaps"], 0.0)
+    for src, dst in (("press", "press_s"), ("sacks", "sacks_s"), ("tackles", "tackles_s"), ("tfl", "tfl_s")):
+        out[dst] = np.where(ok, out[src], 0.0)
+    out["pbu_p"] = np.where(posted, out["pbu"], 0.0)
+    return out
+
+
+def special_components(pbp: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Kickers, punters and returners, all from play-by-play. The sign of an expected-points number depends on who had the ball:
+    on a punt the offense is the punting team, on a kickoff it is the receiving team."""
+    out: dict[str, pd.DataFrame] = {}
+    d = pbp[pbp["epa"].notna()].copy()
+    d["one"] = 1.0
+    dist = pd.to_numeric(col(d, "kick_distance", np.nan), errors="coerce")
+    ret = pd.to_numeric(col(d, "return_yards", 0), errors="coerce").fillna(0)
+    tb = flag(d, "touchback")
+    p_fg = fit_fg(pbp)
+
+    fg = d[(d["play_type"] == "field_goal") & col(d, "kicker_player_id", np.nan).notna() & dist.notna()].copy()
+    fg["fga"] = 1.0
+    fg["fgm"] = (col(fg, "field_goal_result", None) == "made").astype(float)
+    fg["fg_oe"] = fg["fgm"] - p_fg(pd.to_numeric(col(fg, "kick_distance", np.nan), errors="coerce").to_numpy())
+    fg["fg_yds"] = pd.to_numeric(col(fg, "kick_distance", np.nan), errors="coerce")
+    fg["fg50"] = (fg["fg_yds"] >= 50).astype(float)
+    parts = [_by(fg, "kicker_player_id", "posteam", fga="fga", fgm="fgm", fg_oe="fg_oe", fg_yds="fg_yds", fg50="fg50")] if len(fg) else []
+    xp = d[(d["play_type"] == "extra_point") & col(d, "kicker_player_id", np.nan).notna()].copy()
+    xp["xpa"] = 1.0
+    xp["xpm"] = (col(xp, "extra_point_result", None) == "good").astype(float)
+    if len(xp):
+        parts.append(_by(xp, "kicker_player_id", "posteam", xpa="xpa", xpm="xpm"))
+    ko = d[(d["play_type"] == "kickoff") & col(d, "kicker_player_id", np.nan).notna()].copy()
+    ko["kos"] = 1.0
+    ko["ko_epa"] = -ko["epa"]  # the kicking team is the defense on a kickoff
+    ko["ko_tb"] = flag(ko, "touchback")
+    if len(ko):
+        parts.append(_by(ko, "kicker_player_id", "defteam", kos="kos", ko_epa="ko_epa", ko_tb="ko_tb"))
+    if parts:
+        # A kicker's team: the team he kicked for in that game, which his field goals and kickoffs both name.
+        k = pd.concat(parts)
+        out["k"] = k.groupby(["id", "team", "week"], as_index=False).sum()
+
+    pu = d[(d["play_type"] == "punt") & col(d, "punter_player_id", np.nan).notna() & dist.notna()].copy()
+    if len(pu):
+        pu["pnt"] = 1.0
+        pu["gross"] = pd.to_numeric(col(pu, "kick_distance", np.nan), errors="coerce")
+        pu["tb"] = flag(pu, "touchback")
+        pu["net"] = pu["gross"] - pd.to_numeric(col(pu, "return_yards", 0), errors="coerce").fillna(0) - 20 * pu["tb"]
+        pu["in20"] = flag(pu, "punt_inside_twenty")
+        pu["fc"] = flag(pu, "punt_fair_catch")
+        out["p"] = _by(pu, "punter_player_id", "posteam", pnt="pnt", epa="epa", gross="gross", net="net", in20="in20", tb="tb", fc="fc")
+
+    pr = d[(d["play_type"] == "punt") & col(d, "punt_returner_player_id", np.nan).notna()].copy()
+    if len(pr):
+        pr["rets"] = 1.0
+        pr["epa_r"] = -pr["epa"]  # the returner's team is the defense on a punt
+        pr["fc"] = flag(pr, "punt_fair_catch")
+        pr["ret_run"] = 1.0 - pr["fc"]
+        pr["ret_yds"] = pd.to_numeric(col(pr, "return_yards", 0), errors="coerce").fillna(0) * pr["ret_run"]
+        out["pr"] = _by(pr, "punt_returner_player_id", "defteam", rets="rets", epa_r="epa_r", fc="fc", ret_run="ret_run", ret_yds="ret_yds")
+
+    kr = d[(d["play_type"] == "kickoff") & col(d, "kickoff_returner_player_id", np.nan).notna()].copy()
+    if len(kr):
+        kr["rets"] = 1.0
+        kr["epa_r"] = kr["epa"]  # the returner's team has the ball on a kickoff
+        kr["ret_yds"] = pd.to_numeric(col(kr, "return_yards", 0), errors="coerce").fillna(0)
+        out["kr"] = _by(kr, "kickoff_returner_player_id", "posteam", rets="rets", epa_r="epa_r", ret_yds="ret_yds")
+    return out
+
+
+# ---------------------------------------------------------------------------------------------- statistics
+
+
+def spread(values: list[float]) -> dict:
+    """The league's yardstick for one stat: what typical and what elite look like, so a number never stands alone."""
+    a = np.asarray(values, dtype=float)
+    q = np.percentile(a, [10, 25, 50, 75, 90])
+    return {"n": int(len(a)), "mean": round(float(a.mean()), 4), "sd": round(float(a.std(ddof=0)), 4), "q": [round(float(x), 4) for x in q]}
+
+
+def standard_error(st: Stat, num: float, den: float) -> float | None:
+    """How far this player's value could be from his true level on the volume behind it, in the stat's own units."""
+    if den <= 0:
+        return None
+    if st.se == "binom":
+        p = (num + 1) / (den + 2)  # a hair of shrinkage so 0 for 8 is not "exactly 0%, with no doubt"
+        return float(np.sqrt(p * (1 - p) / den) * st.scale)
+    if st.se == "poisson":
+        return float(np.sqrt(max(num, 1.0)) / den * st.scale)
+    return float(st.se) * st.scale / float(np.sqrt(den))
+
+
+def slice_values(tot: pd.DataFrame, st: Stat) -> dict[str, tuple[float, float, float, float]]:
+    """{id: (value, volume, numerator, denominator)} for one stat over one slice's summed components."""
+    if st.num not in tot or st.den not in tot:
+        return {}
+    num = tot[st.num].to_numpy(dtype=float)
+    den = tot[st.den].to_numpy(dtype=float)
+    vol = tot[st.gate].to_numpy(dtype=float) if st.gate and st.gate in tot else den
+    return {pid: (n / d * st.scale, v, n, d) for pid, n, d, v in zip(tot.index, num, den, vol) if d > 0}
+
+
+def snap_share(snaps: pd.DataFrame, side: str, weeks: list[int], pid: str, team: str) -> list | None:
+    """[mean share of the team's snaps, games he played, games counted] over the `weeks` that have snap counts. A counted game he
+    did not play is a zero in the mean, which is why the other two numbers ride along: 40% over four games can be a part-time role
+    or a full one with two games missed, and the page has to be able to tell them apart."""
     counted = sorted(set(snaps.loc[snaps["team"] == team, "week"]) & set(weeks))
     if not counted:
         return None
-    col = "offense_pct" if side == "off" else "defense_pct"
+    c = "offense_pct" if side == "off" else "defense_pct"
     mine = snaps[(snaps["id"] == pid) & (snaps["team"] == team) & snaps["week"].isin(counted)]
-    return round(float(mine[col].fillna(0).sum()) / len(counted), 3)
-
-
-def name_key(name) -> str:
-    return "".join(ch for ch in str(name).lower() if ch.isalnum())
+    share = mine[c].fillna(0)
+    return [round(float(share.sum()) / len(counted), 3), int((share > 0).sum()), len(counted)]
 
 
 def attach_ids(df: pd.DataFrame, name_col: str, to_gsis: dict[str, str], by_name: dict[tuple[str, str], str]) -> pd.DataFrame:
@@ -347,18 +775,223 @@ def attach_ids(df: pd.DataFrame, name_col: str, to_gsis: dict[str, str], by_name
     return df
 
 
+def r4(x) -> float:
+    return round(float(x), 4)
+
+
+def r1(x) -> float:
+    return round(float(x), 1)
+
+
+@dataclass
+class Grouped:
+    rows: list = field(default_factory=list)
+    yard: dict = field(default_factory=dict)
+    logs: dict = field(default_factory=dict)
+    qualifiers: int = 0
+
+
+def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[int], names: dict, pos: dict, snaps: pd.DataFrame,
+                weeks_of: dict[str, dict[int, str]], last_week: int) -> Grouped:
+    """Everything for one group: every player's slices, grades, ranks, uncertainty, movers, the yardstick and the game-by-game trail."""
+    spec = GROUPS[g]
+    stats = spec.stats
+    side = SIDE_OF[g]
+    res = Grouped()
+    if df is None or df.empty:
+        return res
+    df = df.copy()
+    win = side_windows["def" if side == "def" else "off"]
+    df["slice"] = ["form" if w in win.get(t, (set(), set()))[0] else "earlier" for t, w in zip(df["team"], df["week"])]
+    box_cols = BOX.get(g, {})
+    cols = sorted({c for s in stats.values() for c in (s.num, s.den, s.gate) if c and c in df.columns} | {c for c in box_cols.values() if c in df.columns})
+    tot = {sl: (df if sl == "season" else df[df["slice"] == sl]).groupby("id")[cols].sum() for sl in SLICES}
+    latest = df.sort_values("week").groupby("id")["team"].last()
+
+    # Value, volume and numerator for every player in the league, per stat and slice; then the grades and ranks among qualifiers.
+    val: dict[str, dict[str, dict]] = {}
+    grade: dict[str, dict[str, dict]] = {}
+    rank: dict[str, dict] = {}
+    for key, st in stats.items():
+        val[key], grade[key] = {}, {}
+        for sl, need in zip(SLICES, st.need):
+            val[key][sl] = slice_values(tot[sl], st)
+            qual = {pid: t[0] for pid, t in val[key][sl].items() if t[1] >= need}
+            grade[key][sl] = grades(qual, st.higher) if st.higher is not None else {}
+            if sl == "season":
+                rank[key] = ranks(qual, st.higher) if st.higher is not None else {}
+                if len(qual) >= 3:
+                    res.yard[key] = spread(list(qual.values()))
+                if key == spec.headline:
+                    res.qualifiers = len(qual)
+
+    form_weeks_last = {t: w[0] for t, w in win.items()}
+    for pid in tot["season"].index:
+        if not names.get(pid):
+            continue
+        team = latest[pid]
+        entries, deltas = [], []
+        for key, st in stats.items():
+            s_season = val[key]["season"].get(pid)
+            if s_season is None or s_season[1] < st.need[0]:
+                continue  # a stat with too little volume over the season says nothing
+            one: dict = {"k": key}
+            se_of = {}
+            for sl, need in zip(SLICES, st.need):
+                t = val[key][sl].get(pid)
+                if t is None:
+                    one[sl] = None
+                    continue
+                v, n, num, den = t
+                d = {"v": r4(v), "n": r1(n)}
+                se_of[sl] = standard_error(st, num, den)
+                if sl == "season":
+                    d["se"] = r4(se_of[sl]) if se_of[sl] is not None else None
+                if n >= need and st.higher is not None:
+                    d["g"] = grade[key][sl].get(pid)
+                    if sl == "season":
+                        d["r"] = rank[key].get(pid)
+                one[sl] = d
+            f, e = one.get("form"), one.get("earlier")
+            if st.higher is not None and f and e and f.get("g") is not None and e.get("g") is not None:
+                one["delta"] = r1(f["g"] - e["g"])
+                sf, se_ = se_of.get("form"), se_of.get("earlier")
+                if sf is not None and se_ is not None and (sf * sf + se_ * se_) > 0:
+                    z = (f["v"] - e["v"]) / float(np.sqrt(sf * sf + se_ * se_))
+                    one["z"] = r1(z if st.higher else -z)
+                if st.counts:
+                    # How far to trust the change: half at the volume the stat needs to count at all, three quarters at triple it.
+                    deltas.append((key, one["delta"], f["n"] / (f["n"] + st.need[1]), one.get("z")))
+            entries.append(one)
+        head = next((e for e in entries if e["k"] == spec.headline), None)
+        if head is None or head["season"].get("g") is None:
+            continue  # no card without the stat the card is about
+
+        mover = None
+        if len(deltas) >= spec.min_stats:
+            # The outcome stat counts double: a quarterback whose EPA is up should not be a faller because of one throw-quality number.
+            # A small recent sample pulls the score toward zero, because a stat over a handful of plays swings on a few plays.
+            wts = [2.0 if k == spec.headline else 1.0 for k, _, _, _ in deltas]
+            score = round(float(sum(w * c * d for w, (_, d, c, _) in zip(wts, deltas)) / sum(wts)), 1)
+            zs = [(w, z) for w, (_, _, _, z) in zip(wts, deltas) if z is not None]
+            driver = max(deltas, key=lambda x: abs(x[1]) * x[2])[0]
+            mover = {"score": score, "driver": driver, "stats": len(deltas), "agree": sum(1 for _, d, _, _ in deltas if d * score > 0)}
+            if zs:
+                mover["z"] = r1(sum(w * z for w, z in zs) / sum(w for w, _ in zs))
+
+        form_w, earlier_w = win.get(team, (set(), set()))
+        snap_side = "def" if side == "def" else "off"
+        tg = weeks_of.get(team, {})
+        if side == "st":
+            share = {sl: None for sl in SLICES}
+        else:
+            share = {sl: snap_share(snaps, snap_side, sorted(ws), pid, team) for sl, ws in (("season", set(tg)), ("form", form_w), ("earlier", earlier_w))}
+        rows_p = df[df["id"] == pid]
+        res.rows.append({
+            "id": pid, "name": names[pid], "team": team, "pos": pos.get(pid, ""), "group": g,
+            "games": int(rows_p["week"].nunique()), "snaps": share, "stats": entries, "mover": mover,
+            "box": {k: round(float(tot["season"].at[pid, c]), 1) if float(tot["season"].at[pid, c]) % 1 else int(tot["season"].at[pid, c])
+                    for k, c in box_cols.items() if c in tot["season"]},
+        })
+
+    # The game-by-game trail, with the season-to-date percentile after each week: where he ranked then, among players with the same
+    # share of a full season's volume behind them.
+    kept = {r["id"]: r for r in res.rows}
+    if kept:
+        weekly = df.groupby(["id", "week"])[cols].sum()
+        week_team = {(i, w): t for i, w, t in zip(df["id"], df["week"], df["team"])}
+        top = max(last_week, 1)
+        cum_pct: dict[str, dict[int, dict[str, float]]] = {}
+        for k in weeks_all:
+            part = df[df["week"] <= k].groupby("id")[cols].sum()
+            frac = k / top
+            for key, st in stats.items():
+                if st.higher is None:
+                    continue
+                vals = {pid: t[0] for pid, t in slice_values(part, st).items() if t[1] >= max(1.0, st.need[0] * max(frac, 0.6))}
+                for pid, p in percentiles(vals, st.higher).items():
+                    cum_pct.setdefault(key, {}).setdefault(pid, {})[k] = p
+        for pid, row in kept.items():
+            mine = weekly.loc[pid] if pid in weekly.index.get_level_values(0) else None
+            if mine is None:
+                continue
+            trail: dict[str, list] = {}
+            last_team = row["team"]
+            moved = {}
+            for key, st in stats.items():
+                pts = []
+                for w, vals in mine.iterrows():
+                    if st.num not in vals or st.den not in vals or vals[st.den] <= 0:
+                        continue
+                    pct = cum_pct.get(key, {}).get(pid, {}).get(int(w))
+                    pts.append([int(w), r4(vals[st.num] / vals[st.den] * st.scale), r1(vals[st.den]), None if pct is None else r1(pct)])
+                    if week_team.get((pid, w)) != last_team:
+                        moved[int(w)] = week_team.get((pid, w))
+                if pts:
+                    trail[key] = pts
+            if trail:
+                entry = {"g": trail}
+                if moved:
+                    entry["t"] = moved
+                # The box score game by game, for the game log: [[week, value], ...] per total.
+                bx = {}
+                for k, c in box_cols.items():
+                    if c in mine.columns:
+                        bx[k] = [[int(w), int(v) if float(v).is_integer() else round(float(v), 1)] for w, v in mine[c].items()]
+                if bx:
+                    entry["b"] = bx
+                if side != "st":
+                    # His share of the team's snaps in every game that has snap counts, a game he did not play being 0, so a reader
+                    # can tell "he missed two games" from "he played less".
+                    tg = weeks_of.get(row["team"], {})
+                    counted = sorted(set(snaps.loc[snaps["team"] == row["team"], "week"]) & set(tg))
+                    mine_s = snaps[(snaps["id"] == pid) & (snaps["team"] == row["team"])]
+                    got = dict(zip(mine_s["week"], mine_s["defense_pct" if side == "def" else "offense_pct"].fillna(0)))
+                    entry["s"] = [[int(w), round(float(got.get(w, 0.0)), 3)] for w in counted]
+                res.logs[pid] = entry
+    return res
+
+
+def comparables(rows: list[dict], group: str) -> dict[str, list[str]]:
+    """For each player the few most like him in the same group: the smallest typical gap in grade over the graded stats they share."""
+    graded = [k for k, s in GROUPS[group].stats.items() if s.higher is not None]
+    ids = [r["id"] for r in rows]
+    mat = np.full((len(rows), len(graded)), np.nan)
+    for i, r in enumerate(rows):
+        have = {s["k"]: s["season"].get("g") for s in r["stats"]}
+        for j, k in enumerate(graded):
+            if have.get(k) is not None:
+                mat[i, j] = have[k]
+    out: dict[str, list[str]] = {}
+    need = min(3, len(graded))
+    for i, pid in enumerate(ids):
+        diff = (mat - mat[i]) ** 2
+        shared = np.sum(~np.isnan(diff), axis=1)
+        total = np.nansum(diff, axis=1)
+        dist = np.sqrt(total / np.maximum(shared, 1))
+        dist[shared < need] = np.inf
+        dist[i] = np.inf
+        order = [j for j in np.argsort(dist, kind="stable") if np.isfinite(dist[j])][:LIKE_N]
+        out[pid] = [ids[j] for j in order]
+    return out
+
+
+# ---------------------------------------------------------------------------------------------- the build
+
+
 def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
-    raw = site(src["pbp"], ("posteam", "defteam"))
+    raw = site(src["pbp"], ("posteam", "defteam", "home_team", "away_team"))
     raw = raw[raw["season_type"] == "REG"]
     games = finished_games(raw)
     weeks_of = team_weeks(games)
-    if team not in weeks_of:
+    results = game_results(raw, games)
+    if not weeks_of:
         return {"season": season, "players": []}
     # A game counts once its last play is in, and every table is cut down to the games that count, so the stats, the snap
     # shares and the windows all describe the same games.
     done = {(t, w) for t, ws in weeks_of.items() for w in ws}
     pbp = raw[raw["penalty"].fillna(0) != 1] if "penalty" in raw else raw
-    pbp = pbp[[(t, w) in done for t, w in zip(pbp["posteam"], pbp["week"])]]
+    pbp = pbp[[(p, w) in done if isinstance(p, str) else (d, w) in done for p, d, w in zip(pbp["posteam"], pbp["defteam"], pbp["week"])]]
 
     roster = site(src["roster"], ("team",)).drop_duplicates("gsis_id", keep="last")
     pos = dict(zip(roster["gsis_id"], roster["position"]))
@@ -375,6 +1008,16 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
     pfr = {k: keep(src[k], "pfr_player_name") for k in ("pass", "rush", "rec", "defense")}
     snaps = keep(src["snaps"], "player")
 
+    # Which group each player belongs to. The depth chart is the authority; the snap-count position settles a roster that only
+    # says DL or DB.
+    depth = dict(zip(roster["gsis_id"], col(roster, "depth_chart_position", None)))
+    snap_pos = dict(zip(snaps["id"], snaps["position"])) if "position" in snaps else {}
+    grp: dict[str, str] = {}
+    for pid in set(roster["gsis_id"]) | set(snap_pos):
+        g = DEPTH_GROUP.get(str(depth.get(pid)).upper()) or COARSE_GROUP.get(str(pos.get(pid)).upper()) or COARSE_GROUP.get(str(snap_pos.get(pid)).upper())
+        if g:
+            grp[pid] = g
+
     # The weeks PFR has posted, per team; the defensive groups are built only from these.
     pfr_ok = {(t, w) for t, w in zip(pfr["defense"]["team"], pfr["defense"]["week"])}
     pfr_weeks: dict[str, dict[int, str]] = {}
@@ -382,113 +1025,97 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
         if t in weeks_of and w in weeks_of[t]:
             pfr_weeks.setdefault(t, {})[w] = weeks_of[t][w]
 
-    comps = offense_components(pbp, pos, pfr, pfr_ok)
-    dfn = defense_components(pfr["defense"], snaps)
-    dfn["group"] = dfn["id"].map(lambda i: POS_GROUP.get(pos.get(i, ""), ""))
-    for g in ("rush", "rund", "cov"):
+    comps = offense_components(pbp, grp, pfr, pfr_ok, src.get("ftn"))
+    comps.update(special_components(pbp))
+    dfn = defense_components(pbp, pfr["defense"], snaps, pfr_ok)
+    dfn["group"] = dfn["id"].map(grp)
+    for g in ("edge", "idl", "lb", "cb", "saf"):
         comps[g] = dfn[dfn["group"] == g]
 
     windows = {"off": {t: window_of(ws) for t, ws in weeks_of.items()}, "def": {t: window_of(ws) for t, ws in pfr_weeks.items()}}
-    for g, df in comps.items():
-        win = windows[SIDE[g]]
-        df["slice"] = ["form" if w in win.get(t, (set(), set()))[0] else "earlier" for t, w in zip(df["team"], df["week"])]
+    all_weeks = sorted({w for ws in weeks_of.values() for w in ws})
+    last_off = max(all_weeks)
+    last_def = max((w for ws in pfr_weeks.values() for w in ws), default=0)
 
-    players: list[dict] = []
+    rows: list[dict] = []
+    yard: dict[str, dict] = {}
+    logs: dict[str, dict] = {}
     league_n: dict[str, int] = {}
-    tg = weeks_of[team]
-    for g, stats in STATS.items():
-        df = comps.get(g)
-        if df is None or df.empty:
+    like: dict[str, list[str]] = {}
+    for g in GROUP_ORDER:
+        side = SIDE_OF[g]
+        weeks = [w for w in all_weeks if w <= (last_def if side == "def" else last_off)]
+        res = grade_group(g, comps.get(g), windows, weeks, names, pos, snaps, pfr_weeks if side == "def" else weeks_of,
+                          last_def if side == "def" else last_off)
+        if not res.rows:
             continue
-        latest = df.sort_values("week").groupby("id")["team"].last()
-        by_player = {pid: rows for pid, rows in df.groupby("id")}
-        # Value and volume for every player in the league, per stat and slice.
-        table = {
-            pid: {key: {"season": stat_value(rows, stat), "form": stat_value(rows[rows["slice"] == "form"], stat),
-                        "earlier": stat_value(rows[rows["slice"] == "earlier"], stat)} for key, stat in stats.items()}
-            for pid, rows in by_player.items()
-        }
-        pct: dict[str, dict[str, dict[str, float]]] = {}
-        grade: dict[str, dict[str, dict[str, float]]] = {}
-        qualified = 0
-        for key, stat in stats.items():
-            need = {"season": stat[3], "form": stat[4], "earlier": stat[5]}
-            pct[key], grade[key] = {}, {}
-            for sl in ("season", "form", "earlier"):
-                vals = {pid: table[pid][key][sl][0] for pid in by_player
-                        if table[pid][key][sl][0] is not None and table[pid][key][sl][1] >= need[sl]}
-                pct[key][sl] = percentiles(vals, stat[2]) if stat[2] is not None else {}
-                grade[key][sl] = grades(vals, stat[2]) if stat[2] is not None else {}
-                if sl == "season":
-                    qualified = max(qualified, len(vals))
-        league_n[g] = qualified
+        rows += res.rows
+        yard[g] = res.yard
+        league_n[g] = res.qualifiers
+        logs.update({(pid, g): v for pid, v in res.logs.items()})
+        by_id = {r["id"]: r for r in res.rows}
+        for pid, others in comparables(res.rows, g).items():
+            by_id[pid]["_like"] = others
 
-        head = stats[HEADLINE[g]]
-        for pid, rows in by_player.items():
-            if latest[pid] != team or not names.get(pid):
-                continue
-            entries, deltas = [], []
-            for key, stat in stats.items():
-                need = {"season": stat[3], "form": stat[4], "earlier": stat[5]}
-                one: dict = {"k": key}
-                for sl in ("season", "form", "earlier"):
-                    v, n = table[pid][key][sl]
-                    ok = n >= need[sl]
-                    one[sl] = None if v is None else {
-                        "v": round(v, 4), "n": round(n, 1), "pct": pct[key][sl].get(pid) if ok else None,
-                        "g": grade[key][sl].get(pid) if ok else None}
-                # A stat with too little volume over the season says nothing; a style stat is only description, so it stays.
-                if stat[2] is not None and (one["season"] is None or one["season"]["pct"] is None):
-                    continue
-                f, e = one["form"], one["earlier"]
-                if stat[2] is not None and f and e and f["g"] is not None and e["g"] is not None:
-                    one["delta"] = round(f["g"] - e["g"], 1)
-                    if stat[7]:
-                        # How far to trust the change: half at the volume the stat needs to count at all, three quarters at triple it.
-                        deltas.append((key, one["delta"], f["n"] / (f["n"] + stat[4])))
-                entries.append(one)
-            if not any(STATS[g][e["k"]][2] is not None for e in entries):
-                continue
+    bios = bios_of(roster, {r["id"] for r in rows}, season)
 
-            mover = None
-            if len(deltas) >= MIN_STATS[g]:
-                # The outcome stat counts double: a quarterback whose EPA is up should not be a faller because of one throw-quality number.
-                # A small recent sample pulls the score toward zero, because a stat over a handful of plays swings on a few plays.
-                weights = [2.0 if k == HEADLINE[g] else 1.0 for k, _, _ in deltas]
-                score = round(float(sum(w * c * d for w, (_, d, c) in zip(weights, deltas)) / sum(weights)), 1)
-                driver = max(deltas, key=lambda kdc: abs(kdc[1]))[0]
-                agree = sum(1 for _, d, _ in deltas if d * score > 0)
-                mover = {"score": score, "driver": driver, "stats": len(deltas), "agree": agree}
+    # A slug for every person, stable between builds: his name, then his team, then a piece of his id when two share both.
+    slug_of: dict[str, str] = {}
+    taken: set[str] = set()
+    for r in sorted(rows, key=lambda r: (r["name"], r["id"])):
+        if r["id"] in slug_of:
+            continue
+        base = slugify(r["name"])
+        slug = base
+        if slug in taken:
+            slug = f"{base}-{r['team'].lower()}"
+        if slug in taken:
+            slug = f"{base}-{r['id'][-4:].lower()}"
+        taken.add(slug)
+        slug_of[r["id"]] = slug
+    for r in rows:
+        r["slug"] = slug_of[r["id"]]
+        r["like"] = [slug_of[i] for i in r.pop("_like", []) if i in slug_of]
+    rows.sort(key=lambda r: (GROUP_ORDER.index(r["group"]), r["name"], r["id"]))
 
-            form_w, earlier_w = windows[SIDE[g]].get(team, (set(), set()))
-            weekly = []
-            for w in sorted(tg):
-                v, n = stat_value(rows[rows["week"] == w], head)
-                weekly.append({"w": w, "opp": tg[w], "v": None if v is None else round(v, 4), "n": round(n, 1)})
-            share = {sl: snap_share(snaps, SIDE[g], sorted(ws), pid, team)
-                     for sl, ws in (("season", set(tg)), ("form", form_w), ("earlier", earlier_w))}
-            players.append({
-                "id": pid, "name": names[pid], "pos": pos.get(pid, ""), "group": g, "games": int(rows["week"].nunique()),
-                "stats": entries, "mover": mover, "weekly": weekly, "snaps": share,
-            })
+    for r in rows:
+        r["espn"] = bios.get(r["id"], {}).get("espn")
+        if r["espn"] is None:
+            r.pop("espn")
+    people = {slug_of[i]: b for i, b in bios.items() if i in slug_of}
+    for b in people.values():
+        b.pop("espn", None)
+    win = win_translation(logs, rows, results)
 
-    players.sort(key=lambda p: (p["group"], p["name"]))
-    off_form, _ = windows["off"][team]
+    off_form, _ = windows["off"].get(team, (set(), set()))
     def_form, _ = windows["def"].get(team, (set(), set()))
     return {
         "season": season,
-        "week": max(tg),
+        "week": last_off,
         "team": team,
         "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": LICENSE,
         "formGames": FORM_GAMES,
+        "weeks": all_weeks,
         "formWeeks": sorted(off_form),
         "defFormWeeks": sorted(def_form),
-        "defWeek": max(pfr_weeks.get(team, {0: ""})),
-        "games": [{"w": w, "opp": tg[w]} for w in sorted(tg)],
+        "defWeek": last_def,
         "leagueN": league_n,
-        "players": players,
+        "opp": {t: {str(w): o for w, o in sorted(ws.items())} for t, ws in sorted(weeks_of.items())},
+        "yard": yard,
+        "players": rows,
+        "_logs": {"season": season, "week": last_off, "logs": _logs_by_slug(logs, rows, slug_of), "bio": people,
+                  "res": {t: {str(w): v for w, v in sorted(ws.items())} for t, ws in sorted(results.items())}, "win": win},
     }
+
+
+def _logs_by_slug(logs: dict, rows: list[dict], slug_of: dict[str, str]) -> dict:
+    """{slug: {group: {"g": {stat: [[week, value, volume, percentile]]}, "t": {week: team}}}}."""
+    out: dict[str, dict] = {}
+    for (pid, g), v in logs.items():
+        if pid in slug_of:
+            out.setdefault(slug_of[pid], {})[g] = v
+    return out
 
 
 # ---------------------------------------------------------------------------------------------- loading
@@ -508,9 +1135,29 @@ def load(season: int, folder: str | None) -> dict[str, pd.DataFrame]:
     src = {}
     for key, fname in FILES.items():
         where = str(Path(folder) / fname.format(season=season)) if folder else URLS[key].format(season=season)
-        kw = {"usecols": lambda c: c in PBP_COLS} if key == "pbp" else {}
-        src[key] = _read(where, **kw)
+        kw = {"usecols": lambda c: c in PBP_COLS} if key == "pbp" else {"usecols": lambda c: c in FTN_COLS} if key == "ftn" else {}
+        try:
+            src[key] = _read(where, **kw)
+        except Exception as e:  # noqa: BLE001 - the optional charting file may simply not exist yet
+            if key not in OPTIONAL:
+                raise
+            print(f"skipping {key}: {e}", file=sys.stderr)
     return src
+
+
+def _write_if_changed(path: Path, payload: dict) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    old = None
+    if path.exists():
+        try:
+            old = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            pass
+    if old is not None and {**old, "generatedAt": ""} == {**payload, "generatedAt": ""}:
+        return False
+    path.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False, default=float) + "\n")
+    print(f"wrote {path} ({path.stat().st_size // 1024} KB)")
+    return True
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -519,25 +1166,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--team", default="LV")
     ap.add_argument("--input", help="folder with the source files instead of downloading them")
     ap.add_argument("--out", default="data/lab/players.json")
+    ap.add_argument("--logs-out", help="where the game-by-game trail goes; defaults to player-logs.json beside --out")
     args = ap.parse_args(argv)
 
     result = build(load(args.season, args.input), args.season, args.team)
     if not result.get("players"):
         print("no finished games with player data yet; leaving the existing file alone", file=sys.stderr)
         return 0
+    logs = result.pop("_logs")
+    logs["generatedAt"] = result["generatedAt"]
     out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    old = None
-    if out.exists():
-        try:
-            old = json.loads(out.read_text())
-        except json.JSONDecodeError:
-            pass
-    if old is not None and {**old, "generatedAt": ""} == {**result, "generatedAt": ""}:
+    logs_out = Path(args.logs_out) if args.logs_out else out.with_name("player-logs.json")
+    changed = _write_if_changed(out, result)
+    changed = _write_if_changed(logs_out, logs) or changed
+    if not changed:
         print("data unchanged")
-        return 0
-    out.write_text(json.dumps(result, separators=(",", ":"), ensure_ascii=False, default=float) + "\n")
-    print(f"wrote {out} ({len(result['players'])} players, {out.stat().st_size // 1024} KB)")
     return 0
 
 

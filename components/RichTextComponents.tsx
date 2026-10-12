@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "@/components/SiteLink"
 
 import { bodyImageUrl, hotspotPosition, imageAspectRatio } from "../lib/urlFor"
+import PlayerEmbed from "./lab/players/PlayerEmbed"
 import VideoEmbed from "./VideoEmbed"
 
 export const RichTextComponents = {
@@ -37,6 +38,8 @@ export const RichTextComponents = {
 		// the rich text body, reusing the same detection/rendering used for
 		// the game report's standalone "Video / social embeds" field.
 		videoEmbed: ({ value }: any) => <VideoEmbed url={value.url} caption={value.caption} />,
+		// A live card for a player from the Lab: photo, grade, key numbers against the league, and a link to his page.
+		playerCard: ({ value }: any) => <PlayerEmbed slug={value.player} note={value.note} />,
 	},
 
 	list: {
@@ -56,6 +59,13 @@ export const RichTextComponents = {
 	},
 
 	marks: {
+		// A name in the text that links to the player's page in the Lab.
+		playerLink: ({ children, value }: any) =>
+			value?.player ? (
+				<Link href={`/lab/players/${value.player}?ref=post`}>{children}</Link>
+			) : (
+				<>{children}</>
+			),
 		link: ({ children, value }: any) => {
 			const rel = !value.href.startsWith("/") ? "noreferrer noopener" : undefined
 			return (

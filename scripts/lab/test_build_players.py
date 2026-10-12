@@ -52,6 +52,18 @@ def plays(week: int, home: str, away: str, first_id: int):
                 receiver_player_id=None, passer_player_id=None, rusher_player_id=f"b-{team}", cpoe=np.nan, cp=np.nan,
                 xyac_mean_yardage=np.nan, penalty=0, desc="x"))
             pid += 1
+    for team, other in ((home, away), (away, home)):
+        # Two field goals a game: a short one every kicker makes and a long one only AAA's kicker makes once the team is rolling.
+        for dist, made in ((30, True), (52, team == "AAA" and week >= 4)):
+            rows.append(dict(game_id=gid, play_id=pid, week=week, season_type="REG", posteam=team, defteam=other, play_type="field_goal",
+                             epa=0.4 if made else -2.0, penalty=0, desc="x", kicker_player_id=f"k-{team}", kick_distance=dist,
+                             field_goal_result="made" if made else "missed"))
+            pid += 1
+        for _ in range(2):
+            rows.append(dict(game_id=gid, play_id=pid, week=week, season_type="REG", posteam=team, defteam=other, play_type="punt",
+                             epa=-0.2, penalty=0, desc="x", punter_player_id=f"u-{team}", kick_distance=45, return_yards=8,
+                             punt_returner_player_id=f"r-{other}", punt_fair_catch=0, touchback=0, punt_inside_twenty=1))
+            pid += 1
     if week != UNFINISHED:
         rows.append(dict(game_id=gid, play_id=pid, week=week, season_type="REG", posteam=None, defteam=None, play_type="no_play",
                          epa=np.nan, penalty=0, desc="END GAME"))
@@ -92,6 +104,8 @@ def sources():
             dict(gsis_id=f"r-{t}", pfr_id=f"pr-{t}", full_name=f"Rex {t}", position="WR", team=t),
             dict(gsis_id=f"b-{t}", pfr_id=f"pb-{t}", full_name=f"Rob {t}", position="RB", team=t),
             dict(gsis_id=f"d-{t}", pfr_id=f"pd-{t}", full_name=f"Dan {t}", position="DE", team=t),
+            dict(gsis_id=f"k-{t}", pfr_id=f"pk-{t}", full_name=f"Kip {t}", position="K", team=t),
+            dict(gsis_id=f"u-{t}", pfr_id=f"pu-{t}", full_name=f"Upton {t}", position="P", team=t),
         )
     ])
     # The defender's play-by-play id is not used; his PFR row carries pfr id pd-T, which the roster maps to d-T.
@@ -152,7 +166,8 @@ def test_form_is_a_teams_last_finished_games_not_the_calendar():
 def test_a_game_still_being_played_is_left_out_and_a_bye_does_not_break_the_windows():
     out = built()
     assert out["week"] == 5
-    assert [g["w"] for g in out["games"]] == [1, 2, 4, 5]
+    assert out["weeks"] == [1, 2, 3, 4, 5]
+    assert out["opp"]["AAA"] == {"1": "BBB", "2": "CCC", "4": "BBB", "5": "CCC"}
     assert out["formWeeks"] == [4, 5]
 
 
@@ -195,7 +210,8 @@ def test_snap_share_ignores_a_game_with_no_snap_counts_yet():
     out = built()
     rec = player(out, "r-AAA")
     # Week 5 has no snap counts, so the form window is week 4 alone and he still reads 0.9, not 0.45.
-    assert rec["snaps"]["form"] == 0.9
+    assert rec["snaps"]["form"] == [0.9, 1, 1]
+    assert rec["snaps"]["season"] == [0.9, 3, 3]
 
 
 def test_an_unrostered_pfr_player_is_matched_by_name_within_his_team():
@@ -207,8 +223,10 @@ def test_an_unrostered_pfr_player_is_matched_by_name_within_his_team():
     assert stat(player(out, "r-AAA"), "drop")["season"]["n"] == 75
 
 
-def test_a_team_with_no_finished_games_gives_no_players():
-    assert b.build(sources(), 2026, "ZZZ")["players"] == []
+def test_nothing_is_built_before_a_game_is_finished():
+    src = sources()
+    src["pbp"] = src["pbp"][src["pbp"]["desc"] != "END GAME"]
+    assert b.build(src, 2026, "AAA")["players"] == []
 
 
 def test_the_file_is_written_only_when_the_numbers_change(tmp_path, monkeypatch, capsys):
@@ -216,7 +234,162 @@ def test_the_file_is_written_only_when_the_numbers_change(tmp_path, monkeypatch,
     monkeypatch.setattr(b, "load", lambda season, folder: sources())
     assert b.main(["--season", "2026", "--team", "AAA", "--out", str(out)]) == 0
     first = out.read_text()
+    logs = (tmp_path / "player-logs.json").read_text()
     assert b.main(["--season", "2026", "--team", "AAA", "--out", str(out)]) == 0
-    assert out.read_text() == first
+    assert out.read_text() == first and (tmp_path / "player-logs.json").read_text() == logs
     assert "data unchanged" in capsys.readouterr().out
-    json.loads(first)
+    assert "_logs" not in json.loads(first) and "logs" in json.loads(logs)
+
+
+# ------------------------------------------------------------------------------------------ the league-wide additions
+
+
+def test_a_player_is_ranked_with_the_best_first_and_a_tie_shares_the_better_place():
+    assert b.ranks({"a": 3.0, "b": 1.0, "c": 3.0, "d": 2.0}, True) == {"a": 1, "c": 1, "d": 3, "b": 4}
+    assert b.ranks({"a": 3.0, "b": 1.0, "c": 2.0}, False) == {"b": 1, "c": 2, "a": 3}
+
+
+def test_more_plays_behind_a_rate_make_it_less_uncertain_and_a_zero_is_never_certain():
+    st = b.Stat("x", "n", True, (1, 1, 1))
+    small, big = b.standard_error(st, 2, 10), b.standard_error(st, 20, 100)
+    assert big < small
+    assert b.standard_error(st, 0, 8) > 0
+    per = b.Stat("x", "n", True, (1, 1, 1), se=1.5)
+    assert abs(b.standard_error(per, 0, 9) - 0.5) < 1e-9
+    assert b.standard_error(st, 1, 0) is None
+
+
+def test_a_field_goal_is_judged_against_the_distance_it_was_kicked_from():
+    rows = [dict(play_type="field_goal", kick_distance=d, field_goal_result="made" if (d < 45 or i % 3 == 0) else "missed")
+            for i, d in enumerate([25, 30, 35, 40, 44, 48, 52, 55, 58] * 4)]
+    p = b.fit_fg(pd.DataFrame(rows))
+    assert p(30.0) > p(50.0) > p(58.0)
+
+
+def test_slugs_are_the_name_and_a_team_or_id_piece_only_when_two_players_share_it():
+    src = sources()
+    src["roster"].loc[src["roster"]["gsis_id"] == "r-BBB", "full_name"] = "Rex AAA"
+    out = b.build(src, 2026, "AAA")
+    slugs = {p["id"]: p["slug"] for p in out["players"]}
+    assert slugs["r-AAA"] == "rex-aaa" or slugs["r-BBB"] == "rex-aaa"
+    assert slugs["r-AAA"] != slugs["r-BBB"]
+    assert len(set(slugs.values())) == len({p["id"] for p in out["players"]})
+
+
+def test_every_player_row_carries_rank_uncertainty_and_the_leagues_yardstick():
+    out = built()
+    qb = player(out, "q-AAA")
+    epa = stat(qb, "epaDb")
+    assert epa["season"]["r"] == 1 and epa["season"]["se"] > 0 and epa["season"]["g"] > 50
+    assert out["yard"]["qb"]["epaDb"]["n"] == 6
+    assert len(out["yard"]["qb"]["epaDb"]["q"]) == 5
+    assert out["leagueN"]["qb"] == 6
+    assert "z" in epa and "z" in qb["mover"]
+
+
+def test_a_stat_that_is_only_style_is_shown_but_never_moves_a_player():
+    out = built()
+    qb = player(out, "q-AAA")
+    adot = stat(qb, "adot")
+    assert adot["season"]["v"] == 8.0 and "g" not in adot["season"] and "delta" not in adot
+
+
+def test_a_kicker_is_graded_over_the_field_goals_the_league_expects_him_to_make():
+    out = built()
+    aaa = stat(player(out, "k-AAA"), "fgOe")
+    other = stat(player(out, "k-EEE"), "fgOe")
+    assert aaa["season"]["v"] > other["season"]["v"] and aaa["season"]["r"] == 1
+
+
+def test_a_punt_returner_is_scored_from_the_returning_teams_side_of_the_play():
+    out = built()
+    pr = [p for p in out["players"] if p["group"] == "pr" and p["id"] == "r-AAA"]
+    assert pr and stat(pr[0], "epaRet")["season"]["v"] > 0  # the punting team's -0.2 is the returning team's +0.2
+
+
+def test_one_person_in_two_roles_has_one_slug_and_two_rows():
+    out = built()
+    rows = [p for p in out["players"] if p["id"] == "r-AAA"]
+    assert {p["group"] for p in rows} == {"wr", "pr"} and len({p["slug"] for p in rows}) == 1
+
+
+def test_comparables_are_in_the_same_group_and_never_the_player_himself():
+    out = built()
+    qb = player(out, "q-AAA")
+    by_slug = {p["slug"]: p for p in out["players"]}
+    assert qb["like"] and qb["slug"] not in qb["like"]
+    assert all(by_slug[s]["group"] == "qb" for s in qb["like"])
+
+
+def test_the_trail_has_the_games_the_player_played_the_percentile_after_each_and_his_snap_share():
+    out = b.build(sources(), 2026, "AAA")
+    logs = out["_logs"]["logs"]
+    qb = player(out, "q-AAA")
+    trail = logs[qb["slug"]]["qb"]["g"]["epaDb"]
+    assert [t[0] for t in trail] == [1, 2, 4, 5]
+    assert all(len(t) == 4 for t in trail)
+    # AAA is the best offense from week 4 on, so by then he is at the top of the league's quarterbacks.
+    assert trail[-1][3] == 100.0
+    assert [s[0] for s in logs[qb["slug"]]["qb"]["s"]] == [1, 2, 4]  # week 5 has no snap counts yet
+
+
+# ---------------------------------------------------------------------------------------------- profiles: bios, results, wins
+
+
+def test_results_come_from_the_last_plays_running_score_and_are_seen_from_both_sides():
+    pbp = pd.DataFrame({
+        "game_id": ["g1", "g1", "g2"], "play_id": [1, 2, 1], "week": [1, 1, 2],
+        "home_team": ["AAA", "AAA", "BBB"], "away_team": ["BBB", "BBB", "CCC"],
+        "total_home_score": [0, 27, 3], "total_away_score": [0, 20, 3],
+    })
+    games = pd.DataFrame({"game_id": ["g1"], "week": [1], "teams": [["AAA", "BBB"]]})
+    assert b.game_results(pbp, games) == {"AAA": {1: [27, 20]}, "BBB": {1: [20, 27]}}  # g2 is not finished
+    assert b.game_results(pbp.drop(columns=["total_home_score"]), games) == {}  # an older file without scores still builds
+
+
+def test_a_better_game_that_goes_with_winning_shows_as_a_higher_win_share():
+    rows = [{"id": f"p{i}", "team": f"T{i}"} for i in range(60)]
+    # Sixty one-game quarterbacks; the better the game, the more likely the team won (the top 30 won, the bottom 30 lost).
+    logs = {(f"p{i}", "qb"): {"g": {"epaDb": [[1, i / 10, 30.0, None]]}} for i in range(60)}
+    results = {f"T{i}": {1: [24, 10] if i >= 30 else [10, 24]} for i in range(60)}
+    win = b.win_translation(logs, rows, results)["qb"]["epaDb"]
+    assert win["n"] == 60 and win["t"][0] == 0.0 and win["t"][2] == 1.0
+    # A game with too few plays behind it is not counted, and a thin sample says nothing.
+    thin = {k: {"g": {"epaDb": [[1, v["g"]["epaDb"][0][1], 2.0, None]]}} for k, v in logs.items()}
+    assert b.win_translation(thin, rows, results) == {}
+
+
+def test_lower_is_better_stats_flip_before_they_are_cut_into_thirds():
+    rows = [{"id": f"p{i}", "team": f"T{i}"} for i in range(60)]
+    logs = {(f"p{i}", "qb"): {"g": {"badThrow": [[1, i / 100, 30.0, None]]}} for i in range(60)}
+    results = {f"T{i}": {1: [24, 10] if i < 30 else [10, 24]} for i in range(60)}  # the fewer bad throws, the more wins
+    win = b.win_translation(logs, rows, results)["qb"]["badThrow"]
+    assert win["t"][2] == 1.0 and win["t"][0] == 0.0
+
+
+def test_the_roster_gives_the_bio_and_leaves_out_what_it_does_not_know():
+    roster = pd.DataFrame([
+        {"gsis_id": "a", "jersey_number": 89.0, "height": 75.0, "weight": 235, "birth_date": "2002-12-13", "college": "Georgia",
+         "draft_club": "LV", "draft_number": 13.0, "entry_year": 2024, "years_exp": 2, "espn_id": 4432665.0},
+        {"gsis_id": "b", "jersey_number": np.nan, "height": np.nan, "weight": np.nan, "birth_date": None, "college": None,
+         "draft_club": None, "draft_number": np.nan, "entry_year": 2026, "years_exp": 0, "espn_id": np.nan},
+    ])
+    out = b.bios_of(roster, {"a", "b"}, 2026)
+    assert out["a"] == {"no": 89, "ht": 75, "wt": 235, "born": "2002-12-13", "college": "Georgia", "draft": ["LV", 13, 2024], "exp": 2, "espn": 4432665}
+    assert out["b"] == {"exp": 0}  # an undrafted rookie with nothing else on file
+
+
+def test_the_game_by_game_box_score_adds_up_to_the_season_total():
+    out = built()
+    logs = out["_logs"]["logs"]
+    checked = 0
+    for p in out["players"]:
+        bx = logs.get(p["slug"], {}).get(p["group"], {}).get("b")
+        if not bx:
+            continue
+        for k, pts in bx.items():
+            if k in p["box"]:
+                assert abs(sum(v for _, v in pts) - p["box"][k]) < 0.51
+                checked += 1
+    assert checked > 0
+    assert set(out["_logs"]) >= {"bio", "res", "win"}

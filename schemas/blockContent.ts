@@ -1,5 +1,7 @@
 import {defineType, defineArrayMember, defineField} from 'sanity'
 
+import {PlayerSlugInput} from './playerSlugInput'
+
 /**
  * This is the schema definition for the rich text fields used for
  * for this blog studio. When you import it in schemas.js it can be
@@ -46,6 +48,20 @@ export default defineType({
         
         // Annotations can be any object structure – e.g. a link or a footnote.
         annotations: [
+          // Turns a name in the text into a link to that player's page in the Lab.
+          {
+            title: 'Player',
+            name: 'playerLink',
+            type: 'object',
+            fields: [
+              {
+                title: 'Player',
+                name: 'player',
+                type: 'string',
+                components: {input: PlayerSlugInput},
+              },
+            ],
+          },
           {
             title: 'URL',
             name: 'link',
@@ -84,6 +100,34 @@ export default defineType({
         select: {title: 'caption', subtitle: 'url'},
         prepare({title, subtitle}: {title?: string; subtitle?: string}) {
           return {title: title || 'Video / X embed', subtitle}
+        },
+      },
+    }),
+    // A player's card, live from the Lab: photo, grade, two key numbers against the league, and where he is heading. Links to his page.
+    defineArrayMember({
+      type: 'object',
+      name: 'playerCard',
+      title: 'Player card (Lab)',
+      fields: [
+        defineField({
+          name: 'player',
+          title: 'Player',
+          type: 'string',
+          components: {input: PlayerSlugInput},
+          validation: (rule) => rule.required(),
+        }),
+        defineField({
+          name: 'note',
+          title: 'A line of your own (optional)',
+          type: 'text',
+          rows: 2,
+          description: 'Shown inside the card, above the numbers.',
+        }),
+      ],
+      preview: {
+        select: {title: 'player', subtitle: 'note'},
+        prepare({title, subtitle}: {title?: string; subtitle?: string}) {
+          return {title: title ? `Player card: ${title}` : 'Player card', subtitle}
         },
       },
     }),

@@ -65,10 +65,10 @@ export const LAB_TOOLS: LabTool[] = [
 	{
 		id: "players",
 		href: "/lab/players",
-		title: "Player movers",
-		short: "Which Raiders are playing better or worse, in stats the box score hides.",
-		text: "Which Raiders are rising and which are slipping, in the numbers the box score leaves out: points added per target, catches over expected, pressures per snap. Every stat is graded against the league's players at his position.",
-		group: "raiders",
+		title: "Player Lab",
+		short: "Every NFL player ranked in context, with how each has changed through the season.",
+		text: "Every qualifying NFL player ranked against the players who do his job, in the numbers the box score leaves out: points added per play, catches over expected, pressures per snap, field goals over expected. See where each ranks, how sure the number is, and how he has progressed week by week. Search a player, browse leaderboards for every stat, or compare two.",
+		group: "league",
 		isNew: true,
 	},
 	{

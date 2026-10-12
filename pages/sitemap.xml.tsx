@@ -2,7 +2,8 @@ import type { GetServerSideProps } from "next"
 import { groq } from "next-sanity"
 
 import { readClient as client } from "../lib/sanity.client"
-import { gameSlug, getGames, getUnits } from "../lib/lab/data"
+import { gameSlug, getGames, getPlayers, getUnits } from "../lib/lab/data"
+import { GROUP_ORDER, boards, profileSlugs } from "../lib/lab/playersKit"
 import { matchupPath } from "../lib/lab/unitsKit"
 import { TEAMS } from "../lib/nfl"
 
@@ -28,6 +29,13 @@ function matchupPaths(): string[] {
 	return Array.from(paths).sort()
 }
 
+/** Every player's page and every leaderboard, from the same data the pages are built from. */
+function playerPaths(): string[] {
+	const data = getPlayers()
+	const groups = GROUP_ORDER.filter((g) => data.players.some((p) => p.group === g))
+	return [...groups.flatMap((g) => boards(g).map((b) => `/lab/players/leaders/${g}/${b.path}`)), ...profileSlugs(data).map((s) => `/lab/players/${s}`)]
+}
+
 function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -46,7 +54,9 @@ ${url(`${SITE_URL}/lab/top-plays`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/scouting`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
-${url(`${SITE_URL}/lab/players`, undefined, "0.7", "weekly")}
+${url(`${SITE_URL}/lab/players`, undefined, "0.8", "daily")}
+${url(`${SITE_URL}/lab/players/compare`, undefined, "0.5", "weekly")}
+${playerPaths().map((p) => url(`${SITE_URL}${p}`, undefined, "0.5", "weekly")).join("\n")}
 ${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/playoff-machine`, undefined, "0.8", "weekly")}
