@@ -12,6 +12,7 @@ import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { teamNick } from "@/lib/lab/playerView"
 import { SIT_BOARDS, sitBoardHref } from "@/lib/lab/situationsKit"
+import GroupTabs from "@/components/lab/players/GroupTabs"
 import { GROUP_META, GROUP_ORDER, HEADLINE, MOVE_MIN, SIDES, overall, players, profileSlugs, risersFallers, roleMovers, searchIndex, standouts } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
@@ -221,11 +222,41 @@ export default function PlayersPage() {
 
 					{around.risers.length || around.fallers.length ? (
 						<Section id="league-movers" title="Around the league: the surest movers" blurb={<p className="m-0">The players whose recent change is most convincing, not just largest. A move counts for more when it shows up across several stats and enough plays.</p>}>
-							<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-								{[...around.risers, ...around.fallers].map((p) => (
-									<PlayerCard key={p.id + p.group} data={data} player={p} log={logOf(p)} />
-								))}
-							</div>
+							<GroupTabs
+								label="Pick a position"
+								event="lab_movers_tab"
+								tabs={[
+									{
+										id: "all",
+										label: "Everyone",
+										count: around.risers.length + around.fallers.length,
+										panel: (
+											<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+												{[...around.risers, ...around.fallers].map((p) => (
+													<PlayerCard key={p.id + p.group} data={data} player={p} log={logOf(p)} />
+												))}
+											</div>
+										),
+									},
+									...GROUP_ORDER.map((g) => {
+										const m = risersFallers(data, { group: g, limit: 3, byConfidence: true })
+										return { g, list: [...m.risers, ...m.fallers] }
+									})
+										.filter((x) => x.list.length)
+										.map((x) => ({
+											id: x.g,
+											label: GROUP_META[x.g].title,
+											count: x.list.length,
+											panel: (
+												<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+													{x.list.map((p) => (
+														<PlayerCard key={p.id + p.group} data={data} player={p} log={logOf(p)} />
+													))}
+												</div>
+											),
+										})),
+								]}
+							/>
 						</Section>
 					) : null}
 

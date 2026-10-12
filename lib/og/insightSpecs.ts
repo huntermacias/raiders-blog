@@ -1,7 +1,8 @@
 // Picks the right share card for a request to /api/og. Kept out of the route so it can be tested without
 // Next: it only reads the Lab's static JSON.
 
-import { getGameBySlug, getGames, getSeason, getUnits } from "../lab/data"
+import { getGameBySlug, getGames, getPlayers, getSeason, getUnits } from "../lab/data"
+import { getPlayerLogs } from "../lab/playerData"
 import { TEAMS } from "../nfl"
 import { seasonTopPlays, topPlaysFor } from "../lab/topPlays"
 import type { CardSpec } from "./cards"
@@ -17,6 +18,7 @@ import { buildMatchupSpec } from "./matchupCards"
 import { BOARD_SHOWS } from "../lab/boardShow"
 import { buildBoardSpec, buildSlateSpec } from "./unitsCards"
 import { buildTwinsSpec } from "./twinsCards"
+import { buildPlayerSpec } from "./playerCard"
 import { playoffsSpec } from "./playoffsSpec"
 import { rootingSpec } from "./rootingSpec"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
@@ -31,11 +33,16 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string }
+} & RawView & { pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
 	const team = getSeason().team
+
+	if (q.type === "player") {
+		if (!SLUG.test(q.slug)) return null
+		return buildPlayerSpec(getPlayers(), q.slug, getPlayerLogs().bio[q.slug], /^[a-z]{1,4}$/.test(q.pos ?? "") ? q.pos : undefined)
+	}
 
 	if (q.type === "scout") {
 		if (!ABBR.test(q.opp) || q.opp === team) return null

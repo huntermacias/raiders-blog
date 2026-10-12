@@ -462,7 +462,7 @@ export function styleLine(data: PlayersData, p: PlayerRow, s: PlayerStat): strin
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 /** A label in the middle of a sentence: lower case, except an acronym like "EPA" or "YAC". */
-const lc = (s: string) => (/^[A-Z]{2,}/.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1))
+export const lc = (s: string) => (/^[A-Z]{2,}/.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1))
 
 // ---------------------------------------------------------------------------------------------- overall grade
 
@@ -753,7 +753,21 @@ export function scoutingRead(data: PlayersData, p: PlayerRow): string[] {
 	}
 	if (!out.length) {
 		const o = overall(p)
-		if (o !== null) out.push(`${first} grades ${gradeWord(o)} among ${peers} so far, with no number far from the middle.`)
+		// Every number is still a small sample, or none is far from the middle. Say which, so a quiet read is never read as "average".
+		const early = p.stats
+			.map((s) => ({ s, c: contextOf(data, p, s) }))
+			.filter((x): x is { s: PlayerStat; c: StatContext } => Boolean(x.c && x.c.pct !== null && x.c.info.counts !== false))
+		const hi = early.slice().sort((a, b) => b.c.pct! - a.c.pct!)[0]
+		const lo = early.slice().sort((a, b) => a.c.pct! - b.c.pct!)[0]
+		if (hi && hi.c.pct! >= 70) {
+			out.push(`${first}'s best number so far is ${lc(hi.c.info.label)}: ${formatStat(p.group, hi.s.k, hi.c.value)}, ${rankPhrase(hi.c.rank!, hi.c.of!)} among ${peers}. It rests on ${Math.round(hi.c.n)} ${hi.c.info.per}, so it is an early read.`)
+		} else if (lo && lo.c.pct! <= 30) {
+			out.push(`${first}'s weakest number so far is ${lc(lo.c.info.label)}: ${formatStat(p.group, lo.s.k, lo.c.value)}, ${rankPhrase(lo.c.rank!, lo.c.of!)} among ${peers}. It rests on ${Math.round(lo.c.n)} ${lo.c.info.per}, so it is an early read.`)
+		} else if (ctxs.length && o !== null) {
+			out.push(`${first} grades ${gradeWord(o)} among ${peers} so far, with none of his advanced numbers far from the middle.`)
+		} else if (o !== null) {
+			out.push(`${first} grades ${gradeWord(o)} among ${peers} so far, but every number rests on a small sample, so it is an early read.`)
+		}
 	}
 	if (p.mover && moverTier(p) !== "steady") {
 		const conf = confidenceOf(p.mover.z)
@@ -1011,7 +1025,7 @@ export function badgesFor(data: PlayersData, p: PlayerRow, top = 5, limit = 6): 
 	const out: Badge[] = []
 	for (const s of p.stats) {
 		const info = statInfo(p.group, s.k)
-		if (!info || info.higher === null || s.season.r === undefined || s.season.r === null || s.season.r > top) continue
+		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top) continue
 		out.push({ text: `${nth(s.season.r)} in ${lc(info.label)}`, rank: s.season.r, kind: "stat", key: s.k, path: info.path })
 	}
 	for (const k of Object.keys(BOX[p.group])) {

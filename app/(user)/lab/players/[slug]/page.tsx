@@ -7,10 +7,15 @@ import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import UnitsCredit from "@/components/lab/UnitsCredit"
 import { TeamPill, TierChip } from "@/components/lab/players/Bits"
 import GameLog from "@/components/lab/players/GameLog"
+import GradeRing from "@/components/lab/players/GradeRing"
+import LeagueMap from "@/components/lab/players/LeagueMap"
+import { BestWorst, BuildAgainstPeers, Ladders, type GameCall } from "@/components/lab/players/ProfileExtras"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import PercentileProfile from "@/components/lab/players/PercentileProfile"
+import ProfileShare from "@/components/lab/players/ProfileShare"
 import TrackView from "@/components/lab/players/TrackView"
 import ProgressExplorer, { type ExplorerStat } from "@/components/lab/players/ProgressExplorer"
+import SectionNav, { type NavItem } from "@/components/lab/players/SectionNav"
 import Situations from "@/components/lab/players/Situations"
 import SnapStrip from "@/components/lab/players/SnapStrip"
 import StatTile from "@/components/lab/players/StatTile"
@@ -25,9 +30,14 @@ import {
 	HEADLINE,
 	type LogPoint,
 	type PlayerRow,
+	badgesFor,
 	bioFacts,
+	buildVsPeers,
+	extremeGames,
+	ladder,
 	boxRank,
 	formatBox,
+	fingerprint,
 	formatStat,
 	gameLog,
 	gradeWord,
@@ -40,12 +50,14 @@ import {
 	rankPhrase,
 	roleOf,
 	rowsFor,
+	shownPct,
 	scoutingRead,
 	statInfo,
 	tierOf,
 	windowWeeks,
 	winSentence,
 } from "@/lib/lab/playersKit"
+import { defaultAxes, mapData } from "@/lib/lab/mapKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -67,7 +79,9 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 	const title = `${p.name} stats: ${teamName(p.team)} ${GROUP_META[p.group].single.toLowerCase()} ranked against the league | Raiders Rundown`
 	const description = `${p.name}'s ${data.season} advanced stats ranked against every ${GROUP_META[p.group].single.toLowerCase()} in the NFL, with how he has changed through the season and how sure the numbers are. ${read}`.slice(0, 300)
 	const url = `${SITE_URL}/lab/players/${slug}`
-	return { title, description, alternates: { canonical: url }, openGraph: { type: "profile", title, description, url, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] }, twitter: { card: "summary_large_image", title, description, images: [`${SITE_URL}/og-default-v2.png`] } }
+	// The share card is drawn on request from the same data, and the stamp changes whenever the data does.
+	const card = `${SITE_URL}/api/og?type=player&slug=${slug}&v=${Date.parse(data.generatedAt) || 0}`
+	return { title, description, alternates: { canonical: url }, openGraph: { type: "profile", title, description, url, siteName: "Raiders Rundown", images: [card] }, twitter: { card: "summary_large_image", title, description, images: [card] } }
 }
 
 function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
@@ -118,8 +132,58 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		.filter((v): v is NonNullable<typeof v> => v !== null)
 	const logStats = headFirst.filter((s) => isCore(row.group, s.k)).slice(0, 4).map((s) => s.k)
 	const sectionId = `${row.group}`
+	const g = row.group
+	// Sections take turns being plain and tinted, whichever of them a player has.
+	let band = 0
+	const tone = () => ((band += 1) % 2 === 0 ? "bg-lab-tint" : "")
+
+	// The people just above and below him on the boards where he does best (his headline stat first), with the whole league's worth of
+	// context in the map below them.
+	const rankedStats = row.stats
+		.filter((s) => {
+			const i = statInfo(g, s.k)
+			return i && i.higher !== null && i.counts !== false && s.season.r !== undefined && s.season.r !== null
+		})
+		.sort((a, b) => (a.k === HEADLINE[g] ? -1 : b.k === HEADLINE[g] ? 1 : (a.season.r ?? 99) - (b.season.r ?? 99)))
+	const ladders = rankedStats
+		.slice(0, 3)
+		.map((s) => ladder(data, row, s.k))
+		.filter((x): x is NonNullable<typeof x> => x !== null)
+		.map((x) => ({ board: x.board, rungs: x.rungs }))
+	const bios = all.bio
+	const build = buildVsPeers(row, bios[row.slug], data.players.filter((q) => q.group === g).map((q) => bios[q.slug]), new Date())
+	const mp = mapData(data, g)
+	const [mapX, mapY] = defaultAxes(mp, HEADLINE[g])
+	// Best and worst games on his two most telling stats, among games with at least half his usual workload so one stray target is not a "game".
+	const calls: GameCall[] = []
+	for (const s of rankedStats.slice(0, 2)) {
+		const info = statInfo(g, s.k)!
+		const vols = (log?.g[s.k] ?? []).map((p) => p[2]).sort((a, b) => a - b)
+		const med = vols.length ? vols[vols.length >> 1] : 0
+		const ex = extremeGames(log, s.k, info.higher, Math.max(2, Math.floor(med * 0.5)))
+		if (!ex || ex.best.week === ex.worst.week) continue
+		const tag = (w: number) => {
+			const r = games.find((x) => x.week === w)
+			return { opp: opponentFor(data, row.team, w, log), result: r?.result ?? null, won: r?.won ?? null }
+		}
+		calls.push({ key: s.k, label: info.label, per: info.per, best: { ...ex.best, ...tag(ex.best.week) }, worst: { ...ex.worst, ...tag(ex.worst.week) } })
+	}
+	const navItems: NavItem[] = [
+		...(read.length ? [{ id: `read-${g}`, label: "The read" }] : []),
+		{ id: `stack-${g}`, label: "How he stacks up" },
+		{ id: `league-${g}`, label: "In the league" },
+		...(explorerStats.length ? [{ id: `progress-${g}`, label: "Progress" }] : []),
+		...(situations.length ? [{ id: `situations-${g}`, label: "Situational" }] : []),
+		{ id: `numbers-${g}`, label: "In context" },
+		...(style.length ? [{ id: `style-${g}`, label: "How he plays" }] : []),
+		...(side !== "special" ? [{ id: `time-${g}`, label: "Playing time" }] : []),
+		...(games.length ? [{ id: `log-${g}`, label: "Game by game" }] : []),
+		...(boxKeys.length ? [{ id: `box-${g}`, label: "Box score" }] : []),
+		...(row.like.length ? [{ id: `like-${g}`, label: "Similar players" }] : []),
+	]
 	return (
 		<div className="lab-opp" style={cardStyle(row.team)} id={sectionId}>
+			{primary ? <SectionNav items={navItems} /> : null}
 			{!primary ? (
 				<div className="container pt-10">
 					<h2 className="m-0 font-serif text-3xl font-bold tracking-tight">As a {meta.single.toLowerCase()}</h2>
@@ -128,7 +192,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{read.length ? (
-				<section className="container py-8" aria-label="The read">
+				<section className="container scroll-mt-32 py-8" aria-label="The read" id={`read-${row.group}`}>
 					<h2 className="m-0 font-serif text-2xl font-bold">The read</h2>
 					<div className="mt-3 grid max-w-3xl gap-2 text-base leading-relaxed text-lab-soft">
 						{read.map((r, i) => (
@@ -141,7 +205,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 				</section>
 			) : null}
 
-			<section className="border-t border-lab-line" aria-labelledby={`pct-${row.group}`}>
+			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`pct-${row.group}`} id={`stack-${row.group}`}>
 				<div className="container py-8 sm:py-10">
 					<h2 id={`pct-${row.group}`} className="m-0 font-serif text-2xl font-bold">How he stacks up</h2>
 					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every graded stat at a glance, against all the {meta.peers} in the league.</p>
@@ -151,8 +215,32 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 				</div>
 			</section>
 
+			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`league-h-${row.group}`} id={`league-${row.group}`}>
+				<div className="container py-8 sm:py-10">
+					<h2 id={`league-h-${row.group}`} className="m-0 font-serif text-2xl font-bold">In the league</h2>
+					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every {meta.single.toLowerCase()} in the league as a dot: pick any two stats and see where he sits, who is around him, and who is ahead.</p>
+					<div className="mt-5">
+						<LeagueMap group={row.group} focal={[row.slug]} headline={HEADLINE[row.group]} peers={meta.peers} initialX={mapX} initialY={mapY} />
+					</div>
+					{ladders.length ? (
+						<>
+							<h3 className="m-0 mt-10 font-serif text-xl font-bold">Who is around him on the leaderboards</h3>
+							<p className="m-0 mb-4 mt-1 max-w-3xl text-sm text-lab-soft">His best numbers, with the {meta.peers} just ahead of and behind him. A number is easier to judge beside the names.</p>
+							<Ladders group={row.group} items={ladders} peers={meta.peers} />
+						</>
+					) : null}
+					{build.length ? (
+						<>
+							<h3 className="m-0 mt-10 font-serif text-xl font-bold">Build and age against the position</h3>
+							<p className="m-0 mb-4 mt-1 max-w-3xl text-sm text-lab-soft">Size and age are not good or bad. They show what kind of {meta.single.toLowerCase()} he is and how he compares physically with the {meta.peers} in the league.</p>
+							<BuildAgainstPeers lines={build} peers={meta.peers} name={row.name} />
+						</>
+					) : null}
+				</div>
+			</section>
+
 			{explorerStats.length ? (
-				<section className="border-t border-lab-line" aria-labelledby={`prog-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`prog-${row.group}`} id={`progress-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`prog-${row.group}`} className="m-0 font-serif text-2xl font-bold">How he has progressed</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Where he has ranked among {meta.peers} after each week, and every game behind it.</p>
@@ -164,7 +252,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{situations.length ? (
-				<section className="border-t border-lab-line" aria-labelledby={`sit-${row.group}`} id={`situations-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`sit-${row.group}`} id={`situations-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`sit-${row.group}`} className="m-0 font-serif text-2xl font-bold">Situational football</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">How he does on each down and at each distance, and every play of every game as a success or a failure.</p>
@@ -185,7 +273,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 				</section>
 			) : null}
 
-			<section className="border-t border-lab-line bg-lab-tint" aria-labelledby={`grades-${row.group}`}>
+			<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`grades-${row.group}`} id={`numbers-${row.group}`}>
 				<div className="container py-8 sm:py-10">
 					<h2 id={`grades-${row.group}`} className="m-0 font-serif text-2xl font-bold">The numbers, in context</h2>
 					<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Each one against every {meta.single.toLowerCase()} with at least {meta.need}. Right on the strip is better.</p>
@@ -198,7 +286,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			</section>
 
 			{style.length ? (
-				<section className="border-t border-lab-line" aria-labelledby={`style-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`style-${row.group}`} id={`style-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`style-${row.group}`} className="m-0 font-serif text-2xl font-bold">How he plays</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Tendencies: how his game differs from the {meta.peers} around him. These are not better or worse, only different, and often say as much about the offense or defense he plays in as about him.</p>
@@ -212,7 +300,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{side !== "special" ? (
-				<section className="border-t border-lab-line bg-lab-tint" aria-labelledby={`time-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`time-${row.group}`} id={`time-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`time-${row.group}`} className="m-0 font-serif text-2xl font-bold">Playing time</h2>
 						{row.snaps.season ? (
@@ -238,10 +326,15 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{games.length ? (
-				<section className="border-t border-lab-line" aria-labelledby={`log-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`log-${row.group}`} id={`log-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`log-${row.group}`} className="m-0 font-serif text-2xl font-bold">Game by game</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Every game this season: how it ended for his team, how much he played, his box score, and the advanced numbers from that one game. One game is a small sample, so read the right-hand columns as a snapshot, not his level.</p>
+						{calls.length ? (
+							<div className="mt-5">
+								<BestWorst group={row.group} calls={calls} />
+							</div>
+						) : null}
 						<div className="mt-5">
 							<GameLog name={row.name} group={row.group} rows={games} boxKeys={Object.keys(BOX[row.group])} statKeys={logStats} snaps={side !== "special"} />
 						</div>
@@ -250,7 +343,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{boxKeys.length ? (
-				<section className="border-t border-lab-line bg-lab-tint" aria-labelledby={`box-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`box-${row.group}`} id={`box-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`box-${row.group}`} className="m-0 font-serif text-2xl font-bold">The box score</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">The traditional totals, with where each ranks among {meta.peers}. A total rewards volume, which is why the advanced numbers above matter.</p>
@@ -287,7 +380,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			) : null}
 
 			{row.like.length ? (
-				<section className="border-t border-lab-line bg-lab-tint" aria-labelledby={`like-${row.group}`}>
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`like-${row.group}`} id={`like-${row.group}`}>
 					<div className="container py-8 sm:py-10">
 						<h2 id={`like-${row.group}`} className="m-0 font-serif text-2xl font-bold">Players with a similar profile</h2>
 						<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">The {meta.peers} whose grades are closest to his across the same stats. Similar means similar numbers, not the same style of play.</p>
@@ -338,6 +431,8 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 	const url = `${SITE_URL}/lab/players/${slug}`
 	const bio = getPlayerLogs().bio[slug]
 	const facts = bioFacts(bio, new Date())
+	const badges = badgesFor(data, p)
+	const traits = fingerprint(data, p, 3)
 	const ld = [
 		{
 			"@context": "https://schema.org",
@@ -366,9 +461,14 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 			<TrackView event="player_view" props={{ slug, group: p.group, team: p.team }} />
-			<section className="lab-opp border-b border-lab-line" style={cardStyle(p.team)}>
+			<section className="lab-opp relative overflow-hidden border-b border-lab-line" style={{ ...cardStyle(p.team), backgroundImage: "linear-gradient(115deg, color-mix(in srgb, var(--pc-accent) 15%, transparent) 0%, transparent 58%)" }}>
 				<div className="h-2 w-full" style={{ background: "var(--pc-accent)" }} aria-hidden="true" />
-				<div className="container py-8 sm:py-12">
+				{bio?.no !== undefined ? (
+					<span aria-hidden="true" className="pointer-events-none absolute -top-8 right-2 select-none font-serif text-[13rem] font-black leading-none sm:right-10 sm:text-[22rem]" style={{ color: "var(--pc-accent)", opacity: 0.07 }}>
+						{bio.no}
+					</span>
+				) : null}
+				<div className="container relative py-8 sm:py-12">
 					<nav aria-label="Breadcrumb" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-muted">
 						<Link href="/lab/players" className="hover:text-lab-ink">
 							Players
@@ -378,23 +478,25 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 							{meta.title}
 						</Link>
 					</nav>
-					<div className="mt-4 flex flex-wrap items-start justify-between gap-6">
-						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-5 sm:flex-nowrap">
-							<div className="relative shrink-0">
+					<div className="mt-4 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
+						<div className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-5 gap-y-4 sm:gap-x-7">
+							<div className="relative shrink-0 sm:row-span-2 sm:self-center">
 								<Headshot espn={p.espn} name={p.name} size={128} className="ring-4 ring-lab-surface" />
 								<span className="absolute -bottom-1 -right-1 grid h-10 w-10 place-items-center rounded-full border border-lab-line bg-lab-surface">
 									<TeamLogo team={p.team} size={28} />
 								</span>
 							</div>
-							<div className="min-w-0">
+							<div className="min-w-0 self-end sm:self-end">
 								<p className="m-0 flex flex-wrap items-center gap-2 text-sm text-lab-soft">
 									<TeamPill team={p.team} /> {teamName(p.team)} &middot; {p.pos || meta.single}
 									{bio?.no !== undefined ? <span className="font-mono text-lab-muted">&middot; #{bio.no}</span> : null}
 									{rows.length > 1 ? <span className="text-lab-muted"> &middot; also {rows.slice(1).map((r) => GROUP_META[r.group].single.toLowerCase()).join(", ")}</span> : null}
 								</p>
 								<h1 className="m-0 mt-2 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">{p.name}</h1>
+							</div>
+							<div className="col-span-2 min-w-0 sm:col-span-1 sm:self-start">
 								{facts.length ? (
-									<dl className="m-0 mt-3 flex flex-wrap gap-x-5 gap-y-2" data-testid="bio">
+									<dl className="m-0 grid grid-cols-3 gap-x-5 gap-y-3 sm:flex sm:flex-wrap" data-testid="bio">
 										{facts.map((f) => (
 											<div key={f.label}>
 												<dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{f.label}</dt>
@@ -403,6 +505,32 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 										))}
 									</dl>
 								) : null}
+								{badges.length ? (
+									<ul className="m-0 mt-4 flex list-none flex-wrap gap-1.5 p-0" aria-label="Where he leads the league" data-testid="badges">
+										{badges.map((b, i) => (
+											<li key={b.kind + b.key} className="rr-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
+												<Link
+													href={boardHref(p.group, b.path)}
+													className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-bold ${b.rank === 1 ? "border-transparent" : "border-lab-line-strong bg-lab-surface text-lab-ink hover:border-lab-ink"}`}
+													style={b.rank === 1 ? { background: "var(--pc-accent)", color: "var(--pc-on)" } : undefined}
+												>
+													{b.rank === 1 ? <span aria-hidden="true">&#9733;</span> : null}
+													{b.text}
+												</Link>
+											</li>
+										))}
+									</ul>
+								) : null}
+								{traits.length ? (
+									<p className="m-0 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-lab-soft" data-testid="traits">
+										<span className="font-semibold uppercase tracking-[0.12em] text-lab-muted">Plays like</span>
+										{traits.map((t) => (
+											<span key={t.k} className="rounded-md bg-lab-tint px-2 py-0.5 font-medium text-lab-ink" title={`${t.label}: ${t.pct >= 50 ? "higher" : "lower"} than ${shownPct(t.pct >= 50 ? t.pct : 100 - t.pct)}% of ${meta.peers}`}>
+												{t.text}
+											</span>
+										))}
+									</p>
+								) : null}
 								<div className="mt-4 flex flex-wrap gap-3 text-sm">
 									<Link href={compareHref(p.slug)} className="rounded-lg border border-lab-ink bg-lab-ink px-3.5 py-2 font-semibold text-lab-page">
 										Compare with another player
@@ -410,19 +538,24 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 									<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
 										{meta.title} leaderboard
 									</Link>
+									<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${o === null ? "" : `${Math.round(o)} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
 								</div>
 							</div>
 						</div>
-						<div className="rounded-2xl border border-lab-line bg-lab-surface p-5 text-center" data-testid="overall">
-							<p className="m-0 font-mono text-6xl font-bold leading-none tabular-nums">{o === null ? "–" : Math.round(o)}</p>
-							<p className="m-0 mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall grade</p>
-							{rank ? (
-								<p className="m-0 mt-2 text-sm text-lab-soft">
-									<span className="font-semibold text-lab-ink">{rankPhrase(rank.rank, rank.of)}</span> {meta.peers}
-								</p>
-							) : null}
-							{tier ? <TierChip tier={tier} className="mt-1" /> : null}
-							{o !== null ? <p className="m-0 mt-1 text-xs text-lab-muted">{gradeWord(o)}; 50 is average</p> : null}
+						<div className="flex items-center gap-5 rounded-2xl border border-lab-line bg-lab-surface/90 p-4 backdrop-blur lg:flex-col lg:p-5 lg:text-center" data-testid="overall">
+							<GradeRing grade={o} size={124}>
+								<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{o === null ? "–" : Math.round(o)}</p>
+								<p className="m-0 mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
+							</GradeRing>
+							<div>
+								{rank ? (
+									<p className="m-0 text-sm text-lab-soft">
+										<span className="font-semibold text-lab-ink">{rankPhrase(rank.rank, rank.of)}</span> {meta.peers}
+									</p>
+								) : null}
+								{tier ? <TierChip tier={tier} className="mt-1" /> : null}
+								{o !== null ? <p className="m-0 mt-1 text-xs text-lab-muted">{gradeWord(o)}; 50 is average</p> : null}
+							</div>
 						</div>
 					</div>
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-6" />

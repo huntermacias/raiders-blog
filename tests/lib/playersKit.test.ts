@@ -13,7 +13,14 @@ import {
 	ageOn,
 	bioFacts,
 	boardFor,
+	badgesFor,
 	boards,
+	buildVsPeers,
+	extremeGames,
+	fingerprint,
+	ladder,
+	scoutingRead,
+	statInfo,
 	confidenceOf,
 	contextOf,
 	gameLog,
@@ -314,3 +321,81 @@ describe("numbers a reader can check", () => {
 	})
 })
 
+
+
+describe("the profile hero", () => {
+	const star = data.players.find((p) => p.name === "Brock Bowers" && p.group === "te") ?? data.players.filter((p) => p.group === "te").sort((a, b) => b.games - a.games)[0]
+
+	it("only badges real top places, in order, and never a stat that is mostly zeros", () => {
+		for (const p of data.players) {
+			const b = badgesFor(data, p)
+			expect(b.length).toBeLessThanOrEqual(6)
+			for (let i = 0; i < b.length; i++) {
+				expect(b[i].rank).toBeLessThanOrEqual(5)
+				expect(b[i].text).toMatch(/^(Best|Top [2-5]) in /)
+				if (i) expect(b[i].rank).toBeGreaterThanOrEqual(b[i - 1].rank)
+				if (b[i].kind === "stat") expect(statInfo(p.group, b[i].key)?.counts).not.toBe(false)
+			}
+		}
+	})
+
+	it("describes style only for stats far from the middle and never grades it", () => {
+		for (const p of data.players) {
+			const t = fingerprint(data, p, 3)
+			expect(t.length).toBeLessThanOrEqual(3)
+			for (const x of t) expect(Math.abs(x.pct - 50)).toBeGreaterThanOrEqual(30)
+		}
+	})
+
+	it("writes a read for every player that never contradicts itself", () => {
+		for (const p of data.players) {
+			const r = scoutingRead(data, p).join(" ")
+			if (/none of his advanced numbers far from the middle/i.test(r)) expect(badgesFor(data, p, 3).filter((b) => b.kind === "stat").length).toBe(0)
+		}
+		expect(star).toBeTruthy()
+	})
+})
+
+describe("where he sits around the league", () => {
+	const wr = data.players.filter((p) => p.group === "wr").sort((a, b) => b.games - a.games)[0]
+	const key = HEADLINE.wr
+
+	it("shows the players just above and below on a board, himself in the middle when he can be", () => {
+		const l = ladder(data, wr, key)!
+		expect(l.rungs.length).toBe(5)
+		expect(l.rungs.filter((r) => r.me).length).toBe(1)
+		const ranks = l.rungs.map((r) => r.rank)
+		expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
+		expect(ladder(data, wr, "not-a-stat")).toBeNull()
+	})
+
+	it("holds a leader at the top of his own ladder", () => {
+		const board = boards("wr").find((b) => b.kind === "stat" && b.key === key)!
+		const first = leaders(data, board)[0].player
+		const l = ladder(data, first, key)!
+		expect(l.rungs[0].rank).toBe(1)
+		expect(l.rungs[0].me).toBe(true)
+	})
+
+	it("sets height, weight and age against the position, with plain words that agree with the percentile", () => {
+		const bios = data.players.filter((p) => p.group === "wr").map((p) => logs.bio[p.slug])
+		const lines = buildVsPeers(wr, logs.bio[wr.slug], bios, new Date("2026-10-04"))
+		for (const l of lines) {
+			expect(l.pct).toBeGreaterThanOrEqual(0)
+			expect(l.pct).toBeLessThanOrEqual(100)
+			expect(l.word).toMatch(l.pct >= 50 ? /(taller|heavier|older) than/ : /(shorter|lighter|younger) than/)
+			expect(l.word).not.toMatch(/\b(0|100)%/)
+		}
+		expect(buildVsPeers(wr, undefined, bios, new Date())).toEqual([])
+		expect(buildVsPeers(wr, logs.bio[wr.slug], bios.slice(0, 3), new Date())).toEqual([])
+	})
+
+	it("picks his best and worst game by what the stat counts as better, among games with real volume", () => {
+		const log: PlayerLog = { g: { x: [[1, 5, 10, null], [2, 9, 12, null], [3, 1, 11, null], [4, 99, 1, null]] } }
+		expect(extremeGames(log, "x", true, 5)).toEqual({ best: { week: 2, value: 9, volume: 12 }, worst: { week: 3, value: 1, volume: 11 } })
+		expect(extremeGames(log, "x", false, 5)).toEqual({ best: { week: 3, value: 1, volume: 11 }, worst: { week: 2, value: 9, volume: 12 } })
+		expect(extremeGames(log, "x", null, 5)).toBeNull()
+		expect(extremeGames(log, "x", true, 11)).toBeNull()
+		expect(extremeGames(undefined, "x", true, 1)).toBeNull()
+	})
+})

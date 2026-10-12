@@ -21,7 +21,7 @@ const SIZE_CHOICES: { id: ShareSize; name: string; where: string }[] = [
 ]
 
 /** What a card is of when it is not a "Will it last?" card: the route's `type`, the link's query (without the size), where a shared link lands, and the words for it. */
-export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string; /** Names the campaign tracked links carry (utm_campaign). Defaults to "lab_share". */ campaign?: string }
+export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string; /** Names the campaign tracked links carry (utm_campaign). Defaults to "lab_share". */ campaign?: string; /** What goes after "?" in the shared link when it differs from the picture's query (the picture may need a slug the page already has). */ linkQuery?: string }
 
 type Props = {
 	/** The part of the "Will it last?" page the card is of. Leave out when `target` says what it is of. */
@@ -29,6 +29,8 @@ type Props = {
 	/** What the card shows: the stat, the filters, the pinned team, how the dots are laid out. */
 	view?: Partial<ShareView>
 	target?: ShareTarget
+	/** The picture sizes this card comes in; one size means no choice is shown. Defaults to both. */
+	sizes?: ShareSize[]
 	/** Changes when the data does, so a new card is fetched. */
 	stamp: number
 	/** The words that go with a post. */
@@ -52,9 +54,9 @@ const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * phone's own share sheet, save, copy the image, copy the link, X and Facebook. The link carries the chart's
  * stat, filters and pinned team, so whoever opens it sees the same chart.
  */
-export default function ShareCard({ kind, view = {}, target, stamp, text, alt, label = "Share", className = "", onAction, onOpen }: Props) {
+export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "tall"], stamp, text, alt, label = "Share", className = "", onAction, onOpen }: Props) {
 	const [open, setOpen] = React.useState(false)
-	const [size, setSize] = React.useState<ShareSize>("wide")
+	const [size, setSize] = React.useState<ShareSize>(sizes[0] ?? "wide")
 	const [note, setNote] = React.useState("")
 	const [canShare, setCanShare] = React.useState(false)
 	const [canCopyImage, setCanCopyImage] = React.useState(false)
@@ -128,7 +130,7 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 	const px = SIZE_PIXELS[size]
 	// The query, then any tracking parameters, joined with "&"; nothing to carry means no "?".
 	const linkFor = (origin: string, utm = "") => {
-		const qs = [query, utm.replace(/^&/, "")].filter(Boolean).join("&")
+		const qs = [t.linkQuery ?? query, utm.replace(/^&/, "")].filter(Boolean).join("&")
 		return `${origin}${t.sharePath}${qs ? `?${qs}` : ""}`
 	}
 
@@ -222,20 +224,22 @@ export default function ShareCard({ kind, view = {}, target, stamp, text, alt, l
 							</button>
 						</div>
 						<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-							<div role="group" aria-label="Picture size" className="grid gap-2 sm:grid-cols-2">
-								{SIZE_CHOICES.map((c) => (
-									<button key={c.id} type="button" aria-pressed={size === c.id} onClick={() => setSize(c.id)} className={`rounded-xl border px-4 py-2.5 text-left transition ${size === c.id ? "border-lab-ink bg-lab-ink text-lab-page" : "border-lab-line-strong bg-lab-surface text-lab-ink hover:bg-lab-hover"}`}>
-										<span className="block text-sm font-bold">
-											{c.name}{" "}
-											<span className="font-mono text-xs font-medium opacity-80">
-												{SIZE_PIXELS[c.id].width}&times;
-												{SIZE_PIXELS[c.id].height}
+							{sizes.length > 1 ? (
+								<div role="group" aria-label="Picture size" className="grid gap-2 sm:grid-cols-2">
+									{SIZE_CHOICES.filter((c) => sizes.includes(c.id)).map((c) => (
+										<button key={c.id} type="button" aria-pressed={size === c.id} onClick={() => setSize(c.id)} className={`rounded-xl border px-4 py-2.5 text-left transition ${size === c.id ? "border-lab-ink bg-lab-ink text-lab-page" : "border-lab-line-strong bg-lab-surface text-lab-ink hover:bg-lab-hover"}`}>
+											<span className="block text-sm font-bold">
+												{c.name}{" "}
+												<span className="font-mono text-xs font-medium opacity-80">
+													{SIZE_PIXELS[c.id].width}&times;
+													{SIZE_PIXELS[c.id].height}
+												</span>
 											</span>
-										</span>
-										<span className={`block text-xs ${size === c.id ? "opacity-80" : "text-lab-muted"}`}>{c.where}</span>
-									</button>
-								))}
-							</div>
+											<span className={`block text-xs ${size === c.id ? "opacity-80" : "text-lab-muted"}`}>{c.where}</span>
+										</button>
+									))}
+								</div>
+							) : null}
 							<div className={`mx-auto mt-4 overflow-hidden rounded-xl border border-lab-line bg-lab-tint ${size === "tall" ? "max-w-[22rem]" : "w-full"}`} style={{ aspectRatio: `${px.width} / ${px.height}` }}>
 								{/* eslint-disable-next-line @next/next/no-img-element */}
 								<img key={shown} src={shown} alt={alt} width={px.width} height={px.height} decoding="async" onLoad={() => setLoadedSrc(shown)} onError={() => setFailedKey(shown)} className={`block h-full w-full object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />

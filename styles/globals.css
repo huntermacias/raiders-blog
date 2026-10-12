@@ -380,3 +380,24 @@
 		}
 	}
 }
+
+/* A player's grade ring draws itself once and his badges rise in; with reduced motion they are simply there. */
+@keyframes rr-ring-draw {
+	from {
+		stroke-dashoffset: 100;
+	}
+}
+@keyframes rr-rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.rr-ring-arc {
+		animation: rr-ring-draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 1 both;
+	}
+	.rr-rise {
+		animation: rr-rise 0.5s ease-out 1 both;
+	}
+}
