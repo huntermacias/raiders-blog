@@ -61,3 +61,15 @@ describe("the workflows that install the site's packages", () => {
 		})
 	}
 })
+
+describe("the clip drawing step in lab-data.yml", () => {
+	// resvg and satori are left out of the bundle, so Node finds them by looking upward from the bundle's folder. In /tmp that never reaches
+	// the repo's node_modules ("Cannot find module '@resvg/resvg-js'").
+	it("writes the bundle inside the repo, next to the packages it leaves out", () => {
+		const wf = read(".github/workflows/lab-data.yml")
+		expect(wf).toMatch(/--external:@resvg\/resvg-js/)
+		expect(wf).toContain("--outfile=node_modules/.cache/render-clips.cjs")
+		expect(wf).toContain("node node_modules/.cache/render-clips.cjs")
+		expect(wf).not.toContain("/tmp/render-clips.cjs")
+	})
+})

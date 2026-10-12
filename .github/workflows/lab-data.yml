@@ -86,9 +86,12 @@ jobs:
 
       - name: Draw clips
         run: |
-          npx esbuild scripts/clips/render.tsx --bundle --platform=node --format=cjs --jsx=automatic --loader:.tsx=tsx --alias:@=. --external:@resvg/resvg-js --external:satori --log-level=warning --outfile=/tmp/render-clips.cjs
+          # The bundle leaves resvg and satori out (they are native or large), so Node has to find them in the repo's node_modules:
+          # it looks upward from the bundle's own folder, which is why the bundle is written inside the repo and not in /tmp.
+          mkdir -p node_modules/.cache
+          npx esbuild scripts/clips/render.tsx --bundle --platform=node --format=cjs --jsx=automatic --loader:.tsx=tsx --alias:@=. --external:@resvg/resvg-js --external:satori --log-level=warning --outfile=node_modules/.cache/render-clips.cjs
           if [ "${{ inputs.redraw_clips }}" = "true" ]; then FLAG="--all"; else FLAG=""; fi
-          node /tmp/render-clips.cjs $FLAG
+          node node_modules/.cache/render-clips.cjs $FLAG
 
       - name: Add the Lab's pieces to postgame drafts
         # Skipped quietly when the secret is not set.
