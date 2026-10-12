@@ -18,6 +18,7 @@ import { NFL_LEAGUE } from "../../lib/playoffs/season"
 import { teamByAbbr } from "../../lib/nfl"
 import { getRooting } from "../../lib/rooting/data"
 import { GOALS } from "../../lib/rooting/types"
+import { buildView, ownGame, topThree } from "../../lib/rooting/view"
 
 afterEach(() => {
 	cleanup()
@@ -60,7 +61,18 @@ describe("the page's metadata, for every team", () => {
 	})
 
 	it("says what matters most in the description, in points and not percent growth", async () => {
-		const meta = await generateMetadata(props({ team: "LV", goal: "playoffs" }))
+		// Which games are left depends on the day (on Monday night only one game of the week remains), so look for a team the data gives a pick to.
+		const data = getRooting()!
+		const games = getGames()
+		const withPick = TEAMS.find((team) => {
+			const view = buildView({ data, schedule: games, query: { team, goal: "playoffs", week: null, scope: "week" }, season: 2026 })
+			return view.status === "live" && (topThree(view).length > 0 || ownGame(view) !== null)
+		})
+		const meta = await generateMetadata(props({ team: withPick ?? "LV", goal: "playoffs" }))
+		if (!withPick) {
+			expect(String(meta.description)).toContain("See which games still move your odds.")
+			return
+		}
 		expect(String(meta.description)).toMatch(/chance to make the playoffs is \d+%|<1%|>99%/)
 		expect(String(meta.description)).toMatch(/\+\d+ pts?\b/)
 	})

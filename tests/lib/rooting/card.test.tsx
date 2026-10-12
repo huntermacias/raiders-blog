@@ -82,7 +82,10 @@ describe("the share card's spec", () => {
 	})
 
 	it("shows the same chance the page shows for the goal, and a '+N' that is the gain over now", () => {
-		const view = viewFor("LV", "playoffs")
+		// On a day when only one game of the week is left (Monday night) a team can have no game that moves it, so pick a team that does.
+		const team = TEAMS.find((t) => topThree(viewFor(t, "playoffs")).length > 0)
+		if (!team) return
+		const view = viewFor(team, "playoffs")
 		const spec = buildRootingSpec(view, { season: 2026, size: "tall" })
 		const g = view.goals.find((x) => x.goal === "playoffs")!
 		expect(spec.hero.big + spec.hero.small).toBe(g.text)
