@@ -11,6 +11,7 @@ import PlayerEmbed from "../../components/lab/players/PlayerEmbed"
 import PlayerSearch from "../../components/lab/players/PlayerSearch"
 import SnapStrip from "../../components/lab/players/SnapStrip"
 import StatTile from "../../components/lab/players/StatTile"
+import TeamLink from "../../components/lab/players/TeamLink"
 import TrackView from "../../components/lab/players/TrackView"
 import Yardstick from "../../components/lab/players/Yardstick"
 import { getPlayers } from "../../lib/lab/data"
@@ -182,5 +183,50 @@ describe("<Yardstick /> and <SnapStrip />", () => {
 describe("the page data holds together", () => {
 	it("has a Raiders row for the hub", () => {
 		expect(data.players.some((p: PlayerRow) => p.team === "LV")).toBe(true)
+	})
+})
+
+describe("the team filter on a leaderboard", () => {
+	const board = boards("te")[0]
+	const rows = leaders(data, board).map((r) => ({ slug: r.player.slug, name: r.player.name, team: r.player.team, pos: r.player.pos, espn: r.player.espn, v: r.value, rank: r.rank, n: r.volume, d: r.delta, z: r.z, box: r.player.box }))
+	const teams = Array.from(new Set(rows.map((r) => r.team))).sort()
+	const props = { group: "te" as const, statKey: board.key, kind: "stat" as const, yard: data.yard.te![board.key], rows, boxCols: [], higher: true, teams, valueLabel: board.label, perLabel: "targets" }
+	const team = rows[0].team
+
+	it("is read from the address and kept in it, so another stat opens on the same team", () => {
+		window.history.replaceState(null, "", `/lab/players/leaders/te/x?team=${team}`)
+		const { unmount } = render(<LeaderTable {...props} />)
+		const shown = screen.getAllByTestId("leader-row")
+		expect(shown.length).toBe(rows.filter((r) => r.team === team).length)
+		unmount()
+		// A link to another stat carries it.
+		render(<TeamLink href="/lab/players/leaders/te/other">Other stat</TeamLink>)
+		expect(screen.getByRole("link", { name: "Other stat" }).getAttribute("href")).toBe(`/lab/players/leaders/te/other?team=${team}`)
+		window.history.replaceState(null, "", "/")
+	})
+
+	it("writes the choice to the address when it changes, and removes it for All teams", () => {
+		window.history.replaceState(null, "", "/lab/players/leaders/te/x")
+		render(<LeaderTable {...props} />)
+		const select = screen.getByLabelText("Team")
+		act(() => {
+			fireEvent.change(select, { target: { value: team } })
+		})
+		expect(window.location.search).toBe(`?team=${team}`)
+		act(() => {
+			fireEvent.change(select, { target: { value: "" } })
+		})
+		expect(window.location.search).toBe("")
+	})
+
+	it("ignores anything in the address that is not a team code, and says so when a team has nobody on this board", () => {
+		window.history.replaceState(null, "", "/x?team=%3Cscript%3E")
+		render(<LeaderTable {...props} />)
+		expect(screen.getAllByTestId("leader-row").length).toBeGreaterThan(5)
+		cleanup()
+		window.history.replaceState(null, "", "/x?team=ZZZ")
+		render(<LeaderTable {...props} />)
+		expect(screen.getByText(/qualify for this stat yet/)).toBeTruthy()
+		window.history.replaceState(null, "", "/")
 	})
 })

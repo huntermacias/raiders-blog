@@ -393,3 +393,21 @@ def test_the_game_by_game_box_score_adds_up_to_the_season_total():
                 checked += 1
     assert checked > 0
     assert set(out["_logs"]) >= {"bio", "res", "win"}
+
+
+def test_the_volume_beside_each_game_is_the_sample_and_adds_up_to_the_seasons():
+    # A receiver's target share is over his team's pass attempts, but the volume a reader sees beside each game must be his
+    # targets, so the games add up to the targets on his season line (never to the team's attempts).
+    out = built()
+    logs = out["_logs"]["logs"]
+    checked = 0
+    for p in out["players"]:
+        trail = logs.get(p["slug"], {}).get(p["group"], {}).get("g", {})
+        for s in p["stats"]:
+            pts = trail.get(s["k"])
+            if pts:
+                assert abs(sum(t[2] for t in pts) - s["season"]["n"]) < 0.6, (p["name"], s["k"])
+                checked += 1
+    assert checked > 0
+    share = [s for p in out["players"] if p["group"] in ("wr", "te") for s in p["stats"] if s["k"] == "share"]
+    assert share, "the fixture should have a receiver with a target share"

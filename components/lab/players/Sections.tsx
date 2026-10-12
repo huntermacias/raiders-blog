@@ -1,5 +1,6 @@
 import Link from "@/components/SiteLink"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
+import TeamLink from "@/components/lab/players/TeamLink"
 import SnapStrip from "@/components/lab/players/SnapStrip"
 import Yardstick from "@/components/lab/players/Yardstick"
 import { boardHref, cardStyle, profileHref } from "@/lib/lab/playerView"
@@ -117,13 +118,13 @@ export function BoardIndex({ data, current }: { data: PlayersData; current?: { g
 							const on = current?.group === g && current.path === b.path
 							return (
 								<li key={b.path + b.kind}>
-									<Link
+									<TeamLink
 										href={boardHref(g, b.path)}
 										aria-current={on ? "page" : undefined}
 										className={`inline-block rounded-full border px-2.5 py-1 text-xs ${on ? "border-lab-ink bg-lab-ink text-lab-page" : b.kind === "box" ? "border-dashed border-lab-line-strong text-lab-muted hover:border-lab-ink hover:text-lab-ink" : "border-lab-line-strong text-lab-soft hover:border-lab-ink hover:text-lab-ink"}`}
 									>
 										{b.label}
-									</Link>
+									</TeamLink>
 								</li>
 							)
 						})}

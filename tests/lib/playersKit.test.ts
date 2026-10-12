@@ -34,6 +34,7 @@ import {
 	tierOf,
 	topPhrase,
 	trailLine,
+	shownPct,
 	winSentence,
 	yardPos,
 } from "../../lib/lab/playersKit"
@@ -274,3 +275,42 @@ describe("context on one number", () => {
 		}
 	})
 })
+
+describe("numbers a reader can check", () => {
+	it("never shows a 100th (or 0th) percentile: the top of the league reads 99 and the bottom 1", () => {
+		expect(shownPct(100)).toBe(99)
+		expect(shownPct(99.6)).toBe(99)
+		expect(shownPct(0)).toBe(1)
+		expect(shownPct(0.2)).toBe(1)
+		expect(shownPct(63.4)).toBe(63)
+		expect(trailLine([[3, 0, 1, 100], [4, 0, 1, 93.9], [5, 0, 1, 100]])).toBe("Season rank holding near the 99th percentile since Wk 3.")
+	})
+
+	it("shows the plays behind each game: they add up to the plays on his season line, for every player and stat", () => {
+		const data = getPlayers()
+		const logs = getPlayerLogs()
+		let checked = 0
+		for (const p of data.players) {
+			const log = logs.logs[p.slug]?.[p.group]
+			if (!log) continue
+			for (const s of p.stats) {
+				const pts = log.g[s.k]
+				if (!pts?.length) continue
+				const sum = pts.reduce((a, t) => a + t[2], 0)
+				expect(Math.abs(sum - s.season.n), `${p.name} ${s.k}`).toBeLessThan(0.6)
+				checked++
+			}
+		}
+		expect(checked).toBeGreaterThan(1000)
+	})
+
+	it("counts a receiver's target share over his targets, not over the team's passes", () => {
+		const data = getPlayers()
+		const logs = getPlayerLogs()
+		const bowers = data.players.find((p) => p.slug === "brock-bowers")!
+		const pts = logs.logs[bowers.slug].te!.g.share
+		const box = logs.logs[bowers.slug].te!.b!.tgt
+		expect(pts.map((t) => t[2])).toEqual(box.map((t) => t[1]))
+	})
+})
+

@@ -1,5 +1,6 @@
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
+import TeamLink from "@/components/lab/players/TeamLink"
 import TrackView from "@/components/lab/players/TrackView"
 import LeaderTable, { type BoxCol, type LeaderRowSlim } from "@/components/lab/players/LeaderTable"
 import { BoardIndex } from "@/components/lab/players/Sections"
@@ -100,13 +101,13 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 				<ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
 					{siblings.map((b) => (
 						<li key={b.path + b.kind}>
-							<Link
+							<TeamLink
 								href={boardHref(group, b.path)}
 								aria-current={b.path === board.path && b.kind === board.kind ? "page" : undefined}
 								className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold ${b.path === board.path && b.kind === board.kind ? "border-lab-ink bg-lab-ink text-lab-page" : b.kind === "box" ? "border-dashed border-lab-line-strong text-lab-muted hover:border-lab-ink hover:text-lab-ink" : "border-lab-line-strong text-lab-soft hover:border-lab-ink hover:text-lab-ink"}`}
 							>
 								{b.label}
-							</Link>
+							</TeamLink>
 						</li>
 					))}
 				</ul>

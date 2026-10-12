@@ -1,4 +1,4 @@
-import { ordinal } from "@/lib/lab/playersKit"
+import { ordinal, shownPct } from "@/lib/lab/playersKit"
 
 export type TrailPoint = { w: number; pct: number | null }
 
@@ -97,17 +97,17 @@ export default function ProgressLine({
 			)}
 			{ranked2.map((p) => (
 				<circle key={`b${p.w}`} cx={x(p.w)} cy={y(p.pct)} r={3.2} fill={second!.color} stroke="var(--lab-surface)" strokeWidth={1.5}>
-					<title>{`Week ${p.w}: ${ordinal(Math.round(p.pct))} percentile`}</title>
+					<title>{`Week ${p.w}: ${ordinal(shownPct(p.pct))} percentile`}</title>
 				</circle>
 			))}
 			{ranked.map((p) => (
 				<circle key={p.w} cx={x(p.w)} cy={y(p.pct)} r={p.w === last.w ? (compact ? 3 : 4.5) : compact ? 1.8 : 3} fill="var(--pc-accent)" stroke="var(--lab-surface)" strokeWidth={1.5}>
-					<title>{`Week ${p.w}: ${ordinal(Math.round(p.pct))} percentile`}</title>
+					<title>{`Week ${p.w}: ${ordinal(shownPct(p.pct))} percentile`}</title>
 				</circle>
 			))}
 			{compact || second ? null : (
 				<text x={Math.min(x(last.w), W - padR - 14)} y={Math.max(y(last.pct) - 9, 9)} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--lab-ink)">
-					{ordinal(Math.round(last.pct))}
+					{ordinal(shownPct(last.pct))}
 				</text>
 			)}
 		</svg>

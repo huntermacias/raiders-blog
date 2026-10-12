@@ -1,4 +1,4 @@
-import { type Bar, GROUP_META, type PlayerRow, type PlayersData, percentileBars, tierOf, TIER_WORD } from "@/lib/lab/playersKit"
+import { type Bar, GROUP_META, type PlayerRow, type PlayersData, percentileBars, shownPct, tierOf, TIER_WORD } from "@/lib/lab/playersKit"
 
 /**
  * Every graded stat on one screen, as a bar from the worst player at his job (left) to the best (right). The number in the bubble is the
@@ -16,7 +16,7 @@ export default function PercentileProfile({ data, player }: { data: PlayersData;
 						<span
 							className="relative block h-3 rounded-full bg-lab-tint"
 							role="img"
-							aria-label={`${b.label}: ${Math.round(b.pct)}th percentile, ${TIER_WORD[tierOf(b.pct)].toLowerCase()}${b.sure === "thin" ? ", small sample" : ""}`}
+							aria-label={`${b.label}: ${shownPct(b.pct)}th percentile, ${TIER_WORD[tierOf(b.pct)].toLowerCase()}${b.sure === "thin" ? ", small sample" : ""}`}
 						>
 							<span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.max(4, b.pct)}%`, background: "var(--pc-accent)", opacity: b.sure === "thin" ? 0.6 : 1 }} aria-hidden="true" />
 							<span className="absolute -inset-y-1 left-1/2 w-px bg-lab-line-strong" aria-hidden="true" />
@@ -25,7 +25,7 @@ export default function PercentileProfile({ data, player }: { data: PlayersData;
 								style={{ left: `${Math.min(94, Math.max(6, b.pct))}%`, background: "var(--pc-accent)", color: "var(--pc-on)" }}
 								aria-hidden="true"
 							>
-								{Math.round(b.pct)}
+								{shownPct(b.pct)}
 							</span>
 						</span>
 						<span className="text-right font-mono text-xs font-bold tabular-nums text-lab-ink sm:text-sm">

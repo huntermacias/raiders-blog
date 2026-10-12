@@ -9,6 +9,7 @@ import {
 	type PlayerGroup,
 	formatStat,
 	ordinal,
+	shownPct,
 	statInfo,
 	trailLine,
 } from "@/lib/lab/playersKit"
@@ -73,7 +74,7 @@ export default function ProgressExplorer({
 					<div>
 						<p className="m-0 text-sm font-semibold text-lab-ink">{line || "Not enough games yet to draw a line."}</p>
 						<p className="m-0 mt-2 text-xs leading-relaxed text-lab-muted">
-							The line is his season-to-date rank among players at his position after each week, from 100 (the best) to 0 (the worst). It rises when he passes other players, not when he has one big game. Early weeks are noisier because fewer plays are behind them. The shaded weeks are the recent stretch.
+							The line is his season-to-date rank among players at his position after each week, from 99 (the best in the league) down to 1 (the worst). It rises when he passes other players, not when he has one big game. Early weeks are noisier because fewer plays are behind them. The shaded weeks are the recent stretch.
 						</p>
 					</div>
 				</div>
@@ -100,7 +101,7 @@ export default function ProgressExplorer({
 								<td className="px-2 py-2 text-lab-soft">{opp[String(p[0])] ? `vs ${opp[String(p[0])]}` : ""}</td>
 								<td className="px-2 py-2 text-right font-mono tabular-nums text-lab-ink">{formatStat(group, stat.k, p[1])}</td>
 								<td className="px-2 py-2 text-right font-mono tabular-nums text-lab-muted">{Math.round(p[2])}</td>
-								{stat.graded ? <td className="whitespace-nowrap px-3 py-2 text-right font-mono tabular-nums">{p[3] === null ? <span className="text-lab-muted" title="Too few plays to rank yet">–</span> : `${ordinal(Math.round(p[3]))} pct`}</td> : null}
+								{stat.graded ? <td className="whitespace-nowrap px-3 py-2 text-right font-mono tabular-nums">{p[3] === null ? <span className="text-lab-muted" title="Too few plays to rank yet">–</span> : `${ordinal(shownPct(p[3]))} pct`}</td> : null}
 							</tr>
 						))}
 					</tbody>

@@ -924,7 +924,10 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                     if st.num not in vals or st.den not in vals or vals[st.den] <= 0:
                         continue
                     pct = cum_pct.get(key, {}).get(pid, {}).get(int(w))
-                    pts.append([int(w), r4(vals[st.num] / vals[st.den] * st.scale), r1(vals[st.den]), None if pct is None else r1(pct)])
+                    # The volume is what a reader would call the sample (a receiver's targets), not necessarily the stat's denominator
+                    # (his team's pass attempts, for target share).
+                    vol = vals[st.gate] if st.gate and st.gate in vals else vals[st.den]
+                    pts.append([int(w), r4(vals[st.num] / vals[st.den] * st.scale), r1(vol), None if pct is None else r1(pct)])
                     if week_team.get((pid, w)) != last_team:
                         moved[int(w)] = week_team.get((pid, w))
                 if pts:

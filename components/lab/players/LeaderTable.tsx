@@ -5,6 +5,7 @@ import * as React from "react"
 import Link from "@/components/SiteLink"
 import { ConfidenceChip, Delta, TierChip } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
+import { useTeamFilter } from "@/components/lab/players/useTeamFilter"
 import { Headshot } from "@/components/lab/players/Media"
 import { cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
 import { type PlayerGroup, type Yard, confidenceOf, formatBox, formatStat, pctFromRank, tierOf, GROUP_META } from "@/lib/lab/playersKit"
@@ -56,7 +57,8 @@ export default function LeaderTable({
 	valueLabel: string
 	perLabel: string
 }) {
-	const [team, setTeam] = React.useState(defaultTeam)
+	const [urlTeam, setTeam] = useTeamFilter()
+	const team = urlTeam || defaultTeam
 	const [q, setQ] = React.useState("")
 	const [showBox, setShowBox] = React.useState(kind === "box")
 	const [sort, setSort] = React.useState<{ col: Col; dir: 1 | -1 }>({ col: "rank", dir: 1 })
@@ -101,7 +103,7 @@ export default function LeaderTable({
 					Team
 					<select value={team} onChange={(e) => setTeam(e.target.value)} className="min-w-[9rem] rounded-lg border border-lab-line-strong bg-lab-surface px-3 py-2 text-sm font-normal normal-case tracking-normal text-lab-ink">
 						<option value="">All teams</option>
-						{teams.map((t) => (
+						{(team && !teams.includes(team) ? [...teams, team].sort() : teams).map((t) => (
 							<option key={t} value={t}>
 								{teamNick(t)}
 							</option>
@@ -191,7 +193,11 @@ export default function LeaderTable({
 					Show more ({shown.length - limit} left)
 				</button>
 			) : null}
-			{!shown.length ? <p className="m-0 mt-4 text-sm text-lab-soft">Nobody matches. Try another team or a shorter name.</p> : null}
+			{!shown.length ? (
+				<p className="m-0 mt-4 text-sm text-lab-soft">
+					{team && !q.trim() ? `No ${teamNick(team)} ${meta.peers} qualify for this stat yet. Pick another team, or choose All teams to see the league.` : "Nobody matches. Try another team or a shorter name."}
+				</p>
+			) : null}
 		</div>
 	)
 }

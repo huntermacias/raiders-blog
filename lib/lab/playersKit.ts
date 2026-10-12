@@ -293,6 +293,14 @@ export function groupOf(value: string): PlayerGroup | null {
 
 // ---------------------------------------------------------------------------------------------- context: where a number sits
 
+/**
+ * The percentile a reader sees: whole numbers from 1 to 99. The best player in the league has beaten everyone else, but "100th
+ * percentile" reads as a glitch, so the top reads 99 and the bottom 1 (the way baseball's leaderboards print it).
+ */
+export function shownPct(p: number): number {
+	return Math.min(99, Math.max(1, Math.round(p)))
+}
+
 /** Percentile (100 is best) from a rank among `n` players. */
 export function pctFromRank(r: number, n: number): number {
 	return n > 1 ? ((n - r) / (n - 1)) * 100 : 50
@@ -672,7 +680,7 @@ export function roleOf(p: PlayerRow): Role | null {
 		return {
 			kind: "back",
 			headline: "Back in the lineup",
-			detail: `He missed ${games(missed)} earlier, then played all of the last ${games(fc)}, on the field for ${snapsOutOf10(af)} when he plays.`,
+			detail: `He missed ${games(missed)} earlier, then played ${fc === 1 ? "his most recent game" : `all of the last ${fc} games`}, on the field for ${snapsOutOf10(af)} when he plays.`,
 			before: ae,
 			now: af,
 		}
@@ -714,8 +722,8 @@ export function trailLine(points: LogPoint[]): string {
 	if (ranked.length < 2) return ""
 	const first = ranked[0]
 	const last = ranked[ranked.length - 1]
-	const a = Math.round(first[3]!)
-	const b = Math.round(last[3]!)
+	const a = shownPct(first[3]!)
+	const b = shownPct(last[3]!)
 	if (Math.abs(b - a) < 8) return `Season rank holding near the ${ordinal(b)} percentile since Wk ${first[0]}.`
 	return `Season rank ${b > a ? "climbed" : "slipped"}: ${ordinal(a)} to ${ordinal(b)} percentile since Wk ${first[0]}.`
 }
@@ -986,4 +994,111 @@ export function percentileBars(data: PlayersData, p: PlayerRow): Bar[] {
 		out.push({ k: s.k, label: c.info.label, pct: c.pct, value: formatStat(p.group, s.k, c.value), rank: rankPhrase(c.rank, c.of), sure: c.sure })
 	}
 	return out.sort((a, b) => b.pct - a.pct)
+}
+
+// ---------------------------------------------------------------------------------------------- the league-best list
+
+export type Badge = { text: string; rank: number; kind: "stat" | "box"; key: string; path: string }
+
+const nth = (r: number) => (r === 1 ? "Best" : `Top ${r}`)
+
+/**
+ * Where he is among the best in the league, as short badges: "Best in receiving yards", "Top 3 in EPA per target". Only the top few
+ * places count, so a badge always means something. Box-score totals and advanced stats both count, and a rank is the whole league's
+ * rank at his position, never one inside a team.
+ */
+export function badgesFor(data: PlayersData, p: PlayerRow, top = 5, limit = 6): Badge[] {
+	const out: Badge[] = []
+	for (const s of p.stats) {
+		const info = statInfo(p.group, s.k)
+		if (!info || info.higher === null || s.season.r === undefined || s.season.r === null || s.season.r > top) continue
+		out.push({ text: `${nth(s.season.r)} in ${lc(info.label)}`, rank: s.season.r, kind: "stat", key: s.k, path: info.path })
+	}
+	for (const k of Object.keys(BOX[p.group])) {
+		if (p.box[k] === undefined || !(p.box[k] > 0)) continue
+		const r = boxRank(data, p, k)
+		if (!r || r.rank > top) continue
+		out.push({ text: `${nth(r.rank)} in ${lc(BOX[p.group][k].label)}`, rank: r.rank, kind: "box", key: k, path: BOX[p.group][k].path })
+	}
+	return out.sort((a, b) => a.rank - b.rank || Number(a.kind === "box") - Number(b.kind === "box")).slice(0, limit)
+}
+
+// ---------------------------------------------------------------------------------------------- style fingerprint
+
+export type Trait = { k: string; label: string; pct: number; text: string }
+
+/**
+ * What stands out about how he plays, from the style stats only (depth of target, play-action, screens...): the ones where he is far from
+ * the middle of his position, each as a short plain phrase. Style is never good or bad, so nothing here is graded.
+ */
+export function fingerprint(data: PlayersData, p: PlayerRow, limit = 4): Trait[] {
+	const out: Trait[] = []
+	for (const s of p.stats) {
+		const c = contextOf(data, p, s)
+		if (!c || c.stylePct === null || !c.info.lean || c.sure === "thin") continue
+		const hi = c.stylePct >= 80
+		const lo = c.stylePct <= 20
+		if (!hi && !lo) continue
+		out.push({ k: s.k, label: c.info.label, pct: c.stylePct, text: cap(hi ? c.info.lean[1] : c.info.lean[0]) })
+	}
+	return out.sort((a, b) => Math.abs(b.pct - 50) - Math.abs(a.pct - 50)).slice(0, limit)
+}
+
+// ---------------------------------------------------------------------------------------------- the ladder
+
+export type Rung = { slug: string; name: string; team: string; rank: number; value: number; me: boolean }
+
+/** The players just above and below him on a board, with the gaps, so "3rd" becomes "0.08 behind the leader". */
+export function ladder(data: PlayersData, p: PlayerRow, key: string, span = 2): { rungs: Rung[]; board: Board } | null {
+	const board = boards(p.group).find((b) => b.kind === "stat" && b.key === key)
+	if (!board) return null
+	const rows = leaders(data, board)
+	const i = rows.findIndex((r) => r.player.id === p.id)
+	if (i < 0) return null
+	const from = Math.max(0, Math.min(i - span, rows.length - (span * 2 + 1)))
+	const rungs = rows.slice(from, from + span * 2 + 1).map((r) => ({ slug: r.player.slug, name: r.player.name, team: r.player.team, rank: r.rank, value: r.value, me: r.player.id === p.id }))
+	return { rungs, board }
+}
+
+// ---------------------------------------------------------------------------------------------- build and age against his position
+
+export type BuildLine = { label: string; value: string; yard: Yard; v: number; pct: number; word: string }
+
+/** Height, weight and age against everyone else at his position who has a bio on file. */
+export function buildVsPeers(p: PlayerRow, bio: PlayerBio | undefined, peers: (PlayerBio | undefined)[], today: Date): BuildLine[] {
+	if (!bio) return []
+	const age = (b?: PlayerBio) => ageOn(b?.born, today)
+	const specs: { label: string; get: (b?: PlayerBio) => number | null | undefined; fmt: (v: number) => string; words: [string, string] }[] = [
+		{ label: "Height", get: (b) => b?.ht, fmt: (v) => heightText(Math.round(v)) ?? "", words: ["shorter", "taller"] },
+		{ label: "Weight", get: (b) => b?.wt, fmt: (v) => `${Math.round(v)} lbs`, words: ["lighter", "heavier"] },
+		{ label: "Age", get: age, fmt: (v) => String(Math.round(v)), words: ["younger", "older"] },
+	]
+	const out: BuildLine[] = []
+	for (const s of specs) {
+		const mine = s.get(bio)
+		const all = peers.map(s.get).filter((x): x is number => typeof x === "number" && Number.isFinite(x)).sort((a, b) => a - b)
+		if (mine === null || mine === undefined || all.length < 8) continue
+		const q = (f: number) => all[Math.min(all.length - 1, Math.max(0, Math.round(f * (all.length - 1))))]
+		const mean = all.reduce((a, b) => a + b, 0) / all.length
+		const sd = Math.sqrt(all.reduce((a, b) => a + (b - mean) ** 2, 0) / all.length)
+		const below = all.filter((x) => x < mine).length
+		const same = all.filter((x) => x === mine).length
+		const pct = ((below + same / 2) / all.length) * 100
+		const word = pct >= 50 ? `${s.words[1]} than ${shownPct(pct)}% of ${GROUP_META[p.group].peers}` : `${s.words[0]} than ${shownPct(100 - pct)}% of ${GROUP_META[p.group].peers}`
+		out.push({ label: s.label, value: s.fmt(mine), yard: { n: all.length, mean, sd, q: [q(0.1), q(0.25), q(0.5), q(0.75), q(0.9)] }, v: mine, pct, word })
+	}
+	return out
+}
+
+// ---------------------------------------------------------------------------------------------- best and worst game
+
+export type GamePick = { week: number; value: number; volume: number }
+
+/** His best and worst game on a stat among games with enough plays to mean something, by what the stat counts as better. */
+export function extremeGames(log: PlayerLog | undefined, key: string, higher: boolean | null, minVolume: number): { best: GamePick; worst: GamePick } | null {
+	if (higher === null) return null
+	const games = (log?.g[key] ?? []).filter((p) => p[2] >= minVolume).map((p) => ({ week: p[0], value: p[1], volume: p[2] }))
+	if (games.length < 3) return null
+	const sorted = games.slice().sort((a, b) => (higher ? b.value - a.value : a.value - b.value))
+	return { best: sorted[0], worst: sorted[sorted.length - 1] }
 }
