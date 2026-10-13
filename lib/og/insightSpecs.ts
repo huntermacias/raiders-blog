@@ -18,7 +18,9 @@ import { buildMatchupSpec } from "./matchupCards"
 import { BOARD_SHOWS } from "../lab/boardShow"
 import { buildBoardSpec, buildSlateSpec } from "./unitsCards"
 import { buildTwinsSpec } from "./twinsCards"
+import { GROUP_ORDER } from "../lab/playersKit"
 import { buildPlayerSpec } from "./playerCard"
+import { buildPlayerBoardSpec } from "./playerBoardCard"
 import { playoffsSpec } from "./playoffsSpec"
 import { rootingSpec } from "./rootingSpec"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
@@ -33,7 +35,7 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string }
+} & RawView & { group?: string; pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -42,6 +44,12 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	if (q.type === "player") {
 		if (!SLUG.test(q.slug)) return null
 		return buildPlayerSpec(getPlayers(), q.slug, getPlayerLogs().bio[q.slug], /^[a-z]{1,4}$/.test(q.pos ?? "") ? q.pos : undefined)
+	}
+
+	if (q.type === "playerboard") {
+		const group = GROUP_ORDER.find((g) => g === q.group)
+		if (!group || !/^[a-z0-9-]{1,60}$/.test(q.stat ?? "")) return null
+		return buildPlayerBoardSpec(getPlayers(), group, q.stat!, q.slug && SLUG.test(q.slug) ? q.slug : undefined)
 	}
 
 	if (q.type === "scout") {

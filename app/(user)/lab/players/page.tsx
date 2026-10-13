@@ -329,7 +329,7 @@ export default function PlayersPage() {
 									<li>Field goals are judged against the make rate of every kick of that distance this season, and EPA means expected points added from the down, distance and field position.</li>
 								</ol>
 								<p className="m-0 text-xs leading-relaxed text-lab-muted">
-									These are not film grades. They come from play-by-play, charting and snap-count data, so they cannot see blocking, route running or assignments. For that reason offensive linemen are graded on what does exist: how often each is flagged compared with other linemen, and how his whole line does in the games he starts (shared by the five who start together, and labeled that way). Box-score totals use the same games as the rest of the page.
+									These are not film grades. They come from play-by-play, charting and snap-count data, so they cannot see blocking, route running or assignments. For that reason offensive linemen get no overall grade and no rank on their line's numbers. A lineman's page shows his own record (starts, snaps, penalties) and, labeled as his line's, the run success and sacks allowed of the unit in the games he started, which the five who start together share. Box-score totals use the same games as the rest of the page.
 								</p>
 							</details>
 						</div>

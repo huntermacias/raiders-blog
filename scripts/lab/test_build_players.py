@@ -582,3 +582,16 @@ def test_a_defenders_passer_rating_is_the_rating_of_his_season_line_not_an_avera
     assert round(value, 1) == 42.9 and volume == 20
     weekly = [b.passer_rating(*r) for r in weeks[["tgts", "cmp", "yds", "td", "ints"]].itertuples(index=False)]
     assert round(sum(w * t for w, t in zip(weekly, weeks["tgts"])) / 20, 1) == 53.9
+
+
+def test_a_lines_shared_numbers_never_count_toward_a_lineman_or_his_look_alikes():
+    ol = b.GROUPS["ol"].stats
+    assert ol["runSucc"].unit and ol["sackRate"].unit and not ol["runSucc"].counts and not ol["sackRate"].counts
+    assert ol["penRate"].counts and not ol["penRate"].unit
+    # Two linemen on one line share every unit grade, and a third on another line is far from both on those grades; the match is
+    # made on what is each man's own (penalties), so the third man, whose penalties match, is the closest.
+    def row(pid, unit, pen, hold, fs):
+        g = lambda k, v: {"k": k, "season": {"g": v}}
+        return {"id": pid, "stats": [g("runSucc", unit), g("sackRate", unit), g("penRate", pen), g("holdRate", hold), g("fsRate", fs)]}
+    rows = [row("a", 70, 40, 40, 40), row("b", 70, 62, 62, 62), row("c", 30, 41, 41, 41)]
+    assert b.comparables(rows, "ol")["a"][0] == "c"

@@ -285,14 +285,24 @@ export function payRankPhrase(group: PlayerGroup, r: PayRank): string {
 	return r.rank === 1 ? `Highest paid of the ${r.of} ${peers} we track` : `${ordinal(r.rank)}-highest paid of the ${r.of} ${peers} we track`
 }
 
-export function valueSentence(name: string, group: PlayerGroup, v: Value): string {
+/**
+ * True when he was drafted in the last four seasons, so his deal is most likely still the rookie scale: a pay set by his draft slot, not
+ * by what he has done. Pay against play says little for him in either direction.
+ */
+export function onRookieScale(draft: [string, number, number | null] | undefined, season: number): boolean {
+	return Boolean(draft && draft[2] && season - draft[2] <= 3)
+}
+
+export function valueSentence(name: string, group: PlayerGroup, v: Value, rookie = false): string {
 	const peers = GROUP_META[group].peers
 	const base = `Among the ${v.of} ${peers} we have a grade and a contract for, ${name} is ${ordinal(v.gradeRank)} on the field and ${ordinal(v.payRank)} in pay.`
-	if (v.early) return `${base} His grade is still an early read, so this says nothing yet about whether his pay is fair.`
-	if (!v.verdict) return `${base} That pool is too small to call it a bargain or a bust.`
-	if (v.verdict === "underpaid") return `${base} He has played better than his pay ranks.`
-	if (v.verdict === "overpaid") return `${base} His pay ranks higher than his play has so far.`
-	return `${base} Those are close, so his pay is about right for how he has played.`
+	// A rookie-scale deal is set by the draft slot, so the gap to his play says little about whether the contract is good or bad.
+	const rook = rookie ? " He was drafted within the last four seasons, so he is most likely still on a rookie-scale deal set by his draft slot, not by his play. Read the gap as how cheap or costly his draft slot is, not as a verdict on a contract he negotiated." : ""
+	if (v.early) return `${base} His grade is still an early read, so this says nothing yet about whether his pay is fair.${rook}`
+	if (!v.verdict) return `${base} That pool is too small to call it a bargain or a bust.${rook}`
+	if (v.verdict === "underpaid") return `${base} He has played better than his pay ranks.${rook}`
+	if (v.verdict === "overpaid") return `${base} His pay ranks higher than his play has so far.${rook}`
+	return `${base} Those are close, so his pay is about right for how he has played.${rook}`
 }
 
 // ---------------------------------------------------------------------------------------------- compare

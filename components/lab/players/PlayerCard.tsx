@@ -19,6 +19,8 @@ import {
 	moveText,
 	moverTier,
 	gradeScore,
+	countWord,
+	lineRecord,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -50,8 +52,9 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 	const rank = overallRank(data, player)
 	const meta = GROUP_META[player.group]
 	const tier = rank ? tierOf(((rank.of - rank.rank) / Math.max(1, rank.of - 1)) * 100) : null
-	const picks = featuredStat(data, player)
-	const arc = arcOf(player, log)
+	const record = lineRecord(data, player)
+	const picks = record ? [] : featuredStat(data, player)
+	const arc = record ? [] : arcOf(player, log)
 	const points = arc.map((t) => ({ w: t.w, pct: t.pct as number | null }))
 	const mover = player.mover
 	const tierMove = moverTier(player)
@@ -77,10 +80,23 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 						</div>
 					</div>
 					<div className="shrink-0 text-right">
-						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums" title={o === null ? undefined : `Scouting grade ${Math.round(o)}; 50 is average`}>{score === null ? "–" : score}</p>
-						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Overall</p>
+						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums" title={record ? undefined : o === null ? undefined : `Scouting grade ${Math.round(o)}; 50 is average`}>{record ? (record.mine[0]?.value ?? "–") : score === null ? "–" : score}</p>
+						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{record ? "Starts" : "Overall"}</p>
 					</div>
 				</header>
+				{record ? (
+					<div className="mt-1" data-testid="line-summary">
+						<p className="m-0 text-xs text-lab-soft">
+							{record.mine.slice(1).map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(" · ")}
+						</p>
+						{record.line.length ? (
+							<p className="m-0 mt-3 text-xs leading-snug text-lab-soft">
+								<span className="font-semibold text-lab-ink">His line while he started:</span> {record.line.map((l) => `${l.value} ${l.label.toLowerCase()}`).join(", ")}. Shared by the five who start together.
+							</p>
+						) : null}
+					</div>
+				) : null}
+				{record ? null : (
 				<p className="m-0 mt-1 text-xs text-lab-soft">
 					{rank ? (
 						<>
@@ -91,6 +107,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 					)}
 					{isEarly(data, player) ? <span> &middot; <EarlyChip label="Early read" /></span> : tier ? <span> &middot; <TierChip tier={tier} /></span> : null}
 				</p>
+				)}
 				{note ? <p className="m-0 mt-2 text-sm leading-snug text-lab-soft">{note}</p> : null}
 
 				<div className="mt-3 grid gap-3">
@@ -132,7 +149,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 				</footer>
 			</div>
 			<p className="sr-only">
-				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, overall {score === null ? "not yet available" : `${score} out of 99 (scouting grade ${Math.round(o ?? 0)}), ${moveText(mover?.score ?? 0)} lately`}.
+				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, {record ? `${record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(", ")}; no overall grade for linemen` : "overall"} {record ? "" : score === null ? "not yet available" : `${score} out of 99 (scouting grade ${Math.round(o ?? 0)}), ${moveText(mover?.score ?? 0)} lately`}.
 			</p>
 		</article>
 	)

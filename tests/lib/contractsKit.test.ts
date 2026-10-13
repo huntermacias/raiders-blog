@@ -9,11 +9,13 @@ import {
 	money,
 	moneyRows,
 	nameKey,
+	onRookieScale,
 	payPool,
 	payRank,
 	sharePct,
 	valueBoard,
 	valueFor,
+	valueSentence,
 } from "@/lib/lab/contractsKit"
 
 const data = getPlayers()
@@ -143,5 +145,19 @@ describe("compare rows", () => {
 		// A tracked player missing one number says so, instead of looking like he is not tracked at all.
 		const tucker = dealFor(data, bareContracts, "marvin-harrison-jr")!
 		expect(moneyRows(a, tucker, null, null).find((r) => r.key === "guaranteed")!.b).toBe("not on file")
+	})
+})
+
+describe("rookie-scale deals", () => {
+	it("is true for someone drafted in the last four seasons and not for a veteran or an undrafted player", () => {
+		expect(onRookieScale(["LV", 44, 2024], 2026)).toBe(true)
+		expect(onRookieScale(["LAC", 6, 2020], 2026)).toBe(false)
+		expect(onRookieScale(undefined, 2026)).toBe(false)
+	})
+
+	it("says a rookie-scale gap is the draft slot, not a contract he negotiated", () => {
+		const v = { gradeRank: 3, payRank: 20, of: 30, gap: 50, verdict: "underpaid" as const, early: false }
+		expect(valueSentence("Jeanty", "rb", v, true)).toMatch(/rookie-scale deal set by his draft slot/)
+		expect(valueSentence("Jeanty", "rb", v)).not.toMatch(/rookie/)
 	})
 })

@@ -10,6 +10,7 @@ import GameLog from "@/components/lab/players/GameLog"
 import ContractSection from "@/components/lab/players/ContractSection"
 import GradeRing from "@/components/lab/players/GradeRing"
 import LeagueMap from "@/components/lab/players/LeagueMap"
+import LineCard from "@/components/lab/players/LineCard"
 import { BestWorst, BuildAgainstPeers, Ladders, type GameCall } from "@/components/lab/players/ProfileExtras"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import PercentileProfile from "@/components/lab/players/PercentileProfile"
@@ -23,7 +24,7 @@ import Situations from "@/components/lab/players/Situations"
 import SnapStrip from "@/components/lab/players/SnapStrip"
 import StatTile from "@/components/lab/players/StatTile"
 import { getContracts } from "@/lib/lab/contractData"
-import { dealFor, mainRow, payRank, valueFor } from "@/lib/lab/contractsKit"
+import { dealFor, mainRow, onRookieScale, payRank, valueFor } from "@/lib/lab/contractsKit"
 import { getPlayers, getUnits } from "@/lib/lab/data"
 import { teamView } from "@/lib/lab/playerTeam"
 import { getPlayerLogs } from "@/lib/lab/playerData"
@@ -32,6 +33,10 @@ import { SIT_BOARDS, type Role, sitBoardHref, situationView } from "@/lib/lab/si
 import { boardHref, cardStyle, compareHref, profileHref, teamName } from "@/lib/lab/playerView"
 import {
 	BOX,
+	STAT,
+	isGraded,
+	lc,
+	type PlayerGroup,
 	GROUP_META,
 	HEADLINE,
 	type LogPoint,
@@ -53,6 +58,7 @@ import {
 	isCore,
 	isEarly,
 	gradeScore,
+	lineRecord,
 	ordinal,
 	opponentFor,
 	overall,
@@ -96,6 +102,15 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 	return { title, description, alternates: { canonical: url }, openGraph: { type: "profile", title, description, url, siteName: "Raiders Rundown", images: [card] }, twitter: { card: "summary_large_image", title, description, images: [card] } }
 }
 
+/** The stats the similar-player match is made on, in words: every graded stat that is his own, not his unit's. */
+function similarBasis(group: PlayerGroup): string {
+	const names = Object.keys(STAT[group])
+		.filter((k) => isGraded(group, k) && !statInfo(group, k)?.unit)
+		.map((k) => lc(statInfo(group, k)!.label))
+	if (names.length <= 1) return names.join("")
+	return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+}
+
 function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const data = getPlayers()
 	const all = getPlayerLogs()
@@ -113,7 +128,8 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		.filter((s) => log?.g[s.k]?.length)
 		.map((s) => {
 			const i = statInfo(row.group, s.k)!
-			return { k: s.k, label: i.label, graded: i.higher !== null, lower: i.higher === false }
+			// A unit's number is charted by week but never ranked: the five linemen who start together share it.
+			return { k: s.k, label: i.label, graded: i.higher !== null && !i.unit, lower: i.higher === false }
 		})
 		.sort((a, b) => (a.k === HEADLINE[row.group] ? -1 : b.k === HEADLINE[row.group] ? 1 : Number(b.graded) - Number(a.graded)))
 	const trails: Record<string, LogPoint[]> = {}
@@ -157,7 +173,8 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const rankedStats = row.stats
 		.filter((s) => {
 			const i = statInfo(g, s.k)
-			return i && i.higher !== null && i.counts !== false && s.season.r !== undefined && s.season.r !== null
+			// A stat that is still mostly luck is not ranked on a ladder either: the order would be chance.
+			return i && i.higher !== null && i.counts !== false && s.season.r !== undefined && s.season.r !== null && contextOf(data, row, s)?.signal !== "luck"
 		})
 		.sort((a, b) => (a.k === HEADLINE[g] ? -1 : b.k === HEADLINE[g] ? 1 : (a.season.r ?? 99) - (b.season.r ?? 99)))
 	const ladders = rankedStats
@@ -198,7 +215,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		...(side !== "special" ? [{ id: `time-${g}`, label: "Playing time" }] : []),
 		...(games.length ? [{ id: `log-${g}`, label: "Game by game" }] : []),
 		...(boxKeys.length ? [{ id: `box-${g}`, label: "Box score" }] : []),
-		...(row.like.length ? [{ id: `like-${g}`, label: "Similar players" }] : []),
+		...(row.like.length ? [{ id: `like-${g}`, label: "Similar profiles" }] : []),
 	]
 	const step = (key: string) => ({ n: navItems.findIndex((i) => i.id === `${key}-${g}`) + 1, of: navItems.length })
 	return (
@@ -322,7 +339,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 					<SectionHead id={`grades-${row.group}`} icon="numbers" step={step("numbers")} title="The numbers, in context" blurb={<>Each one against every {meta.single.toLowerCase()} with at least {meta.need}. Right on the strip is better.</>} className="mb-1" />
 					<div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 						{headFirst.map((s) => (
-							<StatTile key={s.k} data={data} player={row} stat={s} showBox win={winSentence(wins[s.k], meta.single, statInfo(row.group, s.k)?.label ?? "")} />
+							<StatTile key={s.k} data={data} player={row} stat={s} showBox win={statInfo(row.group, s.k)?.unit ? null : winSentence(wins[s.k], meta.single, statInfo(row.group, s.k)?.label ?? "")} />
 						))}
 					</div>
 				</div>
@@ -352,6 +369,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 					id={`money-${row.group}`}
 					headingId={`money-h-${row.group}`}
 					step={step("money")}
+					rookie={onRookieScale(bios[row.slug]?.draft, data.season)}
 					className={`scroll-mt-32 border-t border-lab-line ${tone()}`}
 				/>
 			) : null}
@@ -436,7 +454,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 			{row.like.length ? (
 				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`like-${row.group}`} id={`like-${row.group}`}>
 					<div className="container py-8 sm:py-10">
-						<SectionHead id={`like-${row.group}`} icon="like" step={step("like")} title="Players with a similar profile" blurb={<>The {meta.peers} whose grades are closest to his across the same stats. Similar means similar numbers, not the same style of play.</>} className="mb-1" />
+						<SectionHead id={`like-${row.group}`} icon="like" step={step("like")} title="Similar statistical profiles" blurb={<>The {meta.peers} whose grades are closest to his on {similarBasis(row.group)}. Similar means similar numbers, not the same style of play{row.group === "ol" ? ", and his line's run success and sacks allowed are left out, because linemen who start together share them" : ""}.</>} className="mb-1" />
 						<ul className="m-0 mt-4 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
 							{row.like.map((slug) => {
 								const q = data.players.find((x) => x.slug === slug && x.group === row.group)
@@ -481,6 +499,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 	const meta = GROUP_META[p.group]
 	const o = overall(p)
 	const score = gradeScore(data, p)
+	const record = lineRecord(data, p)
 	const rank = overallRank(data, p)
 	const tier = rank ? tierOf(pctFromRank(rank.rank, rank.of)) : null
 	const early = isEarly(data, p)
@@ -605,11 +624,12 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 								<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
 									{meta.title} leaderboard
 								</Link>
-								<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
+								<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={record ? `${p.name}: his record and his line's numbers on Raiders Rundown.` : `${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
 							</div>
 						</div>
 
-						<aside className="grid min-w-0 gap-3" aria-label="Overall">
+						<aside className="grid min-w-0 gap-3" aria-label={record ? "His record" : "Overall"}>
+							{record ? <LineCard record={record} peers={meta.peers} /> : (
 							<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface/90 backdrop-blur" data-testid="overall">
 								<div className="flex items-center gap-5 p-5">
 									<div className="shrink-0"><GradeRing grade={o} pct={score} size={112}>
@@ -644,6 +664,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 									</p>
 								) : null}
 							</div>
+							)}
 							{tv ? <TeamStrip view={tv} team={p.team} className="mt-0" /> : null}
 						</aside>
 					</div>

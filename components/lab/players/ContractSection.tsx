@@ -13,6 +13,7 @@ import {
 	sharePct,
 	dealSentence,
 	valueSentence,
+	onRookieScale,
 } from "@/lib/lab/contractsKit"
 import { type PlayerRow, type PlayersData, GROUP_META } from "@/lib/lab/playersKit"
 
@@ -122,6 +123,7 @@ export default function ContractSection({
 	headingId,
 	step,
 	className,
+	rookie = false,
 }: {
 	data: PlayersData
 	contracts: ContractsData
@@ -133,6 +135,8 @@ export default function ContractSection({
 	headingId: string
 	step?: { n: number; of: number }
 	className: string
+	/** True when he is most likely still on his rookie-scale deal. */
+	rookie?: boolean
 }) {
 	const t = deal.row.terms
 	return (
@@ -175,7 +179,7 @@ export default function ContractSection({
 								<EarlyChip label={value.early ? "Early read" : "Too few to call"} />
 							)}
 						</div>
-						<p className="m-0 mt-2 max-w-3xl text-sm leading-relaxed text-lab-soft">{valueSentence(row.name, row.group, value)}</p>
+						<p className="m-0 mt-2 max-w-3xl text-sm leading-relaxed text-lab-soft">{valueSentence(row.name, row.group, value, rookie)}</p>
 						<div className="mt-4 grid gap-4 sm:grid-cols-2">
 							<Rail label="On the field (overall grade)" rank={value.gradeRank} of={value.of} good />
 							<Rail label="In pay" rank={value.payRank} of={value.of} good={false} />

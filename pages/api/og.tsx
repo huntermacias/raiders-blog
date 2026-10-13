@@ -275,12 +275,18 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		t: first(query.t),
 		goal: first(query.goal),
 		pos: first(query.pos),
+		group: first(query.group),
 	})
 	if (insight) {
 		if (insight.type === "player" && insight.headshot) return { ...insight, photo: await headshotDataUri(insight.headshot) }
+		if (insight.type === "playerboard") {
+			// Every face on the card, fetched together: each one is cut off after 3 seconds, so a slow image host costs one wait, not six.
+			const photos = await Promise.all([...insight.rows, ...(insight.focal ? [insight.focal] : [])].map((r) => (r.headshot ? headshotDataUri(r.headshot) : Promise.resolve(null))))
+			return { ...insight, rows: insight.rows.map((r, i) => ({ ...r, photo: photos[i] })), focal: insight.focal ? { ...insight.focal, photo: photos[insight.rows.length] } : null }
+		}
 		return insight
 	}
-	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player") return null
+	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -320,7 +326,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

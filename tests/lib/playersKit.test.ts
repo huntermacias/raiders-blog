@@ -6,7 +6,12 @@ import {
 	BOX,
 	GROUP_META,
 	GROUP_ORDER,
+	countWord,
+	formNameFor,
 	gradeScore,
+	hasOverall,
+	ladderOutOfOrder,
+	lineRecord,
 	overall,
 	HEADLINE,
 	STAT,
@@ -155,6 +160,7 @@ describe("does it show up in winning?", () => {
 		expect(strong).toMatch(/teams won 84% of the time/)
 		expect(strong).toMatch(/28% when he was in the worst third/)
 		expect(strong).toMatch(/EPA per dropback/)
+		expect(strong).toMatch(/not proof he caused it/)
 		expect(winSentence({ n: 150, t: [0.46, 0.5, 0.52] }, "Tight end", "Drop rate")).toMatch(/has not lined up much/)
 		expect(winSentence({ n: 10, t: [0, 0.5, 1] }, "Tight end", "x")).toBeNull()
 		expect(winSentence(undefined, "Tight end", "x")).toBeNull()
@@ -460,5 +466,62 @@ describe("gradeScore", () => {
 		const top = sorted[Math.floor(sorted.length * 0.99)]
 		expect(top.s).toBeGreaterThan(74)
 		expect(top.s).toBeLessThan(86)
+	})
+})
+
+describe("offensive linemen have no overall grade", () => {
+	it("gives a grade only to jobs with two stats of their own, so every other job still has one", () => {
+		expect(hasOverall("ol")).toBe(false)
+		for (const g of GROUP_ORDER.filter((x) => x !== "ol")) expect(hasOverall(g), g).toBe(true)
+	})
+
+	it("returns no overall, no score and no rank for a lineman, and his record and line numbers instead", () => {
+		const ol = data.players.filter((p) => p.group === "ol")
+		expect(ol.length).toBeGreaterThan(50)
+		for (const p of ol) {
+			expect(overall(p)).toBeNull()
+			expect(gradeScore(data, p)).toBeNull()
+			expect(p.mover ?? null).toBeNull()
+		}
+		const rec = lineRecord(data, ol[0])!
+		expect(rec.mine.map((m) => m.label)).toEqual(["Starts", "Snaps", "Penalties"])
+		expect(rec.line.map((l) => l.k).sort()).toEqual(["runSucc", "sackRate"])
+		expect(lineRecord(data, data.players.find((p) => p.group === "qb")!)).toBeNull()
+	})
+
+	it("keeps a lineman's line numbers out of his reads, ladders-worth stats and look-alikes", () => {
+		const p = data.players.find((x) => x.group === "ol")!
+		const read = scoutingRead(data, p, {}).join(" ")
+		expect(read).toMatch(/no overall grade/i)
+		expect(read).not.toMatch(/line run success/i)
+		expect(read).not.toMatch(/Season rank|average place/)
+		// Teammates share a line's numbers, so look-alikes are never just the other men on his line.
+		const mates = new Set(data.players.filter((x) => x.team === p.team && x.group === "ol").map((x) => x.slug))
+		expect(p.like.filter((s) => mates.has(s)).length).toBeLessThan(p.like.length)
+	})
+})
+
+describe("wording that could mislead", () => {
+	it("says 1 penalty, not 1 penalties", () => {
+		expect(countWord(1, "penalties")).toBe("penalty")
+		expect(countWord(2, "penalties")).toBe("penalties")
+		expect(countWord(1, "passing yards")).toBe("passing yard")
+		expect(countWord(1, "tackles for loss")).toBe("tackles for loss")
+	})
+
+	it("says how many of the team's recent games a player actually played", () => {
+		const base = data.players.find((p) => p.group === "ol")!
+		const mk = (form: [number, number, number]) => ({ ...base, snaps: { ...base.snaps, form } }) as typeof base
+		expect(formNameFor(data, mk([1, 2, 2]))).toBe("Last 2 games")
+		expect(formNameFor(data, mk([0.5, 1, 2]))).toBe("Last 2 games (played 1)")
+		expect(formNameFor(data, mk([0, 0, 2]))).toBe("Last 2 games (none played)")
+	})
+
+	it("flags a ladder whose order is not the order of the numbers shown", () => {
+		const r = (rank: number, value: number) => ({ slug: String(rank), name: "x", team: "LV", rank, value, volume: 100, me: false })
+		expect(ladderOutOfOrder([r(1, 0.4), r(2, 0.38), r(3, 0.3)], true)).toBe(false)
+		expect(ladderOutOfOrder([r(151, 0.31), r(152, 0.3), r(153, 0.32)], true)).toBe(true)
+		expect(ladderOutOfOrder([r(1, 3), r(2, 4), r(3, 5)], false)).toBe(false)
+		expect(ladderOutOfOrder([r(1, 3), r(2, 5), r(3, 4)], false)).toBe(true)
 	})
 })

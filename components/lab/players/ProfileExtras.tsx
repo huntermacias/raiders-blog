@@ -2,7 +2,7 @@ import { DOWN, UP } from "@/components/lab/players/Bits"
 import Yardstick from "@/components/lab/players/Yardstick"
 import Link from "@/components/SiteLink"
 import { boardHref, cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
-import { BOX, gameDetail, singular, type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
+import { BOX, gameDetail, ladderOutOfOrder, singular, type BuildLine, type Rung, formatBox, formatStat, ordinal, statInfo, type Board, type PlayerGroup, type GamePick } from "@/lib/lab/playersKit"
 
 // Three server-rendered pieces of a profile: the people just above and below him on a leaderboard, his build against his position, and his
 // best and worst game on a stat. All of the thinking is in playersKit.ts; these only lay it out.
@@ -40,10 +40,18 @@ export function Ladders({ group, items, peers }: { group: PlayerGroup; items: { 
 										)}{" "}
 										<span className="text-xs font-normal text-lab-muted">{teamNick(r.team)}</span>
 									</span>
-									<span className="shrink-0 font-mono tabular-nums">{fmt(r.value)}</span>
+									<span className="shrink-0 text-right">
+										<span className="font-mono tabular-nums">{fmt(r.value)}</span>
+										{board.kind === "stat" && r.volume !== null && info?.per ? <span className="block text-[10px] font-normal leading-tight text-lab-muted">{Math.round(r.volume).toLocaleString("en-US")} {info.per}</span> : null}
+									</span>
 								</li>
 							))}
 						</ol>
+						{board.kind === "stat" && ladderOutOfOrder(rungs, info?.higher) ? (
+							<p className="m-0 mt-2 text-xs leading-snug text-lab-muted" data-testid="ladder-order-note">
+								The order is not strictly by the number shown. Each rank allows for how many {info?.per ?? "plays"} are behind a number, so a figure on fewer plays is pulled toward the league average before it is ranked.
+							</p>
+						) : null}
 						{leader ? null : rungs[0] ? <p className="m-0 mt-2 text-xs text-lab-muted">The leader is further up the board.</p> : null}
 					</div>
 				)

@@ -7,7 +7,8 @@ import { type Bar, GROUP_META, type PlayerRow, type PlayersData, percentileBars,
 export default function PercentileProfile({ data, player }: { data: PlayersData; player: PlayerRow }) {
 	// Stats that are still mostly luck go last, drawn as an outline with no percentile: ranking players on them says little yet.
 	const all: Bar[] = percentileBars(data, player)
-	const bars = [...all.filter((b) => b.signal !== "luck"), ...all.filter((b) => b.signal === "luck")]
+	// A unit's number (his line's run success) is shown but never ranked: the five who start together share it.
+	const bars = [...all.filter((b) => b.signal !== "luck" && !b.unit), ...all.filter((b) => b.signal === "luck" && !b.unit), ...all.filter((b) => b.unit)]
 	if (!bars.length) return null
 	const anyLuck = bars.some((b) => b.signal === "luck")
 	return (
@@ -23,18 +24,19 @@ export default function PercentileProfile({ data, player }: { data: PlayersData;
 			</div>
 			<ul className="m-0 grid list-none gap-3.5 p-0">
 					{bars.map((b) => {
-						const luck = b.signal === "luck"
+						const shared = Boolean(b.unit)
+						const luck = b.signal === "luck" || shared
 						return (
 							<li key={b.k} className="grid grid-cols-[minmax(0,8rem)_1fr_5.5rem] items-center gap-x-3 gap-y-0.5 sm:grid-cols-[12rem_1fr_7rem]">
 								<span className="text-xs font-semibold text-lab-ink sm:text-sm">{b.label}{b.unit ? <span className="block text-[10px] font-normal text-lab-muted">whole line&apos;s number</span> : null}</span>
 								<span
 									className={`relative block h-3.5 rounded-full ${luck ? "border border-dashed border-lab-line-strong bg-transparent" : "bg-lab-tint"}`}
 									role="img"
-									aria-label={luck ? `${b.label}: too early to rank, mostly luck so far` : `${b.label}: ${shownPct(b.pct)}th percentile, ${TIER_WORD[tierOf(b.pct)].toLowerCase()}${b.sure === "thin" ? ", small sample" : ""}`}
+									aria-label={shared ? `${b.label}: his whole line's number, not ranked` : luck ? `${b.label}: too early to rank, mostly luck so far` : `${b.label}: ${shownPct(b.pct)}th percentile, ${TIER_WORD[tierOf(b.pct)].toLowerCase()}${b.sure === "thin" ? ", small sample" : ""}`}
 								>
 									{luck ? (
 										<span className="absolute inset-0 grid place-items-center text-[10px] font-semibold uppercase tracking-[0.08em] text-lab-muted" aria-hidden="true">
-											<span className="bg-lab-surface px-2">Too early to rank</span>
+											<span className="bg-lab-surface px-2">{shared ? "Shared by his line, not ranked" : "Too early to rank"}</span>
 										</span>
 									) : (
 										<>
@@ -55,7 +57,7 @@ export default function PercentileProfile({ data, player }: { data: PlayersData;
 								<span className="text-right font-mono text-xs font-bold tabular-nums text-lab-ink sm:text-sm">
 									{b.value}
 									<span className="block text-[10px] font-normal text-lab-muted">
-										{luck ? "mostly luck so far" : b.rank}
+										{shared ? "his line, not him" : luck ? "mostly luck so far" : b.rank}
 										{b.sure === "thin" && !luck ? <span className="block">small sample</span> : null}
 									</span>
 								</span>

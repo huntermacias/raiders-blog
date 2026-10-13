@@ -94,3 +94,59 @@ describe("the player's photo on the share card", () => {
 		if (process.env.OG_OUT) writeFileSync(process.env.OG_OUT, withPhoto as unknown as Uint8Array)
 	})
 })
+
+describe("the share card for a lineman", () => {
+	it("shows his record and his line's numbers, with no grade, and still draws", async () => {
+		const p = data.players.find((x) => x.slug === "jackson-powers-johnson") ?? data.players.find((x) => x.group === "ol")!
+		const spec = buildPlayerSpec(data, p.slug, bios[p.slug], p.group)!
+		expect(spec.grade).toBeNull()
+		expect(spec.record?.mine.map((m) => m.label)).toEqual(["Starts", "Snaps", "Penalties"])
+		expect(spec.record?.line.length).toBe(2)
+		const svg = await satori(renderCard(spec), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
+		const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+		expect(png.length).toBeGreaterThan(20_000)
+		if (process.env.OG_OL_OUT) writeFileSync(process.env.OG_OL_OUT, png as unknown as Uint8Array)
+	})
+})
+
+describe("the leaderboard share card", () => {
+	const spec = () => insightSpec({ type: "playerboard", slug: "", view: "", rank: "", opp: "", week: "", group: "rb", stat: "yards-after-contact" } as never)
+
+	it("holds the five leaders with a photo address each and the Raider with his place", () => {
+		const s = spec()
+		expect(s?.type).toBe("playerboard")
+		if (!s || s.type !== "playerboard") return
+		expect(s.rows).toHaveLength(5)
+		expect(s.rows.map((r) => r.rank)).toEqual([...s.rows.map((r) => r.rank)].sort((a, b) => a - b))
+		for (const r of s.rows) expect(r.value).toMatch(/\d/)
+		expect(s.rows.some((r) => r.headshot)).toBe(true)
+		expect(s.focal?.of).toBeGreaterThan(5)
+		expect(s.blurb.length).toBeGreaterThan(20)
+	})
+
+	it("names the player the link is about, and answers null for a board that does not exist", () => {
+		const jeanty = data.players.find((p) => p.slug === "ashton-jeanty")
+		if (jeanty) {
+			const s = insightSpec({ type: "playerboard", slug: "ashton-jeanty", view: "", rank: "", opp: "", week: "", group: "rb", stat: "yards-after-contact" } as never)
+			expect(s?.type === "playerboard" && s.focal?.name).toBe("Ashton Jeanty")
+		}
+		expect(insightSpec({ type: "playerboard", slug: "", view: "", rank: "", opp: "", week: "", group: "rb", stat: "nope" } as never)).toBeNull()
+		expect(insightSpec({ type: "playerboard", slug: "", view: "", rank: "", opp: "", week: "", group: "zz", stat: "yards-after-contact" } as never)).toBeNull()
+	})
+
+	it("draws to a PNG, with faces and without", async () => {
+		const s = spec()
+		if (!s || s.type !== "playerboard") throw new Error("no spec")
+		const face = new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#c7c9cc"/><circle cx="100" cy="80" r="42" fill="#a77b5a"/><rect x="40" y="130" width="120" height="70" rx="30" fill="#222"/></svg>').render().asPng()
+		const photo = `data:image/png;base64,${Buffer.from(face as unknown as Uint8Array).toString("base64")}`
+		const render = async (sp: typeof s) => {
+			const svg = await satori(renderCard(sp), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
+			return new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+		}
+		const plain = await render(s)
+		const withFaces = await render({ ...s, rows: s.rows.map((r) => ({ ...r, photo })), focal: s.focal ? { ...s.focal, photo } : null })
+		expect(plain.length).toBeGreaterThan(20_000)
+		expect(withFaces.length).not.toBe(plain.length)
+		if (process.env.OG_BOARD_OUT) writeFileSync(process.env.OG_BOARD_OUT, withFaces as unknown as Uint8Array)
+	})
+})

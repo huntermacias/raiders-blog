@@ -134,6 +134,10 @@ describe("a line stat", () => {
 	it("is labeled as the whole line's number on its tile", () => {
 		const { p, s } = find((c) => c.info.unit === true)
 		render(<StatTile data={data} player={p} stat={s} />)
-		expect(screen.getByTestId("stat-tile").textContent).toMatch(/his whole line's number/)
+		const text = screen.getByTestId("stat-tile").textContent ?? ""
+		expect(text).toMatch(/His line/)
+		expect(text).toMatch(/Not ranked/)
+		expect(text).toMatch(/how his unit is doing more than how he is/)
+		expect(text).not.toMatch(/\d(st|nd|rd|th) of \d+/)
 	})
 })

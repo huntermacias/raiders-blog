@@ -91,7 +91,7 @@ export default function TeamContext({ view, player }: { view: TeamView; player: 
 						</p>
 					</div>
 				) : null}
-				{view.room.length > 1 ? (
+				{view.room.length > 1 && view.room.some((m) => m.grade !== null) ? (
 					<div className="relative overflow-hidden rounded-2xl border border-lab-line bg-lab-surface p-4 pt-5" data-testid="room-card">
 						<span aria-hidden="true" className="absolute inset-x-0 top-0 h-1" style={{ background: "var(--pc-accent)" }} />
 						<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
@@ -119,7 +119,7 @@ export default function TeamContext({ view, player }: { view: TeamView; player: 
 								</li>
 							))}
 						</ol>
-						<p className="m-0 mt-3 text-xs leading-relaxed text-lab-muted">Overall grade, 20 to 80, against all {meta.peers} in the league. A teammate with too few plays to grade is listed without one.</p>
+						<p className="m-0 mt-3 text-xs leading-relaxed text-lab-muted">Scouting grade, 20 to 80, against all {meta.peers} in the league. A teammate with too few plays to grade is listed without one.</p>
 					</div>
 				) : null}
 			</div>

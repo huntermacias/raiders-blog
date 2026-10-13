@@ -19,11 +19,16 @@ import { cardStyle, compareHref, profileHref, teamName } from "@/lib/lab/playerV
 import {
 	GROUP_META,
 	HEADLINE,
+	STAT,
+	isCore,
 	type PlayerRow,
 	compareRows,
 	formatStat,
 	gradeWord,
+	UNIT_NOTE,
 	gradeScore,
+	countWord,
+	lineRecord,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -66,6 +71,7 @@ function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 	const data = getPlayers()
 	const o = overall(p)
 	const score = gradeScore(data, p)
+	const record = lineRecord(data, p)
 	const rank = overallRank(data, p)
 	const meta = GROUP_META[p.group]
 	return (
@@ -84,10 +90,17 @@ function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 					</h2>
 				</div>
 			</div>
+			{record ? (
+				<p className="m-0 mt-2 text-sm text-lab-soft" data-testid="line-record">
+					{record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(" · ")}
+					<span className="block text-xs text-lab-muted">No overall grade for linemen: no public data credits one man with a block.</span>
+				</p>
+			) : (
 			<p className="m-0 mt-2 flex items-baseline gap-2">
 				<span className="font-mono text-4xl font-bold tabular-nums">{score === null ? "–" : score}</span>
 				<span className="text-xs text-lab-muted">overall{o !== null ? `, scouting grade ${Math.round(o)} (${gradeWord(o)}; 50 is average)` : ""}</span>
 			</p>
+			)}
 			{rank ? (
 				<p className="m-0 text-sm text-lab-soft">
 					<span className="font-semibold text-lab-ink">{rankPhrase(rank.rank, rank.of)}</span> {meta.peers}
@@ -109,8 +122,10 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	const entry = (slug?: string) => (slug ? (index.find((e) => e.slug === slug) ?? null) : null)
 	const ready = A && B && A.group === B.group && A.id !== B.id
 	const rows = ready ? compareRows(A, B) : []
-	const graded = rows.filter((r) => r.info.higher !== null)
-	const style = rows.filter((r) => r.info.higher === null)
+	// A line's numbers (run success, sacks allowed) belong to all five who start together, so they are shown but never scored as a win.
+	const graded = rows.filter((r) => r.info.higher !== null && !r.info.unit)
+	const lineRows = rows.filter((r) => r.info.unit)
+	const style = rows.filter((r) => r.info.higher === null && !r.info.unit)
 	const contracts = getContracts()
 	const dealA = ready && A ? dealFor(data, contracts, A.slug) : null
 	const dealB = ready && B ? dealFor(data, contracts, B.slug) : null
@@ -172,7 +187,8 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 					</section>
 
 					{(() => {
-						const key = HEADLINE[A.group]
+						// The headline of a lineman is his line's number, which both men on one line share, so a lineman's chart opens on his own stat.
+						const key = statInfo(A.group, HEADLINE[A.group])?.unit ? (Object.keys(STAT[A.group]).find((k) => isCore(A.group, k)) ?? HEADLINE[A.group]) : HEADLINE[A.group]
 						const la = logs[A.slug]?.[A.group]
 						const lb = logs[B.slug]?.[B.group]
 						const pa = trailOf(la, key).map((t) => ({ w: t[0], pct: t[3] }))
@@ -246,6 +262,22 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 									<h3 className="m-0 mb-3 mt-8 font-serif text-xl font-bold">Style</h3>
 									<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
 										{style.map((r) => (
+											<li key={r.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
+												<span className="font-semibold text-lab-ink">{r.info.label}</span>
+												<span className="mt-1 block text-lab-soft">
+													{A.name}: <span className="font-mono">{formatStat(A.group, r.key, r.a.season.v)}</span> &middot; {B.name}: <span className="font-mono">{formatStat(B.group, r.key, r.b.season.v)}</span>
+												</span>
+											</li>
+										))}
+									</ul>
+								</>
+							) : null}
+							{lineRows.length ? (
+								<>
+									<h3 className="m-0 mb-1 mt-8 font-serif text-xl font-bold">Their lines</h3>
+									<p className="m-0 mb-3 max-w-3xl text-sm text-lab-soft">{UNIT_NOTE} They are shown side by side, not scored.</p>
+									<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="line-rows">
+										{lineRows.map((r) => (
 											<li key={r.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
 												<span className="font-semibold text-lab-ink">{r.info.label}</span>
 												<span className="mt-1 block text-lab-soft">

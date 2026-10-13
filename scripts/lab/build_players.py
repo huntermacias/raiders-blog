@@ -104,7 +104,8 @@ class Stat:
     num / den    columns of the per-game component table; the stat is sum(num) / sum(den) * scale over any slice of games
     higher       True when more is better, False when less is better, None for a style stat that is neither
     need         volume (of `den`) a player needs to be graded: whole season, recent form, earlier games
-    counts       False when the stat is shown and graded but left out of the mover score (it is mostly zeros)
+    counts       False when the stat is shown and graded but left out of the mover score (it is mostly zeros, or a unit's)
+    unit         True when the number belongs to a whole unit, not to him: it is also left out of the similar-player match
     gate         a column to measure the volume by instead of `den`, when `den` is not what a reader would call the sample
                  (a receiver's share of the team's passes is over the team's attempts, but it is his targets that make it a sample)
     calc         a name in CALC for a stat that is not num / den. Passer rating has caps on each part, so a season's rating is the
@@ -119,6 +120,7 @@ class Stat:
     need: tuple[float, float, float]
     scale: float = 1.0
     counts: bool = True
+    unit: bool = False
     se: object = "binom"
     gate: str | None = None
     calc: str | None = None
@@ -209,8 +211,10 @@ GROUPS: dict[str, Group] = {
     # who was flagged, and what his whole line did in the games he started. The line's two numbers are shared by the five who start
     # together, and the page says so.
     "ol": Group({
-        "sackRate": Stat("u_sck", "u_db", False, LINE_PASS_V),
-        "runSucc": Stat("u_rs", "u_run", True, LINE_RUN_V),
+        # The line's two numbers are graded (they are shown, ranked on their board and tracked by week) but never counted toward a
+        # lineman's own movement or overall: the five who start together share them, so they grade the unit, not the man.
+        "sackRate": Stat("u_sck", "u_db", False, LINE_PASS_V, counts=False, unit=True),
+        "runSucc": Stat("u_rs", "u_run", True, LINE_RUN_V, counts=False, unit=True),
         "penRate": Stat("pen", "snaps", False, OL_V, scale=1000.0, se="poisson"),
         "holdRate": Stat("hold", "snaps", False, OL_V, scale=1000.0, counts=False, se="poisson"),
         "fsRate": Stat("fs", "snaps", False, OL_V, scale=1000.0, counts=False, se="poisson"),
@@ -1118,8 +1122,9 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
 
 
 def comparables(rows: list[dict], group: str) -> dict[str, list[str]]:
-    """For each player the few most like him in the same group: the smallest typical gap in grade over the graded stats they share."""
-    graded = [k for k, s in GROUPS[group].stats.items() if s.higher is not None]
+    """For each player the few most like him in the same group: the smallest typical gap in grade over the graded stats they share.
+    A unit's numbers (a line's run success) are left out: linemen who start together share them, so they would match teammates, not styles."""
+    graded = [k for k, s in GROUPS[group].stats.items() if s.higher is not None and not s.unit]
     ids = [r["id"] for r in rows]
     mat = np.full((len(rows), len(graded)), np.nan)
     for i, r in enumerate(rows):

@@ -11,7 +11,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { teamName } from "../lab/playerView"
-import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, headshotUrl, shotUrl, isEarly, gradeScore, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
+import { type LineRecord, type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, headshotUrl, shotUrl, isEarly, gradeScore, lineRecord, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
 import { SOURCES, sourceLine } from "./basis"
 import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -41,6 +41,8 @@ export type PlayerCardSpec = {
 	games: number
 	/** The team's colour on the dark card. */
 	color: string
+	/** For a job with no overall grade (an offensive lineman): his own record and his line's numbers, drawn in place of the grade and the bars. */
+	record?: LineRecord | null
 	/** Where his photo is, for the route to fetch; null when he has none. The spec itself never touches the network. */
 	headshot: string | null
 	/** His photo as a data: URI, put in by the route after it fetched `headshot`; absent or null draws the card without one. */
@@ -84,6 +86,7 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 		badges: badgesFor(data, p, 5, 3).map((b) => b.text),
 		early,
 		bars: bars.map((b) => ({ label: b.label, value: b.value, pct: shownPct(b.pct), rank: b.rank })),
+		record: lineRecord(data, p),
 		season: data.season,
 		week: data.week,
 		games: p.games,
@@ -116,6 +119,20 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 						<div style={{ display: "flex", fontFamily: "Anton", fontSize: fit(name, leftW, 92), lineHeight: 1, color: WHITE, ...caps }}>{name}</div>
 						<div style={label({ fontSize: 22, letterSpacing: 3, marginTop: 12, color: BRIGHT })}>{`${spec.teamName} · ${spec.pos}${spec.no !== null ? ` · #${spec.no}` : ""}`}</div>
 
+						{spec.record ? (
+							<div style={{ display: "flex", flexDirection: "column", marginTop: 30, width: leftW }}>
+								<div style={label({ fontSize: 15, letterSpacing: 3 })}>His record</div>
+								<div style={{ display: "flex", marginTop: 10 }}>
+									{spec.record.mine.map((m) => (
+										<div key={m.label} style={{ display: "flex", flexDirection: "column", marginRight: 44 }}>
+											<div style={{ display: "flex", fontFamily: "Anton", fontSize: 72, lineHeight: 1, color: WHITE }}>{m.value}</div>
+											<div style={label({ fontSize: 17, letterSpacing: 3, marginTop: 6, color: BRIGHT })}>{m.label}</div>
+										</div>
+									))}
+								</div>
+								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 19, color: SILVER, marginTop: 14, width: leftW }}>No overall grade for a lineman: no public data credits one man with a block.</div>
+							</div>
+						) : (
 						<div style={{ display: "flex", alignItems: "center", marginTop: 26 }}>
 							<div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 150, height: 150, borderRadius: 150, border: `10px solid ${spec.color}`, backgroundColor: "rgba(255,255,255,0.04)" }}>
 								<div style={{ display: "flex", fontFamily: "Anton", fontSize: 76, lineHeight: 1, color: WHITE }}>{spec.grade === null ? "–" : String(spec.grade)}</div>
@@ -127,6 +144,7 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 								{spec.gradeWord ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 17, color: DIM, marginTop: 4 }}>{spec.gradeWord}</div> : null}
 							</div>
 						</div>
+						)}
 
 						{spec.badges.length ? (
 							<div style={{ display: "flex", flexWrap: "wrap", marginTop: 24, width: leftW }}>
@@ -141,8 +159,21 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 					</div>
 
 					<div style={{ display: "flex", flexDirection: "column", width: rightW, marginLeft: 40, alignSelf: "flex-start", marginTop: spec.photo ? 54 : 0, padding: "18px 20px 10px", backgroundColor: "rgba(17,18,20,0.92)", border: `2px solid ${LINE}` }}>
-						<div style={label({ fontSize: 15, letterSpacing: 3 })}>{spec.early ? `Early read vs. ${clip(spec.peers, 22)}` : `Strongest numbers vs. ${clip(spec.peers, 22)}`}</div>
-						{spec.bars.length ? (
+						<div style={label({ fontSize: 15, letterSpacing: 3 })}>{spec.record ? "His line while he started" : spec.early ? `Early read vs. ${clip(spec.peers, 22)}` : `Strongest numbers vs. ${clip(spec.peers, 22)}`}</div>
+						{spec.record ? (
+							<div style={{ display: "flex", flexDirection: "column", paddingBottom: 8 }}>
+								{spec.record.line.map((l) => (
+									<div key={l.k} style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
+										<div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", width: barW }}>
+											<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 21, color: BRIGHT }}>{clip(l.label, 30)}</div>
+											<div style={{ display: "flex", fontFamily: "Anton", fontSize: 40, lineHeight: 1, color: WHITE }}>{l.value}</div>
+										</div>
+										{l.typical ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 15, color: DIM, marginTop: 2 }}>{`typical ${l.typical}`}</div> : null}
+									</div>
+								))}
+								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 400, fontSize: 16, lineHeight: 1.3, color: SILVER, marginTop: 16, width: barW }}>These belong to all five linemen who start together, so they describe the unit more than the man.</div>
+							</div>
+						) : spec.bars.length ? (
 							spec.bars.map((b) => (
 								<div key={b.label} style={{ display: "flex", flexDirection: "column", marginTop: 11 }}>
 									<div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", width: barW }}>
@@ -168,7 +199,7 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 				<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
 					<Brand />
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", fontFamily: "Oswald", fontWeight: 400, fontSize: 15, lineHeight: 1.25, letterSpacing: 1, color: DIM }}>
-						<div style={{ display: "flex" }}>{`Middle tick = the typical ${spec.single.toLowerCase()} · ${spec.games} ${spec.games === 1 ? "game" : "games"} behind the grades${spec.early ? " · early read" : ""}`}</div>
+						<div style={{ display: "flex" }}>{spec.record ? `${spec.games} ${spec.games === 1 ? "game" : "games"} played` : `Middle tick = the typical ${spec.single.toLowerCase()} · ${spec.games} ${spec.games === 1 ? "game" : "games"} behind the grades${spec.early ? " · early read" : ""}`}</div>
 						<div style={{ display: "flex" }}>{sourceLine(SOURCES.grades, spec.season, spec.week)}</div>
 					</div>
 				</div>

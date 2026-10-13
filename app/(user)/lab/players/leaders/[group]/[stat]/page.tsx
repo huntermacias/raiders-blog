@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import BoardPage from "@/components/lab/players/BoardPage"
-import { GROUP_META, GROUP_ORDER, boardFor, boards, groupOf } from "@/lib/lab/playersKit"
+import { getPlayers } from "@/lib/lab/data"
+import { GROUP_META, GROUP_ORDER, boardFor, boards, groupOf, statInfo } from "@/lib/lab/playersKit"
 
 export const dynamicParams = false
 
@@ -21,7 +22,9 @@ export async function generateMetadata(props: { params: Promise<{ group: string;
 	const title = `${b.label}: NFL ${meta.title.toLowerCase()} ranked | Raiders Rundown`
 	const description = b.kind === "stat" ? `${meta.title} ranked by ${b.label.toLowerCase()} against the league, with the typical value, how sure each number is and the box score beside it.` : `${b.label} for every NFL ${meta.single.toLowerCase()}, beside the advanced numbers that put them in context.`
 	const url = `${SITE_URL}/lab/players/leaders/${g}/${stat}`
-	return { title, description, alternates: { canonical: url }, openGraph: { type: "website", title, description, url, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] }, twitter: { card: "summary_large_image", title, description, images: [`${SITE_URL}/og-default-v2.png`] } }
+	// The share image carries the leaders' photos; the stamp changes with each data build, so a shared link picks up new numbers.
+	const card = b.kind === "stat" && statInfo(g, b.key)?.unit ? `${SITE_URL}/og-default-v2.png` : `${SITE_URL}/api/og?type=playerboard&group=${g}&stat=${stat}&v=${Date.parse(getPlayers().generatedAt) || 0}`
+	return { title, description, alternates: { canonical: url }, openGraph: { type: "website", title, description, url, siteName: "Raiders Rundown", images: [{ url: card, width: 1200, height: 630, alt: `${b.label}: the five leaders among NFL ${meta.peers}` }] }, twitter: { card: "summary_large_image", title, description, images: [card] } }
 }
 
 export default async function StatLeaders(props: { params: Promise<{ group: string; stat: string }> }) {

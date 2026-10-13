@@ -125,7 +125,7 @@ export type StatInfo = {
 	higher: boolean | null
 	/** What the number is out of, for "(13 targets)". */
 	per: string
-	/** False when the stat is graded but left out of the mover score and the overall grade, because it is mostly zeros or mostly the line's. */
+	/** False when the stat is graded but left out of the mover score, the overall grade, the ladders and the badges, because it is mostly zeros or belongs to his whole line, not to him. */
 	counts?: boolean
 	/** For a style stat: what a low value and a high value say about how he plays. */
 	lean?: [string, string]
@@ -229,8 +229,8 @@ const KRET: Record<string, StatInfo> = {
 }
 
 const OL: Record<string, StatInfo> = {
-	runSucc: { label: "Line run success", short: "Line runs", path: "line-run-success", what: "How often the team's designed runs gain enough to keep the offense on schedule, in the games he started. It is the line, the backs and the scheme together, and the five linemen who start together share it.", box: "Team rushing yards ignore the down and the distance.", fmt: pct0, higher: true, per: "runs", unit: true },
-	sackRate: { label: "Sacks allowed by his line", short: "Line sack rate", path: "line-sack-rate", what: "Sacks as a share of the team's dropbacks in the games he started. It is the line and the quarterback together, and every lineman who starts beside him shares it. Fewer is better.", box: "No sack is charged to a single lineman in the box score.", fmt: pct1, higher: false, per: "dropbacks", unit: true },
+	runSucc: { label: "Line run success", short: "Line runs", path: "line-run-success", what: "How often the team's designed runs gain enough to keep the offense on schedule, in the games he started. It is the line, the backs and the scheme together, and the five linemen who start together share it.", box: "Team rushing yards ignore the down and the distance.", fmt: pct0, higher: true, per: "runs", unit: true, counts: false },
+	sackRate: { label: "Sacks allowed by his line", short: "Line sack rate", path: "line-sack-rate", what: "Sacks as a share of the team's dropbacks in the games he started. It is the line and the quarterback together, and every lineman who starts beside him shares it. Fewer is better.", box: "No sack is charged to a single lineman in the box score.", fmt: pct1, higher: false, per: "dropbacks", unit: true, counts: false },
 	penRate: { label: "Penalties per 1,000 snaps", short: "Penalties/1,000", path: "penalties-per-1000-snaps", what: "Accepted penalties called on him (holding, false starts and the rest) for every 1,000 snaps he plays. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps" },
 	holdRate: { label: "Holding per 1,000 snaps", short: "Holding/1,000", path: "holding-per-1000-snaps", what: "Offensive holding penalties for every 1,000 snaps. It is part of the penalty rate, shown on its own because holding is the penalty that blocking causes. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps", counts: false },
 	fsRate: { label: "False starts per 1,000 snaps", short: "False starts/1,000", path: "false-starts-per-1000-snaps", what: "False starts for every 1,000 snaps: a lapse in focus rather than in blocking. Fewer is better.", box: "A season total is bigger for the lineman who simply played more snaps.", fmt: (v) => v.toFixed(1), higher: false, per: "snaps", counts: false },
@@ -286,6 +286,12 @@ export function formatBox(group: PlayerGroup, key: string, v: number | null | un
 	if (v === null || v === undefined || Number.isNaN(v)) return "–"
 	const f = BOX[group]?.[key]?.fmt ?? int
 	return f(v)
+}
+
+/** "1 penalties" reads as a typo: the last word of a plural label goes singular when the count is one. */
+export function countWord(n: number, label: string): string {
+	if (n !== 1) return label
+	return label.replace(/(\w+)$/, (w) => (/ies$/i.test(w) ? w.replace(/ies$/i, "y") : /(ss|us)$/i.test(w) ? w : /s$/i.test(w) ? w.slice(0, -1) : w))
 }
 
 export const isGraded = (group: PlayerGroup, key: string) => statInfo(group, key)?.higher !== null && statInfo(group, key) !== null
@@ -554,9 +560,50 @@ export const lc = (s: string) => (/^[A-Z]{2,}/.test(s) ? s : s.charAt(0).toLower
 
 /** The mean grade over the stats that count, in one slice: where he sits among his peers in that stretch. */
 export function overall(p: PlayerRow, slice: "season" | "form" | "earlier" = "season"): number | null {
+	if (!hasOverall(p.group)) return null
 	const gs = p.stats.filter((s) => isCore(p.group, s.k) && typeof s[slice]?.g === "number").map((s) => s[slice]!.g as number)
 	if (!gs.length) return null
 	return gs.reduce((a, b) => a + b, 0) / gs.length
+}
+
+/**
+ * A job gets an overall grade only when at least two stats that belong to the man himself make it up. An offensive lineman has one
+ * (penalties): the public data has no block won or lost, and his line's run success and sack rate are shared by the five who start
+ * together, so averaging them in would grade the unit and call it him. Linemen get a record and their line's numbers instead.
+ */
+export function hasOverall(group: PlayerGroup): boolean {
+	return Object.keys(STAT[group] ?? {}).filter((k) => isCore(group, k)).length >= 2
+}
+
+export type LineRecord = {
+	/** What he did himself: games, starts, snaps, penalties. */
+	mine: { label: string; value: string; note?: string }[]
+	/** What his whole line did while he started: shared by the five who start together. */
+	line: { k: string; label: string; value: string; typical: string | null }[]
+}
+
+/**
+ * The profile of a player with no overall grade (an offensive lineman): his own record, then his line's numbers, each said to be the
+ * line's. Null for jobs that do get a grade.
+ */
+export function lineRecord(data: PlayersData, p: PlayerRow): LineRecord | null {
+	if (hasOverall(p.group)) return null
+	const b = p.box
+	const mine: LineRecord["mine"] = []
+	const teamGames = p.snaps.season?.[2] ?? null
+	if (b.gs !== undefined) mine.push({ label: "Starts", value: String(Math.round(b.gs)), note: teamGames ? `of ${teamGames} team ${teamGames === 1 ? "game" : "games"}` : undefined })
+	if (b.snaps !== undefined) mine.push({ label: "Snaps", value: Math.round(b.snaps).toLocaleString("en-US"), note: statOf(p, "snapShare") ? `${snapText(statOf(p, "snapShare")!.season.v)} when he plays` : undefined })
+	const pen = statOf(p, "penRate")
+	if (b.pen !== undefined) mine.push({ label: "Penalties", value: String(Math.round(b.pen)), note: pen ? `${formatStat(p.group, "penRate", pen.season.v)} per 1,000 snaps` : undefined })
+	const line: LineRecord["line"] = []
+	for (const k of ["runSucc", "sackRate"]) {
+		const st = statOf(p, k)
+		const info = statInfo(p.group, k)
+		if (!st || !info) continue
+		const y = yardOf(data, p.group, k)
+		line.push({ k, label: info.label, value: formatStat(p.group, k, st.season.v), typical: y ? formatStat(p.group, k, y.q[2]) : null })
+	}
+	return { mine, line }
 }
 
 /**
@@ -667,6 +714,17 @@ export function formName(data: PlayersData, group: PlayerGroup): string {
 	return windowWeeks(data, group).length === 1 ? "Last game" : `Last ${windowWeeks(data, group).length} games`
 }
 
+/**
+ * The recent window for one player. The window is the team's last games, so a man who sat out one of them has fewer games behind it
+ * than the label "Last 2 games" says: "Last 2 games (played 1)".
+ */
+export function formNameFor(data: PlayersData, p: PlayerRow): string {
+	const base = formName(data, p.group)
+	const f = p.snaps?.form
+	if (!f || f[2] <= f[1]) return base
+	return f[1] === 0 ? `${base} (none played)` : `${base} (played ${f[1]})`
+}
+
 /** The week range the recent window covers, e.g. "Weeks 4 and 5". */
 export function formWeeks(data: PlayersData, group: PlayerGroup): string {
 	const weeks = windowWeeks(data, group)
@@ -685,9 +743,16 @@ export function describeMove(data: PlayersData, p: PlayerRow): string {
 	if (!d || !info || !d.form || !d.earlier) return ""
 	const f = formatStat(p.group, d.k, d.form.v)
 	const e = formatStat(p.group, d.k, d.earlier.v)
-	const recent = formName(data, p.group).toLowerCase()
-	return `${info.label} is ${f} over the ${recent} (${Math.round(d.form.n)} ${info.per}), against ${e} before that.`
+	const f2 = p.snaps?.form
+	const played = f2 && f2[2] > f2[1] ? `, ${f2[1] === 0 ? "none" : f2[1] === 1 ? "only one" : `${f2[1]}`} of which he played` : ""
+	const recent = `${formName(data, p.group).toLowerCase()}${played}`
+	// A rate built on a handful of events is one or two plays, so say how many.
+	const events = COUNTED_EVENTS[d.k] && p.group === "ol" ? Math.round((d.form.v * d.form.n) / 1000) : null
+	const eventText = events === null ? "" : `, ${events} ${events === 1 ? COUNTED_EVENTS[d.k][0] : COUNTED_EVENTS[d.k][1]}`
+	return `${info.label} is ${f} over the ${recent} (${Math.round(d.form.n)} ${info.per}${eventText}), against ${e} before that.`
 }
+
+const COUNTED_EVENTS: Record<string, [string, string]> = { penRate: ["penalty", "penalties"], holdRate: ["holding penalty", "holding penalties"], fsRate: ["false start", "false starts"] }
 
 /** "Mixed" when the stats disagree on which way he moved, so a reader is not told a flat story about a split picture. */
 export function isMixed(p: PlayerRow): boolean {
@@ -870,13 +935,13 @@ export function arcChange(points: ArcPoint[]): { first: ArcPoint; last: ArcPoint
 }
 
 /** The arc as a sentence: climbing, slipping or holding, with the percentile at each end. */
-export function arcLine(points: ArcPoint[]): string {
+export function arcLine(points: ArcPoint[], subject = "Season rank"): string {
 	const c = arcChange(points)
 	if (!c) return ""
 	const a = shownPct(c.first.pct)
 	const b = shownPct(c.last.pct)
-	if (Math.abs(c.delta) < 8) return `Season rank holding near the ${ordinal(b)} percentile since Wk ${c.first.w}.`
-	return `Season rank ${c.delta > 0 ? "climbed" : "slipped"}: ${ordinal(a)} to ${ordinal(b)} percentile since Wk ${c.first.w}.`
+	if (Math.abs(c.delta) < 8) return `${subject} ${subject === "Season rank" ? "holding" : "held"} near the ${ordinal(b)} percentile since Wk ${c.first.w}.`
+	return `${subject} ${c.delta > 0 ? "climbed" : "slipped"}: ${ordinal(a)} to ${ordinal(b)} percentile since Wk ${c.first.w}.`
 }
 
 export function opponentFor(data: PlayersData, team: string, week: number, log?: PlayerLog): string {
@@ -917,12 +982,15 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 	const box = Object.keys(BOX[p.group])
 		.filter((k) => (p.box[k] ?? 0) > 0)
 		.slice(0, 3)
-		.map((k) => `${formatBox(p.group, k, p.box[k])} ${lc(BOX[p.group][k].label)}`)
+		.map((k) => `${formatBox(p.group, k, p.box[k])} ${countWord(p.box[k], lc(BOX[p.group][k].label))}`)
 	const games = `${p.games} ${p.games === 1 ? "game" : "games"}`
 	if (o !== null && rk && solid.length) {
 		out.push(`${first} grades ${gradeWord(o)} among ${peers}: ${rankPhrase(rk.rank, rk.of)} on the average of ${solid.length} settled advanced ${solid.length === 1 ? "stat" : "stats"} over ${games}.${box.length ? ` The box score reads ${list(box)}.` : ""}`)
 	} else if (o !== null) {
 		out.push(`${first} has played ${games}${box.length ? ` for ${list(box)}` : ""}, but every advanced number is still mostly luck at this point, so his grade of ${Math.round(o)} is a placeholder rather than a verdict.`)
+	} else if (!hasOverall(p.group)) {
+		// A job with no individual grade (an offensive lineman) gets the record, said plainly, instead of a verdict.
+		out.push(`${first} has played ${games}${box.length ? `: ${list(box)}` : ""}. There is no overall grade for ${peers}, because the public data has no block won or lost for one man and his line's numbers belong to all five who start beside him.`)
 	}
 
 	// 2. What he does best, with the evidence; 3. what holds him back.
@@ -940,7 +1008,7 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 	const key = HEADLINE[p.group]
 	const info = statInfo(p.group, key)
 	const pts = extra.log?.g[key] ?? []
-	if (info && info.higher !== null && pts.length >= 3) {
+	if (info && info.higher !== null && !info.unit && pts.length >= 3) {
 		const ex = extremeGames(extra.log, key, info.higher, 3)
 		const y = yardOf(data, p.group, key)
 		const opp = ex ? opponentFor(data, p.team, ex.best.week, extra.log) : ""
@@ -955,7 +1023,8 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 	}
 
 	// 5. Which way the season is going: the whole arc first, then the recent stretch.
-	const arc = arcLine(arcOf(p, extra.log))
+	// Said as "average place", because it is a percentile averaged over his graded stats, not the 1 to 99 Overall above it.
+	const arc = o === null ? "" : arcLine(arcOf(p, extra.log), "His average place across his graded stats")
 	if (arc) out.push(arc)
 	if (p.mover && moverTier(p) !== "steady") {
 		const conf = confidenceOf(p.mover.z)
@@ -1170,8 +1239,8 @@ export function winSentence(split: WinSplit | undefined, single: string, label: 
 	if (!split || split.n < 30) return null
 	const [lo, , hi] = split.t
 	const pct = (x: number) => `${Math.round(x * 100)}%`
-	if (hi - lo < 0.12) return `Across ${split.n} games league-wide, a good or bad game on ${lc(label)} from a ${single.toLowerCase()} has not lined up much with his team winning (${pct(hi)} wins in the best third, ${pct(lo)} in the worst).`
-	return `Across ${split.n} games league-wide, teams won ${pct(hi)} of the time when their ${single.toLowerCase()} was in the best third on ${lc(label)}, and ${pct(lo)} when he was in the worst third.`
+	if (hi - lo < 0.12) return `Across ${split.n} games league-wide, a good or bad game on ${lc(label)} from ${/^[aeiou]/i.test(single) ? "an" : "a"} ${single.toLowerCase()} has not lined up much with his team winning (${pct(hi)} wins in the best third, ${pct(lo)} in the worst).`
+	return `Across ${split.n} games league-wide, teams won ${pct(hi)} of the time when their ${single.toLowerCase()} was in the best third on ${lc(label)}, and ${pct(lo)} when he was in the worst third. That is a link, not proof he caused it: a team that is winning plays differently, so the link can run the other way.`
 }
 
 // ---------------------------------------------------------------------------------------------- the game log
@@ -1271,7 +1340,21 @@ export function fingerprint(data: PlayersData, p: PlayerRow, limit = 4): Trait[]
 
 // ---------------------------------------------------------------------------------------------- the ladder
 
-export type Rung = { slug: string; name: string; team: string; rank: number; value: number; me: boolean }
+export type Rung = { slug: string; name: string; team: string; rank: number; value: number; /** The plays behind the value (a stat on a few plays is pulled toward the league before it is ranked). */ volume: number | null; me: boolean }
+
+/**
+ * True when the rungs are not in the order of the numbers shown. A graded stat is ranked on a value pulled toward the league for how few
+ * plays are behind it, so a 32% on 98 runs can sit below a 31% on 200. That is deliberate, and the ladder says so when it happens.
+ */
+export function ladderOutOfOrder(rungs: Rung[], higher: boolean | null | undefined): boolean {
+	if (higher === null || higher === undefined) return false
+	for (let i = 1; i < rungs.length; i++) {
+		const before = rungs[i - 1].value
+		const now = rungs[i].value
+		if (higher ? now > before : now < before) return true
+	}
+	return false
+}
 
 /** The players just above and below him on a board, with the gaps, so "3rd" becomes "0.08 behind the leader". */
 export function ladder(data: PlayersData, p: PlayerRow, key: string, span = 2): { rungs: Rung[]; board: Board } | null {
@@ -1281,7 +1364,7 @@ export function ladder(data: PlayersData, p: PlayerRow, key: string, span = 2): 
 	const i = rows.findIndex((r) => r.player.id === p.id)
 	if (i < 0) return null
 	const from = Math.max(0, Math.min(i - span, rows.length - (span * 2 + 1)))
-	const rungs = rows.slice(from, from + span * 2 + 1).map((r) => ({ slug: r.player.slug, name: r.player.name, team: r.player.team, rank: r.rank, value: r.value, me: r.player.id === p.id }))
+	const rungs = rows.slice(from, from + span * 2 + 1).map((r) => ({ slug: r.player.slug, name: r.player.name, team: r.player.team, rank: r.rank, value: r.value, volume: r.volume, me: r.player.id === p.id }))
 	return { rungs, board }
 }
 
