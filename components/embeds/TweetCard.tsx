@@ -88,7 +88,7 @@ function Avatar({ src, size }: { src: string; size: number }) {
 	)
 }
 
-function Media({ items, handle, href }: { items: TweetMedia[]; handle: string; href: string }) {
+function Media({ items, handle, href, tweetId }: { items: TweetMedia[]; handle: string; href: string; tweetId: string }) {
 	if (!items.length) return null
 	const first = items[0]
 	const frame = "overflow-hidden rounded-xl border border-border bg-muted"
@@ -100,6 +100,7 @@ function Media({ items, handle, href }: { items: TweetMedia[]; handle: string; h
 			<TweetVideo
 				sources={sources}
 				poster={poster}
+				tweetId={tweetId}
 				href={href}
 				width={first.original_info?.width ?? 16}
 				height={first.original_info?.height ?? 9}
@@ -186,7 +187,7 @@ export default function TweetCard({ tweet, caption }: { tweet: Tweet; caption?: 
 						<Segments tweet={tweet} />
 					</p>
 
-					<Media items={tweet.mediaDetails ?? []} handle={user.screen_name} href={href} />
+					<Media items={tweet.mediaDetails ?? []} handle={user.screen_name} href={href} tweetId={tweet.id_str} />
 
 					{q && (
 						<a

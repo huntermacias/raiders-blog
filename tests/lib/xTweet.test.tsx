@@ -15,6 +15,8 @@ import {
 	tweetSegments,
 	tweetToken,
 	type Tweet,
+	videoFrameDoc,
+	xPlayerUrl,
 } from "@/lib/xTweet"
 
 // A made-up post, shaped like what X's syndication endpoint returns.
@@ -94,6 +96,28 @@ describe("X post helpers", () => {
 		expect(bigAvatar("https://pbs.twimg.com/profile_images/1/abc_normal.jpg")).toBe(
 			"https://pbs.twimg.com/profile_images/1/abc_400x400.jpg",
 		)
+	})
+})
+
+describe("video frame", () => {
+	it("builds a page that sends no referrer and reports a load failure", () => {
+		const doc = videoFrameDoc("https://video.twimg.com/a/b.mp4?tag=16&x=1", "https://pbs.twimg.com/p.jpg?format=jpg&name=large")
+		expect(doc).toContain('<meta name="referrer" content="no-referrer">')
+		expect(doc).toContain('src="https://video.twimg.com/a/b.mp4?tag=16&amp;x=1"')
+		expect(doc).toContain('poster="https://pbs.twimg.com/p.jpg?format=jpg&amp;name=large"')
+		expect(doc).toContain("controls autoplay")
+		expect(doc).toContain("xv:")
+	})
+
+	it("only ever plays files from X's own video host", () => {
+		expect(videoFrameDoc("https://evil.example/a.mp4", "")).toBe("")
+		expect(videoFrameDoc('https://video.twimg.com/a.mp4" onerror="alert(1)', "")).toBe("")
+		expect(videoFrameDoc("javascript:alert(1)", "")).toBe("")
+		expect(videoFrameDoc("https://video.twimg.com/a.mp4", "https://evil.example/p.jpg")).not.toContain("poster=")
+	})
+
+	it("points X's own player at the post", () => {
+		expect(xPlayerUrl("123456789012")).toContain("embed/Tweet.html?id=123456789012")
 	})
 })
 

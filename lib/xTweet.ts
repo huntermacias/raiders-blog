@@ -194,3 +194,34 @@ export function mediaUrl(m: TweetMedia, size: "medium" | "large" = "large"): str
 }
 
 export const tweetUrl = (t: BaseTweet) => `https://x.com/${t.user.screen_name}/status/${t.id_str}`
+
+// The page that plays one video inside its own sandboxed frame. The meta tag stops the frame from
+// sending the site's address with the video request (X's video host refuses requests that carry one),
+// and the frame tells the page if the file can't be loaded. Only X's own video hosts are allowed.
+const VIDEO_HOST = /^https:\/\/video\.twimg\.com\/[^\s"'<>\\]+$/
+const POSTER_HOST = /^https:\/\/pbs\.twimg\.com\/[^\s"'<>\\]+$/
+
+export function videoFrameDoc(src: string, poster: string, gif = false): string {
+	if (!VIDEO_HOST.test(src)) return ""
+	const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+	const posterAttr = POSTER_HOST.test(poster) ? ` poster="${esc(poster)}"` : ""
+	const mode = gif ? "autoplay loop muted" : "controls autoplay"
+	return (
+		`<!doctype html><meta name="referrer" content="no-referrer">` +
+		`<style>html,body{margin:0;height:100%;background:#000}video{width:100%;height:100%;object-fit:contain;display:block}</style>` +
+		`<video src="${esc(src)}"${posterAttr} ${mode} playsinline` +
+		` onerror='parent.postMessage({xv:"error"},"*")'></video>`
+	)
+}
+
+// X's own embedded player for one post, for when the video file can't be played directly.
+export function xPlayerUrl(id: string): string {
+	const u = new URL("https://platform.twitter.com/embed/Tweet.html")
+	u.searchParams.set("id", id)
+	u.searchParams.set("lang", "en")
+	u.searchParams.set("theme", "dark")
+	u.searchParams.set("dnt", "true")
+	u.searchParams.set("hideThread", "true")
+	u.searchParams.set("width", "550px")
+	return u.toString()
+}
