@@ -10,6 +10,7 @@ import {
 	formatCount,
 	formatTweetTime,
 	isXUrl,
+	mp4Sources,
 	tweetIdFromUrl,
 	tweetSegments,
 	tweetToken,
@@ -155,7 +156,19 @@ describe("TweetCard", () => {
 		expect(html).not.toContain('title="Replies"')
 	})
 
-	it("plays video posts with the native player", () => {
+	it("tries the middle quality first, then the best, then the rest", () => {
+		const v = (bitrate: number | undefined, url: string, type = "video/mp4") => ({ content_type: type, bitrate, url })
+		const m: any = {
+			type: "video",
+			media_url_https: "https://pbs.twimg.com/x.jpg",
+			video_info: { variants: [v(256000, "low"), v(2176000, "hi"), v(undefined, "hls", "application/x-mpegURL"), v(832000, "mid")] },
+		}
+		expect(mp4Sources(m)).toEqual(["mid", "hi", "low"])
+		expect(mp4Sources({ ...m, video_info: { variants: [v(1, "only")] } })).toEqual(["only"])
+		expect(mp4Sources({ ...m, video_info: undefined })).toEqual([])
+	})
+
+	it("shows a video post as a poster with a play button until it is played", () => {
 		const html = renderToStaticMarkup(
 			<TweetCard
 				tweet={{
@@ -177,9 +190,9 @@ describe("TweetCard", () => {
 				}}
 			/>,
 		)
-		expect(html).toContain("<video")
-		expect(html).toContain("mid.mp4")
-		expect(html).toContain("controls")
+		expect(html).toContain('aria-label="Play video"')
+		expect(html).toContain("Video preview")
+		expect(html).not.toContain("<video")
 	})
 })
 

@@ -1,9 +1,10 @@
+import TweetVideo from "./TweetVideo"
 import {
 	bigAvatar,
 	formatCount,
 	formatTweetTime,
 	mediaUrl,
-	pickMp4,
+	mp4Sources,
 	tweetSegments,
 	tweetUrl,
 	type Tweet,
@@ -87,35 +88,23 @@ function Avatar({ src, size }: { src: string; size: number }) {
 	)
 }
 
-function Media({ items, handle }: { items: TweetMedia[]; handle: string }) {
+function Media({ items, handle, href }: { items: TweetMedia[]; handle: string; href: string }) {
 	if (!items.length) return null
 	const first = items[0]
 	const frame = "overflow-hidden rounded-xl border border-border bg-muted"
 
 	if (first.type !== "photo") {
-		const src = pickMp4(first)
-		const w = first.original_info?.width ?? 16
-		const h = first.original_info?.height ?? 9
+		const sources = mp4Sources(first)
 		const poster = mediaUrl(first, "large")
-		if (!src) {
-			// eslint-disable-next-line @next/next/no-img-element
-			return <img src={poster} alt={`Video from @${handle}`} className={`${frame} mt-3 w-full`} loading="lazy" />
-		}
-		const gif = first.type === "animated_gif"
 		return (
-			<div className={`${frame} mt-3`} style={{ aspectRatio: `${w} / ${h}`, maxHeight: 520 }}>
-				<video
-					className="h-full w-full object-contain"
-					src={src}
-					poster={poster}
-					controls={!gif}
-					autoPlay={gif}
-					loop={gif}
-					muted={gif}
-					playsInline
-					preload={gif ? "auto" : "none"}
-				/>
-			</div>
+			<TweetVideo
+				sources={sources}
+				poster={poster}
+				href={href}
+				width={first.original_info?.width ?? 16}
+				height={first.original_info?.height ?? 9}
+				gif={first.type === "animated_gif"}
+			/>
 		)
 	}
 
@@ -197,7 +186,7 @@ export default function TweetCard({ tweet, caption }: { tweet: Tweet; caption?: 
 						<Segments tweet={tweet} />
 					</p>
 
-					<Media items={tweet.mediaDetails ?? []} handle={user.screen_name} />
+					<Media items={tweet.mediaDetails ?? []} handle={user.screen_name} href={href} />
 
 					{q && (
 						<a

@@ -167,13 +167,15 @@ export function bigAvatar(url: string): string {
 	return url.replace(/_normal(\.\w+)$/, "_400x400$1")
 }
 
-// The second-best mp4 is what X's own widget plays: sharp enough, much lighter
-// than the top bitrate.
-export function pickMp4(m: TweetMedia): string | null {
-	const mp4s = (m.video_info?.variants ?? [])
+// Every mp4 X offers, in the order to try them: the second-best first (what X's own widget plays: sharp,
+// much lighter than the top bitrate), then the best, then the rest.
+export function mp4Sources(m: TweetMedia): string[] {
+	const sorted = (m.video_info?.variants ?? [])
 		.filter((v) => v.content_type === "video/mp4")
 		.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0))
-	return (mp4s.length > 1 ? mp4s[1] : mp4s[0])?.url ?? null
+		.map((v) => v.url)
+	if (sorted.length < 2) return sorted
+	return [sorted[1], sorted[0], ...sorted.slice(2)]
 }
 
 export function mediaUrl(m: TweetMedia, size: "medium" | "large" = "large"): string {
