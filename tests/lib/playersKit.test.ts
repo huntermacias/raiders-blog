@@ -6,6 +6,8 @@ import {
 	BOX,
 	GROUP_META,
 	GROUP_ORDER,
+	gradeScore,
+	overall,
 	HEADLINE,
 	STAT,
 	type PlayerLog,
@@ -440,5 +442,23 @@ describe("stacking and see-through headers", () => {
 	})
 	it("paints sticky table headers over an opaque surface", () => {
 		expect(css).toMatch(/\.lab-solid-tint\s*{[^}]*background-color: var\(--lab-surface\)/)
+	})
+})
+
+describe("gradeScore", () => {
+	it("keeps 50 at 50, orders players by grade, and puts the league's top 1% near 80", () => {
+		const scored = data.players
+			.map((p) => ({ o: overall(p), s: gradeScore(data, p) }))
+			.filter((x): x is { o: number; s: number } => x.o !== null && x.s !== null)
+		expect(scored.length).toBeGreaterThan(100)
+		for (const x of scored) {
+			expect(x.s).toBeGreaterThanOrEqual(1)
+			expect(x.s).toBeLessThanOrEqual(99)
+		}
+		const sorted = [...scored].sort((a, b) => a.o - b.o)
+		for (let i = 1; i < sorted.length; i++) expect(sorted[i].s).toBeGreaterThanOrEqual(sorted[i - 1].s)
+		const top = sorted[Math.floor(sorted.length * 0.99)]
+		expect(top.s).toBeGreaterThan(74)
+		expect(top.s).toBeLessThan(86)
 	})
 })

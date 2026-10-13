@@ -23,7 +23,7 @@ import {
 	compareRows,
 	formatStat,
 	gradeWord,
-	leagueScore,
+	gradeScore,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -65,7 +65,7 @@ function pick(rows: PlayerRow[], other?: PlayerRow): PlayerRow | null {
 function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 	const data = getPlayers()
 	const o = overall(p)
-	const score = leagueScore(data, p)
+	const score = gradeScore(data, p)
 	const rank = overallRank(data, p)
 	const meta = GROUP_META[p.group]
 	return (

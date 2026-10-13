@@ -11,7 +11,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { teamName } from "../lab/playerView"
-import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, headshotUrl, shotUrl, isEarly, leagueScore, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
+import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, headshotUrl, shotUrl, isEarly, gradeScore, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
 import { SOURCES, sourceLine } from "./basis"
 import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -76,8 +76,8 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 		peers: meta.peers,
 		pos: p.pos,
 		no: bio?.no ?? null,
-		// The big number is his place among his peers (1 to 99); the 20 to 80 scouting grade rides underneath.
-		grade: leagueScore(data, p),
+		// The big number is his grade stretched onto 1 to 99; the 20 to 80 scouting grade rides underneath.
+		grade: gradeScore(data, p),
 		gradeWord: o === null ? "" : `Scouting grade ${Math.round(o)} (50 is average)`,
 		tier: r && !isEarly(data, p) ? TIER_WORD[tierOf(((r.of - r.rank) / Math.max(1, r.of - 1)) * 100)] : "",
 		rank: r ? `${ordinal(r.rank)} of ${r.of} ${meta.peers}${isEarly(data, p) ? " so far" : ""}` : null,
@@ -121,7 +121,7 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 								<div style={{ display: "flex", fontFamily: "Anton", fontSize: 76, lineHeight: 1, color: WHITE }}>{spec.grade === null ? "–" : String(spec.grade)}</div>
 							</div>
 							<div style={{ display: "flex", flexDirection: "column", marginLeft: 26, width: leftW - 176 }}>
-								<div style={label({ fontSize: 15, letterSpacing: 3 })}>Overall, place among peers (1 to 99)</div>
+								<div style={label({ fontSize: 15, letterSpacing: 3 })}>Overall (1 to 99, 50 is average)</div>
 								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 38, lineHeight: 1.05, color: WHITE, marginTop: 6, ...caps }}>{spec.grade === null ? "Not enough yet" : spec.early && !spec.tier ? "Early read" : spec.tier || "Overall"}</div>
 								{spec.rank ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 22, color: SILVER, marginTop: 6 }}>{spec.rank}</div> : null}
 								{spec.gradeWord ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 17, color: DIM, marginTop: 4 }}>{spec.gradeWord}</div> : null}

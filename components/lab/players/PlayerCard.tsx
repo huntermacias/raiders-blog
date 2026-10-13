@@ -18,7 +18,7 @@ import {
 	isEarly,
 	moveText,
 	moverTier,
-	leagueScore,
+	gradeScore,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -46,7 +46,7 @@ export function featuredStat(data: PlayersData, p: PlayerRow) {
  */
 export default function PlayerCard({ data, player, log, note, href, className = "" }: { data: PlayersData; player: PlayerRow; log?: PlayerLog; note?: string; href?: string; className?: string }) {
 	const o = overall(player)
-	const score = leagueScore(data, player)
+	const score = gradeScore(data, player)
 	const rank = overallRank(data, player)
 	const meta = GROUP_META[player.group]
 	const tier = rank ? tierOf(((rank.of - rank.rank) / Math.max(1, rank.of - 1)) * 100) : null

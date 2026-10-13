@@ -52,7 +52,7 @@ import {
 	gradeWord,
 	isCore,
 	isEarly,
-	leagueScore,
+	gradeScore,
 	ordinal,
 	opponentFor,
 	overall,
@@ -441,7 +441,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 							{row.like.map((slug) => {
 								const q = data.players.find((x) => x.slug === slug && x.group === row.group)
 								if (!q) return null
-								const o = leagueScore(data, q)
+								const o = gradeScore(data, q)
 								return (
 									<li key={slug} className="lab-opp relative rounded-xl border border-lab-line bg-lab-surface p-3 transition-shadow hover:shadow-md" style={{ ...cardStyle(q.team), borderTop: "4px solid var(--pc-accent)" }}>
 										<p className="m-0 flex items-center gap-2 text-xs text-lab-muted">
@@ -480,7 +480,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 	const p = rows[0]
 	const meta = GROUP_META[p.group]
 	const o = overall(p)
-	const score = leagueScore(data, p)
+	const score = gradeScore(data, p)
 	const rank = overallRank(data, p)
 	const tier = rank ? tierOf(pctFromRank(rank.rank, rank.of)) : null
 	const early = isEarly(data, p)
@@ -640,7 +640,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 								{o !== null && score !== null ? (
 									<p className="m-0 border-t border-lab-line bg-lab-tint px-5 py-3 text-xs leading-relaxed text-lab-muted" data-testid="overall-note">
 										{early ? "Most of his numbers are still mostly luck. " : ""}
-										Overall is his place at the position (1 to 99). Scouting grade {Math.round(o)} ({gradeWord(o)}; 50 is average).
+										Overall is his scouting grade stretched onto 0 to 99 (50 is average). Scouting grade {Math.round(o)} ({gradeWord(o)}; 50 is average).
 									</p>
 								) : null}
 							</div>

@@ -6,7 +6,7 @@ import type { ReactNode } from "react"
  * decoration and nothing depends on seeing it.
  */
 export default function GradeRing({ grade, pct, size = 148, children }: { grade: number | null; pct?: number | null; size?: number; children?: ReactNode }) {
-	// `pct` (1 to 99) fills the ring by place among his peers; without it the ring is the scouting grade, 20 to 80.
+	// `pct` (1 to 99) fills the ring by his Overall score; without it the ring is the scouting grade, 20 to 80.
 	const fill = pct !== undefined ? (pct === null ? 0 : Math.max(0, Math.min(100, pct))) : grade === null ? 0 : Math.max(0, Math.min(100, ((grade - 20) / 60) * 100))
 	return (
 		<div className="relative grid place-items-center" style={{ width: size, height: size }} data-testid="grade-ring">

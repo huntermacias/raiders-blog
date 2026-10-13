@@ -573,14 +573,26 @@ export function isEarly(data: PlayersData, p: PlayerRow): boolean {
 	return solid < 2
 }
 
+const stretchCache = new WeakMap<PlayersData, number>()
+
 /**
- * The number a reader sees as "Overall": where he places among the players at his job, 1 to 99 (99 is the best of them, 50 the middle).
- * The scouting grade is an average of z-scores and is pulled toward 50 early in a season, so even the best quarterback in the league
- * can sit in the mid-50s; read as a grade out of 100 that looks like an average player. The place is what the grade is for.
+ * The number a reader sees as "Overall", 1 to 99 (50 is average). It is the scouting grade stretched around 50 so the league's top 1%
+ * lands near 80. The raw grade is an average of z-scores pulled toward the mean early in a season, so the very best quarterback can sit
+ * in the mid-50s, and read as a grade out of 100 that looks average. The stretch is read off the season's own spread, so it loosens by
+ * itself as grades spread out over the year. Unlike a rank percentile it keeps the size of the gaps: two players a grade point apart are
+ * a few points apart, not a dozen places apart. His place at the position ("39th of 40") is shown beside it.
  */
-export function leagueScore(data: PlayersData, p: PlayerRow): number | null {
-	const r = overallRank(data, p)
-	return r ? shownPct(((r.of - r.rank + 0.5) / r.of) * 100) : null
+export function gradeScore(data: PlayersData, p: PlayerRow): number | null {
+	const o = overall(p)
+	if (o === null) return null
+	let k = stretchCache.get(data)
+	if (k === undefined) {
+		const all = data.players.map((x) => overall(x)).filter((x): x is number => x !== null).sort((a, b) => a - b)
+		const top = all.length ? all[Math.min(all.length - 1, Math.floor(all.length * 0.99))] : 50
+		k = 30 / Math.max(3, top - 50)
+		stretchCache.set(data, k)
+	}
+	return shownPct(50 + (o - 50) * k)
 }
 
 const overallCache = new WeakMap<PlayersData, Map<PlayerGroup, Map<string, number>>>()
