@@ -20,9 +20,9 @@ function RankStrip({ rank, of, className = "" }: { rank: number; of: number; cla
 }
 
 /** A line under his name: the club's record, how its offense and defense rank, and who it plays next. */
-export function TeamStrip({ view, team }: { view: TeamView; team: string }) {
+export function TeamStrip({ view, team, className = "mt-4" }: { view: TeamView; team: string; className?: string }) {
 	return (
-		<p className="m-0 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-lab-line bg-lab-surface/80 py-2 pl-3 pr-4 text-sm text-lab-soft backdrop-blur" style={{ borderLeft: "4px solid var(--pc-accent)" }} data-testid="team-strip">
+		<p className={`m-0 ${className} flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-lab-line bg-lab-surface/80 py-2 pl-3 pr-4 text-sm text-lab-soft backdrop-blur`} style={{ borderLeft: "4px solid var(--pc-accent)" }} data-testid="team-strip">
 			<span className="inline-flex items-center gap-1.5 font-semibold text-lab-ink">
 				<TeamLogo team={team} size={22} />
 				{teamNick(team)} <span className="font-mono text-base tabular-nums">{view.record}</span>

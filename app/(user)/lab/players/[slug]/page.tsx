@@ -42,6 +42,9 @@ import {
 	extremeGames,
 	ladder,
 	boxRank,
+	contextOf,
+	type PlayerStat,
+	type StatContext,
 	formatBox,
 	fingerprint,
 	formatStat,
@@ -487,6 +490,12 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 	const badges = badgesFor(data, p)
 	const traits = fingerprint(data, p, 3)
 	const tv = teamView(getUnits(), data, p)
+	// The three numbers he stands out on, for the hero: settled stats first (a lucky rate is never a headline), best place first.
+	const contexts = p.stats.map((st) => ({ s: st, c: contextOf(data, p, st) })).filter((x): x is { s: PlayerStat; c: StatContext } => Boolean(x.c && x.c.pct !== null && x.c.rank !== null && x.c.of !== null && x.c.info.counts !== false && x.c.info.higher !== null))
+	const settled = contexts.filter((x) => x.c.signal !== "luck" && x.c.sure !== "thin")
+	const keyStats = (settled.length >= 3 ? settled : contexts.filter((x) => x.c.signal !== "luck"))
+		.sort((a, b) => (b.c.pct ?? 0) - (a.c.pct ?? 0))
+		.slice(0, 3)
 	const ld = [
 		{
 			"@context": "https://schema.org",
@@ -535,91 +544,108 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 							{meta.title}
 						</Link>
 					</nav>
-					<div className="mt-4 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
-						<div className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-5 gap-y-4 sm:gap-x-7">
-							<div className="relative shrink-0 rounded-full p-[5px] shadow-lg sm:row-span-2 sm:self-center" style={{ background: "linear-gradient(140deg, var(--pc-accent), color-mix(in srgb, var(--pc-accent) 35%, transparent))" }}>
-								<Headshot espn={p.espn} shot={p.shot} name={p.name} size={128} className="ring-4 ring-lab-surface" />
-								<span className="absolute -bottom-1 -right-1 grid h-10 w-10 place-items-center rounded-full border border-lab-line bg-lab-surface">
-									<TeamLogo team={p.team} size={28} />
-								</span>
+					<div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_23.5rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
+						<div className="min-w-0">
+							<div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-7">
+								<div className="relative shrink-0 self-start rounded-full p-[5px] shadow-lg sm:self-center" style={{ background: "linear-gradient(140deg, var(--pc-accent), color-mix(in srgb, var(--pc-accent) 35%, transparent))" }}>
+									<Headshot espn={p.espn} shot={p.shot} name={p.name} size={128} className="ring-4 ring-lab-surface" />
+									<span className="absolute -bottom-1 -right-1 grid h-10 w-10 place-items-center rounded-full border border-lab-line bg-lab-surface">
+										<TeamLogo team={p.team} size={28} />
+									</span>
+								</div>
+								<div className="min-w-0">
+									<p className="m-0 flex flex-wrap items-center gap-2 text-sm text-lab-soft">
+										<TeamPill team={p.team} /> {teamName(p.team)} &middot; {p.pos || meta.single}
+										{bio?.no !== undefined ? <span className="font-mono text-lab-muted">&middot; #{bio.no}</span> : null}
+										{rows.length > 1 ? <span className="text-lab-muted"> &middot; also {rows.slice(1).map((r) => GROUP_META[r.group].single.toLowerCase()).join(", ")}</span> : null}
+									</p>
+									<h1 className="m-0 mt-2 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">{p.name}</h1>
+									{facts.length ? (
+										<dl className="m-0 mt-4 grid grid-cols-2 gap-x-5 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-7" data-testid="bio">
+											{facts.map((f) => (
+												<div key={f.label} className={f.label === "Drafted" ? "col-span-2 sm:col-span-1" : undefined}>
+													<dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{f.label}</dt>
+													<dd className="m-0 text-sm font-semibold text-lab-ink">{f.value}</dd>
+												</div>
+											))}
+										</dl>
+									) : null}
+								</div>
 							</div>
-							<div className="min-w-0 self-end sm:self-end">
-								<p className="m-0 flex flex-wrap items-center gap-2 text-sm text-lab-soft">
-									<TeamPill team={p.team} /> {teamName(p.team)} &middot; {p.pos || meta.single}
-									{bio?.no !== undefined ? <span className="font-mono text-lab-muted">&middot; #{bio.no}</span> : null}
-									{rows.length > 1 ? <span className="text-lab-muted"> &middot; also {rows.slice(1).map((r) => GROUP_META[r.group].single.toLowerCase()).join(", ")}</span> : null}
+							{badges.length ? (
+								<ul className="m-0 mt-6 flex list-none flex-wrap gap-1.5 p-0" aria-label="Where he leads the league" data-testid="badges">
+									{badges.map((b, i) => (
+										<li key={b.kind + b.key} className="rr-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
+											<Link
+												href={boardHref(p.group, b.path)}
+												className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-bold ${b.rank === 1 ? "border-transparent" : "border-lab-line-strong bg-lab-surface text-lab-ink hover:border-lab-ink"}`}
+												style={b.rank === 1 ? { background: "var(--pc-accent)", color: "var(--pc-on)" } : undefined}
+											>
+												{b.rank === 1 ? <span aria-hidden="true">&#9733;</span> : null}
+												{b.text}
+											</Link>
+										</li>
+									))}
+								</ul>
+							) : null}
+							{traits.length ? (
+								<p className="m-0 mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-lab-soft" data-testid="traits">
+									<span className="font-semibold uppercase tracking-[0.12em] text-lab-muted">Plays like</span>
+									{traits.map((t) => (
+										<span key={t.k} className="rounded-md bg-lab-tint px-2 py-0.5 font-medium text-lab-ink" title={`${t.label}: ${t.pct >= 50 ? "higher" : "lower"} than ${shownPct(t.pct >= 50 ? t.pct : 100 - t.pct)}% of ${meta.peers}`}>
+											{t.text}
+										</span>
+									))}
 								</p>
-								<h1 className="m-0 mt-2 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">{p.name}</h1>
+							) : null}
+							<div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+								<Link href={compareHref(p.slug)} className="rounded-lg border border-lab-ink bg-lab-ink px-3.5 py-2 font-semibold text-lab-page">
+									Compare with another player
+								</Link>
+								<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
+									{meta.title} leaderboard
+								</Link>
+								<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
 							</div>
-							<div className="col-span-2 min-w-0 sm:col-span-1 sm:self-start">
-								{facts.length ? (
-									<dl className="m-0 grid grid-cols-3 gap-x-5 gap-y-3 sm:flex sm:flex-wrap" data-testid="bio">
-										{facts.map((f) => (
-											<div key={f.label}>
-												<dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{f.label}</dt>
-												<dd className="m-0 text-sm font-semibold text-lab-ink">{f.value}</dd>
+						</div>
+
+						<aside className="grid min-w-0 gap-3" aria-label="Overall">
+							<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface/90 backdrop-blur" data-testid="overall">
+								<div className="flex items-center gap-5 p-5">
+									<div className="shrink-0"><GradeRing grade={o} pct={score} size={112}>
+										<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{score === null ? "–" : score}</p>
+										<p className="m-0 mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
+									</GradeRing></div>
+									<div className="min-w-0">
+										{rank ? (
+											<p className="m-0 text-sm leading-snug text-lab-soft">
+												<span className="block font-serif text-3xl font-bold leading-none text-lab-ink">{ordinal(rank.rank)}</span>
+												of {rank.of} {meta.peers}
+											</p>
+										) : null}
+										{early ? <EarlyChip label="Early read" className="mt-2" /> : tier ? <TierChip tier={tier} className="mt-2" /> : null}
+									</div>
+								</div>
+								{keyStats.length ? (
+									<dl className="m-0 grid divide-x divide-lab-line border-t border-lab-line" style={{ gridTemplateColumns: `repeat(${keyStats.length}, minmax(0, 1fr))` }} data-testid="key-stats">
+										{keyStats.map((x) => (
+											<div key={x.s.k} className="min-w-0 px-3 py-3 text-center">
+												<dd className="m-0 font-mono text-lg font-bold tabular-nums text-lab-ink">{formatStat(p.group, x.s.k, x.c.value)}</dd>
+												<dt className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-lab-muted" title={x.c.info.label}>{x.c.info.short}</dt>
+												<p className="m-0 mt-0.5 text-[11px] text-lab-soft">{rankPhrase(x.c.rank!, x.c.of!)}</p>
 											</div>
 										))}
 									</dl>
 								) : null}
-								{badges.length ? (
-									<ul className="m-0 mt-4 flex list-none flex-wrap gap-1.5 p-0" aria-label="Where he leads the league" data-testid="badges">
-										{badges.map((b, i) => (
-											<li key={b.kind + b.key} className="rr-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
-												<Link
-													href={boardHref(p.group, b.path)}
-													className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-bold ${b.rank === 1 ? "border-transparent" : "border-lab-line-strong bg-lab-surface text-lab-ink hover:border-lab-ink"}`}
-													style={b.rank === 1 ? { background: "var(--pc-accent)", color: "var(--pc-on)" } : undefined}
-												>
-													{b.rank === 1 ? <span aria-hidden="true">&#9733;</span> : null}
-													{b.text}
-												</Link>
-											</li>
-										))}
-									</ul>
-								) : null}
-								{traits.length ? (
-									<p className="m-0 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-lab-soft" data-testid="traits">
-										<span className="font-semibold uppercase tracking-[0.12em] text-lab-muted">Plays like</span>
-										{traits.map((t) => (
-											<span key={t.k} className="rounded-md bg-lab-tint px-2 py-0.5 font-medium text-lab-ink" title={`${t.label}: ${t.pct >= 50 ? "higher" : "lower"} than ${shownPct(t.pct >= 50 ? t.pct : 100 - t.pct)}% of ${meta.peers}`}>
-												{t.text}
-											</span>
-										))}
-									</p>
-								) : null}
-									{tv ? <TeamStrip view={tv} team={p.team} /> : null}
-								<div className="mt-4 flex flex-wrap gap-3 text-sm">
-									<Link href={compareHref(p.slug)} className="rounded-lg border border-lab-ink bg-lab-ink px-3.5 py-2 font-semibold text-lab-page">
-										Compare with another player
-									</Link>
-									<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
-										{meta.title} leaderboard
-									</Link>
-									<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
-								</div>
-							</div>
-						</div>
-						<div className="flex items-center gap-5 rounded-2xl border border-lab-line bg-lab-surface/90 p-4 backdrop-blur lg:flex-col lg:p-5 lg:text-center" data-testid="overall">
-							<div className="shrink-0"><GradeRing grade={o} pct={score} size={124}>
-								<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{score === null ? "–" : score}</p>
-								<p className="m-0 mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
-							</GradeRing></div>
-							<div>
-								{rank ? (
-									<p className="m-0 text-sm text-lab-soft">
-										<span className="font-semibold text-lab-ink">{rankPhrase(rank.rank, rank.of)}</span> {meta.peers}
-									</p>
-								) : null}
-								{early ? <EarlyChip label="Early read" className="mt-1" /> : tier ? <TierChip tier={tier} className="mt-1" /> : null}
 								{o !== null && score !== null ? (
-									<p className="m-0 mt-1 text-xs text-lab-muted" data-testid="overall-note">
+									<p className="m-0 border-t border-lab-line bg-lab-tint px-5 py-3 text-xs leading-relaxed text-lab-muted" data-testid="overall-note">
 										{early ? "Most of his numbers are still mostly luck. " : ""}
-										{ordinal(score)} percentile at the position. Scouting grade {Math.round(o)} ({gradeWord(o)}; 50 is average).
+										Overall is his place at the position (1 to 99). Scouting grade {Math.round(o)} ({gradeWord(o)}; 50 is average).
 									</p>
 								) : null}
 							</div>
-						</div>
+							{tv ? <TeamStrip view={tv} team={p.team} className="mt-0" /> : null}
+						</aside>
 					</div>
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-6" />
 				</div>

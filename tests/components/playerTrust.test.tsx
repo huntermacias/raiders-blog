@@ -104,6 +104,13 @@ describe("<TeamContext /> and <TeamStrip />", () => {
 		expect(screen.getByTestId("team-strip").textContent).toMatch(/Offense \d+(st|nd|rd|th)/)
 	})
 
+	it("sits under the Overall card without its own top margin when the hero asks", () => {
+		render(<TeamStrip view={view} team="LV" className="mt-0" />)
+		const strip = screen.getByTestId("team-strip")
+		expect(strip.className).toMatch(/\bmt-0\b/)
+		expect(strip.className).not.toMatch(/\bmt-4\b/)
+	})
+
 	it("shows the unit's league rank and the room, with him marked and only his teammates linked", () => {
 		render(<TeamContext view={view} player={bowers} />)
 		const unit = screen.getByTestId("unit-card")
