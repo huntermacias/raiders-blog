@@ -105,7 +105,7 @@ describe("the Sunday Rooting Guide", () => {
 		expect(wf).toContain("scripts/lab/build_schedule.py")
 		expect(wf).toContain("scripts/rooting/build.ts")
 		expect(wf).toContain("git add data/lab/schedule.json data/lab/rooting.json")
-		expect(wf).toMatch(/git pull --rebase/)
+		expect(wf).toMatch(/bash scripts\/ci\/push-data\.sh data\/lab\/schedule\.json data\/lab\/rooting\.json/)
 		const weekly = read(".github/workflows/lab-data.yml")
 		expect(weekly).toContain("scripts/rooting/build.ts")
 		expect(weekly.indexOf("build_schedule.py")).toBeLessThan(weekly.indexOf("scripts/rooting/build.ts"))

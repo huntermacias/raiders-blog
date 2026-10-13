@@ -59,7 +59,8 @@ describe("the postgame pipeline", () => {
 			expect(yml).toMatch(/apt-get install .*ffmpeg/)
 			expect(yml).toMatch(/scripts\/clips\/render\.tsx/)
 			expect(yml).toMatch(/git add -A data\/lab public\/lab\/clips/)
-			expect(yml.match(/git push/g)).toHaveLength(1)
+			expect(yml.match(/push-data\.sh/g)).toHaveLength(2) // once in the comment, once in the command
+			expect(yml).toMatch(/bash scripts\/ci\/push-data\.sh data\/lab public\/lab\/clips/)
 		})
 		it("adds the Lab's pieces to drafts only when the Sanity secret exists", () => {
 			expect(yml).toMatch(/postgame\.cjs enrich/)

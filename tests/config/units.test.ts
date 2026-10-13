@@ -34,10 +34,13 @@ describe("the team grades refresh", () => {
 		expect(wf).toContain("git diff --cached --quiet")
 	})
 
-	it("retries the push after a rebase, because the other data bots commit to the same branch", () => {
-		expect(wf).toMatch(/git pull --rebase origin/)
-		expect(wf).toMatch(/for i in 1 2 3/)
-		expect(read(".github/workflows/lab-data.yml")).toMatch(/git pull --rebase origin/)
+	it("pushes through the retry script, because the other data bots commit to the same branch", () => {
+		expect(wf).toMatch(/bash scripts\/ci\/push-data\.sh data\/lab\/units\.json /)
+		expect(wf).not.toMatch(/git push/)
+		expect(read(".github/workflows/lab-data.yml")).toMatch(/bash scripts\/ci\/push-data\.sh /)
+		const script = read("scripts/ci/push-data.sh")
+		expect(script).toMatch(/for i in 1 2 3/)
+		expect(script).toMatch(/git reset --quiet --hard/)
 	})
 
 	it("counts a game only once its plays are in", () => {
