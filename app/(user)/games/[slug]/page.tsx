@@ -13,7 +13,7 @@ import { readingMinutes } from "../../../../lib/home"
 import BoxScore from "../../../../components/BoxScore"
 import GameLeaders from "../../../../components/GameLeaders"
 import GameTimeline from "../../../../components/GameTimeline"
-import VideoEmbed from "../../../../components/VideoEmbed"
+import Embed from "../../../../components/embeds/Embed"
 import GamePoll from "../../../../components/GamePoll"
 import PlayerOfTheGame from "../../../../components/PlayerOfTheGame"
 import ReactionBar from "../../../../components/ReactionBar"
@@ -297,7 +297,7 @@ async function GameReportPage(props: Props) {
 
 			<div className="container max-w-3xl space-y-10 pb-12">
 				{game.videoEmbeds?.map((embed) => (
-					<VideoEmbed key={embed._key} url={embed.url} caption={embed.caption} />
+					<Embed key={embed._key} url={embed.url} caption={embed.caption} />
 				))}
 
 				<GameTimeline moments={game.keyMoments} />

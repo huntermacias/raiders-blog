@@ -6,7 +6,7 @@ import type { Metadata } from "next"
 import { client } from "../../../../lib/sanity.client"
 import { Badge } from "@/components/ui/badge"
 import LiveAutoRefresh from "../../../../components/LiveAutoRefresh"
-import VideoEmbed from "../../../../components/VideoEmbed"
+import Embed from "../../../../components/embeds/Embed"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -108,7 +108,7 @@ async function LiveEventPage(props: Props) {
 									{formatTime(u.postedAt)}
 								</span>
 								<p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">{u.body}</p>
-								{u.embedUrl && <VideoEmbed url={u.embedUrl} />}
+								{u.embedUrl && <Embed url={u.embedUrl} />}
 							</li>
 						))}
 					</ol>

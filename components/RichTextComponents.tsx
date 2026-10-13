@@ -3,7 +3,7 @@ import Link from "@/components/SiteLink"
 
 import { bodyImageUrl, hotspotPosition, imageAspectRatio } from "../lib/urlFor"
 import PlayerEmbed from "./lab/players/PlayerEmbed"
-import VideoEmbed from "./VideoEmbed"
+import Embed from "./embeds/Embed"
 
 export const RichTextComponents = {
 	types: {
@@ -37,7 +37,7 @@ export const RichTextComponents = {
 		// Lets an editor place a YouTube or X (Twitter) embed anywhere inside
 		// the rich text body, reusing the same detection/rendering used for
 		// the game report's standalone "Video / social embeds" field.
-		videoEmbed: ({ value }: any) => <VideoEmbed url={value.url} caption={value.caption} />,
+		videoEmbed: ({ value }: any) => <Embed url={value.url} caption={value.caption} />,
 		// A live card for a player from the Lab: photo, grade, key numbers against the league, and a link to his page.
 		playerCard: ({ value }: any) => <PlayerEmbed slug={value.player} note={value.note} />,
 	},
