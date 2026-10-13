@@ -1030,7 +1030,9 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 		const conf = confidenceOf(p.mover.z)
 		const dir = p.mover.score > 0 ? "better" : "worse"
 		const d = describeMove(data, p)
-		out.push(`Lately he is playing ${dir}. ${d} ${CONFIDENCE_HELP[conf]}`.trim())
+		// Only a clear change is called "playing better or worse"; a leaning one is said as a lean, and one inside the noise is not a claim.
+		const lead = conf === "clear" ? `Lately he is playing ${dir}.` : conf === "leaning" ? `Lately his numbers lean ${dir === "better" ? "up" : "down"}.` : "The recent stretch says nothing reliable yet."
+		out.push(`${lead} ${d} ${CONFIDENCE_HELP[conf]}`.trim())
 	}
 
 	// 6. Playing time.

@@ -525,3 +525,17 @@ describe("wording that could mislead", () => {
 		expect(ladderOutOfOrder([r(1, 3), r(2, 5), r(3, 4)], false)).toBe(true)
 	})
 })
+
+describe("the recent-stretch line in a read", () => {
+	it("calls only a clear change playing better or worse", () => {
+		const mk = (z: number) => {
+			const p = data.players.find((q) => q.group === "qb" && q.mover && q.stats.some((s) => s.form && s.earlier))!
+			return { ...p, mover: { ...p.mover!, score: -9, z, driver: p.mover!.driver } }
+		}
+		const text = (z: number) => scoutingRead(data, mk(z), {}).join(" ")
+		expect(text(-2)).toMatch(/Lately he is playing worse/)
+		expect(text(-1)).toMatch(/Lately his numbers lean down/)
+		expect(text(-0.2)).toMatch(/says nothing reliable yet/)
+		expect(text(-1)).not.toMatch(/playing worse/)
+	})
+})
