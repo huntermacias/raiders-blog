@@ -21,6 +21,7 @@ import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
 import { type PlayerCardSpec, renderPlayerCard } from "./playerCard"
 import { type PlayerBoardCardSpec, renderPlayerBoardCard } from "./playerBoardCard"
+import { type CompareCardSpec, compareCardSize, renderCompareCard } from "./compareCards"
 import { type MathCardSpec, renderMathCard } from "./mathCard"
 import { type RankingsCardSpec, renderRankingsCard } from "./rankingsCard"
 
@@ -78,6 +79,7 @@ export type CardSpec =
 	| BoardCardSpec
 	| PlayerCardSpec
 	| PlayerBoardCardSpec
+	| CompareCardSpec
 	| {
 			type: "scoreboard"
 			season: number
@@ -92,7 +94,7 @@ export type CardSpec =
 
 /** The pixel size of a card: 1200x630 for every card but the tall version of a "will it last?", "season twins", playoff machine or matchup card (1080x1350). */
 export function cardSize(spec: CardSpec): { width: number; height: number } {
-	return spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
+	return spec.type === "compare" ? compareCardSize(spec) : spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
 }
 
 /** Trim to a word boundary so a title never runs off the card. */
@@ -500,6 +502,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 			return renderPlayerCard(spec)
 		case "playerboard":
 			return renderPlayerBoardCard(spec)
+		case "compare":
+			return renderCompareCard(spec)
 
 		case "scoreboard": {
 			const graded = spec.hits + spec.misses > 0

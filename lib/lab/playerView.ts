@@ -29,3 +29,13 @@ export function cardStyle(team: string): CSSProperties {
 export const profileHref = (slug: string) => `/lab/players/${slug}`
 export const boardHref = (group: PlayerGroup, path: string) => `/lab/players/leaders/${group}/${path}`
 export const compareHref = (a: string, b?: string) => `/lab/players/compare?a=${encodeURIComponent(a)}${b ? `&b=${encodeURIComponent(b)}` : ""}`
+
+/**
+ * The two sides' colors as CSS values. The first is the page's accent for his team (set by cardStyle); the second is the opponent's second
+ * color, the Raiders' own, or a fixed blue when both play for the same team so the two are never the same color.
+ */
+export function sideColors(aTeam: string, bTeam: string): { a: string; b: string; onB: string } {
+	if (aTeam === bTeam) return { a: "var(--pc-accent)", b: "var(--lab-scrimmage)", onB: "#ffffff" }
+	if (bTeam === "LV") return { a: "var(--pc-accent)", b: "var(--lab-team)", onB: "var(--lab-on-team)" }
+	return { a: "var(--pc-accent)", b: "var(--lab-opp2)", onB: "var(--lab-on-opp2)" }
+}

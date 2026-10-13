@@ -23,6 +23,9 @@ const SIZE_CHOICES: { id: ShareSize; name: string; where: string }[] = [
 /** What a card is of when it is not a "Will it last?" card: the route's `type`, the link's query (without the size), where a shared link lands, and the words for it. */
 export type ShareTarget = { type: string; query: string; sharePath: string; name: string; file: string; /** Names the campaign tracked links carry (utm_campaign). Defaults to "lab_share". */ campaign?: string; /** What goes after "?" in the shared link when it differs from the picture's query (the picture may need a slug the page already has). */ linkQuery?: string }
 
+/** One of several pictures a target comes in (a head-to-head, a radar, one player's case): `params` is added to the picture's address. */
+export type ShareVariant = { id: string; name: string; hint: string; params: string; alt?: string }
+
 type Props = {
 	/** The part of the "Will it last?" page the card is of. Leave out when `target` says what it is of. */
 	kind?: ShareKind
@@ -31,6 +34,15 @@ type Props = {
 	target?: ShareTarget
 	/** The picture sizes this card comes in; one size means no choice is shown. Defaults to both. */
 	sizes?: ShareSize[]
+	/** Different pictures of the same thing; more than one adds a choice above the picture. */
+	variants?: ShareVariant[]
+	/** Which picture is chosen, when the page keeps that choice itself (so a preview outside the window follows it). */
+	variantId?: string
+	onVariant?: (id: string) => void
+	/** Save and copy the picture at twice the pixels (the preview stays light). */
+	hd?: boolean
+	/** The line under the buttons; defaults to a note that the link opens the same chart. */
+	footnote?: string
 	/** Changes when the data does, so a new card is fetched. */
 	stamp: number
 	/** The words that go with a post. */
@@ -54,9 +66,15 @@ const focusable = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * phone's own share sheet, save, copy the image, copy the link, X and Facebook. The link carries the chart's
  * stat, filters and pinned team, so whoever opens it sees the same chart.
  */
-export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "tall"], stamp, text, alt, label = "Share", className = "", onAction, onOpen }: Props) {
+export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "tall"], variants, variantId: chosenId, onVariant, hd = false, footnote, stamp, text, alt, label = "Share", className = "", onAction, onOpen }: Props) {
 	const [open, setOpen] = React.useState(false)
 	const [size, setSize] = React.useState<ShareSize>(sizes[0] ?? "wide")
+	const [ownVariant, setOwnVariant] = React.useState(variants?.[0]?.id ?? "")
+	const variantId = chosenId ?? ownVariant
+	const setVariantId = (id: string) => {
+		setOwnVariant(id)
+		onVariant?.(id)
+	}
 	const [note, setNote] = React.useState("")
 	const [canShare, setCanShare] = React.useState(false)
 	const [canCopyImage, setCanCopyImage] = React.useState(false)
@@ -122,12 +140,16 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 	}
 	const query = t.query
 	const campaign = t.campaign ?? "lab_share"
-	const src = `/api/og?type=${t.type}${query ? `&${query}` : ""}&size=${size}&v=${stamp}`
+	const variant = variants?.find((v) => v.id === variantId) ?? variants?.[0]
+	const src = `/api/og?type=${t.type}${query ? `&${query}` : ""}${variant?.params ? `&${variant.params}` : ""}&size=${size}&v=${stamp}`
+	// What is saved or copied: twice the pixels when asked, so a post stays sharp on a big screen.
+	const fileSrc = hd ? `${src}&scale=2` : src
 	const shown = attempt ? `${src}&retry=${attempt}` : src
 	const loaded = loadedSrc === shown
 	const failed = failedKey === shown
-	const filename = `${t.file}-${size}.png`
+	const filename = `${t.file}${variant ? `-${variant.id}` : ""}-${size}${hd ? "-hd" : ""}.png`
 	const px = SIZE_PIXELS[size]
+	const saved = hd ? { width: px.width * 2, height: px.height * 2 } : px
 	// The query, then any tracking parameters, joined with "&"; nothing to carry means no "?".
 	const linkFor = (origin: string, utm = "") => {
 		const qs = [t.linkQuery ?? query, utm.replace(/^&/, "")].filter(Boolean).join("&")
@@ -152,7 +174,7 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 
 	const copyImage = async () => {
 		try {
-			const blob = await (await fetch(src)).blob()
+			const blob = await (await fetch(fileSrc)).blob()
 			await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })])
 			say("Image copied")
 			onAction?.("copy_image")
@@ -164,7 +186,7 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 	const nativeShare = async () => {
 		const url = linkFor(SITE_URL, `&utm_source=share&utm_medium=social&utm_campaign=${campaign}`)
 		try {
-			const blob = await (await fetch(src)).blob()
+			const blob = await (await fetch(fileSrc)).blob()
 			const file = new File([blob], filename, { type: "image/png" })
 			if (navigator.canShare?.({ files: [file] })) {
 				await navigator.share({ files: [file], text: `${text} ${url}` })
@@ -224,6 +246,15 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 							</button>
 						</div>
 						<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+							{variants && variants.length > 1 ? (
+								<div role="group" aria-label="Which picture" className="mb-3 flex flex-wrap gap-2">
+									{variants.map((v) => (
+										<button key={v.id} type="button" aria-pressed={variant?.id === v.id} onClick={() => setVariantId(v.id)} title={v.hint} className={`min-h-[40px] rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${variant?.id === v.id ? "border-lab-ink bg-lab-ink text-lab-page" : "border-lab-line-strong bg-lab-surface text-lab-soft hover:bg-lab-hover hover:text-lab-ink"}`}>
+											{v.name}
+										</button>
+									))}
+								</div>
+							) : null}
 							{sizes.length > 1 ? (
 								<div role="group" aria-label="Picture size" className="grid gap-2 sm:grid-cols-2">
 									{SIZE_CHOICES.filter((c) => sizes.includes(c.id)).map((c) => (
@@ -242,7 +273,7 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 							) : null}
 							<div className={`mx-auto mt-4 overflow-hidden rounded-xl border border-lab-line bg-lab-tint ${size === "tall" ? "max-w-[22rem]" : "w-full"}`} style={{ aspectRatio: `${px.width} / ${px.height}` }}>
 								{/* eslint-disable-next-line @next/next/no-img-element */}
-								<img key={shown} src={shown} alt={alt} width={px.width} height={px.height} decoding="async" onLoad={() => setLoadedSrc(shown)} onError={() => setFailedKey(shown)} className={`block h-full w-full object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
+								<img key={shown} src={shown} alt={variant?.alt ?? alt} width={px.width} height={px.height} decoding="async" onLoad={() => setLoadedSrc(shown)} onError={() => setFailedKey(shown)} className={`block h-full w-full object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
 							</div>
 							{failed && !loaded ? (
 								<p className="m-0 mt-2 text-center text-xs text-lab-soft" role="alert">
@@ -267,9 +298,9 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 										Share&hellip;
 									</button>
 								) : null}
-								<a href={src} download={filename} onClick={() => onAction?.("save")} className={action}>
+								<a href={fileSrc} download={filename} onClick={() => onAction?.("save")} className={action} title={hd ? `${saved.width}\u00d7${saved.height} pixels` : undefined}>
 									<Download className="h-4 w-4" aria-hidden />
-									Save image
+									{hd ? "Save HD image" : "Save image"}
 								</a>
 								{canCopyImage ? (
 									<button type="button" onClick={copyImage} className={action}>
@@ -289,7 +320,7 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 								</button>
 							</div>
 							<p className="m-0 mt-2 min-h-[1.25rem] text-center text-xs font-semibold text-lab-soft" role="status" aria-live="polite">
-								{note || "The link opens this same chart, with the same filters."}
+								{note || footnote || "The link opens this same chart, with the same filters."}
 							</p>
 						</div>
 					</div>

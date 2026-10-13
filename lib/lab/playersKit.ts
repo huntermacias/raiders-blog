@@ -630,7 +630,11 @@ const stretchCache = new WeakMap<PlayersData, number>()
  * a few points apart, not a dozen places apart. His place at the position ("39th of 40") is shown beside it.
  */
 export function gradeScore(data: PlayersData, p: PlayerRow): number | null {
-	const o = overall(p)
+	return stretchGrade(data, overall(p))
+}
+
+/** The same 1 to 99 stretch for any scouting grade, so a grade over a different stretch of games (recent form) reads on the same scale. */
+export function stretchGrade(data: PlayersData, o: number | null): number | null {
 	if (o === null) return null
 	let k = stretchCache.get(data)
 	if (k === undefined) {

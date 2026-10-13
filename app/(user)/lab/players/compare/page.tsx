@@ -3,312 +3,312 @@ import type { Metadata } from "next"
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
 import UpdatedStamp from "@/components/lab/UpdatedStamp"
-import { Headshot, TeamLogo } from "@/components/lab/players/Media"
-import TrackView from "@/components/lab/players/TrackView"
-import UnitsCredit from "@/components/lab/UnitsCredit"
+import type { ShareVariant } from "@/components/lab/ShareCard"
+import CompareBars from "@/components/lab/players/CompareBars"
+import CompareControls from "@/components/lab/players/CompareControls"
 import ComparePicker from "@/components/lab/players/ComparePicker"
+import CompareHero from "@/components/lab/players/CompareHero"
+import CompareRadar from "@/components/lab/players/CompareRadar"
+import CompareShare from "@/components/lab/players/CompareShare"
 import MoneyCompare from "@/components/lab/players/MoneyCompare"
 import ProgressLine from "@/components/lab/players/ProgressLine"
-import Yardstick from "@/components/lab/players/Yardstick"
+import TrackView from "@/components/lab/players/TrackView"
+import UnitsCredit from "@/components/lab/UnitsCredit"
+import {
+	type CompareConfig,
+	MAX_METRICS,
+	RANGE_IDS,
+	buildComparison,
+	configQuery,
+	featuredDebates,
+	rangeLabels,
+	readConfig,
+	resolvePair,
+	shareText,
+	spotlightOf,
+} from "@/lib/lab/compareKit"
 import { getContracts } from "@/lib/lab/contractData"
 import { coverageWords, dealFor, moneyRows, payRank, valueFor, valueSentence } from "@/lib/lab/contractsKit"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { labColorVarsB } from "@/lib/lab/colors"
-import { cardStyle, compareHref, profileHref, teamName } from "@/lib/lab/playerView"
-import {
-	GROUP_META,
-	HEADLINE,
-	STAT,
-	isCore,
-	type PlayerRow,
-	compareRows,
-	formatStat,
-	gradeWord,
-	UNIT_NOTE,
-	gradeScore,
-	countWord,
-	lineRecord,
-	overall,
-	overallRank,
-	rankPhrase,
-	rowsFor,
-	searchIndex,
-	statInfo,
-	trailOf,
-} from "@/lib/lab/playersKit"
+import { cardStyle, compareHref, sideColors } from "@/lib/lab/playerView"
+import { GROUP_META, HEADLINE, STAT, UNIT_NOTE, isCore, searchIndex, statInfo, trailOf } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-type Search = { a?: string; b?: string }
+type Search = { a?: string; b?: string; r?: string; m?: string; g?: string }
+
+const possessive = (n: string) => (n.endsWith("s") ? `${n}'` : `${n}'s`)
+
+const stampOf = (generatedAt: string) => {
+	const t = Date.parse(generatedAt)
+	return Number.isFinite(t) ? t : 0
+}
 
 export async function generateMetadata(props: { searchParams: Promise<Search> }): Promise<Metadata> {
-	const { a, b } = await props.searchParams
+	const q = await props.searchParams
 	const data = getPlayers()
-	const ra = a ? rowsFor(data, a)[0] : null
-	const rb = b ? rowsFor(data, b)[0] : null
-	const title = ra && rb ? `${ra.name} vs ${rb.name}: stats compared in context | Raiders Rundown` : "Compare any two NFL players in context | Raiders Rundown"
-	const description = "Two players, side by side on the stats that matter for their position: where each ranks in the league, who is clearly ahead and who is too close to call."
+	const cfg = readConfig(q)
+	const c = cfg.a && cfg.b ? buildComparison(data, cfg) : null
 	const base = `${SITE_URL}/lab/players/compare`
+	const title = c ? `${c.a.name} vs ${c.b.name}: stats compared in context | Raiders Rundown` : "Compare any two NFL players in context | Raiders Rundown"
+	const description = c ? `${c.headline} Percentiles, who leads each stat and what it means, from the Raiders Rundown Player Lab.` : "Two players, side by side on the stats that matter for their position: where each ranks in the league, who is clearly ahead and who is too close to call."
+	// The picture is the comparison's own graphic, so a link posted to X or anywhere else unfurls into these two players, this range and these stats.
+	const image = c ? `${SITE_URL}/api/og?type=compare&${configQuery({ ...cfg, a: c.a.slug, b: c.b.slug })}&size=wide&v=${stampOf(data.generatedAt)}` : `${SITE_URL}/og-default-v2.png`
+	const alt = c ? `${c.a.name} against ${c.b.name}: ${c.headline}` : "Raiders Rundown Player Lab: compare two players"
 	return {
 		title,
 		description,
 		alternates: { canonical: base },
 		// A comparison of two particular players is a tool, not a page worth indexing on its own.
-		robots: ra && rb ? { index: false, follow: true } : undefined,
-		openGraph: { type: "website", title, description, url: base, siteName: "Raiders Rundown", images: [`${SITE_URL}/og-default-v2.png`] },
-		twitter: { card: "summary_large_image", title, description, images: [`${SITE_URL}/og-default-v2.png`] },
+		robots: c ? { index: false, follow: true } : undefined,
+		openGraph: { type: "website", title, description, url: base, siteName: "Raiders Rundown", images: [{ url: image, width: 1200, height: 630, alt }] },
+		twitter: { card: "summary_large_image", title, description, images: [{ url: image, alt }] },
 	}
 }
 
-function pick(rows: PlayerRow[], other?: PlayerRow): PlayerRow | null {
-	if (!rows.length) return null
-	return (other && rows.find((r) => r.group === other.group)) || rows[0]
-}
-
-function Header({ p, letter }: { p: PlayerRow; letter: string }) {
-	const data = getPlayers()
-	const o = overall(p)
-	const score = gradeScore(data, p)
-	const record = lineRecord(data, p)
-	const rank = overallRank(data, p)
-	const meta = GROUP_META[p.group]
-	return (
-		<div className="lab-opp rounded-2xl border border-lab-line bg-lab-surface p-4" style={cardStyle(p.team)}>
-			<div className="flex items-center gap-3">
-				<Headshot espn={p.espn} shot={p.shot} name={p.name} size={64} />
-				<div className="min-w-0">
-					<p className="m-0 flex items-center gap-2 text-xs text-lab-muted">
-						<span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-lab-ink text-[10px] font-bold text-lab-ink">{letter}</span>
-						<TeamLogo team={p.team} size={18} /> {teamName(p.team)} &middot; {p.pos}
-					</p>
-					<h2 className="m-0 mt-1 font-serif text-2xl font-bold leading-tight">
-						<Link href={profileHref(p.slug)} className="hover:underline">
-							{p.name}
-						</Link>
-					</h2>
-				</div>
-			</div>
-			{record ? (
-				<p className="m-0 mt-2 text-sm text-lab-soft" data-testid="line-record">
-					{record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(" · ")}
-					<span className="block text-xs text-lab-muted">No overall grade for linemen: no public data credits one man with a block.</span>
-				</p>
-			) : (
-			<p className="m-0 mt-2 flex items-baseline gap-2">
-				<span className="font-mono text-4xl font-bold tabular-nums">{score === null ? "–" : score}</span>
-				<span className="text-xs text-lab-muted">overall{o !== null ? `, scouting grade ${Math.round(o)} (${gradeWord(o)}; 50 is average)` : ""}</span>
-			</p>
-			)}
-			{rank ? (
-				<p className="m-0 text-sm text-lab-soft">
-					<span className="font-semibold text-lab-ink">{rankPhrase(rank.rank, rank.of)}</span> {meta.peers}
-				</p>
-			) : null}
-		</div>
-	)
+function problemText(p: ReturnType<typeof resolvePair>): string | null {
+	if (!("problem" in p)) return null
+	if (p.problem === "same") return "That is one player twice. Pick someone else for the other side."
+	if (p.problem === "jobs" && p.a && p.b) {
+		return `${p.a.name} is a ${GROUP_META[p.a.group].single.toLowerCase()} and ${p.b.name} is a ${GROUP_META[p.b.group].single.toLowerCase()}, and they are measured on different stats. Pick two players who do the same job.`
+	}
+	return null
 }
 
 export default async function ComparePage(props: { searchParams: Promise<Search> }) {
-	const { a, b } = await props.searchParams
+	const q = await props.searchParams
 	const data = getPlayers()
 	const logs = getPlayerLogs().logs
-	const ra = a ? rowsFor(data, a) : []
-	const rb = b ? rowsFor(data, b) : []
-	const A = pick(ra, rb[0])
-	const B = pick(rb, A ?? undefined)
+	const cfg: CompareConfig = readConfig(q)
 	const index = searchIndex(data)
 	const entry = (slug?: string) => (slug ? (index.find((e) => e.slug === slug) ?? null) : null)
-	const ready = A && B && A.group === B.group && A.id !== B.id
-	const rows = ready ? compareRows(A, B) : []
-	// A line's numbers (run success, sacks allowed) belong to all five who start together, so they are shown but never scored as a win.
-	const graded = rows.filter((r) => r.info.higher !== null && !r.info.unit)
-	const lineRows = rows.filter((r) => r.info.unit)
-	const style = rows.filter((r) => r.info.higher === null && !r.info.unit)
+	const pair = cfg.a && cfg.b ? resolvePair(data, cfg) : null
+	const c = pair && !("problem" in pair) ? buildComparison(data, cfg) : null
+	const stamp = stampOf(data.generatedAt)
+
 	const contracts = getContracts()
-	const dealA = ready && A ? dealFor(data, contracts, A.slug) : null
-	const dealB = ready && B ? dealFor(data, contracts, B.slug) : null
-	const money = ready && A && B ? moneyRows(dealA, dealB, dealA ? payRank(data, contracts, A.slug) : null, dealB ? payRank(data, contracts, B.slug) : null) : []
+	const A = c?.a ?? null
+	const B = c?.b ?? null
+	const dealA = A ? dealFor(data, contracts, A.slug) : null
+	const dealB = B ? dealFor(data, contracts, B.slug) : null
+	const money = A && B ? moneyRows(dealA, dealB, dealA ? payRank(data, contracts, A.slug) : null, dealB ? payRank(data, contracts, B.slug) : null) : []
 	const valueA = dealA && A ? valueFor(data, contracts, A.slug) : null
 	const valueB = dealB && B ? valueFor(data, contracts, B.slug) : null
-	const aWins = graded.filter((r) => r.edge === "a" && r.strength === "clear").length
-	const bWins = graded.filter((r) => r.edge === "b" && r.strength === "clear").length
-	const close = graded.filter((r) => r.strength === "toss-up").length
 
-	// Suggestions: each Raider against the best player at his job.
-	const suggest = data.players
-		.filter((p) => p.team === data.team && p.stats.some((s) => s.k === HEADLINE[p.group]))
-		.map((p) => {
-			const best = data.players
-				.filter((x) => x.group === p.group && x.id !== p.id)
-				.sort((m, n) => (overall(n) ?? 0) - (overall(m) ?? 0))[0]
-			return best ? { p, best } : null
-		})
-		.filter((x): x is { p: PlayerRow; best: PlayerRow } => Boolean(x))
-		.slice(0, 8)
+	const colors = A && B ? sideColors(A.team, B.team) : null
+	const pageStyle = A && B ? { ...cardStyle(A.team), ...(B.team !== "LV" && B.team !== A.team ? labColorVarsB(B.team) : {}) } : undefined
 
-	const style2 = A && B ? { ...cardStyle(A.team), ...(B.team !== "LV" ? labColorVarsB(B.team) : {}) } : undefined
-	const colorB = !B ? "var(--lab-ink)" : B.team === A?.team ? "var(--lab-ink)" : B.team === "LV" ? "var(--lab-team)" : "var(--lab-opp2)"
+	// What the controls offer: the three stretches (one with nothing to compare is greyed out), every stat for this job, and the default set.
+	const ranges = c
+		? RANGE_IDS.map((id) => {
+				const l = rangeLabels(data, c.a, id)
+				const has = id === c.range ? c.metrics.length > 0 : (buildComparison(data, { ...cfg, range: id, metrics: null })?.metrics.length ?? 0) > 0
+				return { id, label: l.name, weeks: l.weeks, disabled: !has }
+			})
+		: []
+	const defaults = c ? (cfg.metrics ? (buildComparison(data, { ...cfg, metrics: null })?.metrics ?? c.metrics) : c.metrics).map((m) => m.key) : []
+
+	// The graphics on offer: a head to head always; a radar when there are three stats with a percentile each; a case for each player when he has enough to say.
+	const variants: ShareVariant[] = c
+		? [
+				{ id: "h2h", name: "Head to head", hint: "Both players, both grades and the stats side by side. The default link preview.", params: "f=h2h", alt: `${c.a.name} against ${c.b.name}, stat by stat` },
+				...(c.radar.length >= 3 ? [{ id: "radar", name: "Radar", hint: "The shape of each player across the stats you chose.", params: "f=radar", alt: `Radar chart of ${c.a.name} and ${c.b.name}` }] : []),
+				...(["a", "b"] as const)
+					.filter((side) => spotlightOf(c, side, 4).length >= 2)
+					.map((side) => {
+						const p = side === "a" ? c.a : c.b
+						return { id: `spot-${side}`, name: `${possessive(p.name.split(" ").slice(-1)[0])} case`, hint: `${p.name}'s strongest numbers against his position.`, params: `f=spot&side=${side}`, alt: `${p.name}'s strongest numbers` }
+					}),
+			]
+		: []
+
+	// A line's chart opens on his own stat: his headline is the line's, which both men on one line share.
+	let trail: { key: string; label: string; pa: { w: number; pct: number | null }[]; pb: { w: number; pct: number | null }[] } | null = null
+	if (c && A && B) {
+		const key = statInfo(A.group, HEADLINE[A.group])?.unit ? (Object.keys(STAT[A.group]).find((k) => isCore(A.group, k)) ?? HEADLINE[A.group]) : HEADLINE[A.group]
+		const pa = trailOf(logs[A.slug]?.[A.group], key).map((t) => ({ w: t[0], pct: t[3] }))
+		const pb = trailOf(logs[B.slug]?.[B.group], key).map((t) => ({ w: t[0], pct: t[3] }))
+		if (pa.filter((x) => x.pct !== null).length + pb.filter((x) => x.pct !== null).length >= 2) trail = { key, label: statInfo(A.group, key)!.label, pa, pb }
+	}
+
+	const debates = featuredDebates(data, 10)
+	const note = pair ? problemText(pair) : null
 
 	return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink">
 			<section className="border-b border-lab-line">
-				<div className="container py-10 sm:py-12">
+				<div className="container py-8 sm:py-12">
 					<p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-lab-muted">
 						<Link href="/lab/players" className="hover:text-lab-ink">
 							Players
 						</Link>{" "}
 						&rsaquo; Compare
 					</p>
-					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Compare two players</h1>
-					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">Put two players who do the same job side by side. For each stat you see where both rank in the league, and whether the gap between them is bigger than the noise a few plays create.</p>
+					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Settle the debate</h1>
+					<p className="mt-3 max-w-2xl text-base leading-relaxed text-lab-soft">Put two players who do the same job side by side. For each stat you see where both rank in the league, who is ahead, and whether the gap is bigger than the noise a few plays create. Then post the graphic.</p>
 					<div className="mt-6 max-w-3xl">
-						<ComparePicker index={index} a={entry(A?.slug ?? a)} b={entry(B?.slug ?? b)} />
+						<ComparePicker key={`${cfg.a}|${cfg.b}`} index={index} a={entry(c?.a.slug ?? cfg.a)} b={entry(c?.b.slug ?? cfg.b)} range={cfg.range} />
 					</div>
-					{A && B ? <TrackView event="player_compare" props={{ a: A.slug, b: B.slug, group: A.group }} /> : null}
+					{c ? <TrackView event="player_compare" props={{ a: c.a.slug, b: c.b.slug, group: c.group, range: c.range }} /> : null}
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-5" />
 				</div>
 			</section>
 
-			{ready && A && B ? (
-				<div className="lab-opp lab-opp2" style={style2}>
-					<section className="container py-8 sm:py-10">
-						<div className="grid gap-4 md:grid-cols-2">
-							<Header p={A} letter="A" />
-							<Header p={B} letter="B" />
-						</div>
-						<p className="m-0 mt-5 max-w-3xl text-base leading-relaxed text-lab-soft" data-testid="verdict">
-							{aWins === 0 && bWins === 0
-								? `On the stats that count, ${A.name} and ${B.name} are too close to separate with the plays we have.`
-								: `${A.name} is clearly ahead on ${aWins} ${aWins === 1 ? "stat" : "stats"}, ${B.name} on ${bWins}.`}{" "}
-							{close ? `${close} ${close === 1 ? "is" : "are"} too close to call.` : ""}
-						</p>
+			{c && A && B && colors ? (
+				<div className="lab-opp lab-opp2" style={pageStyle}>
+					<section className="container py-6 sm:py-10">
+						<CompareHero data={data} c={c} />
+						{c.early.a || c.early.b ? (
+							<p className="m-0 mt-3 max-w-3xl text-xs leading-relaxed text-lab-muted" data-testid="early-note">
+								Early read: {c.early.a && c.early.b ? `${A.name} and ${B.name} have` : `${c.early.a ? A.name : B.name} has`} played little so far, so these numbers move fast.
+							</p>
+						) : null}
 					</section>
 
-					{(() => {
-						// The headline of a lineman is his line's number, which both men on one line share, so a lineman's chart opens on his own stat.
-						const key = statInfo(A.group, HEADLINE[A.group])?.unit ? (Object.keys(STAT[A.group]).find((k) => isCore(A.group, k)) ?? HEADLINE[A.group]) : HEADLINE[A.group]
-						const la = logs[A.slug]?.[A.group]
-						const lb = logs[B.slug]?.[B.group]
-						const pa = trailOf(la, key).map((t) => ({ w: t[0], pct: t[3] }))
-						const pb = trailOf(lb, key).map((t) => ({ w: t[0], pct: t[3] }))
-						if (pa.filter((x) => x.pct !== null).length + pb.filter((x) => x.pct !== null).length < 2) return null
-						const info = statInfo(A.group, key)!
-						return (
-							<section className="border-t border-lab-line bg-lab-tint">
+					<section className="border-t border-lab-line bg-lab-tint" aria-label="Choose what is compared">
+						<div className="container py-6">
+							<CompareControls
+								cfg={{ ...cfg, a: A.slug, b: B.slug }}
+								ranges={ranges}
+								options={c.options.map((m) => ({ key: m.key, label: m.label, luck: m.signal === "luck" }))}
+								selected={c.metrics.map((m) => m.key)}
+								defaults={defaults}
+								max={MAX_METRICS}
+							/>
+						</div>
+					</section>
+
+					{c.metrics.length === 0 ? (
+						<section className="container py-10">
+							<p className="m-0 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-surface p-4 text-sm text-lab-soft">
+								{A.name} and {B.name} do not have a stat in common over {c.rangeName.toLowerCase()}. Try another stretch of games.
+							</p>
+						</section>
+					) : (
+						<>
+							<section className="border-t border-lab-line" aria-labelledby="shape-h">
 								<div className="container py-8 sm:py-10">
-									<h2 className="m-0 font-serif text-2xl font-bold">The year so far: {info.label}</h2>
-									<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Where each has ranked among {GROUP_META[A.group].peers} after every week. Solid line is {A.name}, dashed is {B.name}.</p>
-									<div className="mt-4 max-w-3xl">
-										<ProgressLine weeks={data.weeks} points={pa} second={{ points: pb, color: colorB }} formWeeks={data.formWeeks} label={`${A.name} and ${B.name}, ${info.label}: season-to-date rank among their peers after each week.`} />
+									<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center">
+										{c.radar.length >= 3 ? (
+											<div>
+												<h2 id="shape-h" className="m-0 font-serif text-2xl font-bold">
+													The shape of each player
+												</h2>
+												<p className="m-0 mb-3 mt-1 max-w-xl text-sm text-lab-soft">Each spoke is a stat. The farther out a point sits, the better he ranks at his job.</p>
+												<CompareRadar axes={c.radar} aName={A.name} bName={B.name} colorA={colors.a} colorB={colors.b} />
+											</div>
+										) : null}
+										<div className={c.radar.length >= 3 ? "" : "lg:col-span-2"}>
+											<h2 id={c.radar.length >= 3 ? undefined : "shape-h"} className="m-0 font-serif text-2xl font-bold">
+												What the numbers say
+											</h2>
+											<ul className="m-0 mt-3 grid list-none gap-3 p-0" data-testid="takeaways">
+												{c.insights.map((t, i) => (
+													<li key={i} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">
+														{t}
+													</li>
+												))}
+											</ul>
+											<p className="m-0 mt-3 text-xs leading-relaxed text-lab-muted">{c.basis}</p>
+										</div>
 									</div>
 								</div>
 							</section>
-						)
-					})()}
 
-					<section className="border-t border-lab-line">
-						<div className="container py-8 sm:py-10">
-							<h2 className="m-0 font-serif text-2xl font-bold">Stat by stat</h2>
-							<div className="mt-4 overflow-hidden rounded-xl border border-lab-line">
-								<ul className="m-0 list-none p-0">
-									{graded.map((r) => {
-										const y = data.yard[A.group]?.[r.key]
-										const winner = r.edge === "a" ? A.name : r.edge === "b" ? B.name : null
-										return (
-											<li key={r.key} className="border-t border-lab-line px-4 py-3 first:border-t-0" data-testid="compare-row">
-												<div className="flex flex-wrap items-baseline justify-between gap-2">
-													<h3 className="m-0 text-sm font-semibold text-lab-ink">
-														{r.info.label} {r.info.higher === false ? <span className="font-normal text-lab-muted">(lower is better)</span> : null}
-													</h3>
-													<span className="text-xs text-lab-muted">
-														{winner ? `${winner} is ${r.strength === "clear" ? "clearly" : "slightly"} ahead` : "Too close to call"}
-													</span>
-												</div>
-												<div className="mt-2 grid items-center gap-3 sm:grid-cols-[6rem_1fr_6rem]">
-													<p className="m-0 font-mono text-sm font-bold tabular-nums sm:text-right">
-														<span className="text-lab-muted">A </span>
-														{formatStat(A.group, r.key, r.a.season.v)}
-														<span className="block text-[10px] font-normal text-lab-muted">{r.a.season.r ? rankPhrase(r.a.season.r, y?.n ?? r.a.season.r) : ""}</span>
-													</p>
-													{y ? (
-														<Yardstick
-															marks={[
-																{ v: r.a.season.v, se: r.a.season.se, name: A.name, color: "var(--pc-accent)" },
-																{ v: r.b.season.v, se: r.b.season.se, name: B.name, color: colorB },
-															]}
-															yard={y}
-															higher={r.info.higher}
-															fmt={(v) => formatStat(A.group, r.key, v)}
-															peers={GROUP_META[A.group].peers}
-														/>
-													) : (
-														<span />
-													)}
-													<p className="m-0 font-mono text-sm font-bold tabular-nums">
-														<span className="text-lab-muted">B </span>
-														{formatStat(B.group, r.key, r.b.season.v)}
-														<span className="block text-[10px] font-normal text-lab-muted">{r.b.season.r ? rankPhrase(r.b.season.r, y?.n ?? r.b.season.r) : ""}</span>
-													</p>
-												</div>
-											</li>
-										)
-									})}
-								</ul>
-							</div>
-							{style.length ? (
-								<>
-									<h3 className="m-0 mb-3 mt-8 font-serif text-xl font-bold">Style</h3>
-									<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
-										{style.map((r) => (
-											<li key={r.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
-												<span className="font-semibold text-lab-ink">{r.info.label}</span>
-												<span className="mt-1 block text-lab-soft">
-													{A.name}: <span className="font-mono">{formatStat(A.group, r.key, r.a.season.v)}</span> &middot; {B.name}: <span className="font-mono">{formatStat(B.group, r.key, r.b.season.v)}</span>
-												</span>
-											</li>
-										))}
-									</ul>
-								</>
+							<section className="border-t border-lab-line" aria-labelledby="stats-h">
+								<div className="container py-8 sm:py-10">
+									<h2 id="stats-h" className="m-0 font-serif text-2xl font-bold">
+										Stat by stat
+									</h2>
+									<p className="m-0 mb-4 mt-1 max-w-3xl text-sm text-lab-soft">{c.rangeName}. {c.rangeWeeks}.</p>
+									<CompareBars data={data} c={c} colorA={colors.a} colorB={colors.b} />
+									<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">&ldquo;Clear lead&rdquo; means the gap is bigger than what the plays behind each number could produce by chance. &ldquo;Slight edge&rdquo; points one way but could still be noise.</p>
+
+									{c.style.length ? (
+										<>
+											<h3 className="m-0 mb-3 mt-8 font-serif text-xl font-bold">Style</h3>
+											<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
+												{c.style.map((m) => (
+													<li key={m.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
+														<span className="font-semibold text-lab-ink">{m.label}</span>
+														<span className="mt-1 block text-lab-soft">
+															{A.name}: <span className="font-mono">{m.a.text}</span> &middot; {B.name}: <span className="font-mono">{m.b.text}</span>
+														</span>
+													</li>
+												))}
+											</ul>
+										</>
+									) : null}
+									{c.line.length ? (
+										<>
+											<h3 className="m-0 mb-1 mt-8 font-serif text-xl font-bold">Their lines</h3>
+											<p className="m-0 mb-3 max-w-3xl text-sm text-lab-soft">{UNIT_NOTE} They are shown side by side, not scored.</p>
+											<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="line-rows">
+												{c.line.map((m) => (
+													<li key={m.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
+														<span className="font-semibold text-lab-ink">{m.label}</span>
+														<span className="mt-1 block text-lab-soft">
+															{A.name}: <span className="font-mono">{m.a.text}</span> &middot; {B.name}: <span className="font-mono">{m.b.text}</span>
+														</span>
+													</li>
+												))}
+											</ul>
+										</>
+									) : null}
+								</div>
+							</section>
+
+							{trail ? (
+								<section className="border-t border-lab-line bg-lab-tint">
+									<div className="container py-8 sm:py-10">
+										<h2 className="m-0 font-serif text-2xl font-bold">The year so far: {trail.label}</h2>
+										<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">
+											Where each has ranked among {GROUP_META[A.group].peers} after every week. Solid line is {A.name}, dashed is {B.name}.
+										</p>
+										<div className="mt-4 max-w-3xl">
+											<ProgressLine weeks={data.weeks} points={trail.pa} second={{ points: trail.pb, color: colors.b }} formWeeks={data.formWeeks} label={`${A.name} and ${B.name}, ${trail.label}: season-to-date rank among their peers after each week.`} />
+										</div>
+									</div>
+								</section>
 							) : null}
-							{lineRows.length ? (
-								<>
-									<h3 className="m-0 mb-1 mt-8 font-serif text-xl font-bold">Their lines</h3>
-									<p className="m-0 mb-3 max-w-3xl text-sm text-lab-soft">{UNIT_NOTE} They are shown side by side, not scored.</p>
-									<ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="line-rows">
-										{lineRows.map((r) => (
-											<li key={r.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
-												<span className="font-semibold text-lab-ink">{r.info.label}</span>
-												<span className="mt-1 block text-lab-soft">
-													{A.name}: <span className="font-mono">{formatStat(A.group, r.key, r.a.season.v)}</span> &middot; {B.name}: <span className="font-mono">{formatStat(B.group, r.key, r.b.season.v)}</span>
-												</span>
-											</li>
-										))}
-									</ul>
-								</>
-							) : null}
-							<p className="m-0 mt-5 max-w-3xl text-xs leading-relaxed text-lab-muted">&ldquo;Clearly ahead&rdquo; means the gap is bigger than what the plays behind each number could produce by chance. &ldquo;Slightly&rdquo; means it points one way but could still be noise.</p>
-						</div>
-</section>
+
+							<section className="border-t border-lab-line" aria-labelledby="share-h" id="share">
+								<div className="container py-8 sm:py-12">
+									<h2 id="share-h" className="m-0 mb-5 font-serif text-2xl font-bold sm:text-3xl">
+										Make it a graphic
+									</h2>
+									<CompareShare
+										query={configQuery({ ...cfg, a: A.slug, b: B.slug })}
+										stamp={stamp}
+										text={shareText(c)}
+										a={{ slug: A.slug, name: A.name }}
+										b={{ slug: B.slug, name: B.name }}
+										group={c.group}
+										variants={variants}
+									/>
+								</div>
+							</section>
+						</>
+					)}
 
 					<section className="border-t border-lab-line bg-lab-tint" aria-labelledby="money-h" id="money">
 						<div className="container py-8 sm:py-10">
-							<h2 id="money-h" className="m-0 font-serif text-2xl font-bold">The money</h2>
+							<h2 id="money-h" className="m-0 font-serif text-2xl font-bold">
+								The money
+							</h2>
 							{money.length ? (
 								<>
 									<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Contract and cap numbers side by side. Bars share one scale, so the longer bar is the bigger number. A bigger number is not a better one: it is only what each is paid.</p>
 									<div className="mt-4">
-										<MoneyCompare rows={money} aName={A.name} bName={B.name} colorB={colorB} />
+										<MoneyCompare rows={money} aName={A.name} bName={B.name} colorB={colors.b} />
 									</div>
 									{valueA || valueB ? (
 										<ul className="m-0 mt-5 grid list-none gap-3 p-0 md:grid-cols-2" data-testid="money-value">
-											{valueA ? (
-												<li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(A.name, A.group, valueA)}</li>
-											) : null}
-											{valueB ? (
-												<li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(B.name, B.group, valueB)}</li>
-											) : null}
+											{valueA ? <li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(A.name, A.group, valueA)}</li> : null}
+											{valueB ? <li className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm leading-relaxed text-lab-soft">{valueSentence(B.name, B.group, valueB)}</li> : null}
 										</ul>
 									) : null}
 									<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">
@@ -324,23 +324,18 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 							)}
 						</div>
 					</section>
-
 				</div>
 			) : (
 				<section className="container py-10 sm:py-14">
-					{A && B && A.group !== B.group ? (
-						<p className="m-0 mb-6 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-surface p-4 text-sm text-lab-soft">
-							{A.name} is a {GROUP_META[A.group].single.toLowerCase()} and {B.name} is a {GROUP_META[B.group].single.toLowerCase()}, and they are measured on different stats. Pick two players who do the same job.
-						</p>
-					) : null}
-					<h2 className="m-0 font-serif text-2xl font-bold">Try a comparison</h2>
-					<p className="m-0 mt-1 text-sm text-lab-soft">Each Raider against the best player at his job right now.</p>
-					<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2">
-						{suggest.map(({ p, best }) => (
-							<li key={p.id + p.group}>
-								<Link href={compareHref(p.slug, best.slug)} className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm hover:border-lab-ink">
-									<span className="font-semibold text-lab-ink">{p.name}</span> <span className="text-lab-muted">vs</span> <span className="font-semibold text-lab-ink">{best.name}</span>
-									<span className="block text-xs text-lab-muted">{GROUP_META[p.group].title}</span>
+					{note ? <p className="m-0 mb-6 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-surface p-4 text-sm text-lab-soft">{note}</p> : null}
+					<h2 className="m-0 font-serif text-2xl font-bold">Start with a debate</h2>
+					<p className="m-0 mt-1 text-sm text-lab-soft">Each Raider against the best player at his job right now, and the top two at the biggest positions.</p>
+					<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="debates">
+						{debates.map(({ a, b, tag }) => (
+							<li key={`${a.slug}|${b.slug}`}>
+								<Link href={compareHref(a.slug, b.slug)} className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
+									<span className="font-semibold text-lab-ink">{a.name}</span> <span className="text-lab-muted">vs</span> <span className="font-semibold text-lab-ink">{b.name}</span>
+									<span className="block text-xs text-lab-muted">{tag}</span>
 								</Link>
 							</li>
 						))}

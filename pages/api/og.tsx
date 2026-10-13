@@ -21,6 +21,8 @@
 //   /api/og?type=rooting&team=LV&goal=playoffs|division|bye[&week=8][&size=wide|tall]   (the rooting guide: a team's goal and the top three games to root in)
 //   /api/og?type=playoffs[&s=<scenario code>][&t=KC][&size=wide|tall]   (the playoff machine: a team's seed and bracket in a scenario, or its odds as the race stands)
 //   /api/og?type=player&slug=brock-bowers[&pos=te]   (a Player Lab profile: grade, league-best badges and strongest numbers)
+//   /api/og?type=compare&a=brock-bowers&b=trey-mcbride[&r=form|earlier][&m=epaTgt,croe][&g=te][&f=h2h|radar|spot][&side=a|b][&size=wide|tall][&scale=2]
+//           (two players side by side: head to head, radar or one player's case; scale=2 is the high-resolution download)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
 // content edit produces a new URL and X/Facebook re-scrape a fresh image.
@@ -276,8 +278,17 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		goal: first(query.goal),
 		pos: first(query.pos),
 		group: first(query.group),
+		r: first(query.r),
+		m: first(query.m),
+		g: first(query.g),
+		f: first(query.f),
+		side: first(query.side),
 	})
 	if (insight) {
+		if (insight.type === "compare") {
+			const [pa, pb] = await Promise.all([insight.a.headshot ? headshotDataUri(insight.a.headshot) : null, insight.b.headshot ? headshotDataUri(insight.b.headshot) : null])
+			return { ...insight, a: { ...insight.a, photo: pa }, b: { ...insight.b, photo: pb } }
+		}
 		if (insight.type === "player" && insight.headshot) return { ...insight, photo: await headshotDataUri(insight.headshot) }
 		if (insight.type === "playerboard") {
 			// Every face on the card, fetched together: each one is cut off after 3 seconds, so a slow image host costs one wait, not six.
@@ -286,7 +297,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		}
 		return insight
 	}
-	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard") return null
+	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard" || type === "compare") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -326,7 +337,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
@@ -392,7 +403,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 		const { width, height } = cardSize(spec)
 		const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
-		const png = new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng()
+		// scale=2 is the download: the same card at twice the pixels (comparison cards only, so no other card can be asked for a huge image).
+		const scale = spec.type === "compare" && first(req.query.scale) === "2" ? 2 : 1
+		const png = new Resvg(svg, { fitTo: { mode: "width", value: width * scale } }).render().asPng()
 
 		res.setHeader("Content-Type", "image/png")
 		// The page URL carries `v=<updatedAt>`, so a long cache is safe: an edit
