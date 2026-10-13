@@ -11,7 +11,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import { teamName } from "../lab/playerView"
-import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, isEarly, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
+import { type PlayerBio, type PlayerGroup, type PlayersData, GROUP_META, badgesFor, gradeWord, headshotUrl, shotUrl, isEarly, leagueScore, ordinal, overall, overallRank, percentileBars, rowsFor, shownPct, statInfo, tierOf, TIER_WORD } from "../lab/playersKit"
 import { SOURCES, sourceLine } from "./basis"
 import { BRIGHT, Brand, DIM, Eyebrow, Frame, LINE, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -41,6 +41,10 @@ export type PlayerCardSpec = {
 	games: number
 	/** The team's colour on the dark card. */
 	color: string
+	/** Where his photo is, for the route to fetch; null when he has none. The spec itself never touches the network. */
+	headshot: string | null
+	/** His photo as a data: URI, put in by the route after it fetched `headshot`; absent or null draws the card without one. */
+	photo?: string | null
 }
 
 const W = 1200
@@ -72,8 +76,9 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 		peers: meta.peers,
 		pos: p.pos,
 		no: bio?.no ?? null,
-		grade: o === null ? null : Math.round(o),
-		gradeWord: gradeWord(o),
+		// The big number is his place among his peers (1 to 99); the 20 to 80 scouting grade rides underneath.
+		grade: leagueScore(data, p),
+		gradeWord: o === null ? "" : `Scouting grade ${Math.round(o)} (50 is average)`,
 		tier: r && !isEarly(data, p) ? TIER_WORD[tierOf(((r.of - r.rank) / Math.max(1, r.of - 1)) * 100)] : "",
 		rank: r ? `${ordinal(r.rank)} of ${r.of} ${meta.peers}${isEarly(data, p) ? " so far" : ""}` : null,
 		badges: badgesFor(data, p, 5, 3).map((b) => b.text),
@@ -83,6 +88,8 @@ export function buildPlayerSpec(data: PlayersData, slug: string, bio: PlayerBio 
 		week: data.week,
 		games: p.games,
 		color,
+		// The NFL.com images are served as whatever the browser accepts (often webp), which the card cannot draw; ask for a png.
+		headshot: p.espn ? headshotUrl(p.espn) : p.shot ? shotUrl(p.shot).replace("f_auto,q_auto", "f_png,w_400") : null,
 	}
 }
 
@@ -97,6 +104,12 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 	return (
 		<Frame glow={spec.color} ghost={spec.no !== null ? String(spec.no) : undefined} w={W} h={H}>
 			<div style={{ display: "flex", flexDirection: "column", width: W, height: H, padding: `32px ${PAD}px 24px` }}>
+				{spec.photo ? (
+					<div style={{ display: "flex", position: "absolute", top: 18, right: PAD, width: 136, height: 136, borderRadius: 136, overflow: "hidden", border: `6px solid ${spec.color}`, backgroundColor: rgba(spec.color, 0.35) }}>
+						{/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+						<img src={spec.photo} width={124} height={124} style={{ width: 124, height: 124, objectFit: "cover", objectPosition: "50% 15%" }} />
+					</div>
+				) : null}
 				<Eyebrow text={`Player Lab · ${spec.single}`} color={spec.color} />
 				<div style={{ display: "flex", marginTop: 20, width: W - PAD * 2 }}>
 					<div style={{ display: "flex", flexDirection: "column", width: leftW }}>
@@ -108,9 +121,10 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 								<div style={{ display: "flex", fontFamily: "Anton", fontSize: 76, lineHeight: 1, color: WHITE }}>{spec.grade === null ? "–" : String(spec.grade)}</div>
 							</div>
 							<div style={{ display: "flex", flexDirection: "column", marginLeft: 26, width: leftW - 176 }}>
-								<div style={label({ fontSize: 15, letterSpacing: 3 })}>Overall grade, 20 to 80</div>
-								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 38, lineHeight: 1.05, color: WHITE, marginTop: 6, ...caps }}>{spec.grade === null ? "Not enough yet" : spec.gradeWord}</div>
+								<div style={label({ fontSize: 15, letterSpacing: 3 })}>Overall, place among peers (1 to 99)</div>
+								<div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 38, lineHeight: 1.05, color: WHITE, marginTop: 6, ...caps }}>{spec.grade === null ? "Not enough yet" : spec.early && !spec.tier ? "Early read" : spec.tier || "Overall"}</div>
 								{spec.rank ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 22, color: SILVER, marginTop: 6 }}>{spec.rank}</div> : null}
+								{spec.gradeWord ? <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 500, fontSize: 17, color: DIM, marginTop: 4 }}>{spec.gradeWord}</div> : null}
 							</div>
 						</div>
 
@@ -126,7 +140,7 @@ export function renderPlayerCard(spec: PlayerCardSpec): ReactElement {
 						) : null}
 					</div>
 
-					<div style={{ display: "flex", flexDirection: "column", width: rightW, marginLeft: 40, alignSelf: "flex-start", padding: "18px 20px 10px", backgroundColor: "rgba(17,18,20,0.92)", border: `2px solid ${LINE}` }}>
+					<div style={{ display: "flex", flexDirection: "column", width: rightW, marginLeft: 40, alignSelf: "flex-start", marginTop: spec.photo ? 54 : 0, padding: "18px 20px 10px", backgroundColor: "rgba(17,18,20,0.92)", border: `2px solid ${LINE}` }}>
 						<div style={label({ fontSize: 15, letterSpacing: 3 })}>{spec.early ? `Early read vs. ${clip(spec.peers, 22)}` : `Strongest numbers vs. ${clip(spec.peers, 22)}`}</div>
 						{spec.bars.length ? (
 							spec.bars.map((b) => (

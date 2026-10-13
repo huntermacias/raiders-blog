@@ -49,6 +49,8 @@ import {
 	gradeWord,
 	isCore,
 	isEarly,
+	leagueScore,
+	ordinal,
 	opponentFor,
 	overall,
 	overallRank,
@@ -436,7 +438,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 							{row.like.map((slug) => {
 								const q = data.players.find((x) => x.slug === slug && x.group === row.group)
 								if (!q) return null
-								const o = overall(q)
+								const o = leagueScore(data, q)
 								return (
 									<li key={slug} className="lab-opp relative rounded-xl border border-lab-line bg-lab-surface p-3 transition-shadow hover:shadow-md" style={{ ...cardStyle(q.team), borderTop: "4px solid var(--pc-accent)" }}>
 										<p className="m-0 flex items-center gap-2 text-xs text-lab-muted">
@@ -447,7 +449,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 												{q.name}
 											</Link>
 										</p>
-										<span aria-hidden="true" className="absolute right-3 top-3 font-mono text-2xl font-bold tabular-nums text-lab-muted" style={{ opacity: 0.6 }}>{o === null ? "" : Math.round(o)}</span>
+										<span aria-hidden="true" className="absolute right-3 top-3 font-mono text-2xl font-bold tabular-nums text-lab-muted" style={{ opacity: 0.6 }}>{o === null ? "" : o}</span>
 										<p className="m-0 mt-1 text-xs text-lab-soft">
 											Overall {o === null ? "–" : Math.round(o)} &middot; {formatStat(q.group, HEADLINE[q.group], q.stats.find((s) => s.k === HEADLINE[q.group])?.season.v)}
 										</p>
@@ -475,6 +477,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 	const p = rows[0]
 	const meta = GROUP_META[p.group]
 	const o = overall(p)
+	const score = leagueScore(data, p)
 	const rank = overallRank(data, p)
 	const tier = rank ? tierOf(pctFromRank(rank.rank, rank.of)) : null
 	const early = isEarly(data, p)
@@ -593,13 +596,13 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 									<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
 										{meta.title} leaderboard
 									</Link>
-									<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${o === null ? "" : `${Math.round(o)} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
+									<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={`${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
 								</div>
 							</div>
 						</div>
 						<div className="flex items-center gap-5 rounded-2xl border border-lab-line bg-lab-surface/90 p-4 backdrop-blur lg:flex-col lg:p-5 lg:text-center" data-testid="overall">
-							<div className="shrink-0"><GradeRing grade={o} size={124}>
-								<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{o === null ? "–" : Math.round(o)}</p>
+							<div className="shrink-0"><GradeRing grade={o} pct={score} size={124}>
+								<p className="m-0 font-mono text-4xl font-bold leading-none tabular-nums">{score === null ? "–" : score}</p>
 								<p className="m-0 mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
 							</GradeRing></div>
 							<div>
@@ -609,7 +612,12 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 									</p>
 								) : null}
 								{early ? <EarlyChip label="Early read" className="mt-1" /> : tier ? <TierChip tier={tier} className="mt-1" /> : null}
-								{o !== null ? <p className="m-0 mt-1 text-xs text-lab-muted">{early ? "Most of his numbers are still mostly luck; 50 is average" : `${gradeWord(o)}; 50 is average`}</p> : null}
+								{o !== null && score !== null ? (
+									<p className="m-0 mt-1 text-xs text-lab-muted" data-testid="overall-note">
+										{early ? "Most of his numbers are still mostly luck. " : ""}
+										{ordinal(score)} percentile at the position. Scouting grade {Math.round(o)} ({gradeWord(o)}; 50 is average).
+									</p>
+								) : null}
 							</div>
 						</div>
 					</div>

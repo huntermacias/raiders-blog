@@ -18,6 +18,7 @@ import {
 	isEarly,
 	moveText,
 	moverTier,
+	leagueScore,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -45,6 +46,7 @@ export function featuredStat(data: PlayersData, p: PlayerRow) {
  */
 export default function PlayerCard({ data, player, log, note, href, className = "" }: { data: PlayersData; player: PlayerRow; log?: PlayerLog; note?: string; href?: string; className?: string }) {
 	const o = overall(player)
+	const score = leagueScore(data, player)
 	const rank = overallRank(data, player)
 	const meta = GROUP_META[player.group]
 	const tier = rank ? tierOf(((rank.of - rank.rank) / Math.max(1, rank.of - 1)) * 100) : null
@@ -75,8 +77,8 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 						</div>
 					</div>
 					<div className="shrink-0 text-right">
-						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums">{o === null ? "–" : Math.round(o)}</p>
-						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Grade</p>
+						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums" title={o === null ? undefined : `Scouting grade ${Math.round(o)}; 50 is average`}>{score === null ? "–" : score}</p>
+						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">Overall</p>
 					</div>
 				</header>
 				<p className="m-0 mt-1 text-xs text-lab-soft">
@@ -130,7 +132,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 				</footer>
 			</div>
 			<p className="sr-only">
-				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, overall grade {o === null ? "not yet available" : `${Math.round(o)}, ${moveText(mover?.score ?? 0)} lately`}.
+				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, overall {score === null ? "not yet available" : `${score} out of 99 (scouting grade ${Math.round(o ?? 0)}), ${moveText(mover?.score ?? 0)} lately`}.
 			</p>
 		</article>
 	)

@@ -84,14 +84,14 @@ describe("<StatTile />", () => {
 })
 
 describe("<PlayerCard />", () => {
-	it("is one link to his page, shows his grade and his rank, and never shows a grade word that repeats the tier", () => {
+	it("is one link to his page, shows his overall place and his rank, and never shows a grade word that repeats the tier", () => {
 		render(<PlayerCard data={data} player={te} log={logs.logs[te.slug]?.te} note="A line of my own." />)
 		const card = screen.getByTestId("player-card")
 		const links = within(card).getAllByRole("link")
 		expect(links).toHaveLength(1)
 		expect(links[0].getAttribute("href")).toBe(`/lab/players/${te.slug}`)
 		expect(within(card).getByText("A line of my own.")).toBeTruthy()
-		expect(within(card).getByText(/^Grade$/)).toBeTruthy()
+		expect(within(card).getByText(/^Overall$/)).toBeTruthy()
 		expect(card.textContent).toMatch(/\d+(st|nd|rd|th) of \d+/)
 	})
 

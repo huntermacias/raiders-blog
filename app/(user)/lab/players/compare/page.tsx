@@ -23,6 +23,7 @@ import {
 	compareRows,
 	formatStat,
 	gradeWord,
+	leagueScore,
 	overall,
 	overallRank,
 	rankPhrase,
@@ -64,6 +65,7 @@ function pick(rows: PlayerRow[], other?: PlayerRow): PlayerRow | null {
 function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 	const data = getPlayers()
 	const o = overall(p)
+	const score = leagueScore(data, p)
 	const rank = overallRank(data, p)
 	const meta = GROUP_META[p.group]
 	return (
@@ -83,8 +85,8 @@ function Header({ p, letter }: { p: PlayerRow; letter: string }) {
 				</div>
 			</div>
 			<p className="m-0 mt-2 flex items-baseline gap-2">
-				<span className="font-mono text-4xl font-bold tabular-nums">{o === null ? "–" : Math.round(o)}</span>
-				<span className="text-xs text-lab-muted">overall grade{o !== null ? `, ${gradeWord(o)}` : ""}</span>
+				<span className="font-mono text-4xl font-bold tabular-nums">{score === null ? "–" : score}</span>
+				<span className="text-xs text-lab-muted">overall{o !== null ? `, scouting grade ${Math.round(o)} (${gradeWord(o)}; 50 is average)` : ""}</span>
 			</p>
 			{rank ? (
 				<p className="m-0 text-sm text-lab-soft">

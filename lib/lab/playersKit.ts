@@ -573,6 +573,16 @@ export function isEarly(data: PlayersData, p: PlayerRow): boolean {
 	return solid < 2
 }
 
+/**
+ * The number a reader sees as "Overall": where he places among the players at his job, 1 to 99 (99 is the best of them, 50 the middle).
+ * The scouting grade is an average of z-scores and is pulled toward 50 early in a season, so even the best quarterback in the league
+ * can sit in the mid-50s; read as a grade out of 100 that looks like an average player. The place is what the grade is for.
+ */
+export function leagueScore(data: PlayersData, p: PlayerRow): number | null {
+	const r = overallRank(data, p)
+	return r ? shownPct(((r.of - r.rank + 0.5) / r.of) * 100) : null
+}
+
 const overallCache = new WeakMap<PlayersData, Map<PlayerGroup, Map<string, number>>>()
 
 /** His rank among his group by overall grade this season (1 is best), and how many are ranked. */

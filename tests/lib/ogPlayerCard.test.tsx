@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { writeFileSync } from "node:fs"
+
 import { Resvg } from "@resvg/resvg-js"
 import satori from "satori"
 import { describe, expect, it, vi } from "vitest"
@@ -61,5 +63,34 @@ describe("drawing the player card", () => {
 			const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
 			expect(png.length).toBeGreaterThan(20_000)
 		}
+	})
+})
+
+describe("the player's photo on the share card", () => {
+	it("names where the photo is without fetching it, and only for a player who has one", () => {
+		const withEspn = data.players.find((p) => p.espn)!
+		const spec = buildPlayerSpec(data, withEspn.slug, bios[withEspn.slug], withEspn.group)!
+		expect(spec.headshot).toBe(`https://a.espncdn.com/i/headshots/nfl/players/full/${withEspn.espn}.png`)
+		expect(spec.photo).toBeUndefined()
+		const bare = data.players.find((p) => !p.espn && !p.shot)
+		if (bare) expect(buildPlayerSpec(data, bare.slug, bios[bare.slug], bare.group)!.headshot).toBeNull()
+		const nfl = data.players.find((p) => !p.espn && p.shot)
+		if (nfl) expect(buildPlayerSpec(data, nfl.slug, bios[nfl.slug], nfl.group)!.headshot).toMatch(/f_png/)
+	})
+
+	it("draws the photo in a ring when the route supplies it, and draws the same card without it", async () => {
+		const p = data.players.find((x) => x.name === "Brock Bowers") ?? data.players[0]
+		const spec = buildPlayerSpec(data, p.slug, bios[p.slug], p.group)!
+		const face = new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="350" height="254"><rect width="350" height="254" fill="#c7c9cc"/><circle cx="175" cy="105" r="62" fill="#a77b5a"/><rect x="85" y="165" width="180" height="89" rx="40" fill="#222"/></svg>').render().asPng()
+		const photo = `data:image/png;base64,${Buffer.from(face as unknown as Uint8Array).toString("base64")}`
+		const render = async (sp: typeof spec) => {
+			const svg = await satori(renderCard(sp), { width: OG_WIDTH, height: OG_HEIGHT, fonts: ogFonts() })
+			return new Resvg(svg, { fitTo: { mode: "width", value: OG_WIDTH } }).render().asPng()
+		}
+		const without = await render(spec)
+		const withPhoto = await render({ ...spec, photo })
+		expect(withPhoto.length).toBeGreaterThan(20_000)
+		expect(withPhoto.length).not.toBe(without.length)
+		if (process.env.OG_OUT) writeFileSync(process.env.OG_OUT, withPhoto as unknown as Uint8Array)
 	})
 })

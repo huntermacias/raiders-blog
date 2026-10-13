@@ -89,6 +89,25 @@ async function photoDataUri(image: unknown): Promise<string | null> {
 	}
 }
 
+/** A player's photo as a data: URI for the card, or null: a slow or missing photo never costs the card. */
+async function headshotDataUri(url: string): Promise<string | null> {
+	const ctrl = new AbortController()
+	const timer = setTimeout(() => ctrl.abort(), 3000)
+	try {
+		const res = await fetch(url, { signal: ctrl.signal })
+		if (!res.ok) return null
+		const type = (res.headers.get("content-type") || "").split(";")[0]
+		if (!/^image\/(jpeg|png)$/.test(type)) return null
+		const buf = Buffer.from(await res.arrayBuffer())
+		if (buf.length === 0 || buf.length > 2_000_000) return null
+		return `data:${type};base64,${buf.toString("base64")}`
+	} catch {
+		return null
+	} finally {
+		clearTimeout(timer)
+	}
+}
+
 /** A short label above the headline, from the title when it says what the piece is. */
 function eyebrowFor(title: string, category?: string | null): string {
 	if (/power rankings?/i.test(title)) return "Power Rankings"
@@ -257,7 +276,10 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		goal: first(query.goal),
 		pos: first(query.pos),
 	})
-	if (insight) return insight
+	if (insight) {
+		if (insight.type === "player" && insight.headshot) return { ...insight, photo: await headshotDataUri(insight.headshot) }
+		return insight
+	}
 	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player") return null
 
 	if (type === "lab") {
