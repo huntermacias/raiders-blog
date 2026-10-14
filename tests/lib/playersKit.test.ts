@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { getPlayers } from "../../lib/lab/data"
 import { getPlayerLogs } from "../../lib/lab/playerData"
 import {
+	overallRank,
 	BOX,
 	GROUP_META,
 	GROUP_ORDER,
@@ -27,6 +28,7 @@ import {
 	gameDetail,
 	fingerprint,
 	ladder,
+	observedKeyOf,
 	scoutingRead,
 	statInfo,
 	confidenceOf,
@@ -54,6 +56,7 @@ import {
 	yardPos,
 } from "../../lib/lab/playersKit"
 
+import { isV2Site } from "../../lib/lab/labMethod"
 const data = getPlayers()
 const logs = getPlayerLogs()
 
@@ -306,7 +309,6 @@ describe("numbers a reader can check", () => {
 
 	it("shows the plays behind each game: they add up to the plays on his season line, for every player and stat", () => {
 		const data = getPlayers()
-		const logs = getPlayerLogs()
 		let checked = 0
 		for (const p of data.players) {
 			const log = logs.logs[p.slug]?.[p.group]
@@ -452,7 +454,7 @@ describe("stacking and see-through headers", () => {
 })
 
 describe("gradeScore", () => {
-	it("keeps 50 at 50, orders players by grade, and puts the league's top 1% near 80", () => {
+	it.skipIf(isV2Site())("keeps 50 at 50, orders players by grade, and puts the league's top 1% near 80", () => {
 		const scored = data.players
 			.map((p) => ({ o: overall(p), s: gradeScore(data, p) }))
 			.filter((x): x is { o: number; s: number } => x.o !== null && x.s !== null)
@@ -466,6 +468,22 @@ describe("gradeScore", () => {
 		const top = sorted[Math.floor(sorted.length * 0.99)]
 		expect(top.s).toBeGreaterThan(74)
 		expect(top.s).toBeLessThan(86)
+	})
+})
+
+describe("the v2 standing", () => {
+	it.skipIf(!isV2Site())("is the observed percentile: 1 to 99, in the order of the rank, the same for every job and independent of earlier seasons", () => {
+		const scored = data.players.map((p) => ({ p, s: gradeScore(data, p), r: overallRank(data, p) })).filter((x): x is { p: PlayerRow; s: number; r: { rank: number; of: number } } => x.s !== null && x.r !== null)
+		expect(scored.length).toBeGreaterThan(100)
+		for (const x of scored) {
+			expect(x.s).toBeGreaterThanOrEqual(1)
+			expect(x.s).toBeLessThanOrEqual(99)
+		}
+		// Within one job a better rank never has a lower standing.
+		for (const g of GROUP_ORDER) {
+			const rows = scored.filter((x) => x.p.group === g).sort((a, b) => a.r.rank - b.r.rank)
+			for (let i = 1; i < rows.length; i++) expect(rows[i].s, `${g} ${rows[i].p.name}`).toBeLessThanOrEqual(rows[i - 1].s)
+		}
 	})
 })
 
@@ -537,5 +555,20 @@ describe("the recent-stretch line in a read", () => {
 		expect(text(-1)).toMatch(/Lately his numbers lean down/)
 		expect(text(-0.2)).toMatch(/says nothing reliable yet/)
 		expect(text(-1)).not.toMatch(/playing worse/)
+	})
+	it.skipIf(!isV2Site())("has the written read say the same rank the card shows, on the one observed stat, with no average of stats and no averaged trend", () => {
+		const logs = getPlayerLogs()
+		let checked = 0
+		for (const p of data.players.filter((x) => ["qb", "wr", "te"].includes(x.group) && x.games >= 3)) {
+			const rk = overallRank(data, p)
+			if (!rk) continue
+			const read = scoutingRead(data, p, { log: logs.logs[p.slug]?.[p.group] })
+			const st = p.stats.find((x) => x.k === observedKeyOf(p.group))!
+			expect(rk.rank, p.name).toBe(st.season.r)
+			expect(read[0], p.name).toContain(`ranks ${rankPhrase(rk.rank, rk.of)}`)
+			expect(read.join(" "), p.name).not.toMatch(/settled advanced|average place/)
+			checked++
+		}
+		expect(checked).toBeGreaterThan(50)
 	})
 })

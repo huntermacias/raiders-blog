@@ -42,6 +42,7 @@ import {
 	type Signal,
 	type Sureness,
 } from "./playersKit"
+import { isV2Site } from "./labMethod"
 import { type PlayerHistory, hasSeason, seasonData } from "./seasonKit"
 
 export type RangeId = "season" | "form" | "earlier"
@@ -218,7 +219,8 @@ function sideOf(data: PlayersData, p: PlayerRow, key: string, info: StatInfo, ra
 			of = y.n
 			pct = pctFromRank(r, y.n)
 		}
-		if (s.season.hn && typeof s.season.a === "number" && typeof s.season.pe === "number") post = { v: s.season.a, se: s.season.pe }
+		// v2 judges a comparison on this season's plays; the history-informed projection has its own block.
+		if (!isV2Site() && s.season.hn && typeof s.season.a === "number" && typeof s.season.pe === "number") post = { v: s.season.a, se: s.season.pe }
 	} else {
 		// A standard error shrinks with the square root of the plays, so a window's error is the season's scaled by how few plays it has.
 		if (s.season.se && s.season.n > 0) se = s.season.se * Math.sqrt(s.season.n / sl.n)

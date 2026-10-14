@@ -35,9 +35,9 @@ describe("the comparison page", () => {
 	})
 
 	it("keeps the chosen stretch and stats when it draws", async () => {
-		render(await page({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,share" }))
+		render(await page({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,yacOe" }))
 		expect(screen.getAllByTestId("compare-row")).toHaveLength(2)
-		expect(screen.getByTestId("compare-share").querySelector("img")?.getAttribute("src")).toContain("r=form&m=croe,share")
+		expect(screen.getByTestId("compare-share").querySelector("img")?.getAttribute("src")).toContain("r=form&m=croe,yacOe")
 	})
 
 	it("explains a pair that cannot be compared and offers the debates instead", async () => {
@@ -57,9 +57,9 @@ describe("the comparison page", () => {
 
 describe("what a link to a comparison unfolds into", () => {
 	it("is the comparison's own graphic, with the exact range and stats, and is not indexed", async () => {
-		const meta = await generateMetadata({ searchParams: Promise.resolve({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,share" }) })
+		const meta = await generateMetadata({ searchParams: Promise.resolve({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,yacOe" }) })
 		const og = meta.openGraph as { images: { url: string; width: number; height: number }[] }
-		expect(og.images[0].url).toMatch(new RegExp(`^https://www\\.raidersrundown\\.com/api/og\\?type=compare&a=${te[0].slug}&b=${te[1].slug}&r=form&m=croe,share&size=wide&v=\\d+$`))
+		expect(og.images[0].url).toMatch(new RegExp(`^https://www\\.raidersrundown\\.com/api/og\\?type=compare&a=${te[0].slug}&b=${te[1].slug}&r=form&m=croe,yacOe&size=wide&v=\\d+$`))
 		expect([og.images[0].width, og.images[0].height]).toEqual([1200, 630])
 		const tw = meta.twitter as { card: string; images: { url: string }[] }
 		expect(tw.card).toBe("summary_large_image")

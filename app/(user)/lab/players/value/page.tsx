@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { isV2Site } from "@/lib/lab/labMethod"
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
 import UnitsCredit from "@/components/lab/UnitsCredit"
@@ -106,7 +107,7 @@ export default function ValuePage() {
 					</p>
 					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Pay against play</h1>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft">
-						Who has played better than his contract suggests, and who has not. Each player is ranked by overall grade and by yearly pay against the other players at his job on {coverageWords(contracts)}, and the gap between the two ranks is the read.
+						Who has played better than his contract suggests, and who has not. Each player is ranked by {isV2Site() ? "how he has played this season" : "overall grade"} and by yearly pay against the other players at his job on {coverageWords(contracts)}, and the gap between the two ranks is the read.
 					</p>
 					<p className="mt-3 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-tint px-4 py-3 text-sm leading-relaxed text-lab-soft" data-testid="value-caveat">
 						{contracts.teams.length >= 32 ? "A rank here is a rank across the league, among the players who have both a grade and a contract row, so a backup with no grade yet is left out." : `This is a comparison among ${contracts.teams.join(", ")} players only, so a rank here is a rank among those, not among the league.`} A player whose grade is still an early read is shown without a verdict, and a position with few players is not called either way. Contract figures are as of {contracts.asOf}, read from a public cap site, so a deal signed or cut since may differ.

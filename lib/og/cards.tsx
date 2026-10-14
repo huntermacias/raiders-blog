@@ -21,6 +21,7 @@ import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
 import { type PlayerCardSpec, renderPlayerCard } from "./playerCard"
 import { type PlayerBoardCardSpec, renderPlayerBoardCard } from "./playerBoardCard"
+import { type HubCardSpec, renderHubCard } from "./hubCard"
 import { type CompareCardSpec, compareCardSize, renderCompareCard } from "./compareCards"
 import { type MathCardSpec, renderMathCard } from "./mathCard"
 import { type RankingsCardSpec, renderRankingsCard } from "./rankingsCard"
@@ -79,6 +80,7 @@ export type CardSpec =
 	| BoardCardSpec
 	| PlayerCardSpec
 	| PlayerBoardCardSpec
+	| HubCardSpec
 	| CompareCardSpec
 	| {
 			type: "scoreboard"
@@ -502,6 +504,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 			return renderPlayerCard(spec)
 		case "playerboard":
 			return renderPlayerBoardCard(spec)
+		case "hub":
+			return renderHubCard(spec)
 		case "compare":
 			return renderCompareCard(spec)
 

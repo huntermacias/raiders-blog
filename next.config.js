@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
+  // Always define the Player Lab method switch ("v1" unless NEXT_PUBLIC_LAB_METHOD=v2 is set for the build). Next only inlines a
+  // NEXT_PUBLIC_ variable that exists at build time, so without this a default build kept both data files and chose one at run time.
+  env: { NEXT_PUBLIC_LAB_METHOD: process.env.NEXT_PUBLIC_LAB_METHOD === "v2" ? "v2" : "v1" },
   experimental: {
     // Sanity Studio (via next-sanity) bundles the Mux video input plugin,
     // whose dependency chain (@mux/mux-player -> custom-media-element) ships

@@ -6,7 +6,10 @@
 // 25th, 50th, 75th and 90th best players look like). This file turns that into words and lists, so a number is never shown alone.
 // Pure functions of the data they are handed; like unitsKit.ts it imports no data, so the server, the browser and the tests share it.
 
+import { isV2Site } from "./labMethod"
 import { ordinal } from "./unitsKit"
+import { pct0, pct1 } from "./v2/fmt"
+import { V2_EXTRA } from "./v2/statsV2"
 
 export { ordinal }
 
@@ -27,6 +30,14 @@ export type Slice = {
 	hn?: number
 	rl?: number
 	pe?: number
+	/** v2 only: the share of the estimate that comes from this season's plays, the grade from this season alone, and his rank on the estimate. */
+	cw?: number
+	g0?: number | null
+	ar?: number | null
+	/** A window's (form or earlier) own score on the scouting axis; the season has none. */
+	s?: number | null
+	/** v2: how many players are ranked on this stat, so a rank reads "10th of 40" from the row alone. */
+	of?: number
 }
 export type PlayerStat = { k: string; season: Slice; form: Slice | null; earlier: Slice | null; delta?: number; z?: number }
 export type Mover = { score: number; driver: string; stats: number; agree: number; z?: number }
@@ -51,7 +62,7 @@ export type PlayerRow = {
 	shot?: string
 }
 /** `rel` is the share of the differences between players on this stat that is real rather than luck so far (0 to 1); style stats have none. */
-export type Yard = { n: number; mean: number; sd: number; q: [number, number, number, number, number]; rel?: number }
+export type Yard = { n: number; mean: number; sd: number; q: [number, number, number, number, number]; rel?: number; /** v2: the league mean the grade is centred on, the fixed true-talent spread, and the noise in one play. */ mu?: number; ts?: number; ps?: number }
 export type PlayersData = {
 	season: number
 	/** The earlier seasons this season's grades start from, when the builder had a history file. */
@@ -123,8 +134,6 @@ export const GROUP_META: Record<PlayerGroup, GroupMeta> = {
 // ---------------------------------------------------------------------------------------------- the stats
 
 const signed = (v: number, d: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(d)}`
-const pct0 = (v: number) => `${(v * 100).toFixed(0)}%`
-const pct1 = (v: number) => `${(v * 100).toFixed(1)}%`
 const yds1 = (v: number) => `${v.toFixed(1)} yds`
 
 export type StatInfo = {
@@ -256,11 +265,17 @@ const OL: Record<string, StatInfo> = {
 
 /** The stat catalogs, one per kind of job. build_players.py keeps the same keys, in the same groups. */
 export const STAT_SETS = { QB, RB, OL, REC, EDGE, LB, DB, KICK, PUNT, PRET, KRET }
-export const STAT: Record<PlayerGroup, Record<string, StatInfo>> = {
+const STAT_V1: Record<PlayerGroup, Record<string, StatInfo>> = {
 	qb: QB, rb: RB, wr: REC, te: REC, ol: OL, edge: EDGE, idl: EDGE, lb: LB, cb: DB, saf: DB, k: KICK, p: PUNT, pr: PRET, kr: KRET,
 }
+/** On the v2 site the catalog also describes the stats only v2 builds (see v2/statsV2.ts); on v1 it is exactly what it always was. */
+export const STAT: Record<PlayerGroup, Record<string, StatInfo>> = isV2Site()
+	? (Object.fromEntries(Object.entries(STAT_V1).map(([g, set]) => [g, { ...set, ...(V2_EXTRA[g as PlayerGroup] ?? {}) }])) as Record<PlayerGroup, Record<string, StatInfo>>)
+	: STAT_V1
 /** The stat a card, a leaderboard and the progression chart open on. Mirrors HEADLINE in build_players.py. */
-export const HEADLINE: Record<PlayerGroup, string> = { qb: "epaDb", rb: "epaRush", wr: "epaTgt", te: "epaTgt", ol: "runSucc", edge: "pressRate", idl: "pressRate", lb: "missedPct", cb: "yardsTgt", saf: "yardsTgt", k: "fgOe", p: "epaPunt", pr: "epaRet", kr: "epaRet" }
+const HEADLINE_V1: Record<PlayerGroup, string> = { qb: "epaDb", rb: "epaRush", wr: "epaTgt", te: "epaTgt", ol: "runSucc", edge: "pressRate", idl: "pressRate", lb: "missedPct", cb: "yardsTgt", saf: "yardsTgt", k: "fgOe", p: "epaPunt", pr: "epaRet", kr: "epaRet" }
+/** The stat a job is read on. v2 reads receivers on success rate (the method's primary), everything else as before. */
+export const HEADLINE: Record<PlayerGroup, string> = isV2Site() ? { ...HEADLINE_V1, wr: "success", te: "success" } : HEADLINE_V1
 
 /** `bad`: a total where more is worse (missed tackles, interceptions thrown, penalties). It still ranks most-first on its board, but it never earns a badge. */
 export type BoxInfo = { label: string; short: string; path: string; fmt?: (v: number) => string; bad?: true }
@@ -448,7 +463,8 @@ export function signalOf(y: Yard | null | undefined): Signal {
  * has a settled EPA per dropback in week 5 even though the league as a whole does not yet.
  */
 export function signalFor(y: Yard | null | undefined, s: Slice): Signal {
-	if (s.hn && s.rl !== undefined && y && y.rel !== undefined) return signalOf({ ...y, rel: Math.max(y.rel, s.rl) })
+	// (v2 never mixes earlier seasons into a this-season reading: the projection is shown on its own.)
+	if (!isV2Site() && s.hn && s.rl !== undefined && y && y.rel !== undefined) return signalOf({ ...y, rel: Math.max(y.rel, s.rl) })
 	return signalOf(y)
 }
 export const SIGNAL_WORD: Record<Signal, string> = {
@@ -508,7 +524,7 @@ export function contextOf(data: PlayersData, p: PlayerRow, s: PlayerStat): StatC
 	const sl = s.season
 	const se = sl.se ?? null
 	// With his earlier seasons in the grade, the number to trust is the stabilized one and its own, smaller, margin.
-	const withHistory = Boolean(sl.hn && sl.a !== undefined && sl.a !== null && sl.pe !== undefined)
+	const withHistory = Boolean(!isV2Site() && sl.hn && sl.a !== undefined && sl.a !== null && sl.pe !== undefined)
 	const signal = info.higher === null ? "partial" : signalFor(y, sl)
 	return {
 		info,
@@ -525,7 +541,7 @@ export function contextOf(data: PlayersData, p: PlayerRow, s: PlayerStat): StatC
 		signal,
 		yard: y,
 		stylePct: info.higher === null && y ? valuePct(sl.v, y) : null,
-		history: sl.hn ?? 0,
+		history: isV2Site() ? 0 : (sl.hn ?? 0),
 	}
 }
 
@@ -594,6 +610,7 @@ export const lc = (s: string) => (/^[A-Z]{2,}/.test(s) ? s : s.charAt(0).toLower
 /** The mean grade over the stats that count, in one slice: where he sits among his peers in that stretch. */
 export function overall(p: PlayerRow, slice: "season" | "form" | "earlier" = "season"): number | null {
 	if (!hasOverall(p.group)) return null
+	if (isV2Site()) return observedScore(p, slice)
 	const gs = p.stats.filter((s) => isCore(p.group, s.k) && typeof s[slice]?.g === "number").map((s) => s[slice]!.g as number)
 	if (!gs.length) return null
 	return gs.reduce((a, b) => a + b, 0) / gs.length
@@ -604,8 +621,38 @@ export function overall(p: PlayerRow, slice: "season" | "form" | "earlier" = "se
  * (penalties): the public data has no block won or lost, and his line's run success and sack rate are shared by the five who start
  * together, so averaging them in would grade the unit and call it him. Linemen get a record and their line's numbers instead.
  */
+/** What the 1-to-99 number beside a name is called. In v2 it is a standing on this season's plays, not a grade. */
+export const OVERALL_WORD = isV2Site() ? "Standing" : "Overall"
+
 export function hasOverall(group: PlayerGroup): boolean {
+	if (isV2Site()) return observedKeyOf(group) !== null
 	return Object.keys(STAT[group] ?? {}).filter((k) => isCore(group, k)).length >= 2
+}
+
+/**
+ * v2 reads a player on ONE observed stat, never on an average of several: the job's primary stat where the method has one, else its headline.
+ * Offensive linemen have no ranked stat of their own, so no standing at all. (A test holds this to the method's own policy in the data.)
+ */
+export const V2_OBSERVED_KEY: Partial<Record<PlayerGroup, string>> = { qb: "epaDb", wr: "success", te: "success", edge: "pressRate", idl: "pressRate", p: "epaPunt", kr: "epaRet" }
+export function observedKeyOf(group: PlayerGroup): string | null {
+	const key = HEADLINE[group]
+	const info = statInfo(group, key)
+	return info && info.higher !== null && !info.unit ? key : null
+}
+
+/**
+ * v2 only: where he stands this season on his one observed stat, on the scouting axis (20 to 80) so every place that draws a "standing"
+ * keeps working. It is the percentile of his rank among players with enough plays, from THIS season's plays alone: no earlier season,
+ * no league pull, no average of several stats. The form and earlier slices are those windows' own scores on the same stat.
+ */
+function observedScore(p: PlayerRow, slice: "season" | "form" | "earlier"): number | null {
+	const key = observedKeyOf(p.group)
+	const s = key ? p.stats.find((x) => x.k === key) : undefined
+	if (!s) return null
+	if (slice !== "season") return typeof s[slice]?.s === "number" ? (s[slice]!.s as number) : null
+	const r = s.season.r
+	const of = s.season.of
+	return typeof r === "number" && typeof of === "number" ? 20 + 0.6 * pctFromRank(r, of) : null
 }
 
 export type LineRecord = {
@@ -669,6 +716,7 @@ export function gradeScore(data: PlayersData, p: PlayerRow): number | null {
 /** The same 1 to 99 stretch for any scouting grade, so a grade over a different stretch of games (recent form) reads on the same scale. */
 export function stretchGrade(data: PlayersData, o: number | null): number | null {
 	if (o === null) return null
+	if (isV2Site()) return shownPct((o - 20) / 0.6) // v2: the observed percentile itself; nothing is stretched
 	let k = stretchCache.get(data)
 	if (k === undefined) {
 		const all = data.players.map((x) => overall(x)).filter((x): x is number => x !== null).sort((a, b) => a - b)
@@ -683,6 +731,13 @@ const overallCache = new WeakMap<PlayersData, Map<PlayerGroup, Map<string, numbe
 
 /** His rank among his group by overall grade this season (1 is best), and how many are ranked. */
 export function overallRank(data: PlayersData, p: PlayerRow): { rank: number; of: number } | null {
+	if (isV2Site()) {
+		// v2: the rank is the stat's own, the same one the player's card shows, never a re-sort of the derived 1-to-99 number.
+		const key = observedKeyOf(p.group)
+		const st = key ? p.stats.find((x) => x.k === key) : undefined
+		const of = key ? (yardOf(data, p.group, key)?.n ?? null) : null
+		return st && typeof st.season.r === "number" && of ? { rank: st.season.r, of } : null
+	}
 	let by = overallCache.get(data)
 	if (!by) overallCache.set(data, (by = new Map()))
 	let ranks = by.get(p.group)
@@ -955,7 +1010,7 @@ export type ArcPoint = { w: number; pct: number }
 export function arcOf(p: PlayerRow, log: PlayerLog | undefined): ArcPoint[] {
 	const byWeek = new Map<number, number[]>()
 	for (const s of p.stats) {
-		if (!isCore(p.group, s.k)) continue
+		if (isV2Site() ? s.k !== observedKeyOf(p.group) : !isCore(p.group, s.k)) continue
 		for (const t of trailOf(log, s.k)) if (t[3] !== null) byWeek.set(t[0], [...(byWeek.get(t[0]) ?? []), t[3]])
 	}
 	return Array.from(byWeek.entries())
@@ -1021,7 +1076,12 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 		.slice(0, 3)
 		.map((k) => `${formatBox(p.group, k, p.box[k])} ${countWord(p.box[k], lc(BOX[p.group][k].label))}`)
 	const games = `${p.games} ${p.games === 1 ? "game" : "games"}`
-	if (o !== null && rk && solid.length) {
+	const obsKey = isV2Site() ? observedKeyOf(p.group) : null
+	const obsStat = obsKey ? all.find((x) => x.s.k === obsKey) : undefined
+	if (isV2Site() && o !== null && rk && obsStat) {
+		// v2 reads one stat, says so, and uses the same rank the card beside it shows.
+		out.push(`${first} ranks ${rankPhrase(rk.rank, rk.of)} among ${peers} this season on ${lc(obsStat.c.info.label)}: ${formatStat(p.group, obsStat.s.k, obsStat.c.value)} on ${Math.round(obsStat.c.n)} ${obsStat.c.info.per} over ${games}.${box.length ? ` The box score reads ${list(box)}.` : ""}`)
+	} else if (o !== null && rk && solid.length) {
 		out.push(`${first} grades ${gradeWord(o)} among ${peers}: ${rankPhrase(rk.rank, rk.of)} on the average of ${solid.length} settled advanced ${solid.length === 1 ? "stat" : "stats"} over ${games}.${box.length ? ` The box score reads ${list(box)}.` : ""}`)
 	} else if (o !== null) {
 		out.push(`${first} has played ${games}${box.length ? ` for ${list(box)}` : ""}, but every advanced number is still mostly luck at this point, so his grade of ${Math.round(o)} is a placeholder rather than a verdict.`)
@@ -1061,7 +1121,7 @@ export function scoutingRead(data: PlayersData, p: PlayerRow, extra: ReadExtra =
 
 	// 5. Which way the season is going: the whole arc first, then the recent stretch.
 	// Said as "average place", because it is a percentile averaged over his graded stats, not the 1 to 99 Overall above it.
-	const arc = o === null ? "" : arcLine(arcOf(p, extra.log), "His average place across his graded stats")
+	const arc = o === null ? "" : arcLine(arcOf(p, extra.log), isV2Site() && info ? `His place on ${lc(info.label)}` : "His average place across his graded stats")
 	if (arc) out.push(arc)
 	if (p.mover && moverTier(p) !== "steady") {
 		const conf = confidenceOf(p.mover.z)

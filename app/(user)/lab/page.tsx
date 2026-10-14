@@ -4,6 +4,14 @@ import Link from "@/components/SiteLink"
 import Sparkline from "@/components/lab/Sparkline"
 import Tip from "@/components/lab/Tip"
 import LabToolCard from "@/components/lab/LabToolCard"
+import Drops from "@/components/lab/hub/Drops"
+import HubPulse from "@/components/lab/hub/HubPulse"
+import CardPreview from "@/components/lab/hub/CardPreview"
+import ReportShare from "@/components/lab/hub/ReportShare"
+import SettleIt from "@/components/lab/hub/SettleIt"
+import UpdatedStamp from "@/components/lab/UpdatedStamp"
+import { getHub } from "@/lib/lab/hub"
+import { teamNick } from "@/lib/lab/playerView"
 import { gameSlug, getGames, getSeason } from "@/lib/lab/data"
 import { SWING_HELP } from "@/lib/lab/glossary"
 import { labColorVars } from "@/lib/lab/colors"
@@ -14,10 +22,14 @@ import { formatSwing, gameStory, swingPoints, clockAt, pct } from "@/lib/lab/wp"
 const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab`
 
-export const metadata: Metadata = {
-	title: "The Lab: playoff odds, matchups and Raiders game replays | Raiders Rundown",
+const hubStamp = () => getHub().input.stamp
+
+export function generateMetadata(): Metadata {
+	const card = `${SITE_URL}/api/og?type=hub&v=${hubStamp()}`
+	return {
+	title: "The Lab: this week's findings, playoff odds, matchups and game replays | Raiders Rundown",
 	description:
-		"Playoff odds and a playoff machine, position-group matchups for every game, and every Raiders game rebuilt from the play-by-play, with win probability scrubbers and drive replays.",
+		"The Raiders' playoff odds, the players moving the most, head-to-head debates the numbers can settle, and every Raiders game rebuilt from the play-by-play. Rebuilt after every game.",
 	alternates: { canonical: PAGE_URL },
 	openGraph: {
 		type: "website",
@@ -25,17 +37,23 @@ export const metadata: Metadata = {
 		description: "Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play.",
 		url: PAGE_URL,
 		siteName: "Raiders Rundown",
-		images: [`${SITE_URL}/og-default-v2.png`],
+		images: [{ url: card, width: 1200, height: 630, alt: "The Lab Report: this week's findings on one card" }],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "The Lab | Raiders Rundown",
 		description: "Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play.",
-		images: [`${SITE_URL}/og-default-v2.png`],
+		images: [card],
 	},
+	other: { "og:image": card },
+	}
 }
 
 export default function LabPage() {
+	const hub = getHub()
+	const odds = hub.input.odds
+	const next = hub.input.next
+	const reportText = `The Raiders Rundown Lab Report${hub.pulse.week ? `, Week ${hub.pulse.week}` : ""}: ${odds && odds.status === "live" ? `Raiders at ${odds.pct} to make the playoffs, ` : ""}the players moving, the units and the biggest play.`
 	const season = getSeason()
 	const games = getGames()
 	const latest = games[games.length - 1]
@@ -49,20 +67,42 @@ export default function LabPage() {
 	return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink" style={labColorVars(latest?.opp ?? "")}>
 			<section className="border-b border-lab-line">
-				<div className="container py-10 sm:py-14">
+				<div className="container grid gap-10 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-center">
+					<div className="min-w-0">
 					<p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-lab-muted">Raiders Rundown &middot; The Lab</p>
 					<h1 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">The Lab</h1>
 					<p className="mt-4 max-w-2xl text-base leading-relaxed text-lab-soft sm:text-lg">
-						Playoff odds, matchup breakdowns and every Raiders game rebuilt from the play-by-play. Built from open NFL data, and refreshed through the week as games finish.
+						The numbers behind the Raiders and the league, rebuilt after every game: the playoff race, the players moving the most, the arguments the data can settle, and every Raiders game replayed from the play-by-play.
 					</p>
-					<div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-sm tabular-nums text-lab-muted">
-						<span>
-							{season.season} season &middot; {wins}-{losses}
-						</span>
-						<span>{games.length} games replayed</span>
+					<dl className="mt-6 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-3" data-testid="hub-tiles">
+						<div className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3">
+							<dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">{season.season} record</dt>
+							<dd className="m-0 mt-1 font-mono text-2xl font-bold tabular-nums">{hub.pulse.record ?? `${wins}-${losses}`}</dd>
+						</div>
+						{odds ? (
+							<div className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3">
+								<dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">{odds.status === "live" ? "Playoff odds" : "Playoffs"}</dt>
+								<dd className="m-0 mt-1 font-mono text-2xl font-bold tabular-nums">{odds.pct}</dd>
+								{odds.change && odds.change.dir !== "flat" ? <dd className="m-0 text-xs text-lab-muted">{odds.change.text} {odds.change.since}</dd> : null}
+							</div>
+						) : null}
+						{next ? (
+							<div className="col-span-2 rounded-xl border border-lab-line bg-lab-surface px-4 py-3 sm:col-span-1">
+								<dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-muted">Next up{hub.input.units.slate ? `, Week ${hub.input.units.slate.week}` : ""}</dt>
+								<dd className="m-0 mt-1 font-serif text-2xl font-bold">
+									{next.venue === "at" ? "at" : "vs."} {teamNick(next.opp)}
+								</dd>
+							</div>
+						) : null}
+					</dl>
+					<div className="mt-5 max-w-3xl">
+						<HubPulse pulse={hub.pulse} />
 					</div>
+					<UpdatedStamp at={hub.input.players.generatedAt} kind="grades" className="mt-4" />
 					<nav aria-label="On this page" className="mt-6 flex flex-wrap gap-2">
 						{[
+							{ href: "#week", label: "This week" },
+							{ href: "#settle", label: "Settle it" },
 							{ href: "#start", label: "Start here" },
 							{ href: "#raiders", label: "The Raiders" },
 							{ href: "#league", label: "League and history" },
@@ -73,8 +113,47 @@ export default function LabPage() {
 							</a>
 						))}
 					</nav>
+					</div>
+					{hub.drops.length >= 3 ? (
+						<figure className="m-0 hidden lg:block">
+							<CardPreview src={`/api/og?type=hub&v=${hub.input.stamp}`} alt="The Lab Report: this week's findings on one card" />
+							<figcaption className="mt-3 flex items-center justify-between gap-3 text-xs text-lab-muted">
+								<span>The Lab Report, as it looks when you post it.</span>
+								<ReportShare stamp={hub.input.stamp} week={hub.pulse.week} text={reportText} />
+							</figcaption>
+						</figure>
+					) : null}
 				</div>
 			</section>
+
+			{hub.drops.length ? (
+				<section id="week" className="container scroll-mt-24 pt-10 sm:pt-12" aria-labelledby="week-heading">
+					<div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+						<h2 id="week-heading" className="m-0 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							{hub.pulse.week ? `Week ${hub.pulse.week} in the Lab` : "This week in the Lab"}
+						</h2>
+						<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+							<p className="m-0 text-sm text-lab-muted">What the numbers found. Every one has a card you can post.</p>
+							<span className="lg:hidden">
+								<ReportShare stamp={hub.input.stamp} week={hub.pulse.week} text={reportText} />
+							</span>
+						</div>
+					</div>
+					<Drops drops={hub.drops} stamp={hub.input.stamp} />
+				</section>
+			) : null}
+
+			{hub.takes.length ? (
+				<section id="settle" className="container scroll-mt-24 pt-10 sm:pt-12" aria-labelledby="settle-heading">
+					<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+						<h2 id="settle-heading" className="m-0 font-serif text-2xl font-bold tracking-tight sm:text-3xl">
+							Settle it
+						</h2>
+						<p className="m-0 text-sm text-lab-muted">Arguments the numbers can answer. You go first.</p>
+					</div>
+					<SettleIt takes={hub.takes} stamp={hub.input.stamp} />
+				</section>
+			) : null}
 
 			{LAB_GROUPS.map((group) => (
 				<section key={group.id} id={group.id} className="container scroll-mt-24 pt-10 sm:pt-12" aria-labelledby={`${group.id}-heading`}>
@@ -84,7 +163,7 @@ export default function LabPage() {
 						</h2>
 						<p className="m-0 text-sm text-lab-muted">{group.blurb}</p>
 					</div>
-					<ul className={`m-0 grid list-none gap-4 p-0 ${group.id === "start" ? "md:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+					<ul className={`m-0 grid list-none gap-4 p-0 ${group.id === "start" ? "md:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
 						{group.id === "raiders" && latest && latestStory && latestLow ? (
 							<li>
 								<Link
@@ -122,7 +201,7 @@ export default function LabPage() {
 						) : null}
 						{toolsIn(group.id).map((t) => (
 							<li key={t.id}>
-								<LabToolCard tool={t} badges={toolBadges(t, weeks)} featured={group.id === "start"} />
+								<LabToolCard tool={t} badges={toolBadges(t, weeks)} featured={group.id === "start"} teaser={hub.teasers[t.id]} />
 							</li>
 						))}
 					</ul>

@@ -19,6 +19,7 @@
 //   /api/og?type=board[&sort=composite|off|def|qb|ol|rec|run|rush|rund|cov][&show=AFC|NFC|<division>][&team=XX][&size=wide|tall]   (the league's position-group heat map)
 //   /api/og?type=twins[&size=wide|tall][&mode=off|def][&twin=2022-JAX]   (season twins: the Raiders' closest team-season)
 //   /api/og?type=rooting&team=LV&goal=playoffs|division|bye[&week=8][&size=wide|tall]   (the rooting guide: a team's goal and the top three games to root in)
+//   /api/og?type=hub   (the Lab hub: the week's findings on one card)
 //   /api/og?type=playoffs[&s=<scenario code>][&t=KC][&size=wide|tall]   (the playoff machine: a team's seed and bracket in a scenario, or its odds as the race stands)
 //   /api/og?type=player&slug=brock-bowers[&pos=te]   (a Player Lab profile: grade, league-best badges and strongest numbers)
 //   /api/og?type=compare&a=brock-bowers&b=trey-mcbride[&r=form|earlier][&m=epaTgt,croe][&g=te][&y=2024|&ya=2022&yb=2025][&f=h2h|radar|spot][&side=a|b][&size=wide|tall][&scale=2]
@@ -292,6 +293,10 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 			return { ...insight, a: { ...insight.a, photo: pa }, b: { ...insight.b, photo: pb } }
 		}
 		if (insight.type === "player" && insight.headshot) return { ...insight, photo: await headshotDataUri(insight.headshot) }
+		if (insight.type === "hub") {
+			const photos = await Promise.all(insight.rows.map((r) => (r.headshot ? headshotDataUri(r.headshot) : Promise.resolve(null))))
+			return { ...insight, rows: insight.rows.map((r, i) => ({ ...r, photo: photos[i] })) }
+		}
 		if (insight.type === "playerboard") {
 			// Every face on the card, fetched together: each one is cut off after 3 seconds, so a slow image host costs one wait, not six.
 			const photos = await Promise.all([...insight.rows, ...(insight.focal ? [insight.focal] : [])].map((r) => (r.headshot ? headshotDataUri(r.headshot) : Promise.resolve(null))))
@@ -299,7 +304,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		}
 		return insight
 	}
-	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard" || type === "compare") return null
+	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard" || type === "compare" || type === "hub") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -339,7 +344,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
-	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare" || spec.type === "hub") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

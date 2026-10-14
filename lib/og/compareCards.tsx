@@ -19,6 +19,7 @@ import { type CompareConfig, type Comparison, type Metric, buildComparison, conf
 import { SIZE_PIXELS } from "../lab/lastShare"
 import { teamNick } from "../lab/playerView"
 import { type PlayerRow, type PlayersData, GROUP_META, headshotUrl, ordinal, shotUrl } from "../lab/playersKit"
+import { isV2Site } from "../lab/labMethod"
 import { overallRank } from "../lab/playersKit"
 import { SOURCES, sourceLine } from "./basis"
 import { BG, BRIGHT, DIM, LINE, SILVER, WHITE, Speed, accent, caps, clip, rgba, RRMark } from "./kit"
@@ -284,7 +285,7 @@ function Overall({ p, size, align }: { p: ComparePlayer; size: number; align: "l
 					<div style={anton({ fontSize: size, lineHeight: 1, color: p.color })}>{String(p.overall)}</div>
 				</div>
 			)}
-			<div style={dim({ fontSize: Math.max(13, Math.round(size / 4.2)), letterSpacing: 2, marginTop: 2 })}>{p.overall === null ? "No overall for linemen" : "Overall grade"}</div>
+			<div style={dim({ fontSize: Math.max(13, Math.round(size / 4.2)), letterSpacing: 2, marginTop: 2 })}>{p.overall === null ? "No overall for linemen" : isV2Site() ? "This season (percentile)" : "Overall grade"}</div>
 		</div>
 	)
 }

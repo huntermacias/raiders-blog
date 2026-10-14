@@ -1,0 +1,276 @@
+{
+ "version": 3,
+ "generatedAt": "2026-10-14T05:48:47Z",
+ "generatedFrom": "QB rolling replay of the league's quarterback-only EPA per dropback, test seasons 2019-2025, estimate made after the first k games and scored on the games after; talent spread and drift learned from earlier seasons only",
+ "intervalScale": 1.45,
+ "target": "P(A's EPA per dropback in the games after the cutoff > B's in the same games), relative to the league in those games, counting the uncertainty in both estimated levels and the luck in both outcomes",
+ "cutoffGames": [
+  4,
+  5,
+  8,
+  10
+ ],
+ "display": {
+  "step": 0.05,
+  "floor": 0.55,
+  "cap": 0.8,
+  "rule": "shown rounded DOWN to the step, never above the cap (the top bucket's realized rate, rounded down); below the floor the pair is too close to call; quarterback pairs only, both with 4 to 10 games"
+ },
+ "coverage": {
+  "pooled": {
+   "1.0": {
+    "within80": 0.7645390070921986,
+    "within80Ci": [
+     0.7227373742739764,
+     0.8042710067800668
+    ],
+    "within95": 0.9290780141843972,
+    "within95Ci": [
+     0.898216363773756,
+     0.9558548774793781
+    ]
+   },
+   "1.09": {
+    "within80": 0.7730496453900709,
+    "within80Ci": [
+     0.7308846672083766,
+     0.8134619691583495
+    ],
+    "within95": 0.9347517730496454,
+    "within95Ci": [
+     0.9052566096423017,
+     0.9590555785789935
+    ]
+   },
+   "1.2": {
+    "within80": 0.7829787234042553,
+    "within80Ci": [
+     0.7419130130829921,
+     0.8235549238282673
+    ],
+    "within95": 0.9418439716312057,
+    "within95Ci": [
+     0.912881387183146,
+     0.9666762728146013
+    ]
+   },
+   "1.3": {
+    "within80": 0.7900709219858156,
+    "within80Ci": [
+     0.7476768352656291,
+     0.8313512677798391
+    ],
+    "within95": 0.948936170212766,
+    "within95Ci": [
+     0.92091915508349,
+     0.9727204828888673
+    ]
+   },
+   "1.4": {
+    "within80": 0.798581560283688,
+    "within80Ci": [
+     0.7578640776699029,
+     0.839578315712128
+    ],
+    "within95": 0.9546099290780142,
+    "within95Ci": [
+     0.9289030024623369,
+     0.9765522629310345
+    ]
+   },
+   "1.45": {
+    "within80": 0.8014184397163121,
+    "within80Ci": [
+     0.7621789240125404,
+     0.8421122994652406
+    ],
+    "within95": 0.9602836879432625,
+    "within95Ci": [
+     0.9373878260518554,
+     0.9796909792510122
+    ]
+   }
+  },
+  "byCutoff": {
+   "4": {
+    "rows": 207,
+    "within80": 0.7729468599033816,
+    "within80Ci": [
+     0.7149270833333333,
+     0.8195916312374132
+    ],
+    "within95": 0.9516908212560387,
+    "within95Ci": [
+     0.9238372234231171,
+     0.9739673913043478
+    ]
+   },
+   "5": {
+    "rows": 206,
+    "within80": 0.7766990291262136,
+    "within80Ci": [
+     0.7323198198198198,
+     0.8263716814159292
+    ],
+    "within95": 0.9223300970873787,
+    "within95Ci": [
+     0.8771901854364541,
+     0.9653718908476213
+    ]
+   },
+   "8": {
+    "rows": 165,
+    "within80": 0.7454545454545455,
+    "within80Ci": [
+     0.6877877347197046,
+     0.8001315789473683
+    ],
+    "within95": 0.9090909090909091,
+    "within95Ci": [
+     0.8749208860759494,
+     0.9426751592356688
+    ]
+   },
+   "10": {
+    "rows": 127,
+    "within80": 0.7559055118110236,
+    "within80Ci": [
+     0.6923076923076923,
+     0.8046970274390244
+    ],
+    "within95": 0.9291338582677166,
+    "within95Ci": [
+     0.8908948863636363,
+     0.9675056910569105
+    ]
+   }
+  },
+  "chronological": {
+   "widthsLearnedFromEarlierSeasons": {
+    "2021": 1.852,
+    "2022": 1.834,
+    "2023": 1.582,
+    "2024": 1.456,
+    "2025": 1.456
+   },
+   "rows": 500,
+   "within80": 0.834,
+   "within95": 0.972
+  }
+ },
+ "pairwise": {
+  "pairs": 6275,
+  "players": 60,
+  "playerSeasonCutoffs": 705,
+  "buckets": [
+   {
+    "bucket": "0.5-0.6",
+    "pairs": 2525,
+    "claimed": 0.5494493760433872,
+    "realized": 0.5952475247524752,
+    "realizedLo": 0.5661902813057982,
+    "realizedHi": 0.6315683561289687,
+    "publish": true
+   },
+   {
+    "bucket": "0.6-0.7",
+    "pairs": 2018,
+    "claimed": 0.6469055155419507,
+    "realized": 0.6848364717542121,
+    "realizedLo": 0.635896919357838,
+    "realizedHi": 0.7335784822294399,
+    "publish": true
+   },
+   {
+    "bucket": "0.7-0.8",
+    "pairs": 1200,
+    "claimed": 0.7432532317995566,
+    "realized": 0.7725,
+    "realizedLo": 0.709722226583968,
+    "realizedHi": 0.8392304306328904,
+    "publish": true
+   },
+   {
+    "bucket": "0.8-1.0",
+    "pairs": 532,
+    "claimed": 0.8481100836250215,
+    "realized": 0.825187969924812,
+    "realizedLo": 0.7572630776003401,
+    "realizedHi": 0.9025071413997142,
+    "publish": true
+   }
+  ],
+  "brier": {
+   "model": 0.2127192049087224,
+   "coinFlip": 0.25,
+   "modelCi": [
+    0.19949370350010556,
+    0.22677897171923908
+   ],
+   "coinFlipCi": [
+    0.25,
+    0.25
+   ]
+  },
+  "scoredOutOfSample": "seasons 2021-2025, each with the width learned from the seasons before it",
+  "inSampleAtPublishedWidth": {
+   "buckets": [
+    {
+     "bucket": "0.5-0.6",
+     "pairs": 3488,
+     "claimed": 0.549403790587764,
+     "realized": 0.5702408256880734,
+     "realizedLo": 0.5398234134815519,
+     "realizedHi": 0.5973232131541784,
+     "publish": true
+    },
+    {
+     "bucket": "0.6-0.7",
+     "pairs": 2850,
+     "claimed": 0.6471875319328069,
+     "realized": 0.6578947368421053,
+     "realizedLo": 0.6223673009693222,
+     "realizedHi": 0.6981361003195595,
+     "publish": true
+    },
+    {
+     "bucket": "0.7-0.8",
+     "pairs": 1731,
+     "claimed": 0.744984790230369,
+     "realized": 0.7642980935875217,
+     "realizedLo": 0.7104773641019991,
+     "realizedHi": 0.8145796343270453,
+     "publish": true
+    },
+    {
+     "bucket": "0.8-1.0",
+     "pairs": 809,
+     "claimed": 0.8490170176514228,
+     "realized": 0.8343634116192831,
+     "realizedLo": 0.7750597734302359,
+     "realizedHi": 0.8953471705394305,
+     "publish": true
+    }
+   ],
+   "brier": {
+    "model": 0.21559700642008503,
+    "coinFlip": 0.25,
+    "modelCi": [
+     0.2011764323713375,
+     0.22807314455418484
+    ],
+    "coinFlipCi": [
+     0.25,
+     0.25
+    ]
+   }
+  }
+ },
+ "notes": [
+  "Pairs share players, so 6,275 pairs are only 705 player-season-cutoffs; every interval here resamples players, not pairs.",
+  "On identical rows, a wider range never covers less; coverage rises with the width at every cutoff.",
+  "The published width (1.45) is learned from every completed season and applies to the season being played. Its coverage on the seasons it was learned from is a description, not a test; the test is the chronological row (each season scored with a width learned only from earlier seasons): 83.4% inside the 80% range and 97.2% inside the 95% range.",
+  "The value being estimated is the league's quarterback-only EPA per dropback, relative to the league over the same games.",
+  "Chances are not published after 10 games or for any pair of non-quarterbacks."
+ ]
+}

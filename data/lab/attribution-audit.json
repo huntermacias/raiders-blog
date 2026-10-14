@@ -1,0 +1,377 @@
+{
+ "version": 1,
+ "generatedAt": "2026-10-14T06:31:08Z",
+ "seasons": "2016-2026 regular season",
+ "ownership": {
+  "dropback": "the quarterback's: a pass, a sack, or a scramble (the league leaves the passer empty on a scramble and names the quarterback as the rusher)",
+  "designedQuarterbackRun": "his, but kept apart from his dropbacks",
+  "target": "the receiver's",
+  "penaltyPlay": "left out of every player and team number: the play's EPA mixes the penalty's result with the snap, and the passer did not control it",
+  "noPlay": "left out (no result to value)",
+  "kneelSpike": "left out (not a pass or run play)",
+  "twoPointTry": "counted as an ordinary pass or run when the league gives it an EPA value"
+ },
+ "leftOut": {
+  "dropbacksByPlayTypeAndPenalty": [
+   {
+    "play_type": "pass",
+    "pen": false,
+    "n": 195221,
+    "withEpa": 195220,
+    "meanEpa": 0.014
+   },
+   {
+    "play_type": "pass",
+    "pen": true,
+    "n": 2771,
+    "withEpa": 2771,
+    "meanEpa": 0.381
+   },
+   {
+    "play_type": "run",
+    "pen": false,
+    "n": 8618,
+    "withEpa": 8618,
+    "meanEpa": 0.426
+   },
+   {
+    "play_type": "run",
+    "pen": true,
+    "n": 509,
+    "withEpa": 509,
+    "meanEpa": 1.395
+   }
+  ],
+  "penaltyDropbacksBySide": {
+   "defense flagged": {
+    "n": 2068,
+    "meanEpa": 1.503
+   },
+   "offense flagged": {
+    "n": 1212,
+    "meanEpa": -1.108
+   }
+  },
+  "mostCommonPenaltiesOnDropbacks": [
+   {
+    "side": "defense flagged",
+    "penalty_type": "Unnecessary Roughness",
+    "n": 686,
+    "meanEpa": 1.7
+   },
+   {
+    "side": "defense flagged",
+    "penalty_type": "Roughing the Passer",
+    "n": 446,
+    "meanEpa": 2.287
+   },
+   {
+    "side": "offense flagged",
+    "penalty_type": "Intentional Grounding",
+    "n": 389,
+    "meanEpa": -1.833
+   },
+   {
+    "side": "defense flagged",
+    "penalty_type": "Face Mask",
+    "n": 224,
+    "meanEpa": 1.997
+   },
+   {
+    "side": "defense flagged",
+    "penalty_type": "Defensive Holding",
+    "n": 195,
+    "meanEpa": 1.56
+   },
+   {
+    "side": "offense flagged",
+    "penalty_type": "Offensive Holding",
+    "n": 168,
+    "meanEpa": -0.432
+   },
+   {
+    "side": "offense flagged",
+    "penalty_type": "Unnecessary Roughness",
+    "n": 149,
+    "meanEpa": -2.067
+   },
+   {
+    "side": "offense flagged",
+    "penalty_type": "Unsportsmanlike Conduct",
+    "n": 120,
+    "meanEpa": 0.109
+   },
+   {
+    "side": "offense flagged",
+    "penalty_type": "Illegal Block Above the Waist",
+    "n": 112,
+    "meanEpa": -0.377
+   },
+   {
+    "side": "defense flagged",
+    "penalty_type": "Unsportsmanlike Conduct",
+    "n": 91,
+    "meanEpa": -0.777
+   }
+  ],
+  "bySeason": [
+   {
+    "season": 2016,
+    "dropbacksCounted": 19751,
+    "dropbacksLeftOutForAPenalty": 321,
+    "playsWhereQbEpaDiffers": 57,
+    "epaTakenOffQuarterbacks": -253.9,
+    "twoPointTriesCounted": 100
+   },
+   {
+    "season": 2017,
+    "dropbacksCounted": 19073,
+    "dropbacksLeftOutForAPenalty": 341,
+    "playsWhereQbEpaDiffers": 65,
+    "epaTakenOffQuarterbacks": -307.1,
+    "twoPointTriesCounted": 81
+   },
+   {
+    "season": 2018,
+    "dropbacksCounted": 19414,
+    "dropbacksLeftOutForAPenalty": 351,
+    "playsWhereQbEpaDiffers": 71,
+    "epaTakenOffQuarterbacks": -335.4,
+    "twoPointTriesCounted": 129
+   },
+   {
+    "season": 2019,
+    "dropbacksCounted": 19574,
+    "dropbacksLeftOutForAPenalty": 347,
+    "playsWhereQbEpaDiffers": 73,
+    "epaTakenOffQuarterbacks": -335.3,
+    "twoPointTriesCounted": 110
+   },
+   {
+    "season": 2020,
+    "dropbacksCounted": 19718,
+    "dropbacksLeftOutForAPenalty": 306,
+    "playsWhereQbEpaDiffers": 68,
+    "epaTakenOffQuarterbacks": -318.0,
+    "twoPointTriesCounted": 128
+   },
+   {
+    "season": 2021,
+    "dropbacksCounted": 20584,
+    "dropbacksLeftOutForAPenalty": 323,
+    "playsWhereQbEpaDiffers": 63,
+    "epaTakenOffQuarterbacks": -278.7,
+    "twoPointTriesCounted": 153
+   },
+   {
+    "season": 2022,
+    "dropbacksCounted": 20014,
+    "dropbacksLeftOutForAPenalty": 284,
+    "playsWhereQbEpaDiffers": 77,
+    "epaTakenOffQuarterbacks": -376.8,
+    "twoPointTriesCounted": 118
+   },
+   {
+    "season": 2023,
+    "dropbacksCounted": 20466,
+    "dropbacksLeftOutForAPenalty": 304,
+    "playsWhereQbEpaDiffers": 74,
+    "epaTakenOffQuarterbacks": -342.0,
+    "twoPointTriesCounted": 121
+   },
+   {
+    "season": 2024,
+    "dropbacksCounted": 19925,
+    "dropbacksLeftOutForAPenalty": 290,
+    "playsWhereQbEpaDiffers": 56,
+    "epaTakenOffQuarterbacks": -262.7,
+    "twoPointTriesCounted": 135
+   },
+   {
+    "season": 2025,
+    "dropbacksCounted": 19513,
+    "dropbacksLeftOutForAPenalty": 317,
+    "playsWhereQbEpaDiffers": 53,
+    "epaTakenOffQuarterbacks": -250.3,
+    "twoPointTriesCounted": 123
+   },
+   {
+    "season": 2026,
+    "dropbacksCounted": 5806,
+    "dropbacksLeftOutForAPenalty": 96,
+    "playsWhereQbEpaDiffers": 23,
+    "epaTakenOffQuarterbacks": -109.3,
+    "twoPointTriesCounted": 35
+   }
+  ],
+  "kneelsAndSpikesAreNotDropbacks": {
+   "kneels": 4186,
+   "spikes": 723,
+   "rule": "play_type is qb_kneel or qb_spike, never pass or run, so no player table counts them"
+  }
+ },
+ "fumbles": {
+  "lostFumblesOnDropbacks": 1616,
+  "byQuarterback": 923,
+  "byReceiver": 656,
+  "other": 37,
+  "ofWhichSacks": 871,
+  "ofWhichScrambles": 51,
+  "meanQbEpaMinusEpaOnReceiverFumbles": 4.78,
+  "shareOfDropbacksWhereTheyDiffer": 0.00334,
+  "examples": [
+   {
+    "season": 2026,
+    "week": 5,
+    "team": "MIN",
+    "passer": "K.Murray",
+    "receiver": "M.Price",
+    "epa": -10.06,
+    "qbEpa": -0.24,
+    "desc": "(2:49) (Shotgun) 1-K.Murray pass short left to 4-M.Price to NO 12 for 7 yards (22-M.Emerson; 20-P.Werner). FUMBLES (22-M.Emerson), RECOVERED by NO-7-J.Sanker at"
+   },
+   {
+    "season": 2026,
+    "week": 5,
+    "team": "BAL",
+    "passer": "T.Huntley",
+    "receiver": "M.Andrews",
+    "epa": -7.04,
+    "qbEpa": 0.14,
+    "desc": "(8:14) (Shotgun) 5-T.Huntley pass short middle to 89-M.Andrews to BAL 34 for 9 yards (0-D.Deablo, 29-S.Brown). FUMBLES (29-S.Brown), RECOVERED by ATL-3-J.Bates "
+   },
+   {
+    "season": 2026,
+    "week": 5,
+    "team": "LAC",
+    "passer": "J.Herbert",
+    "receiver": "C.Kolar",
+    "epa": -3.06,
+    "qbEpa": 2.7,
+    "desc": "(8:46) (Shotgun) 10-J.Herbert pass short middle to 88-C.Kolar to LAC 36 for 19 yards (9-T.Hufanga). FUMBLES (9-T.Hufanga), touched at LAC 38, RECOVERED by DEN-2"
+   }
+  ],
+  "rule": "qb_epa is the league's value of the pass itself. A receiver's lost fumble after a catch is taken out of it and stays in the receiver's numbers and the team's. A quarterback's own fumble (a sack, a scramble) stays in qb_epa."
+ },
+ "predictive": {
+  "pairs": 198,
+  "definitions": {
+   "epa": {
+    "rSelfNext": 0.136,
+    "rWithCurrentHeadline": 0.136,
+    "ci": [
+     0.039,
+     0.225
+    ]
+   },
+   "epa_withpen": {
+    "rSelfNext": 0.144,
+    "rWithCurrentHeadline": 0.145,
+    "ci": [
+     0.039,
+     0.246
+    ],
+    "diffVsHeadline": [
+     0.009,
+     0.0,
+     0.018
+    ]
+   },
+   "qb_epa": {
+    "rSelfNext": 0.143,
+    "rWithCurrentHeadline": 0.142,
+    "ci": [
+     0.034,
+     0.231
+    ],
+    "diffVsHeadline": [
+     0.006,
+     -0.003,
+     0.014
+    ]
+   },
+   "epa_nofumble_recv": {
+    "rSelfNext": 0.143,
+    "rWithCurrentHeadline": 0.143,
+    "ci": [
+     0.033,
+     0.251
+    ],
+    "diffVsHeadline": [
+     0.007,
+     0.0,
+     0.014
+    ]
+   },
+   "epa_att": {
+    "rSelfNext": 0.146,
+    "rWithCurrentHeadline": 0.149,
+    "ci": [
+     0.049,
+     0.229
+    ],
+    "diffVsHeadline": [
+     0.013,
+     0.002,
+     0.023
+    ]
+   }
+  },
+  "reading": "All definitions predict next season about equally well (the intervals overlap and the differences against the headline include zero). The choice is therefore made on what the number means, not on a fitted advantage."
+ },
+ "thisSeasonsOrder": {
+  "season": 2026,
+  "quarterbacks": 40,
+  "spearmanEpaVsEpaWithPenalties": 0.984,
+  "spearmanEpaVsQbEpa": 0.975,
+  "biggestMoves": [
+   {
+    "name": "Tyler Huntley",
+    "epa": -0.084,
+    "qbEpa": 0.065,
+    "rankEpa": 29,
+    "rankQbEpa": 20
+   },
+   {
+    "name": "Marcus Mariota",
+    "epa": 0.095,
+    "qbEpa": 0.176,
+    "rankEpa": 18,
+    "rankQbEpa": 11
+   },
+   {
+    "name": "Case Keenum",
+    "epa": -0.101,
+    "qbEpa": -0.005,
+    "rankEpa": 31,
+    "rankQbEpa": 26
+   },
+   {
+    "name": "Tyler Shough",
+    "epa": -0.044,
+    "qbEpa": -0.028,
+    "rankEpa": 27,
+    "rankQbEpa": 31
+   },
+   {
+    "name": "Tyson Bagent",
+    "epa": -0.095,
+    "qbEpa": -0.095,
+    "rankEpa": 30,
+    "rankQbEpa": 34
+   },
+   {
+    "name": "Jayden Daniels",
+    "epa": 0.159,
+    "qbEpa": 0.159,
+    "rankEpa": 11,
+    "rankQbEpa": 15
+   }
+  ]
+ },
+ "decision": "The quarterback's headline value is qb_epa. Team offense stays on the play's EPA. The two differ only on a receiver's lost fumble after a catch; no attempt is made to make them agree.",
+ "limits": [
+  "Penalty plays are removed for both sides. Defensive penalties on dropbacks (roughing the passer, pass interference) average a large positive EPA and offensive ones (intentional grounding, holding) a negative one, so the removal is roughly balanced but not exactly. Intentional grounding is a quarterback's own error and is left out of his number; it is about one play per quarterback-season.",
+  "qb_epa takes a receiver's fumble off the quarterback, but a pass that is tipped, dropped or thrown away is still his."
+ ]
+}

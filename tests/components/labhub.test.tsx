@@ -65,7 +65,7 @@ describe("the Lab hub", () => {
 		render(<LabHub />)
 		const nav = screen.getByRole("navigation", { name: "On this page" })
 		const links = within(nav).getAllByRole("link")
-		expect(links.length).toBe(LAB_GROUPS.length + 1)
+		expect(links.length).toBe(LAB_GROUPS.length + 3)
 		for (const a of links) expect(document.getElementById((a.getAttribute("href") as string).slice(1)), a.textContent ?? "").toBeTruthy()
 	})
 })

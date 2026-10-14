@@ -1,0 +1,38 @@
+{
+ "version": 1,
+ "generatedAt": "2026-10-14T06:30:05Z",
+ "question": "Is a quarterback's projection from earlier seasons worse when he has a new team or a new head coach?",
+ "seasons": "2018-2025, last season directly before, 250+ dropbacks now and 100+ before",
+ "byEnvironment": [
+  {
+   "env": "same team, same head coach",
+   "n": 141,
+   "bias": 0.018,
+   "rmse": 0.1042,
+   "r": 0.441
+  },
+  {
+   "env": "new team",
+   "n": 39,
+   "bias": -0.0243,
+   "rmse": 0.1093,
+   "r": 0.169
+  },
+  {
+   "env": "same team, new head coach",
+   "n": 38,
+   "bias": 0.0104,
+   "rmse": 0.1037,
+   "r": 0.331
+  }
+ ],
+ "rmseGapChangedMinusSame": {
+  "mean": 0.002963288873282724,
+  "ci90": [
+   -0.01234849649539128,
+   0.019761711491684857
+  ],
+  "includesZero": true
+ },
+ "decision": "Warn on a new team or new head coach; adjust nothing. The correlation is lower for movers but the gap in prediction error is within the noise, so there is no validated amount to subtract."
+}
