@@ -24,6 +24,8 @@ import { buildPlayerBoardSpec } from "./playerBoardCard"
 import { buildCompareSpec } from "./compareCards"
 import { readConfig } from "../lab/compareKit"
 import { getPlayerHistory } from "../lab/playerHistoryData"
+import { getHub } from "../lab/hub"
+import { buildHubSpec } from "./hubCard"
 import { playoffsSpec } from "./playoffsSpec"
 import { rootingSpec } from "./rootingSpec"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
@@ -79,6 +81,11 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 
 	if (q.type === "twins") {
 		return twinsSpec(q)
+	}
+
+	if (q.type === "hub") {
+		const hub = getHub()
+		return buildHubSpec(hub.drops, hub.pulse, hub.input.players.season)
 	}
 
 	if (q.type === "playoffs") return playoffsSpec({ s: q.s, t: q.t, size: q.size })
