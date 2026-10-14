@@ -27,7 +27,7 @@ async function png(spec: NonNullable<ReturnType<typeof buildCompareSpec>>, scale
 	const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
 	return new Resvg(svg, { fitTo: { mode: "width", value: width * scale } }).render().asPng()
 }
-const dims = (b: Uint8Array) => {
+const dims = (b: { buffer: ArrayBufferLike; byteOffset: number; byteLength: number }) => {
 	const v = new DataView(b.buffer, b.byteOffset, b.byteLength)
 	return { w: v.getUint32(16), h: v.getUint32(20) }
 }
