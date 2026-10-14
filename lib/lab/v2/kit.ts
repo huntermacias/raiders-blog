@@ -331,6 +331,17 @@ export function topThree(data: V2Data, group: PlayerGroup): { season: string | n
 /** A named leader with fewer than this share of the typical qualifier's plays is flagged as a small sample. */
 export const SMALL_SAMPLE_SHARE = 0.6
 
+/** How much is behind a player's this-season number next to the typical ranked player at his job (the median), and whether that is thin. */
+export function sampleOf(data: V2Data, p: V2Row): { n: number; typical: number; per: string; small: boolean } | null {
+	const key = observedKey(data, p.group)
+	const info = statInfo(p.group, key)
+	const mine = statOf(p, key)?.season
+	if (!info || !mine || info.higher === null || info.unit) return null
+	const counts = data.players.filter((x) => x.group === p.group && statOf(x, key)?.season.r != null).map((x) => statOf(x, key)!.season.n).sort((a, b) => a - b)
+	const typical = counts.length ? counts[Math.floor(counts.length / 2)] : 0
+	return { n: mine.n, typical, per: info.per, small: typical > 0 && mine.n < typical * SMALL_SAMPLE_SHARE }
+}
+
 export const viewName = (group: PlayerGroup, view: ViewId) =>
 	view === "season" ? `${GROUP_META[group].title}: ${THIS_SEASON.toLowerCase()}` : view === "contribution" ? `${GROUP_META[group].title}: contribution so far` : `${GROUP_META[group].title}: projection`
 

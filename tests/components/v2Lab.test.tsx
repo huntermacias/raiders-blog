@@ -56,6 +56,14 @@ describe("a player's page", () => {
 		}
 	})
 
+	it("flags a thin sample on the player's own page, and only there", async () => {
+		await renderProfile(named("Drew Lock").slug)
+		expect(screen.getByTestId("v2-small-sample").textContent).toMatch(/small sample: a typical quarterback has \d+ dropbacks/)
+		cleanup()
+		await renderProfile(named("Bryce Young").slug)
+		expect(screen.queryByTestId("v2-small-sample")).toBeNull()
+	})
+
 	it("warns about a new team and says it adjusts nothing", async () => {
 		const moved = data.players.find((p: Any) => p.grade && p.teamChanged)
 		await renderProfile(moved.slug)

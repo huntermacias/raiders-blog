@@ -13,6 +13,7 @@ import {
 	lowerLabel,
 	observedOf,
 	projectionOf,
+	sampleOf,
 	rbOverlapNote,
 	sharePct,
 	whyDiffer,
@@ -50,6 +51,7 @@ export default function V2Summary({ data, player }: { data: V2Data; player: V2Ro
 	const why = whyDiffer(data, player)
 	const policy = data.method.policy[player.group]
 	const tracked = player.tracked
+	const sample = sampleOf(data, player)
 
 	return (
 		<div className="grid gap-3" data-testid="v2-summary">
@@ -79,6 +81,11 @@ export default function V2Summary({ data, player }: { data: V2Data; player: V2Ro
 					{obs ? (
 						<p className="m-0 mt-2 text-xs text-lab-muted">
 							{Math.round(obs.n)} {obs.per} over {obs.games} {obs.games === 1 ? "game" : "games"}. This season&apos;s plays only.
+						</p>
+					) : null}
+					{obs && sample?.small ? (
+						<p className="m-0 mt-1 text-xs font-semibold text-lab-ink" data-testid="v2-small-sample">
+							A small sample: a typical {meta.single.toLowerCase()} has {Math.round(sample.typical)} {sample.per} by now. Treat the rank as early.
 						</p>
 					) : null}
 				</div>
