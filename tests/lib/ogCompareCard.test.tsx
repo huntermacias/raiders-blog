@@ -48,11 +48,11 @@ describe("the comparison card's spec", () => {
 	})
 
 	it("carries a chosen stretch of games into the printed link and the label, but not the stat list", () => {
-		const s = buildCompareSpec(data, readConfig({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,share" }))!
+		const s = buildCompareSpec(data, readConfig({ a: te[0].slug, b: te[1].slug, r: "form", m: "croe,yacOe" }))!
 		expect(s.link).toContain("&r=form")
 		expect(s.link).not.toContain("m=")
 		expect(s.range).not.toMatch(/Season to date/)
-		expect(s.rows.map((r) => r.label).join(" ")).toMatch(/CROE|Catches/i)
+		expect(s.rows.map((r) => r.label).join(" ")).toMatch(/CROE|Catches|YAC/i)
 		expect(s.rows).toHaveLength(2)
 	})
 
@@ -66,7 +66,7 @@ describe("the comparison card's spec", () => {
 		const ol = pool("ol")
 		const s = buildCompareSpec(data, readConfig({ a: ol[0].slug, b: ol[1].slug }), { format: "radar" })!
 		expect(s.format).toBe("h2h")
-		expect(buildCompareSpec(data, readConfig({ a: te[0].slug, b: te[1].slug, m: "croe,share" }), { format: "radar" })!.format).toBe("h2h")
+		expect(buildCompareSpec(data, readConfig({ a: te[0].slug, b: te[1].slug, m: "croe,yacOe" }), { format: "radar" })!.format).toBe("h2h")
 	})
 
 	it("is taller on the tall size and shows more stats there", () => {

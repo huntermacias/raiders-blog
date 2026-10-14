@@ -6,7 +6,10 @@ import LeaderTable, { type BoxCol, type LeaderRowSlim } from "@/components/lab/p
 import { BoardIndex } from "@/components/lab/players/Sections"
 import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import UnitsCredit from "@/components/lab/UnitsCredit"
+import ViewTabs from "@/components/lab/v2/ViewTabs"
 import { getPlayers } from "@/lib/lab/data"
+import { isV2 } from "@/lib/lab/v2/types"
+import { observedKey } from "@/lib/lab/v2/kit"
 import {
 	BOX,
 	type Board,
@@ -112,6 +115,7 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 						{info?.higher === false ? " Lower is better." : null}
 						{board.kind === "box" && BOX[group][board.key]?.bad ? " This is a total where more is worse, so first place has the most of it. It is listed for completeness, never as an honor." : null}
 					</p>
+					{isV2(data) ? <ViewTabs data={data} group={group} current="season" seasonHref={boardHref(group, statInfo(group, observedKey(data, group))?.path ?? board.path)} /> : null}
 					<TrackView event="board_view" props={{ group, board: board.path }} />
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-4" />
 				</div>
@@ -156,7 +160,11 @@ export default function BoardPage({ group, board }: { group: PlayerGroup; board:
 				<details className="mt-8 max-w-3xl rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm text-lab-soft">
 					<summary className="cursor-pointer text-sm font-semibold text-lab-ink">How to read this table</summary>
 					<ul className="mb-2 mt-3 list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-lab-muted">
-						<li>The number on the left is the league rank among {meta.peers}, even when the list is filtered to one team. On a graded stat the rank allows for how many plays are behind each number: a player with a few plays has his number pulled toward the middle, so he cannot jump ahead of a player who did the same over many more.</li>
+						<li>
+							{isV2(data)
+								? `The number on the left is the league rank among ${meta.peers} with enough plays, from this season's plays only and in the order of the number shown, even when the list is filtered to one team. Nothing here is adjusted for how many plays are behind a number or for earlier seasons: the projection board does that, and says so.`
+								: `The number on the left is the league rank among ${meta.peers}, even when the list is filtered to one team. On a graded stat the rank allows for how many plays are behind each number: a player with a few plays has his number pulled toward the middle, so he cannot jump ahead of a player who did the same over many more.`}
+						</li>
 						<li>&ldquo;Against the league&rdquo; draws each player on the same strip: the ends are the 10th-best and 90th-best player, the shaded stretch is the middle half, and the tick is the median. Right is always better.</li>
 						<li>&ldquo;Lately&rdquo; is the change in grade between a player&apos;s last {data.formGames} games and the games before them. The tag says whether the change is bigger than what a few plays could cause.</li>
 						<li>Tick &ldquo;Show the box score&rdquo; to put the traditional totals next to the advanced number and sort by either.</li>

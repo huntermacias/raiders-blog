@@ -25,7 +25,9 @@ import SnapStrip from "@/components/lab/players/SnapStrip"
 import StatTile from "@/components/lab/players/StatTile"
 import { getContracts } from "@/lib/lab/contractData"
 import { dealFor, mainRow, onRookieScale, payRank, valueFor } from "@/lib/lab/contractsKit"
+import V2Summary from "@/components/lab/v2/V2Summary"
 import { getPlayers, getUnits } from "@/lib/lab/data"
+import { isV2, type V2Row } from "@/lib/lab/v2/types"
 import { teamView } from "@/lib/lab/playerTeam"
 import { getPlayerLogs } from "@/lib/lab/playerData"
 import { getPlayerHistory } from "@/lib/lab/playerHistoryData"
@@ -495,9 +497,9 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 												{q.name}
 											</Link>
 										</p>
-										<span aria-hidden="true" className="absolute right-3 top-3 font-mono text-2xl font-bold tabular-nums text-lab-muted" style={{ opacity: 0.6 }}>{o === null ? "" : o}</span>
+										<span aria-hidden="true" className="absolute right-3 top-3 font-mono text-2xl font-bold tabular-nums text-lab-muted" style={{ opacity: 0.6 }}>{o === null || isV2(data) ? "" : o}</span>
 										<p className="m-0 mt-1 text-xs text-lab-soft">
-											Overall {o === null ? "–" : Math.round(o)} &middot; {formatStat(q.group, HEADLINE[q.group], q.stats.find((s) => s.k === HEADLINE[q.group])?.season.v)}
+											{isV2(data) ? (overallRank(data, q) ? `${ordinal(overallRank(data, q)!.rank)} of ${overallRank(data, q)!.of} this season` : "Not ranked this season") : `Overall ${o === null ? "–" : Math.round(o)}`} &middot; {formatStat(q.group, HEADLINE[q.group], q.stats.find((s) => s.k === HEADLINE[q.group])?.season.v)}
 										</p>
 										<p className="m-0 mt-2 text-xs">
 											<Link href={compareHref(row.slug, slug)} className="font-semibold text-lab-ink underline decoration-lab-line-strong underline-offset-2">
@@ -649,12 +651,12 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
 								<Link href={boardHref(p.group, statInfo(p.group, HEADLINE[p.group])!.path)} className="rounded-lg border border-lab-line-strong px-3.5 py-2 font-semibold text-lab-soft hover:border-lab-ink hover:text-lab-ink">
 									{meta.title} leaderboard
 								</Link>
-								<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={record ? `${p.name}: his record and his line's numbers on Raiders Rundown.` : `${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
+								<ProfileShare slug={p.slug} name={p.name} group={p.group} stamp={Date.parse(data.generatedAt) || 0} text={record ? `${p.name}: his record and his line's numbers on Raiders Rundown.` : isV2(data) ? `${p.name}: ${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers} this season. ` : ""}This season, what he has contributed and his projection, kept apart, on Raiders Rundown.` : `${p.name}: ${score === null ? "" : `${score} overall, `}${rank ? `${rankPhrase(rank.rank, rank.of)} ${meta.peers}${early ? " on early numbers" : ""}. ` : ""}Advanced stats against the league on Raiders Rundown.`} />
 							</div>
 						</div>
 
-						<aside className="grid min-w-0 gap-3" aria-label={record ? "His record" : "Overall"}>
-							{record ? <LineCard record={record} peers={meta.peers} /> : (
+						<aside className="grid min-w-0 gap-3" aria-label={record ? "His record" : isV2(data) ? "This season, contribution and projection" : "Overall"}>
+							{record ? <LineCard record={record} peers={meta.peers} /> : isV2(data) ? <V2Summary data={data} player={p as V2Row} /> : (
 							<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface/90 backdrop-blur" data-testid="overall">
 								<div className="flex items-center gap-5 p-5">
 									<div className="shrink-0"><GradeRing grade={o} pct={score} size={112}>

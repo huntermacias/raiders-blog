@@ -186,8 +186,8 @@ def test_a_build_with_a_history_tags_the_stats_that_used_it_and_names_the_season
     epa = next(s for s in mine["stats"] if s["k"] == "epaDb")["season"]
     assert epa["hn"] == 500 and 0 <= epa["rl"] <= 1 and epa["pe"] > 0
     # Only the stat that has a history, only the man who has one.
-    assert not any("rl" in s["season"] for s in mine["stats"] if s["k"] != "epaDb")
-    assert not any("rl" in s["season"] for p in out["players"] if p["id"] != "q-AAA" for s in p["stats"])
+    assert not any("hn" in s["season"] for s in mine["stats"] if s["k"] != "epaDb")
+    assert not any("hn" in s["season"] for p in out["players"] if p["id"] != "q-AAA" for s in p["stats"])
     # His raw number is untouched; only the stabilized one moves.
     before = next(s for s in qb["stats"] if s["k"] == "epaDb")["season"]
     assert epa["v"] == before["v"] and epa["se"] == before["se"]
@@ -199,7 +199,7 @@ def test_a_build_with_a_history_tags_the_stats_that_used_it_and_names_the_season
 def test_the_history_file_is_found_beside_the_output_by_default(tmp_path, monkeypatch):
     seen = {}
 
-    def fake_build(src, season, team="LV", book=None):
+    def fake_build(src, season, team="LV", book=None, ref=None):
         seen["seasons"] = book.seasons if book else None
         return {"season": season, "players": []}
 

@@ -19,6 +19,7 @@ import { getPlayerLogs } from "../../lib/lab/playerData"
 import { BOX, boards, gameLog, leaders, searchIndex, type PlayerRow } from "../../lib/lab/playersKit"
 import { track } from "@vercel/analytics"
 
+import { isV2Site } from "../../lib/lab/labMethod"
 afterEach(cleanup)
 const data = getPlayers()
 const logs = getPlayerLogs()
@@ -91,7 +92,7 @@ describe("<PlayerCard />", () => {
 		expect(links).toHaveLength(1)
 		expect(links[0].getAttribute("href")).toBe(`/lab/players/${te.slug}`)
 		expect(within(card).getByText("A line of my own.")).toBeTruthy()
-		expect(within(card).getByText(/^Overall$/)).toBeTruthy()
+		expect(within(card).getByText(isV2Site() ? /^This season$/ : /^Overall$/)).toBeTruthy()
 		expect(card.textContent).toMatch(/\d+(st|nd|rd|th) of \d+/)
 	})
 

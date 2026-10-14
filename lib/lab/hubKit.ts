@@ -7,6 +7,7 @@
 //
 // Pure: the page loads the data and hands it in, so every sentence here can be tested without a clock or a file.
 
+import { isV2Site } from "./labMethod"
 import { buildComparison, featuredDebates } from "./compareKit"
 import { CONFIDENCE_WORD, GROUP_META, HEADLINE, type PlayerGroup, type PlayerRow, type PlayersData, BOX, describeMove, formatBox, formatStat, gradeScore, hasOverall, headshotUrl, initialsOf, isEarly, moveText, ordinal, risersFallers, shotUrl, standouts, contextLine, confidenceOf } from "./playersKit"
 import { type TopPlay, playSentence, playWord, swingText, whenText } from "./topPlays"
@@ -428,7 +429,7 @@ function verdictFor(data: PlayersData, a: PlayerRow, b: PlayerRow): Take["verdic
 	if (!c) return null
 	const ga = gradeScore(data, a)
 	const gb = gradeScore(data, b)
-	const grades = ga !== null && gb !== null ? ` (grade ${ga} to ${gb})` : ""
+	const grades = ga !== null && gb !== null ? ` (${isV2Site() ? "this-season percentile" : "grade"} ${ga} to ${gb})` : ""
 	const lead = c.overall.lead ?? "even"
 	if (lead === "even") return { lead: "even", text: `The Lab calls it a toss-up${grades}. The gap is smaller than the noise a few plays make.` }
 	const w = lead === "a" ? a : b

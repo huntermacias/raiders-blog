@@ -1,0 +1,2044 @@
+{
+ "version": 1,
+ "generatedAt": "2026-10-14T06:40:06Z",
+ "season": 2026,
+ "cutoffCheck": {
+  "quarterbacks": 40,
+  "mismatches": []
+ },
+ "reading": [
+  "'Displayed' is the number on a card today: the average grade of the quarterback's main stats, stretched onto 1 to 99. 'This season' in v2 is one stat, quarterback-only EPA per dropback, and its rank.",
+  "A change in rank has four possible causes, listed per player: scrambles are now dropbacks; the value is the league's quarterback-only EPA; v1 averaged five stats and ranked on a value pulled toward the middle, v2 ranks the plain number; and the projection counts earlier seasons while 'this season' does not."
+ ],
+ "rows": [
+  {
+   "id": "00-0037834",
+   "name": "Brock Purdy",
+   "team": "SF",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 81,
+    "rankOfDisplayed": 1,
+    "of": 40,
+    "scoutingGrade": 57.0,
+    "epaPerDropback": 0.4362,
+    "dropbacks": 142,
+    "rankOnTheStat": 1,
+    "statGrade": 59.5,
+    "plainRankOnTheStat": 2,
+    "mainStatRanks": {
+     "epaDb": 1,
+     "success": 1,
+     "cpoe": 4,
+     "badThrow": 6,
+     "sackRate": 3
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.4382,
+    "dropbacks": 152,
+    "rank": 2,
+    "standing": 97,
+    "projection": {
+     "grade": 65.9,
+     "lo": 57.1,
+     "hi": 74.7,
+     "rank": 1,
+     "shareThisSeason": 0.1294
+    },
+    "contributionEpa": 53.9,
+    "contributionPerGame": 10.8
+   },
+   "causes": {
+    "why": [
+     "no material change: same stat, same order within a few places"
+    ],
+    "scramblesNowCounted": 10,
+    "epaPerDropbackWithV1Attribution": 0.4362,
+    "epaPerDropbackAfterAddingScrambles": 0.4382,
+    "epaPerDropbackQbOnly": 0.4382,
+    "changeFromScrambles": 0.002,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0036442",
+   "name": "Joe Burrow",
+   "team": "CIN",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 77,
+    "rankOfDisplayed": 2,
+    "of": 40,
+    "scoutingGrade": 56.1,
+    "epaPerDropback": 0.1286,
+    "dropbacks": 197,
+    "rankOnTheStat": 9,
+    "statGrade": 53.9,
+    "plainRankOnTheStat": 14,
+    "mainStatRanks": {
+     "epaDb": 9,
+     "success": 5,
+     "cpoe": 2,
+     "badThrow": 1,
+     "sackRate": 13
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.163,
+    "dropbacks": 203,
+    "rank": 14,
+    "standing": 67,
+    "projection": {
+     "grade": 56.7,
+     "lo": 48.3,
+     "hi": 65.1,
+     "rank": 8,
+     "shareThisSeason": 0.1567
+    },
+    "contributionEpa": 20.3,
+    "contributionPerGame": 4.1
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 2nd on it but 9th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 197 dropbacks (9th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 14th), and shows the sample beside it",
+     "his EPA per dropback moved +0.034: receivers' fumbles no longer charged to him (+0.026)"
+    ],
+    "scramblesNowCounted": 6,
+    "epaPerDropbackWithV1Attribution": 0.1286,
+    "epaPerDropbackAfterAddingScrambles": 0.137,
+    "epaPerDropbackQbOnly": 0.163,
+    "changeFromScrambles": 0.0084,
+    "changeFromQbOnlyEpa": 0.026
+   }
+  },
+  {
+   "id": "00-0039851",
+   "name": "Drake Maye",
+   "team": "NE",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 76,
+    "rankOfDisplayed": 3,
+    "of": 40,
+    "scoutingGrade": 56.0,
+    "epaPerDropback": 0.1548,
+    "dropbacks": 160,
+    "rankOnTheStat": 6,
+    "statGrade": 54.8,
+    "plainRankOnTheStat": 11,
+    "mainStatRanks": {
+     "epaDb": 6,
+     "success": 2,
+     "cpoe": 1,
+     "badThrow": 5,
+     "sackRate": 36
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.2209,
+    "dropbacks": 176,
+    "rank": 9,
+    "standing": 79,
+    "projection": {
+     "grade": 59.5,
+     "lo": 49.9,
+     "hi": 69.1,
+     "rank": 6,
+     "shareThisSeason": 0.1773
+    },
+    "contributionEpa": 25.2,
+    "contributionPerGame": 5.0
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 160 dropbacks (6th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 11th), and shows the sample beside it",
+     "his EPA per dropback moved +0.066: 16 scrambles now count as dropbacks (+0.066)"
+    ],
+    "scramblesNowCounted": 16,
+    "epaPerDropbackWithV1Attribution": 0.1548,
+    "epaPerDropbackAfterAddingScrambles": 0.2209,
+    "epaPerDropbackQbOnly": 0.2209,
+    "changeFromScrambles": 0.0661,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0034869",
+   "name": "Sam Darnold",
+   "team": "SEA",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 67,
+    "rankOfDisplayed": 5,
+    "of": 40,
+    "scoutingGrade": 53.8,
+    "epaPerDropback": -0.0059,
+    "dropbacks": 101,
+    "rankOnTheStat": 12,
+    "statGrade": 52.3,
+    "plainRankOnTheStat": 22,
+    "mainStatRanks": {
+     "epaDb": 12,
+     "success": 7,
+     "cpoe": 3,
+     "badThrow": 7,
+     "sackRate": 20
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0032,
+    "dropbacks": 102,
+    "rank": 25,
+    "standing": 38,
+    "projection": {
+     "grade": 54.4,
+     "lo": 45.2,
+     "hi": 63.6,
+     "rank": 12,
+     "shareThisSeason": 0.0954
+    },
+    "contributionEpa": -6.9,
+    "contributionPerGame": -1.7
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 5th on it but 12th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 101 dropbacks (12th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 22nd), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 1,
+    "epaPerDropbackWithV1Attribution": -0.0059,
+    "epaPerDropbackAfterAddingScrambles": 0.0032,
+    "epaPerDropbackQbOnly": 0.0032,
+    "changeFromScrambles": 0.0091,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0033106",
+   "name": "Jared Goff",
+   "team": "DET",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 67,
+    "rankOfDisplayed": 4,
+    "of": 40,
+    "scoutingGrade": 54.0,
+    "epaPerDropback": 0.2598,
+    "dropbacks": 199,
+    "rankOnTheStat": 2,
+    "statGrade": 57.1,
+    "plainRankOnTheStat": 5,
+    "mainStatRanks": {
+     "epaDb": 2,
+     "success": 3,
+     "cpoe": 11,
+     "badThrow": 15,
+     "sackRate": 11
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.2708,
+    "dropbacks": 204,
+    "rank": 7,
+    "standing": 85,
+    "projection": {
+     "grade": 61.4,
+     "lo": 53.5,
+     "hi": 69.3,
+     "rank": 3,
+     "shareThisSeason": 0.1407
+    },
+    "contributionEpa": 40.0,
+    "contributionPerGame": 8.0
+   },
+   "causes": {
+    "why": [
+     "no material change: same stat, same order within a few places"
+    ],
+    "scramblesNowCounted": 5,
+    "epaPerDropbackWithV1Attribution": 0.2598,
+    "epaPerDropbackAfterAddingScrambles": 0.2457,
+    "epaPerDropbackQbOnly": 0.2708,
+    "changeFromScrambles": -0.0142,
+    "changeFromQbOnlyEpa": 0.0251
+   }
+  },
+  {
+   "id": "00-0034857",
+   "name": "Josh Allen",
+   "team": "BUF",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 64,
+    "rankOfDisplayed": 7,
+    "of": 40,
+    "scoutingGrade": 53.2,
+    "epaPerDropback": 0.2141,
+    "dropbacks": 149,
+    "rankOnTheStat": 3,
+    "statGrade": 55.9,
+    "plainRankOnTheStat": 7,
+    "mainStatRanks": {
+     "epaDb": 3,
+     "success": 11,
+     "cpoe": 9,
+     "badThrow": 12,
+     "sackRate": 8
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.3326,
+    "dropbacks": 162,
+    "rank": 6,
+    "standing": 87,
+    "projection": {
+     "grade": 64.0,
+     "lo": 55.9,
+     "hi": 72.1,
+     "rank": 2,
+     "shareThisSeason": 0.1179
+    },
+    "contributionEpa": 46.4,
+    "contributionPerGame": 9.3
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved +0.119: 13 scrambles now count as dropbacks (+0.075) and receivers' fumbles no longer charged to him (+0.043)"
+    ],
+    "scramblesNowCounted": 13,
+    "epaPerDropbackWithV1Attribution": 0.2141,
+    "epaPerDropbackAfterAddingScrambles": 0.2893,
+    "epaPerDropbackQbOnly": 0.3326,
+    "changeFromScrambles": 0.0753,
+    "changeFromQbOnlyEpa": 0.0433
+   }
+  },
+  {
+   "id": "00-0034796",
+   "name": "Lamar Jackson",
+   "team": "BAL",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 64,
+    "rankOfDisplayed": 6,
+    "of": 40,
+    "scoutingGrade": 53.2,
+    "epaPerDropback": 0.3649,
+    "dropbacks": 101,
+    "rankOnTheStat": 4,
+    "statGrade": 55.5,
+    "plainRankOnTheStat": 4,
+    "mainStatRanks": {
+     "epaDb": 4,
+     "success": 6,
+     "cpoe": 8,
+     "badThrow": 24,
+     "sackRate": 29
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.3868,
+    "dropbacks": 109,
+    "rank": 3,
+    "standing": 95,
+    "projection": {
+     "grade": 60.9,
+     "lo": 52.2,
+     "hi": 69.6,
+     "rank": 4,
+     "shareThisSeason": 0.0906
+    },
+    "contributionEpa": 37.4,
+    "contributionPerGame": 9.3
+   },
+   "causes": {
+    "why": [
+     "no material change: same stat, same order within a few places"
+    ],
+    "scramblesNowCounted": 8,
+    "epaPerDropbackWithV1Attribution": 0.3649,
+    "epaPerDropbackAfterAddingScrambles": 0.3868,
+    "epaPerDropbackQbOnly": 0.3868,
+    "changeFromScrambles": 0.0219,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0030565",
+   "name": "Geno Smith",
+   "team": "NYJ",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 62,
+    "rankOfDisplayed": 8,
+    "of": 40,
+    "scoutingGrade": 52.8,
+    "epaPerDropback": 0.0095,
+    "dropbacks": 161,
+    "rankOnTheStat": 26,
+    "statGrade": 47.9,
+    "plainRankOnTheStat": 21,
+    "mainStatRanks": {
+     "epaDb": 26,
+     "success": 18,
+     "cpoe": 5,
+     "badThrow": 2,
+     "sackRate": 38
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0261,
+    "dropbacks": 170,
+    "rank": 24,
+    "standing": 41,
+    "projection": {
+     "grade": 46.8,
+     "lo": 38.7,
+     "hi": 54.9,
+     "rank": 29,
+     "shareThisSeason": 0.1232
+    },
+    "contributionEpa": -11.4,
+    "contributionPerGame": -2.3
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 8th on it but 26th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 161 dropbacks (26th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 21st), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 9,
+    "epaPerDropbackWithV1Attribution": 0.0095,
+    "epaPerDropbackAfterAddingScrambles": 0.0107,
+    "epaPerDropbackQbOnly": 0.0261,
+    "changeFromScrambles": 0.0011,
+    "changeFromQbOnlyEpa": 0.0154
+   }
+  },
+  {
+   "id": "00-0033873",
+   "name": "Patrick Mahomes",
+   "team": "KC",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 61,
+    "rankOfDisplayed": 9,
+    "of": 40,
+    "scoutingGrade": 52.6,
+    "epaPerDropback": 0.1327,
+    "dropbacks": 132,
+    "rankOnTheStat": 8,
+    "statGrade": 54.0,
+    "plainRankOnTheStat": 13,
+    "mainStatRanks": {
+     "epaDb": 8,
+     "success": 8,
+     "cpoe": 13,
+     "badThrow": 9,
+     "sackRate": 10
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1505,
+    "dropbacks": 140,
+    "rank": 16,
+    "standing": 62,
+    "projection": {
+     "grade": 59.7,
+     "lo": 51.6,
+     "hi": 67.8,
+     "rank": 5,
+     "shareThisSeason": 0.1019
+    },
+    "contributionEpa": 11.1,
+    "contributionPerGame": 2.8
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 132 dropbacks (8th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 13th), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 8,
+    "epaPerDropbackWithV1Attribution": 0.1327,
+    "epaPerDropbackAfterAddingScrambles": 0.1505,
+    "epaPerDropbackQbOnly": 0.1505,
+    "changeFromScrambles": 0.0178,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0033077",
+   "name": "Dak Prescott",
+   "team": "DAL",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 60,
+    "rankOfDisplayed": 10,
+    "of": 40,
+    "scoutingGrade": 52.2,
+    "epaPerDropback": 0.1581,
+    "dropbacks": 194,
+    "rankOnTheStat": 11,
+    "statGrade": 53.4,
+    "plainRankOnTheStat": 10,
+    "mainStatRanks": {
+     "epaDb": 11,
+     "success": 10,
+     "cpoe": 15,
+     "badThrow": 8,
+     "sackRate": 6
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1757,
+    "dropbacks": 205,
+    "rank": 12,
+    "standing": 72,
+    "projection": {
+     "grade": 56.1,
+     "lo": 48.0,
+     "hi": 64.2,
+     "rank": 10,
+     "shareThisSeason": 0.1488
+    },
+    "contributionEpa": 21.8,
+    "contributionPerGame": 4.4
+   },
+   "causes": {
+    "why": [
+     "no material change: same stat, same order within a few places"
+    ],
+    "scramblesNowCounted": 11,
+    "epaPerDropbackWithV1Attribution": 0.1581,
+    "epaPerDropbackAfterAddingScrambles": 0.1518,
+    "epaPerDropbackQbOnly": 0.1757,
+    "changeFromScrambles": -0.0063,
+    "changeFromQbOnlyEpa": 0.0239
+   }
+  },
+  {
+   "id": "00-0032268",
+   "name": "Marcus Mariota",
+   "team": "WAS",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 56,
+    "rankOfDisplayed": 11,
+    "of": 40,
+    "scoutingGrade": 51.4,
+    "epaPerDropback": 0.1236,
+    "dropbacks": 54,
+    "rankOnTheStat": 15,
+    "statGrade": 51.3,
+    "plainRankOnTheStat": 15,
+    "mainStatRanks": {
+     "epaDb": 15,
+     "success": 12,
+     "cpoe": 10,
+     "badThrow": 22,
+     "sackRate": 26
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1763,
+    "dropbacks": 57,
+    "rank": 11,
+    "standing": 74,
+    "projection": {
+     "grade": 51.9,
+     "lo": 40.5,
+     "hi": 63.3,
+     "rank": 17,
+     "shareThisSeason": 0.0814
+    },
+    "contributionEpa": 9.6,
+    "contributionPerGame": 3.2
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved +0.053: 3 scrambles now count as dropbacks (-0.029) and receivers' fumbles no longer charged to him (+0.082)"
+    ],
+    "scramblesNowCounted": 3,
+    "epaPerDropbackWithV1Attribution": 0.1236,
+    "epaPerDropbackAfterAddingScrambles": 0.0947,
+    "epaPerDropbackQbOnly": 0.1763,
+    "changeFromScrambles": -0.0289,
+    "changeFromQbOnlyEpa": 0.0816
+   }
+  },
+  {
+   "id": "00-0036264",
+   "name": "Jordan Love",
+   "team": "GB",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 55,
+    "rankOfDisplayed": 12,
+    "of": 40,
+    "scoutingGrade": 51.2,
+    "epaPerDropback": 0.0902,
+    "dropbacks": 194,
+    "rankOnTheStat": 5,
+    "statGrade": 54.9,
+    "plainRankOnTheStat": 17,
+    "mainStatRanks": {
+     "epaDb": 5,
+     "success": 16,
+     "cpoe": 12,
+     "badThrow": 28,
+     "sackRate": 4
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0914,
+    "dropbacks": 195,
+    "rank": 19,
+    "standing": 54,
+    "projection": {
+     "grade": 58.4,
+     "lo": 49.7,
+     "hi": 67.1,
+     "rank": 7,
+     "shareThisSeason": 0.1636
+    },
+    "contributionEpa": -0.7,
+    "contributionPerGame": -0.1
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 12th on it but 5th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 194 dropbacks (5th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 17th), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 1,
+    "epaPerDropbackWithV1Attribution": 0.0902,
+    "epaPerDropbackAfterAddingScrambles": 0.0914,
+    "epaPerDropbackQbOnly": 0.0914,
+    "changeFromScrambles": 0.0012,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0029604",
+   "name": "Kirk Cousins",
+   "team": "LV",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 55,
+    "rankOfDisplayed": 13,
+    "of": 40,
+    "scoutingGrade": 51.1,
+    "epaPerDropback": 0.1474,
+    "dropbacks": 179,
+    "rankOnTheStat": 16,
+    "statGrade": 50.9,
+    "plainRankOnTheStat": 12,
+    "mainStatRanks": {
+     "epaDb": 16,
+     "success": 13,
+     "cpoe": 19,
+     "badThrow": 10,
+     "sackRate": 9
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1733,
+    "dropbacks": 182,
+    "rank": 13,
+    "standing": 69,
+    "projection": {
+     "grade": 50.9,
+     "lo": 42.2,
+     "hi": 59.6,
+     "rank": 19,
+     "shareThisSeason": 0.1519
+    },
+    "contributionEpa": 17.1,
+    "contributionPerGame": 3.4
+   },
+   "causes": {
+    "why": [
+     "no material change: same stat, same order within a few places"
+    ],
+    "scramblesNowCounted": 3,
+    "epaPerDropbackWithV1Attribution": 0.1474,
+    "epaPerDropbackAfterAddingScrambles": 0.1438,
+    "epaPerDropbackQbOnly": 0.1733,
+    "changeFromScrambles": -0.0037,
+    "changeFromQbOnlyEpa": 0.0295
+   }
+  },
+  {
+   "id": "00-0036971",
+   "name": "Trevor Lawrence",
+   "team": "JAX",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 54,
+    "rankOfDisplayed": 14,
+    "of": 40,
+    "scoutingGrade": 50.9,
+    "epaPerDropback": 0.2507,
+    "dropbacks": 150,
+    "rankOnTheStat": 13,
+    "statGrade": 52.3,
+    "plainRankOnTheStat": 6,
+    "mainStatRanks": {
+     "epaDb": 13,
+     "success": 14,
+     "cpoe": 26,
+     "badThrow": 14,
+     "sackRate": 14
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.2454,
+    "dropbacks": 155,
+    "rank": 8,
+    "standing": 82,
+    "projection": {
+     "grade": 53.5,
+     "lo": 45.2,
+     "hi": 61.8,
+     "rank": 14,
+     "shareThisSeason": 0.1164
+    },
+    "contributionEpa": 31.3,
+    "contributionPerGame": 6.3
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 150 dropbacks (13th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 6th), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 5,
+    "epaPerDropbackWithV1Attribution": 0.2507,
+    "epaPerDropbackAfterAddingScrambles": 0.2454,
+    "epaPerDropbackQbOnly": 0.2454,
+    "changeFromScrambles": -0.0053,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0026498",
+   "name": "Matthew Stafford",
+   "team": "LAR",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 54,
+    "rankOfDisplayed": 15,
+    "of": 40,
+    "scoutingGrade": 50.8,
+    "epaPerDropback": 0.1059,
+    "dropbacks": 220,
+    "rankOnTheStat": 10,
+    "statGrade": 53.8,
+    "plainRankOnTheStat": 16,
+    "mainStatRanks": {
+     "epaDb": 10,
+     "success": 4,
+     "cpoe": 28,
+     "badThrow": 34,
+     "sackRate": 2
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.137,
+    "dropbacks": 224,
+    "rank": 17,
+    "standing": 59,
+    "projection": {
+     "grade": 56.2,
+     "lo": 48.2,
+     "hi": 64.2,
+     "rank": 9,
+     "shareThisSeason": 0.1571
+    },
+    "contributionEpa": 11.7,
+    "contributionPerGame": 2.3
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 15th on it but 10th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 220 dropbacks (10th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 16th), and shows the sample beside it",
+     "his EPA per dropback moved +0.031: receivers' fumbles no longer charged to him (+0.025)"
+    ],
+    "scramblesNowCounted": 4,
+    "epaPerDropbackWithV1Attribution": 0.1059,
+    "epaPerDropbackAfterAddingScrambles": 0.112,
+    "epaPerDropbackQbOnly": 0.137,
+    "changeFromScrambles": 0.0062,
+    "changeFromQbOnlyEpa": 0.025
+   }
+  },
+  {
+   "id": "00-0036389",
+   "name": "Jalen Hurts",
+   "team": "PHI",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 53,
+    "rankOfDisplayed": 16,
+    "of": 40,
+    "scoutingGrade": 50.6,
+    "epaPerDropback": -0.075,
+    "dropbacks": 165,
+    "rankOnTheStat": 18,
+    "statGrade": 50.4,
+    "plainRankOnTheStat": 28,
+    "mainStatRanks": {
+     "epaDb": 18,
+     "success": 29,
+     "cpoe": 7,
+     "badThrow": 18,
+     "sackRate": 31
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0272,
+    "dropbacks": 177,
+    "rank": 30,
+    "standing": 26,
+    "projection": {
+     "grade": 54.3,
+     "lo": 46.1,
+     "hi": 62.5,
+     "rank": 13,
+     "shareThisSeason": 0.1317
+    },
+    "contributionEpa": -21.6,
+    "contributionPerGame": -4.3
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 165 dropbacks (18th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 28th), and shows the sample beside it",
+     "his EPA per dropback moved +0.048: 12 scrambles now count as dropbacks (+0.028) and receivers' fumbles no longer charged to him (+0.020)"
+    ],
+    "scramblesNowCounted": 12,
+    "epaPerDropbackWithV1Attribution": -0.075,
+    "epaPerDropbackAfterAddingScrambles": -0.0475,
+    "epaPerDropbackQbOnly": -0.0272,
+    "changeFromScrambles": 0.0275,
+    "changeFromQbOnlyEpa": 0.0203
+   }
+  },
+  {
+   "id": "00-0039910",
+   "name": "Jayden Daniels",
+   "team": "WAS",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 50,
+    "rankOfDisplayed": 18,
+    "of": 40,
+    "scoutingGrade": 50.0,
+    "epaPerDropback": -0.0179,
+    "dropbacks": 83,
+    "rankOnTheStat": 19,
+    "statGrade": 50.3,
+    "plainRankOnTheStat": 24,
+    "mainStatRanks": {
+     "epaDb": 19,
+     "success": 24,
+     "cpoe": 16,
+     "badThrow": 16,
+     "sackRate": 35
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1592,
+    "dropbacks": 99,
+    "rank": 15,
+    "standing": 64,
+    "projection": {
+     "grade": 53.4,
+     "lo": 42.8,
+     "hi": 64.0,
+     "rank": 15,
+     "shareThisSeason": 0.1232
+    },
+    "contributionEpa": 5.2,
+    "contributionPerGame": 1.7
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 83 dropbacks (19th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 24th), and shows the sample beside it",
+     "his EPA per dropback moved +0.177: 16 scrambles now count as dropbacks (+0.177)"
+    ],
+    "scramblesNowCounted": 16,
+    "epaPerDropbackWithV1Attribution": -0.0179,
+    "epaPerDropbackAfterAddingScrambles": 0.1592,
+    "epaPerDropbackQbOnly": 0.1592,
+    "changeFromScrambles": 0.1771,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0041251",
+   "name": "Jalon Daniels",
+   "team": "TB",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 50,
+    "rankOfDisplayed": 17,
+    "of": 40,
+    "scoutingGrade": 50.0,
+    "epaPerDropback": 0.0185,
+    "dropbacks": 59,
+    "rankOnTheStat": 21,
+    "statGrade": 50.1,
+    "plainRankOnTheStat": 20,
+    "mainStatRanks": {
+     "epaDb": 21,
+     "success": 23,
+     "cpoe": 17,
+     "badThrow": 17,
+     "sackRate": 22
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0524,
+    "dropbacks": 71,
+    "rank": 22,
+    "standing": 46,
+    "projection": {
+     "grade": 49.6,
+     "lo": 33.1,
+     "hi": 66.1,
+     "rank": 22,
+     "shareThisSeason": 0.2127
+    },
+    "contributionEpa": -1.4,
+    "contributionPerGame": -0.5
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved +0.034: 12 scrambles now count as dropbacks (+0.034)"
+    ],
+    "scramblesNowCounted": 12,
+    "epaPerDropbackWithV1Attribution": 0.0185,
+    "epaPerDropbackAfterAddingScrambles": 0.0524,
+    "epaPerDropbackQbOnly": 0.0524,
+    "changeFromScrambles": 0.0339,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0039917",
+   "name": "Michael Penix Jr.",
+   "team": "ATL",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 49,
+    "rankOfDisplayed": 19,
+    "of": 40,
+    "scoutingGrade": 49.7,
+    "epaPerDropback": 0.3727,
+    "dropbacks": 81,
+    "rankOnTheStat": 7,
+    "statGrade": 54.2,
+    "plainRankOnTheStat": 3,
+    "mainStatRanks": {
+     "epaDb": 7,
+     "success": 9,
+     "cpoe": 35,
+     "badThrow": 37,
+     "sackRate": 7
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.3431,
+    "dropbacks": 83,
+    "rank": 5,
+    "standing": 90,
+    "projection": {
+     "grade": 55.0,
+     "lo": 43.3,
+     "hi": 66.7,
+     "rank": 11,
+     "shareThisSeason": 0.1262
+    },
+    "contributionEpa": 22.6,
+    "contributionPerGame": 7.5
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 19th on it but 7th on EPA per dropback alone; v2's season number is EPA alone"
+    ],
+    "scramblesNowCounted": 2,
+    "epaPerDropbackWithV1Attribution": 0.3727,
+    "epaPerDropbackAfterAddingScrambles": 0.3431,
+    "epaPerDropbackQbOnly": 0.3431,
+    "changeFromScrambles": -0.0296,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0035993",
+   "name": "Tyler Huntley",
+   "team": "BAL",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 49,
+    "rankOfDisplayed": 20,
+    "of": 40,
+    "scoutingGrade": 49.7,
+    "epaPerDropback": -0.0791,
+    "dropbacks": 45,
+    "rankOnTheStat": 33,
+    "statGrade": 47.1,
+    "plainRankOnTheStat": 30,
+    "mainStatRanks": {
+     "epaDb": 33,
+     "success": 25,
+     "cpoe": 6,
+     "badThrow": null,
+     "sackRate": 33
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0653,
+    "dropbacks": 48,
+    "rank": 20,
+    "standing": 51,
+    "projection": {
+     "grade": 48.1,
+     "lo": 36.0,
+     "hi": 60.2,
+     "rank": 26,
+     "shareThisSeason": 0.078
+    },
+    "contributionEpa": 3.3,
+    "contributionPerGame": 1.7
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 20th on it but 33rd on EPA per dropback alone; v2's season number is EPA alone",
+     "his EPA per dropback moved +0.144: receivers' fumbles no longer charged to him (+0.150)"
+    ],
+    "scramblesNowCounted": 3,
+    "epaPerDropbackWithV1Attribution": -0.0791,
+    "epaPerDropbackAfterAddingScrambles": -0.0844,
+    "epaPerDropbackQbOnly": 0.0653,
+    "changeFromScrambles": -0.0053,
+    "changeFromQbOnlyEpa": 0.1496
+   }
+  },
+  {
+   "id": "00-0040743",
+   "name": "Tyler Shough",
+   "team": "NO",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 48,
+    "rankOfDisplayed": 22,
+    "of": 40,
+    "scoutingGrade": 49.5,
+    "epaPerDropback": -0.0494,
+    "dropbacks": 215,
+    "rankOnTheStat": 30,
+    "statGrade": 47.6,
+    "plainRankOnTheStat": 27,
+    "mainStatRanks": {
+     "epaDb": 30,
+     "success": 19,
+     "cpoe": 14,
+     "badThrow": 23,
+     "sackRate": 28
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0282,
+    "dropbacks": 221,
+    "rank": 31,
+    "standing": 23,
+    "projection": {
+     "grade": 45.9,
+     "lo": 34.9,
+     "hi": 56.9,
+     "rank": 31,
+     "shareThisSeason": 0.2959
+    },
+    "contributionEpa": -20.0,
+    "contributionPerGame": -4.0
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 22nd on it but 30th on EPA per dropback alone; v2's season number is EPA alone"
+    ],
+    "scramblesNowCounted": 6,
+    "epaPerDropbackWithV1Attribution": -0.0494,
+    "epaPerDropbackAfterAddingScrambles": -0.0439,
+    "epaPerDropbackQbOnly": -0.0282,
+    "changeFromScrambles": 0.0054,
+    "changeFromQbOnlyEpa": 0.0157
+   }
+  },
+  {
+   "id": "00-0035228",
+   "name": "Kyler Murray",
+   "team": "MIN",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 48,
+    "rankOfDisplayed": 21,
+    "of": 40,
+    "scoutingGrade": 49.6,
+    "epaPerDropback": -0.1706,
+    "dropbacks": 108,
+    "rankOnTheStat": 24,
+    "statGrade": 48.6,
+    "plainRankOnTheStat": 34,
+    "mainStatRanks": {
+     "epaDb": 24,
+     "success": 28,
+     "cpoe": 23,
+     "badThrow": 4,
+     "sackRate": 19
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0218,
+    "dropbacks": 120,
+    "rank": 29,
+    "standing": 28,
+    "projection": {
+     "grade": 50.9,
+     "lo": 41.8,
+     "hi": 60.0,
+     "rank": 20,
+     "shareThisSeason": 0.1096
+    },
+    "contributionEpa": -10.9,
+    "contributionPerGame": -2.7
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 108 dropbacks (24th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 34th), and shows the sample beside it",
+     "his EPA per dropback moved +0.149: 12 scrambles now count as dropbacks (+0.067) and receivers' fumbles no longer charged to him (+0.082)"
+    ],
+    "scramblesNowCounted": 12,
+    "epaPerDropbackWithV1Attribution": -0.1706,
+    "epaPerDropbackAfterAddingScrambles": -0.1036,
+    "epaPerDropbackQbOnly": -0.0218,
+    "changeFromScrambles": 0.0669,
+    "changeFromQbOnlyEpa": 0.0819
+   }
+  },
+  {
+   "id": "00-0033119",
+   "name": "Jacoby Brissett",
+   "team": "ARI",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 47,
+    "rankOfDisplayed": 25,
+    "of": 40,
+    "scoutingGrade": 49.3,
+    "epaPerDropback": -0.0222,
+    "dropbacks": 208,
+    "rankOnTheStat": 32,
+    "statGrade": 47.3,
+    "plainRankOnTheStat": 25,
+    "mainStatRanks": {
+     "epaDb": 32,
+     "success": 21,
+     "cpoe": 18,
+     "badThrow": 19,
+     "sackRate": 30
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0086,
+    "dropbacks": 213,
+    "rank": 27,
+    "standing": 33,
+    "projection": {
+     "grade": 44.6,
+     "lo": 35.5,
+     "hi": 53.7,
+     "rank": 36,
+     "shareThisSeason": 0.1954
+    },
+    "contributionEpa": -12.4,
+    "contributionPerGame": -2.5
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 25th on it but 32nd on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 208 dropbacks (32nd); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 25th), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 5,
+    "epaPerDropbackWithV1Attribution": -0.0222,
+    "epaPerDropbackAfterAddingScrambles": -0.0086,
+    "epaPerDropbackQbOnly": -0.0086,
+    "changeFromScrambles": 0.0136,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0035710",
+   "name": "Daniel Jones",
+   "team": "IND",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 47,
+    "rankOfDisplayed": 24,
+    "of": 40,
+    "scoutingGrade": 49.3,
+    "epaPerDropback": -0.1886,
+    "dropbacks": 183,
+    "rankOnTheStat": 34,
+    "statGrade": 45.5,
+    "plainRankOnTheStat": 36,
+    "mainStatRanks": {
+     "epaDb": 34,
+     "success": 27,
+     "cpoe": 21,
+     "badThrow": 3,
+     "sackRate": 25
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.1544,
+    "dropbacks": 187,
+    "rank": 37,
+    "standing": 8,
+    "projection": {
+     "grade": 43.8,
+     "lo": 35.1,
+     "hi": 52.5,
+     "rank": 37,
+     "shareThisSeason": 0.1545
+    },
+    "contributionEpa": -35.2,
+    "contributionPerGame": -7.0
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 24th on it but 34th on EPA per dropback alone; v2's season number is EPA alone",
+     "his EPA per dropback moved +0.034: receivers' fumbles no longer charged to him (+0.030)"
+    ],
+    "scramblesNowCounted": 4,
+    "epaPerDropbackWithV1Attribution": -0.1886,
+    "epaPerDropbackAfterAddingScrambles": -0.1844,
+    "epaPerDropbackQbOnly": -0.1544,
+    "changeFromScrambles": 0.0042,
+    "changeFromQbOnlyEpa": 0.0301
+   }
+  },
+  {
+   "id": "00-0038416",
+   "name": "Tyson Bagent",
+   "team": "CHI",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 47,
+    "rankOfDisplayed": 23,
+    "of": 40,
+    "scoutingGrade": 49.4,
+    "epaPerDropback": -0.0983,
+    "dropbacks": 66,
+    "rankOnTheStat": 36,
+    "statGrade": 45.2,
+    "plainRankOnTheStat": 32,
+    "mainStatRanks": {
+     "epaDb": 36,
+     "success": 15,
+     "cpoe": 24,
+     "badThrow": 11,
+     "sackRate": 12
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0947,
+    "dropbacks": 69,
+    "rank": 34,
+    "standing": 15,
+    "projection": {
+     "grade": 44.9,
+     "lo": 30.5,
+     "hi": 59.3,
+     "rank": 34,
+     "shareThisSeason": 0.1584
+    },
+    "contributionEpa": -10.5,
+    "contributionPerGame": -3.5
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 23rd on it but 36th on EPA per dropback alone; v2's season number is EPA alone"
+    ],
+    "scramblesNowCounted": 3,
+    "epaPerDropbackWithV1Attribution": -0.0983,
+    "epaPerDropbackAfterAddingScrambles": -0.0947,
+    "epaPerDropbackQbOnly": -0.0947,
+    "changeFromScrambles": 0.0037,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0036355",
+   "name": "Justin Herbert",
+   "team": "LAC",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 45,
+    "rankOfDisplayed": 27,
+    "of": 40,
+    "scoutingGrade": 48.8,
+    "epaPerDropback": -0.2525,
+    "dropbacks": 155,
+    "rankOnTheStat": 29,
+    "statGrade": 47.6,
+    "plainRankOnTheStat": 38,
+    "mainStatRanks": {
+     "epaDb": 29,
+     "success": 26,
+     "cpoe": 25,
+     "badThrow": 13,
+     "sackRate": 32
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.1989,
+    "dropbacks": 171,
+    "rank": 38,
+    "standing": 5,
+    "projection": {
+     "grade": 49.1,
+     "lo": 41.1,
+     "hi": 57.1,
+     "rank": 25,
+     "shareThisSeason": 0.1215
+    },
+    "contributionEpa": -49.3,
+    "contributionPerGame": -9.9
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 155 dropbacks (29th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 38th), and shows the sample beside it",
+     "his EPA per dropback moved +0.054: 16 scrambles now count as dropbacks (+0.020) and receivers' fumbles no longer charged to him (+0.034)"
+    ],
+    "scramblesNowCounted": 16,
+    "epaPerDropbackWithV1Attribution": -0.2525,
+    "epaPerDropbackAfterAddingScrambles": -0.2325,
+    "epaPerDropbackQbOnly": -0.1989,
+    "changeFromScrambles": 0.02,
+    "changeFromQbOnlyEpa": 0.0337
+   }
+  },
+  {
+   "id": "00-0039163",
+   "name": "C.J. Stroud",
+   "team": "HOU",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 45,
+    "rankOfDisplayed": 26,
+    "of": 40,
+    "scoutingGrade": 49.0,
+    "epaPerDropback": 0.0759,
+    "dropbacks": 190,
+    "rankOnTheStat": 14,
+    "statGrade": 51.4,
+    "plainRankOnTheStat": 18,
+    "mainStatRanks": {
+     "epaDb": 14,
+     "success": 17,
+     "cpoe": 27,
+     "badThrow": 33,
+     "sackRate": 24
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.1067,
+    "dropbacks": 196,
+    "rank": 18,
+    "standing": 56,
+    "projection": {
+     "grade": 52.1,
+     "lo": 43.5,
+     "hi": 60.7,
+     "rank": 16,
+     "shareThisSeason": 0.1611
+    },
+    "contributionEpa": 8.3,
+    "contributionPerGame": 1.7
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 26th on it but 14th on EPA per dropback alone; v2's season number is EPA alone",
+     "his EPA per dropback moved +0.031: 6 scrambles now count as dropbacks (+0.031)"
+    ],
+    "scramblesNowCounted": 6,
+    "epaPerDropbackWithV1Attribution": 0.0759,
+    "epaPerDropbackAfterAddingScrambles": 0.1067,
+    "epaPerDropbackQbOnly": 0.1067,
+    "changeFromScrambles": 0.0308,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0032950",
+   "name": "Carson Wentz",
+   "team": "MIN",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 44,
+    "rankOfDisplayed": 28,
+    "of": 40,
+    "scoutingGrade": 48.5,
+    "epaPerDropback": 0.053,
+    "dropbacks": 45,
+    "rankOnTheStat": 23,
+    "statGrade": 49.4,
+    "plainRankOnTheStat": 19,
+    "mainStatRanks": {
+     "epaDb": 23,
+     "success": 20,
+     "cpoe": null,
+     "badThrow": 31,
+     "sackRate": 37
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0321,
+    "dropbacks": 47,
+    "rank": 23,
+    "standing": 44,
+    "projection": {
+     "grade": 47.4,
+     "lo": 35.0,
+     "hi": 59.8,
+     "rank": 27,
+     "shareThisSeason": 0.0789
+    },
+    "contributionEpa": -3.0,
+    "contributionPerGame": -1.5
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 28th on it but 23rd on EPA per dropback alone; v2's season number is EPA alone"
+    ],
+    "scramblesNowCounted": 2,
+    "epaPerDropbackWithV1Attribution": 0.053,
+    "epaPerDropbackAfterAddingScrambles": 0.0321,
+    "epaPerDropbackQbOnly": 0.0321,
+    "changeFromScrambles": -0.0209,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0028986",
+   "name": "Case Keenum",
+   "team": "CHI",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 42,
+    "rankOfDisplayed": 30,
+    "of": 40,
+    "scoutingGrade": 48.1,
+    "epaPerDropback": -0.0851,
+    "dropbacks": 55,
+    "rankOnTheStat": 35,
+    "statGrade": 45.5,
+    "plainRankOnTheStat": 31,
+    "mainStatRanks": {
+     "epaDb": 35,
+     "success": 22,
+     "cpoe": 20,
+     "badThrow": null,
+     "sackRate": 17
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.005,
+    "dropbacks": 57,
+    "rank": 26,
+    "standing": 36,
+    "projection": {
+     "grade": 44.8,
+     "lo": 29.1,
+     "hi": 60.5,
+     "rank": 35,
+     "shareThisSeason": 0.155
+    },
+    "contributionEpa": -3.0,
+    "contributionPerGame": -1.5
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 30th on it but 35th on EPA per dropback alone; v2's season number is EPA alone",
+     "his EPA per dropback moved +0.080: 2 scrambles now count as dropbacks (-0.016) and receivers' fumbles no longer charged to him (+0.097)"
+    ],
+    "scramblesNowCounted": 2,
+    "epaPerDropbackWithV1Attribution": -0.0851,
+    "epaPerDropbackAfterAddingScrambles": -0.1015,
+    "epaPerDropbackQbOnly": -0.005,
+    "changeFromScrambles": -0.0164,
+    "changeFromQbOnlyEpa": 0.0965
+   }
+  },
+  {
+   "id": "00-0035704",
+   "name": "Drew Lock",
+   "team": "SEA",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 42,
+    "rankOfDisplayed": 29,
+    "of": 40,
+    "scoutingGrade": 48.2,
+    "epaPerDropback": 0.4507,
+    "dropbacks": 50,
+    "rankOnTheStat": 20,
+    "statGrade": 50.2,
+    "plainRankOnTheStat": 1,
+    "mainStatRanks": {
+     "epaDb": 20,
+     "success": 30,
+     "cpoe": 29,
+     "badThrow": 26,
+     "sackRate": 16
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.4758,
+    "dropbacks": 51,
+    "rank": 1,
+    "standing": 99,
+    "projection": {
+     "grade": 49.7,
+     "lo": 36.5,
+     "hi": 62.9,
+     "rank": 21,
+     "shareThisSeason": 0.0984
+    },
+    "contributionEpa": 20.6,
+    "contributionPerGame": 10.3
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 29th on it but 20th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 50 dropbacks (20th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 1st), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 1,
+    "epaPerDropbackWithV1Attribution": 0.4507,
+    "epaPerDropbackAfterAddingScrambles": 0.4758,
+    "epaPerDropbackQbOnly": 0.4758,
+    "changeFromScrambles": 0.0252,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0034855",
+   "name": "Baker Mayfield",
+   "team": "TB",
+   "games": 3,
+   "v1": {
+    "displayedOverall": 40,
+    "rankOfDisplayed": 31,
+    "of": 40,
+    "scoutingGrade": 47.8,
+    "epaPerDropback": -0.3294,
+    "dropbacks": 108,
+    "rankOnTheStat": 27,
+    "statGrade": 47.7,
+    "plainRankOnTheStat": 39,
+    "mainStatRanks": {
+     "epaDb": 27,
+     "success": 31,
+     "cpoe": 32,
+     "badThrow": 21,
+     "sackRate": 27
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.2901,
+    "dropbacks": 116,
+    "rank": 39,
+    "standing": 3,
+    "projection": {
+     "grade": 49.2,
+     "lo": 41.0,
+     "hi": 57.4,
+     "rank": 24,
+     "shareThisSeason": 0.0857
+    },
+    "contributionEpa": -41.4,
+    "contributionPerGame": -13.8
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 108 dropbacks (27th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 39th), and shows the sample beside it",
+     "his EPA per dropback moved +0.039: 8 scrambles now count as dropbacks (+0.018) and receivers' fumbles no longer charged to him (+0.022)"
+    ],
+    "scramblesNowCounted": 8,
+    "epaPerDropbackWithV1Attribution": -0.3294,
+    "epaPerDropbackAfterAddingScrambles": -0.3117,
+    "epaPerDropbackQbOnly": -0.2901,
+    "changeFromScrambles": 0.0177,
+    "changeFromQbOnlyEpa": 0.0216
+   }
+  },
+  {
+   "id": "00-0039918",
+   "name": "Caleb Williams",
+   "team": "CHI",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 39,
+    "rankOfDisplayed": 33,
+    "of": 40,
+    "scoutingGrade": 47.4,
+    "epaPerDropback": 0.2076,
+    "dropbacks": 58,
+    "rankOnTheStat": 17,
+    "statGrade": 50.7,
+    "plainRankOnTheStat": 8,
+    "mainStatRanks": {
+     "epaDb": 17,
+     "success": 33,
+     "cpoe": 36,
+     "badThrow": 30,
+     "sackRate": 18
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.3797,
+    "dropbacks": 68,
+    "rank": 4,
+    "standing": 92,
+    "projection": {
+     "grade": 51.6,
+     "lo": 41.9,
+     "hi": 61.3,
+     "rank": 18,
+     "shareThisSeason": 0.0707
+    },
+    "contributionEpa": 18.3,
+    "contributionPerGame": 9.2
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 33rd on it but 17th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 58 dropbacks (17th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 8th), and shows the sample beside it",
+     "his EPA per dropback moved +0.172: 10 scrambles now count as dropbacks (+0.104) and receivers' fumbles no longer charged to him (+0.068)"
+    ],
+    "scramblesNowCounted": 10,
+    "epaPerDropbackWithV1Attribution": 0.2076,
+    "epaPerDropbackAfterAddingScrambles": 0.3114,
+    "epaPerDropbackQbOnly": 0.3797,
+    "changeFromScrambles": 0.1038,
+    "changeFromQbOnlyEpa": 0.0682
+   }
+  },
+  {
+   "id": "00-0039732",
+   "name": "Bo Nix",
+   "team": "DEN",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 39,
+    "rankOfDisplayed": 32,
+    "of": 40,
+    "scoutingGrade": 47.6,
+    "epaPerDropback": -0.0773,
+    "dropbacks": 167,
+    "rankOnTheStat": 22,
+    "statGrade": 49.6,
+    "plainRankOnTheStat": 29,
+    "mainStatRanks": {
+     "epaDb": 22,
+     "success": 34,
+     "cpoe": 31,
+     "badThrow": 27,
+     "sackRate": 1
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.1081,
+    "dropbacks": 171,
+    "rank": 35,
+    "standing": 13,
+    "projection": {
+     "grade": 49.6,
+     "lo": 40.4,
+     "hi": 58.8,
+     "rank": 23,
+     "shareThisSeason": 0.1587
+    },
+    "contributionEpa": -26.6,
+    "contributionPerGame": -5.3
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 32nd on it but 22nd on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 167 dropbacks (22nd); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 29th), and shows the sample beside it",
+     "his EPA per dropback moved -0.031: 4 scrambles now count as dropbacks (-0.031)"
+    ],
+    "scramblesNowCounted": 4,
+    "epaPerDropbackWithV1Attribution": -0.0773,
+    "epaPerDropbackAfterAddingScrambles": -0.1081,
+    "epaPerDropbackQbOnly": -0.1081,
+    "changeFromScrambles": -0.0308,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0039150",
+   "name": "Bryce Young",
+   "team": "CAR",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 37,
+    "rankOfDisplayed": 34,
+    "of": 40,
+    "scoutingGrade": 47.1,
+    "epaPerDropback": 0.175,
+    "dropbacks": 167,
+    "rankOnTheStat": 25,
+    "statGrade": 47.9,
+    "plainRankOnTheStat": 9,
+    "mainStatRanks": {
+     "epaDb": 25,
+     "success": 36,
+     "cpoe": 22,
+     "badThrow": 35,
+     "sackRate": 23
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.2197,
+    "dropbacks": 171,
+    "rank": 10,
+    "standing": 77,
+    "projection": {
+     "grade": 45.1,
+     "lo": 36.4,
+     "hi": 53.8,
+     "rank": 33,
+     "shareThisSeason": 0.1438
+    },
+    "contributionEpa": 25.4,
+    "contributionPerGame": 6.3
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 34th on it but 25th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 167 dropbacks (25th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 9th), and shows the sample beside it",
+     "his EPA per dropback moved +0.045: 4 scrambles now count as dropbacks (+0.015) and receivers' fumbles no longer charged to him (+0.030)"
+    ],
+    "scramblesNowCounted": 4,
+    "epaPerDropbackWithV1Attribution": 0.175,
+    "epaPerDropbackAfterAddingScrambles": 0.1899,
+    "epaPerDropbackQbOnly": 0.2197,
+    "changeFromScrambles": 0.0149,
+    "changeFromQbOnlyEpa": 0.0298
+   }
+  },
+  {
+   "id": "00-0023459",
+   "name": "Aaron Rodgers",
+   "team": "PIT",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 36,
+    "rankOfDisplayed": 35,
+    "of": 40,
+    "scoutingGrade": 46.7,
+    "epaPerDropback": -0.1126,
+    "dropbacks": 196,
+    "rankOnTheStat": 28,
+    "statGrade": 47.7,
+    "plainRankOnTheStat": 33,
+    "mainStatRanks": {
+     "epaDb": 28,
+     "success": 32,
+     "cpoe": 34,
+     "badThrow": 32,
+     "sackRate": 15
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0873,
+    "dropbacks": 199,
+    "rank": 32,
+    "standing": 21,
+    "projection": {
+     "grade": 46.3,
+     "lo": 37.7,
+     "hi": 54.9,
+     "rank": 30,
+     "shareThisSeason": 0.1631
+    },
+    "contributionEpa": -30.4,
+    "contributionPerGame": -6.1
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 35th on it but 28th on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 196 dropbacks (28th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 33rd), and shows the sample beside it"
+    ],
+    "scramblesNowCounted": 3,
+    "epaPerDropbackWithV1Attribution": -0.1126,
+    "epaPerDropbackAfterAddingScrambles": -0.1087,
+    "epaPerDropbackQbOnly": -0.0873,
+    "changeFromScrambles": 0.0039,
+    "changeFromQbOnlyEpa": 0.0213
+   }
+  },
+  {
+   "id": "00-0033537",
+   "name": "Deshaun Watson",
+   "team": "CLE",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 32,
+    "rankOfDisplayed": 36,
+    "of": 40,
+    "scoutingGrade": 45.8,
+    "epaPerDropback": -0.0174,
+    "dropbacks": 166,
+    "rankOnTheStat": 37,
+    "statGrade": 44.3,
+    "plainRankOnTheStat": 23,
+    "mainStatRanks": {
+     "epaDb": 37,
+     "success": 39,
+     "cpoe": 37,
+     "badThrow": 20,
+     "sackRate": 40
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": 0.0536,
+    "dropbacks": 181,
+    "rank": 21,
+    "standing": 49,
+    "projection": {
+     "grade": 41.7,
+     "lo": 31.3,
+     "hi": 52.1,
+     "rank": 38,
+     "shareThisSeason": 0.2162
+    },
+    "contributionEpa": -13.1,
+    "contributionPerGame": -2.6
+   },
+   "causes": {
+    "why": [
+     "v1 ranked a value pulled toward the middle for his 166 dropbacks (37th); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 23rd), and shows the sample beside it",
+     "his EPA per dropback moved +0.071: 15 scrambles now count as dropbacks (+0.047) and receivers' fumbles no longer charged to him (+0.024)"
+    ],
+    "scramblesNowCounted": 15,
+    "epaPerDropbackWithV1Attribution": -0.0174,
+    "epaPerDropbackAfterAddingScrambles": 0.0299,
+    "epaPerDropbackQbOnly": 0.0536,
+    "changeFromScrambles": 0.0474,
+    "changeFromQbOnlyEpa": 0.0236
+   }
+  },
+  {
+   "id": "00-0031503",
+   "name": "Jameis Winston",
+   "team": "NYG",
+   "games": 4,
+   "v1": {
+    "displayedOverall": 30,
+    "rankOfDisplayed": 37,
+    "of": 40,
+    "scoutingGrade": 45.5,
+    "epaPerDropback": -0.0485,
+    "dropbacks": 142,
+    "rankOnTheStat": 31,
+    "statGrade": 47.4,
+    "plainRankOnTheStat": 26,
+    "mainStatRanks": {
+     "epaDb": 31,
+     "success": 35,
+     "cpoe": 38,
+     "badThrow": 38,
+     "sackRate": 21
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.0124,
+    "dropbacks": 146,
+    "rank": 28,
+    "standing": 31,
+    "projection": {
+     "grade": 45.4,
+     "lo": 34.7,
+     "hi": 56.1,
+     "rank": 32,
+     "shareThisSeason": 0.1858
+    },
+    "contributionEpa": -11.8,
+    "contributionPerGame": -2.9
+   },
+   "causes": {
+    "why": [
+     "v1's Overall averaged five stats and he ranked 37th on it but 31st on EPA per dropback alone; v2's season number is EPA alone",
+     "v1 ranked a value pulled toward the middle for his 142 dropbacks (31st); v2 ranks the plain number, not a pulled one (on v1's own numbers that is 26th), and shows the sample beside it",
+     "his EPA per dropback moved +0.036: 4 scrambles now count as dropbacks (+0.036)"
+    ],
+    "scramblesNowCounted": 4,
+    "epaPerDropbackWithV1Attribution": -0.0485,
+    "epaPerDropbackAfterAddingScrambles": -0.0124,
+    "epaPerDropbackQbOnly": -0.0124,
+    "changeFromScrambles": 0.0361,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  },
+  {
+   "id": "00-0038128",
+   "name": "Malik Willis",
+   "team": "MIA",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 28,
+    "rankOfDisplayed": 38,
+    "of": 40,
+    "scoutingGrade": 45.0,
+    "epaPerDropback": -0.1987,
+    "dropbacks": 142,
+    "rankOnTheStat": 38,
+    "statGrade": 43.8,
+    "plainRankOnTheStat": 37,
+    "mainStatRanks": {
+     "epaDb": 38,
+     "success": 40,
+     "cpoe": 33,
+     "badThrow": 25,
+     "sackRate": 39
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.093,
+    "dropbacks": 158,
+    "rank": 33,
+    "standing": 18,
+    "projection": {
+     "grade": 46.9,
+     "lo": 34.4,
+     "hi": 59.4,
+     "rank": 28,
+     "shareThisSeason": 0.2715
+    },
+    "contributionEpa": -30.5,
+    "contributionPerGame": -6.1
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved +0.106: 16 scrambles now count as dropbacks (+0.082) and receivers' fumbles no longer charged to him (+0.024)"
+    ],
+    "scramblesNowCounted": 16,
+    "epaPerDropbackWithV1Attribution": -0.1987,
+    "epaPerDropbackAfterAddingScrambles": -0.1166,
+    "epaPerDropbackQbOnly": -0.093,
+    "changeFromScrambles": 0.0821,
+    "changeFromQbOnlyEpa": 0.0237
+   }
+  },
+  {
+   "id": "00-0040676",
+   "name": "Cam Ward",
+   "team": "TEN",
+   "games": 5,
+   "v1": {
+    "displayedOverall": 28,
+    "rankOfDisplayed": 39,
+    "of": 40,
+    "scoutingGrade": 44.9,
+    "epaPerDropback": -0.1747,
+    "dropbacks": 164,
+    "rankOnTheStat": 39,
+    "statGrade": 42.5,
+    "plainRankOnTheStat": 35,
+    "mainStatRanks": {
+     "epaDb": 39,
+     "success": 38,
+     "cpoe": 30,
+     "badThrow": 29,
+     "sackRate": 34
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.1331,
+    "dropbacks": 175,
+    "rank": 36,
+    "standing": 10,
+    "projection": {
+     "grade": 36.8,
+     "lo": 26.2,
+     "hi": 47.4,
+     "rank": 39,
+     "shareThisSeason": 0.2181
+    },
+    "contributionEpa": -32.3,
+    "contributionPerGame": -6.5
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved +0.042: 11 scrambles now count as dropbacks (+0.023) and receivers' fumbles no longer charged to him (+0.019)"
+    ],
+    "scramblesNowCounted": 11,
+    "epaPerDropbackWithV1Attribution": -0.1747,
+    "epaPerDropbackAfterAddingScrambles": -0.1518,
+    "epaPerDropbackQbOnly": -0.1331,
+    "changeFromScrambles": 0.0229,
+    "changeFromQbOnlyEpa": 0.0187
+   }
+  },
+  {
+   "id": "00-0033662",
+   "name": "Cooper Rush",
+   "team": "ATL",
+   "games": 2,
+   "v1": {
+    "displayedOverall": 22,
+    "rankOfDisplayed": 40,
+    "of": 40,
+    "scoutingGrade": 43.5,
+    "epaPerDropback": -0.7208,
+    "dropbacks": 43,
+    "rankOnTheStat": 40,
+    "statGrade": 40.2,
+    "plainRankOnTheStat": 40,
+    "mainStatRanks": {
+     "epaDb": 40,
+     "success": 37,
+     "cpoe": null,
+     "badThrow": 36,
+     "sackRate": 5
+    }
+   },
+   "v2": {
+    "thisSeasonQbEpa": -0.7551,
+    "dropbacks": 45,
+    "rank": 40,
+    "standing": 1,
+    "projection": {
+     "grade": 36.4,
+     "lo": 24.5,
+     "hi": 48.3,
+     "rank": 40,
+     "shareThisSeason": 0.0702
+    },
+    "contributionEpa": -37.2,
+    "contributionPerGame": -18.6
+   },
+   "causes": {
+    "why": [
+     "his EPA per dropback moved -0.034: 2 scrambles now count as dropbacks (-0.034)"
+    ],
+    "scramblesNowCounted": 2,
+    "epaPerDropbackWithV1Attribution": -0.7208,
+    "epaPerDropbackAfterAddingScrambles": -0.7551,
+    "epaPerDropbackQbOnly": -0.7551,
+    "changeFromScrambles": -0.0343,
+    "changeFromQbOnlyEpa": 0.0
+   }
+  }
+ ]
+}

@@ -14,6 +14,9 @@ import { buildComparison, configQuery, readConfig, type CompareConfig } from "..
 import { getPlayers } from "../../lib/lab/data"
 import { searchIndex } from "../../lib/lab/playersKit"
 
+import { isV2Site } from "../../lib/lab/labMethod"
+import { threeWay } from "../../lib/lab/v2/kit"
+import type { V2Data, V2Row } from "../../lib/lab/v2/types"
 type Router = { push: ReturnType<typeof vi.fn>; replace: ReturnType<typeof vi.fn> }
 const router = () => (globalThis as unknown as { __router: Router }).__router
 
@@ -37,8 +40,27 @@ describe("<CompareHero />", () => {
 		expect(screen.getByTestId("headline").textContent).toBe(c.headline)
 		expect(screen.getByTestId("verdict")).toBeTruthy()
 		// the higher grade is marked on exactly one side, and only when there is one
-		const lead = c.overall.lead
-		expect(screen.queryAllByText("Higher grade")).toHaveLength(lead === "a" || lead === "b" ? 1 : 0)
+		// (v2 marks a lead only when the gap is bigger than the two numbers' own uncertainty, the same call the three-question block makes)
+		const lead = isV2Site() ? threeWay(data as V2Data, c.a as V2Row, c.b as V2Row)[0].lead : c.overall.lead
+		expect(screen.queryAllByText(isV2Site() ? "Higher this season" : "Higher grade")).toHaveLength(lead === "a" || lead === "b" ? 1 : 0)
+	})
+
+	it.skipIf(!isV2Site())("in v2 never says 'higher' over a pair of quarterbacks the three-question block calls too close, and does over a clear gap", () => {
+		const qbs = data.players.filter((p) => p.group === "qb" && p.stats.length >= 1 && p.games >= 4)
+		let close: [V2Row, V2Row] | null = null
+		let clear: [V2Row, V2Row] | null = null
+		for (const x of qbs) for (const y of qbs) {
+			if (x === y) continue
+			const lead = threeWay(data as V2Data, x as V2Row, y as V2Row)[0].lead
+			if (!lead && !close) close = [x as V2Row, y as V2Row]
+			if (lead === "a" && !clear) clear = [x as V2Row, y as V2Row]
+		}
+		expect(close && clear).toBeTruthy()
+		render(<CompareHero data={data} c={buildComparison(data, readConfig({ a: close![0].slug, b: close![1].slug }))!} />)
+		expect(screen.queryAllByText("Higher this season")).toHaveLength(0)
+		cleanup()
+		render(<CompareHero data={data} c={buildComparison(data, readConfig({ a: clear![0].slug, b: clear![1].slug }))!} />)
+		expect(screen.queryAllByText("Higher this season")).toHaveLength(1)
 	})
 
 	it("says what a lineman has instead of an overall grade", () => {

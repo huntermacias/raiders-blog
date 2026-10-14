@@ -2,7 +2,6 @@ import seasonJson from "@/data/lab/season.json"
 import scoutingJson from "@/data/lab/scouting.json"
 import historyJson from "@/data/lab/history.json"
 import unitsJson from "@/data/lab/units.json"
-import playersJson from "@/data/lab/players.json"
 import type { LabGame, LabSeason } from "./types"
 import type { ScoutingData } from "./scouting"
 import type { HistoryData } from "./history"
@@ -13,7 +12,9 @@ const season = seasonJson as unknown as LabSeason
 const scouting = scoutingJson as unknown as ScoutingData
 const history = historyJson as unknown as HistoryData
 const units = unitsJson as unknown as UnitsData
-const players = playersJson as unknown as PlayersData
+// The method switch (labMethod.ts) picks the players file at build time; v1 is the default and the only one in the bundle unless it is set.
+/* eslint-disable @typescript-eslint/no-require-imports */
+const players = (process.env.NEXT_PUBLIC_LAB_METHOD === "v2" ? require("../../data/lab/v2/players.json") : require("../../data/lab/players.json")) as PlayersData
 
 export function getPlayers(): PlayersData {
 	return players

@@ -14,6 +14,8 @@ import { getPlayerLogs } from "@/lib/lab/playerData"
 import { teamNick } from "@/lib/lab/playerView"
 import { SIT_BOARDS, sitBoardHref } from "@/lib/lab/situationsKit"
 import GroupTabs from "@/components/lab/players/GroupTabs"
+import { V2Cards, V2HowItWorks } from "@/components/lab/v2/V2Explainer"
+import { isV2Site } from "@/lib/lab/labMethod"
 import { GROUP_META, GROUP_ORDER, HEADLINE, MOVE_MIN, SIDES, overall, players, profileSlugs, risersFallers, roleMovers, searchIndex, standouts } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
@@ -210,7 +212,7 @@ export default function PlayersPage() {
 						</Section>
 					) : null}
 
-					<Section id="roster" title="The Raiders, card by card" blurb={<p className="m-0">Every Raider with enough plays to grade. The big Overall number runs 1 to 99, with 50 average. It is his scouting grade stretched onto that scale, so a quarterback at 80 is in the league's top 1%. The grade itself is the average of his main stats against that position: 50 is average and each 10 points is a standard deviation. His place at the position (39th of 40, say) is shown beside it. Open a card for the whole season.</p>} tint>
+					<Section id="roster" title="The Raiders, card by card" blurb={isV2Site() ? <><p className="m-0">Every Raider with enough plays to rank. The big number is his percentile among players at his job on this season&apos;s numbers (99 is best of the league). Open a card for the other two answers: what he has contributed so far, and his projection.</p><div className="mt-4"><V2Cards /></div></> : <p className="m-0">Every Raider with enough plays to grade. The big Overall number runs 1 to 99, with 50 average. It is his scouting grade stretched onto that scale, so a quarterback at 80 is in the league's top 1%. The grade itself is the average of his main stats against that position: 50 is average and each 10 points is a standard deviation. His place at the position (39th of 40, say) is shown beside it. Open a card for the whole season.</p>} tint>
 						<div className="grid gap-10">
 							{SIDES.map((side) => {
 								const list = roster.filter((p) => side.groups.includes(p.group)).sort((a, b) => (overall(b) ?? 0) - (overall(a) ?? 0))
@@ -315,9 +317,9 @@ export default function PlayersPage() {
 						<div className="container py-10 sm:py-12">
 							<details className="max-w-3xl rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm text-lab-soft">
 								<summary id="how-it-works" className="cursor-pointer text-sm font-semibold text-lab-ink">
-									How the grades, ranks and movers work
+									{isV2Site() ? "How the three views work" : "How the grades, ranks and movers work"}
 								</summary>
-								<ol className="mb-3 mt-3 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-lab-muted">
+								{isV2Site() ? <V2HowItWorks formGames={data.formGames} /> : (<ol className="mb-3 mt-3 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-lab-muted">
 									<li>Every player is compared only with players who do the same job: {GROUP_ORDER.map((g) => GROUP_META[g].title.toLowerCase()).join(", ")}. A defensive tackle is never graded against an edge rusher.</li>
 									<li>To be graded on a stat a player needs enough plays behind it (for example 40 dropbacks for a quarterback or 12 targets for a receiver). Everyone below that is left off, rather than ranked on a few plays.</li>
 									<li>Rank is among the players who qualify. The strip under each number shows the 10th-best to the 90th-best player; the shaded part is the middle half. The thin line beside the dot is the range his true level most likely sits in, which is wide when few plays are behind it.</li>
@@ -327,7 +329,7 @@ export default function PlayersPage() {
 									<li>Stats that describe a style, like how deep a quarterback throws or how often a back runs to the edge, are shown against the league but never graded. Stats that are mostly zeros, like drop rate, are shown and graded but not counted in the overall grade.</li>
 									<li>Early in a season a rate over a handful of plays, like missed tackles, drops or field goal percentage, is mostly luck. Each stat carries a measure of how much of the gap between players is real so far. Players are ranked on the number pulled toward the league average by how few plays are behind it, a stat that is mostly luck is marked "too early to rank", and none of those earns a tier, a badge, a standout card or a verdict in a read. They firm up as games are played.</li>
 									<li>Field goals are judged against the make rate of every kick of that distance this season, and EPA means expected points added from the down, distance and field position.</li>
-								</ol>
+								</ol>)}
 								<p className="m-0 text-xs leading-relaxed text-lab-muted">
 									These are not film grades. They come from play-by-play, charting and snap-count data, so they cannot see blocking, route running or assignments. For that reason offensive linemen get no overall grade and no rank on their line's numbers. A lineman's page shows his own record (starts, snaps, penalties) and, labeled as his line's, the run success and sacks allowed of the unit in the games he started, which the five who start together share. Box-score totals use the same games as the rest of the page.
 								</p>

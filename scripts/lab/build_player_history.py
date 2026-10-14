@@ -29,6 +29,7 @@ from pathlib import Path
 import numpy as np
 
 import build_players as bp
+import method as mth
 
 # A stat's drift is never taken as zero: even a stat that looks perfectly steady can change, and a prior that never ages would
 # be trusted without limit. This is the smallest share of the talent variance a year of aging is allowed to be.
@@ -58,8 +59,8 @@ def estimate(per_season: dict[int, dict]) -> dict[str, dict[str, dict[str, float
     for season, comp in per_season.items():
         for pid, rows in comp["players"].items():
             for group, _, _, _, stats in rows:
-                for k, v, _, se, g, _ in stats:
-                    if se is None or g is None:  # a stat with no grade is a style stat: not good or bad, so nothing to carry forward
+                for k, v, _, se, g, r in stats:
+                    if se is None or (g is None and r is None):  # a stat with neither a grade nor a rank is a style stat: not good or bad, so nothing to carry forward
                         continue
                     table.setdefault((group, k), {}).setdefault(season, {})[pid] = (float(v), float(se))
     out: dict[str, dict[str, dict[str, float]]] = {}
@@ -91,15 +92,17 @@ def estimate(per_season: dict[int, dict]) -> dict[str, dict[str, dict[str, float
     return out
 
 
-def build_history(seasons: list[int], folder: str | None) -> dict:
+def build_history(seasons: list[int], folder: str | None, ref: "bp.Reference | None" = None) -> dict:
     per_season: dict[int, dict] = {}
     for season in sorted(seasons):
         print(f"building {season}", file=sys.stderr)
-        result = bp.build(bp.load(season, folder), season)
+        src = bp.load(season, folder)
+        result = bp.build(src, season, "LV", None, ref)
         if not result.get("players"):
             raise SystemExit(f"no player data for {season}")
         per_season[season] = compact(result)
         per_season[season]["weeks"] = result["week"]
+        per_season[season]["coaches"] = bp.coaches_of(src["pbp"])
     players: dict[str, dict] = {}
     for season, comp in per_season.items():
         for pid, rows in comp["players"].items():
@@ -113,6 +116,8 @@ def build_history(seasons: list[int], folder: str | None) -> dict:
         "seasons": sorted(seasons),
         "weeks": {str(s): c["weeks"] for s, c in per_season.items()},
         "yard": {str(s): c["yard"] for s, c in per_season.items()},
+        "coaches": {str(s): c["coaches"] for s, c in per_season.items()},
+        "method": mth.METHOD_VERSION,
         "model": estimate(per_season),
         "players": players,
     }
@@ -123,8 +128,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seasons", type=int, nargs="+", required=True)
     ap.add_argument("--input", help="folder with the source files instead of downloading them")
     ap.add_argument("--out", default="data/lab/player-history.json")
+    ap.add_argument("--method", default=None, help="method-v2.json (default: the file beside --out, if there is one)")
     args = ap.parse_args(argv)
-    payload = build_history(args.seasons, args.input)
+    ref = bp.Reference.load(Path(args.method) if args.method else Path(args.out).with_name("method-v2.json"))
+    payload = build_history(args.seasons, args.input, ref)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False, default=float) + "\n")

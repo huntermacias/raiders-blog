@@ -1,0 +1,1092 @@
+{
+ "version": 2,
+ "name": "Rundown method v2",
+ "generatedAt": "2026-10-14T05:19:45Z",
+ "source": "nflverse data (play-by-play, FTN charting, PFR advanced stats, snap counts, rosters), CC BY 4.0. Calculations by Raiders Rundown.",
+ "referenceSeasons": [
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "population": "Player-seasons with at least 3 times the volume that earns a stat a place on a player's card.",
+ "note": "All numbers are in the stat's displayed units. talentSd is how far apart players truly are, playSd the noise per unit of volume, drift the variance of a player's true-level change in a year.",
+ "groups": {
+  "qb": {
+   "stats": {
+    "epaDb": {
+     "n": 346,
+     "mean": 0.0294,
+     "talentSd": 0.1065,
+     "playSd": 1.7266,
+     "reliability": 0.5488,
+     "halfSeasonSd": 0.1732,
+     "shareReal": 0.378,
+     "stability": 0.4586,
+     "stabilityCi": [
+      0.3513,
+      0.5634
+     ],
+     "stabilityN": 215,
+     "label": "strong",
+     "drift": 0.0033206
+    },
+    "success": {
+     "n": 346,
+     "mean": 0.4495,
+     "talentSd": 0.0391,
+     "playSd": 0.5189,
+     "reliability": 0.646,
+     "halfSeasonSd": 0.0566,
+     "shareReal": 0.4771,
+     "stability": 0.4552,
+     "stabilityCi": [
+      0.3487,
+      0.5531
+     ],
+     "stabilityN": 215,
+     "label": "strong",
+     "drift": 0.000724264
+    },
+    "cpoe": {
+     "n": 326,
+     "mean": -0.0535,
+     "talentSd": 2.7398,
+     "playSd": 43.739,
+     "reliability": 0.5458,
+     "halfSeasonSd": 4.4815,
+     "shareReal": 0.3737,
+     "stability": 0.3271,
+     "stabilityCi": [
+      0.2142,
+      0.4249
+     ],
+     "stabilityN": 199,
+     "label": "moderate",
+     "drift": 3.90567
+    },
+    "sackRate": {
+     "n": 346,
+     "mean": 0.0654,
+     "talentSd": 0.0162,
+     "playSd": 0.2727,
+     "reliability": 0.5316,
+     "halfSeasonSd": 0.027,
+     "shareReal": 0.3615,
+     "stability": 0.4421,
+     "stabilityCi": [
+      0.3231,
+      0.5458
+     ],
+     "stabilityN": 215,
+     "label": "strong",
+     "drift": 9.71228e-05
+    },
+    "badThrow": {
+     "n": 337,
+     "mean": 0.1495,
+     "talentSd": 0.0178,
+     "playSd": 0.4064,
+     "reliability": 0.382,
+     "halfSeasonSd": 0.0366,
+     "shareReal": 0.2361,
+     "stability": 0.4183,
+     "stabilityCi": [
+      0.3028,
+      0.52
+     ],
+     "stabilityN": 210,
+     "label": "strong",
+     "drift": 3.1684e-05
+    }
+   }
+  },
+  "rb": {
+   "stats": {
+    "epaRush": {
+     "n": 488,
+     "mean": -0.0718,
+     "talentSd": 0.0589,
+     "playSd": 0.9513,
+     "reliability": 0.3265,
+     "halfSeasonSd": 0.1342,
+     "shareReal": 0.1927,
+     "stability": 0.1033,
+     "stabilityCi": [
+      -0.0104,
+      0.2037
+     ],
+     "stabilityN": 286,
+     "label": "weak",
+     "drift": 0.00300249
+    },
+    "success": {
+     "n": 488,
+     "mean": 0.3902,
+     "talentSd": 0.0361,
+     "playSd": 0.505,
+     "reliability": 0.39,
+     "halfSeasonSd": 0.0735,
+     "shareReal": 0.2408,
+     "stability": 0.1111,
+     "stabilityCi": [
+      0.0073,
+      0.2281
+     ],
+     "stabilityN": 286,
+     "label": "weak",
+     "drift": 0.00122364
+    },
+    "explosive": {
+     "n": 488,
+     "mean": 0.1036,
+     "talentSd": 0.0212,
+     "playSd": 0.2831,
+     "reliability": 0.4112,
+     "halfSeasonSd": 0.0417,
+     "shareReal": 0.2587,
+     "stability": 0.2802,
+     "stabilityCi": [
+      0.1766,
+      0.3793
+     ],
+     "stabilityN": 286,
+     "label": "moderate",
+     "drift": 0.000313207
+    },
+    "yco": {
+     "n": 490,
+     "mean": 1.9869,
+     "talentSd": 0.3025,
+     "playSd": 3.8361,
+     "reliability": 0.4375,
+     "halfSeasonSd": 0.5732,
+     "shareReal": 0.2785,
+     "stability": 0.2729,
+     "stabilityCi": [
+      0.1537,
+      0.3761
+     ],
+     "stabilityN": 289,
+     "label": "moderate",
+     "drift": 0.0470565
+    },
+    "ryoe": {
+     "n": 291,
+     "mean": 0.2434,
+     "talentSd": 0.2813,
+     "playSd": 5.8599,
+     "reliability": 0.2605,
+     "halfSeasonSd": 0.727,
+     "shareReal": 0.1497,
+     "stability": 0.2829,
+     "stabilityCi": [
+      0.1309,
+      0.4221
+     ],
+     "stabilityN": 156,
+     "label": "moderate",
+     "drift": 0.00791297
+    },
+    "broken": {
+     "n": 490,
+     "mean": 0.0679,
+     "talentSd": 0.0159,
+     "playSd": 0.3063,
+     "reliability": 0.2517,
+     "halfSeasonSd": 0.042,
+     "shareReal": 0.1439,
+     "stability": 0.1986,
+     "stabilityCi": [
+      0.1016,
+      0.2937
+     ],
+     "stabilityN": 289,
+     "label": "weak",
+     "drift": 0.000232997
+    },
+    "stuffRate": {
+     "n": 488,
+     "mean": 0.1804,
+     "talentSd": 0.0254,
+     "playSd": 0.394,
+     "reliability": 0.3417,
+     "halfSeasonSd": 0.0561,
+     "shareReal": 0.2061,
+     "stability": 0.1139,
+     "stabilityCi": [
+      0.0083,
+      0.2081
+     ],
+     "stabilityN": 286,
+     "label": "weak",
+     "drift": 0.000333436
+    },
+    "recEpaTgt": {
+     "n": 178,
+     "mean": 0.0303,
+     "talentSd": 0.0652,
+     "playSd": 1.2116,
+     "reliability": 0.1463,
+     "halfSeasonSd": 0.232,
+     "shareReal": 0.0789,
+     "stability": 0.1443,
+     "stabilityCi": [
+      -0.0843,
+      0.3561
+     ],
+     "stabilityN": 81,
+     "label": "weak",
+     "drift": 0.000425104
+    },
+    "touchEpa": {
+     "n": 465,
+     "mean": -0.0472,
+     "talentSd": 0.052,
+     "playSd": 1.0198,
+     "reliability": 0.3065,
+     "halfSeasonSd": 0.1226,
+     "shareReal": 0.1797,
+     "stability": 0.1327,
+     "stabilityCi": [
+      0.0061,
+      0.2575
+     ],
+     "stabilityN": 269,
+     "label": "weak",
+     "drift": 0.00233038
+    }
+   }
+  },
+  "wr": {
+   "stats": {
+    "success": {
+     "n": 825,
+     "mean": 0.5075,
+     "talentSd": 0.0467,
+     "playSd": 0.4859,
+     "reliability": 0.3831,
+     "halfSeasonSd": 0.0961,
+     "shareReal": 0.2365,
+     "stability": 0.2938,
+     "stabilityCi": [
+      0.2079,
+      0.3755
+     ],
+     "stabilityN": 511,
+     "label": "moderate",
+     "drift": 0.000889052
+    },
+    "epaTgt": {
+     "n": 825,
+     "mean": 0.2265,
+     "talentSd": 0.1153,
+     "playSd": 1.6726,
+     "reliability": 0.2413,
+     "halfSeasonSd": 0.3113,
+     "shareReal": 0.1371,
+     "stability": 0.2257,
+     "stabilityCi": [
+      0.1488,
+      0.3004
+     ],
+     "stabilityN": 511,
+     "label": "weak",
+     "drift": 0.00132941
+    },
+    "firstDown": {
+     "n": 825,
+     "mean": 0.3827,
+     "talentSd": 0.0442,
+     "playSd": 0.4886,
+     "reliability": 0.3536,
+     "halfSeasonSd": 0.0953,
+     "shareReal": 0.2147,
+     "stability": 0.2642,
+     "stabilityCi": [
+      0.1794,
+      0.3492
+     ],
+     "stabilityN": 511,
+     "label": "moderate",
+     "drift": 0.000571559
+    },
+    "croe": {
+     "n": 821,
+     "mean": 0.0005,
+     "talentSd": 0.0353,
+     "playSd": 0.4355,
+     "reliability": 0.3054,
+     "halfSeasonSd": 0.0831,
+     "shareReal": 0.1799,
+     "stability": 0.2553,
+     "stabilityCi": [
+      0.1595,
+      0.3474
+     ],
+     "stabilityN": 508,
+     "label": "moderate",
+     "drift": 0.00028447
+    },
+    "yacOe": {
+     "n": 767,
+     "mean": -0.455,
+     "talentSd": 0.7952,
+     "playSd": 6.4294,
+     "reliability": 0.3918,
+     "halfSeasonSd": 1.6132,
+     "shareReal": 0.243,
+     "stability": 0.3225,
+     "stabilityCi": [
+      0.215,
+      0.4229
+     ],
+     "stabilityN": 460,
+     "label": "moderate",
+     "drift": 0.285395
+    },
+    "drop": {
+     "n": 824,
+     "mean": 0.0461,
+     "talentSd": 0.0106,
+     "playSd": 0.2067,
+     "reliability": 0.1514,
+     "halfSeasonSd": 0.0373,
+     "shareReal": 0.0816,
+     "stability": 0.1377,
+     "stabilityCi": [
+      0.039,
+      0.2347
+     ],
+     "stabilityN": 510,
+     "label": "weak",
+     "drift": 5.02737e-05
+    }
+   }
+  },
+  "te": {
+   "stats": {
+    "success": {
+     "n": 303,
+     "mean": 0.5333,
+     "talentSd": 0.0366,
+     "playSd": 0.5172,
+     "reliability": 0.2287,
+     "halfSeasonSd": 0.1026,
+     "shareReal": 0.1274,
+     "stability": 0.315,
+     "stabilityCi": [
+      0.1452,
+      0.4618
+     ],
+     "stabilityN": 174,
+     "label": "moderate",
+     "drift": 0.000133956
+    },
+    "epaTgt": {
+     "n": 303,
+     "mean": 0.2151,
+     "talentSd": 0.1075,
+     "playSd": 1.5121,
+     "reliability": 0.2277,
+     "halfSeasonSd": 0.3002,
+     "shareReal": 0.1283,
+     "stability": 0.2983,
+     "stabilityCi": [
+      0.146,
+      0.4363
+     ],
+     "stabilityN": 174,
+     "label": "moderate",
+     "drift": 0.00149156
+    },
+    "firstDown": {
+     "n": 303,
+     "mean": 0.3786,
+     "talentSd": 0.0382,
+     "playSd": 0.509,
+     "reliability": 0.2479,
+     "halfSeasonSd": 0.1016,
+     "shareReal": 0.141,
+     "stability": 0.3195,
+     "stabilityCi": [
+      0.1622,
+      0.4673
+     ],
+     "stabilityN": 174,
+     "label": "moderate",
+     "drift": 0.000145924
+    },
+    "croe": {
+     "n": 301,
+     "mean": 0.0161,
+     "talentSd": 0.0349,
+     "playSd": 0.4253,
+     "reliability": 0.2809,
+     "halfSeasonSd": 0.0862,
+     "shareReal": 0.1634,
+     "stability": 0.1875,
+     "stabilityCi": [
+      0.0237,
+      0.3396
+     ],
+     "stabilityN": 174,
+     "label": "weak",
+     "drift": 0.00149325
+    },
+    "yacOe": {
+     "n": 303,
+     "mean": 0.102,
+     "talentSd": 0.8097,
+     "playSd": 6.0711,
+     "reliability": 0.4035,
+     "halfSeasonSd": 1.6114,
+     "shareReal": 0.2525,
+     "stability": 0.404,
+     "stabilityCi": [
+      0.2529,
+      0.5391
+     ],
+     "stabilityN": 174,
+     "label": "strong",
+     "drift": 0.137773
+    },
+    "drop": {
+     "n": 303,
+     "mean": 0.0478,
+     "talentSd": 0.0109,
+     "playSd": 0.2042,
+     "reliability": 0.1433,
+     "halfSeasonSd": 0.0394,
+     "shareReal": 0.0771,
+     "stability": 0.2049,
+     "stabilityCi": [
+      0.0464,
+      0.3516
+     ],
+     "stabilityN": 174,
+     "label": "weak",
+     "drift": 1.1881e-05
+    }
+   }
+  },
+  "edge": {
+   "stats": {
+    "pressRate": {
+     "n": 1280,
+     "mean": 2.78,
+     "talentSd": 1.32,
+     "playSd": 17.9,
+     "reliability": 0.7214,
+     "halfSeasonSd": 1.76,
+     "shareReal": 0.564,
+     "stability": 0.6433,
+     "stabilityCi": [
+      0.5989,
+      0.6821
+     ],
+     "stabilityN": 740,
+     "label": "strong",
+     "drift": 0.344006
+    },
+    "sackRate": {
+     "n": 1280,
+     "mean": 0.75,
+     "talentSd": 0.38,
+     "playSd": 8.46,
+     "reliability": 0.4899,
+     "halfSeasonSd": 0.67,
+     "shareReal": 0.3241,
+     "stability": 0.3733,
+     "stabilityCi": [
+      0.3118,
+      0.4356
+     ],
+     "stabilityN": 740,
+     "label": "moderate",
+     "drift": 0.0953717
+    },
+    "tflRate": {
+     "n": 1280,
+     "mean": 1.08,
+     "talentSd": 0.35,
+     "playSd": 10.27,
+     "reliability": 0.3595,
+     "halfSeasonSd": 0.76,
+     "shareReal": 0.219,
+     "stability": 0.3133,
+     "stabilityCi": [
+      0.2434,
+      0.3859
+     ],
+     "stabilityN": 740,
+     "label": "moderate",
+     "drift": 0.0583793
+    },
+    "missedPct": {
+     "n": 746,
+     "mean": 0.0988,
+     "talentSd": 0.0317,
+     "playSd": 0.3041,
+     "reliability": 0.3315,
+     "halfSeasonSd": 0.0712,
+     "shareReal": 0.1984,
+     "stability": 0.2614,
+     "stabilityCi": [
+      0.1571,
+      0.3567
+     ],
+     "stabilityN": 356,
+     "label": "moderate",
+     "drift": 0.000100489
+    }
+   }
+  },
+  "idl": {
+   "stats": {
+    "pressRate": {
+     "n": 808,
+     "mean": 1.74,
+     "talentSd": 0.89,
+     "playSd": 13.81,
+     "reliability": 0.6476,
+     "halfSeasonSd": 1.28,
+     "shareReal": 0.4783,
+     "stability": 0.6152,
+     "stabilityCi": [
+      0.5446,
+      0.6795
+     ],
+     "stabilityN": 476,
+     "label": "strong",
+     "drift": 0.178649
+    },
+    "sackRate": {
+     "n": 808,
+     "mean": 0.44,
+     "talentSd": 0.25,
+     "playSd": 6.48,
+     "reliability": 0.3892,
+     "halfSeasonSd": 0.5,
+     "shareReal": 0.2415,
+     "stability": 0.3853,
+     "stabilityCi": [
+      0.2996,
+      0.4643
+     ],
+     "stabilityN": 476,
+     "label": "moderate",
+     "drift": 0.0129252
+    },
+    "tflRate": {
+     "n": 808,
+     "mean": 0.8,
+     "talentSd": 0.29,
+     "playSd": 9.01,
+     "reliability": 0.3192,
+     "halfSeasonSd": 0.67,
+     "shareReal": 0.1898,
+     "stability": 0.3062,
+     "stabilityCi": [
+      0.228,
+      0.3875
+     ],
+     "stabilityN": 476,
+     "label": "moderate",
+     "drift": 0.0138658
+    },
+    "missedPct": {
+     "n": 241,
+     "mean": 0.1014,
+     "talentSd": 0.0288,
+     "playSd": 0.293,
+     "reliability": 0.2677,
+     "halfSeasonSd": 0.0734,
+     "shareReal": 0.1538,
+     "stability": 0.2835,
+     "stabilityCi": [
+      0.1123,
+      0.4259
+     ],
+     "stabilityN": 119,
+     "label": "moderate",
+     "drift": 8.2944e-05
+    }
+   }
+  },
+  "lb": {
+   "stats": {
+    "tackleRate": {
+     "n": 567,
+     "mean": 12.38,
+     "talentSd": 2.09,
+     "playSd": 36.07,
+     "reliability": 0.6486,
+     "halfSeasonSd": 3.01,
+     "shareReal": 0.48,
+     "stability": 0.4902,
+     "stabilityCi": [
+      0.3931,
+      0.5839
+     ],
+     "stabilityN": 307,
+     "label": "strong",
+     "drift": 1.54248
+    },
+    "tflRate": {
+     "n": 567,
+     "mean": 0.73,
+     "talentSd": 0.24,
+     "playSd": 8.32,
+     "reliability": 0.315,
+     "halfSeasonSd": 0.56,
+     "shareReal": 0.1869,
+     "stability": 0.2126,
+     "stabilityCi": [
+      0.104,
+      0.3189
+     ],
+     "stabilityN": 307,
+     "label": "weak",
+     "drift": 0.0679057
+    },
+    "missedPct": {
+     "n": 569,
+     "mean": 0.0855,
+     "talentSd": 0.0191,
+     "playSd": 0.2941,
+     "reliability": 0.2303,
+     "halfSeasonSd": 0.053,
+     "shareReal": 0.1301,
+     "stability": 0.2286,
+     "stabilityCi": [
+      0.1203,
+      0.3288
+     ],
+     "stabilityN": 316,
+     "label": "weak",
+     "drift": 3.6481e-05
+    },
+    "yardsTgt": {
+     "n": 319,
+     "mean": 6.909,
+     "talentSd": 0.5314,
+     "playSd": 8.1155,
+     "reliability": 0.1819,
+     "halfSeasonSd": 1.6815,
+     "shareReal": 0.0999,
+     "stability": 0.0369,
+     "stabilityCi": [
+      -0.097,
+      0.1741
+     ],
+     "stabilityN": 165,
+     "label": "weak",
+     "drift": 0.246908
+    },
+    "compPct": {
+     "n": 319,
+     "mean": 0.7442,
+     "talentSd": 0.0319,
+     "playSd": 0.4678,
+     "reliability": 0.1939,
+     "halfSeasonSd": 0.0974,
+     "shareReal": 0.1073,
+     "stability": -0.0098,
+     "stabilityCi": [
+      -0.1579,
+      0.1439
+     ],
+     "stabilityN": 165,
+     "label": "weak",
+     "drift": 0.00105532
+    }
+   }
+  },
+  "cb": {
+   "stats": {
+    "yardsTgt": {
+     "n": 910,
+     "mean": 7.3914,
+     "talentSd": 0.576,
+     "playSd": 9.8415,
+     "reliability": 0.1559,
+     "halfSeasonSd": 1.9817,
+     "shareReal": 0.0845,
+     "stability": 0.0637,
+     "stabilityCi": [
+      -0.0242,
+      0.142
+     ],
+     "stabilityN": 528,
+     "label": "weak",
+     "drift": 0.128793
+    },
+    "compPct": {
+     "n": 910,
+     "mean": 0.6176,
+     "talentSd": 0.0485,
+     "playSd": 0.4693,
+     "reliability": 0.3649,
+     "halfSeasonSd": 0.1026,
+     "shareReal": 0.2232,
+     "stability": 0.2237,
+     "stabilityCi": [
+      0.1523,
+      0.2982
+     ],
+     "stabilityN": 528,
+     "label": "weak",
+     "drift": 0.00177326
+    },
+    "pbuRate": {
+     "n": 910,
+     "mean": 0.119,
+     "talentSd": 0.0223,
+     "playSd": 0.3384,
+     "reliability": 0.1909,
+     "halfSeasonSd": 0.0689,
+     "shareReal": 0.1051,
+     "stability": 0.209,
+     "stabilityCi": [
+      0.1348,
+      0.2897
+     ],
+     "stabilityN": 528,
+     "label": "weak",
+     "drift": 4.9729e-05
+    },
+    "intRate": {
+     "n": 910,
+     "mean": 0.02,
+     "talentSd": 0.011,
+     "playSd": 0.1353,
+     "reliability": 0.2641,
+     "halfSeasonSd": 0.0283,
+     "shareReal": 0.1517,
+     "stability": 0.208,
+     "stabilityCi": [
+      0.0977,
+      0.3031
+     ],
+     "stabilityN": 528,
+     "label": "weak",
+     "drift": 6.69884e-05
+    },
+    "missedPct": {
+     "n": 858,
+     "mean": 0.1068,
+     "talentSd": 0.027,
+     "playSd": 0.303,
+     "reliability": 0.2839,
+     "halfSeasonSd": 0.0663,
+     "shareReal": 0.1654,
+     "stability": 0.2603,
+     "stabilityCi": [
+      0.1754,
+      0.3443
+     ],
+     "stabilityN": 488,
+     "label": "moderate",
+     "drift": 7.29e-05
+    }
+   }
+  },
+  "saf": {
+   "stats": {
+    "yardsTgt": {
+     "n": 491,
+     "mean": 8.2427,
+     "talentSd": 1.0004,
+     "playSd": 11.1797,
+     "reliability": 0.2532,
+     "halfSeasonSd": 2.6278,
+     "shareReal": 0.1449,
+     "stability": 0.1502,
+     "stabilityCi": [
+      -0.0071,
+      0.2989
+     ],
+     "stabilityN": 264,
+     "label": "weak",
+     "drift": 0.472536
+    },
+    "compPct": {
+     "n": 491,
+     "mean": 0.6614,
+     "talentSd": 0.0199,
+     "playSd": 0.4974,
+     "reliability": 0.0637,
+     "halfSeasonSd": 0.1099,
+     "shareReal": 0.0329,
+     "stability": -0.0153,
+     "stabilityCi": [
+      -0.1529,
+      0.114
+     ],
+     "stabilityN": 264,
+     "label": "weak",
+     "drift": 0.000696083
+    },
+    "pbuRate": {
+     "n": 491,
+     "mean": 0.1296,
+     "talentSd": 0.0255,
+     "playSd": 0.3803,
+     "reliability": 0.1599,
+     "halfSeasonSd": 0.0864,
+     "shareReal": 0.0867,
+     "stability": 0.1629,
+     "stabilityCi": [
+      0.0482,
+      0.2721
+     ],
+     "stabilityN": 264,
+     "label": "weak",
+     "drift": 0.000440444
+    },
+    "intRate": {
+     "n": 491,
+     "mean": 0.0385,
+     "talentSd": 0.0203,
+     "playSd": 0.205,
+     "reliability": 0.3019,
+     "halfSeasonSd": 0.0487,
+     "shareReal": 0.1743,
+     "stability": 0.2552,
+     "stabilityCi": [
+      0.1414,
+      0.364
+     ],
+     "stabilityN": 264,
+     "label": "moderate",
+     "drift": 0.000210141
+    },
+    "missedPct": {
+     "n": 723,
+     "mean": 0.0952,
+     "talentSd": 0.0164,
+     "playSd": 0.2971,
+     "reliability": 0.1551,
+     "halfSeasonSd": 0.0568,
+     "shareReal": 0.0839,
+     "stability": 0.227,
+     "stabilityCi": [
+      0.1352,
+      0.3135
+     ],
+     "stabilityN": 443,
+     "label": "weak",
+     "drift": 2.6896e-05
+    }
+   }
+  },
+  "k": {
+   "stats": {
+    "fgOe": {
+     "n": 245,
+     "mean": 0.22,
+     "talentSd": 1.75,
+     "playSd": 34.86,
+     "reliability": 0.0652,
+     "halfSeasonSd": 9.57,
+     "shareReal": 0.0336,
+     "stability": 0.0251,
+     "stabilityCi": [
+      -0.1178,
+      0.18
+     ],
+     "stabilityN": 165,
+     "label": "weak",
+     "drift": 0.30625
+    },
+    "fgPct": {
+     "n": 245,
+     "mean": 0.8492,
+     "talentSd": 0.015,
+     "playSd": 0.3734,
+     "reliability": 0.0423,
+     "halfSeasonSd": 0.1019,
+     "shareReal": 0.0216,
+     "stability": 0.0018,
+     "stabilityCi": [
+      -0.1323,
+      0.1461
+     ],
+     "stabilityN": 165,
+     "label": "weak",
+     "drift": 0.000146561
+    },
+    "xpPct": {
+     "n": 221,
+     "mean": 0.9499,
+     "talentSd": 0.0217,
+     "playSd": 0.2177,
+     "reliability": 0.2522,
+     "halfSeasonSd": 0.0572,
+     "shareReal": 0.1443,
+     "stability": 0.2176,
+     "stabilityCi": [
+      0.0651,
+      0.3541
+     ],
+     "stabilityN": 138,
+     "label": "weak",
+     "drift": 4.7089e-05
+    },
+    "koEpa": {
+     "n": 268,
+     "mean": -0.0686,
+     "talentSd": 0.1258,
+     "playSd": 0.6305,
+     "reliability": 0.716,
+     "halfSeasonSd": 0.1686,
+     "shareReal": 0.5573,
+     "stability": 0.3869,
+     "stabilityCi": [
+      0.2301,
+      0.5349
+     ],
+     "stabilityN": 170,
+     "label": "moderate",
+     "drift": 0.00298815
+    }
+   }
+  },
+  "p": {
+   "stats": {
+    "epaPunt": {
+     "n": 258,
+     "mean": -0.1345,
+     "talentSd": 0.1045,
+     "playSd": 0.9166,
+     "reliability": 0.4042,
+     "halfSeasonSd": 0.208,
+     "shareReal": 0.2525,
+     "stability": 0.2239,
+     "stabilityCi": [
+      0.0857,
+      0.3569
+     ],
+     "stabilityN": 185,
+     "label": "weak",
+     "drift": 0.00633423
+    },
+    "net": {
+     "n": 258,
+     "mean": 40.8498,
+     "talentSd": 1.6021,
+     "playSd": 10.4658,
+     "reliability": 0.5492,
+     "halfSeasonSd": 2.6049,
+     "shareReal": 0.3783,
+     "stability": 0.3626,
+     "stabilityCi": [
+      0.2545,
+      0.464
+     ],
+     "stabilityN": 185,
+     "label": "moderate",
+     "drift": 1.4462
+    },
+    "in20": {
+     "n": 258,
+     "mean": 0.3919,
+     "talentSd": 0.043,
+     "playSd": 0.4798,
+     "reliability": 0.2972,
+     "halfSeasonSd": 0.1032,
+     "shareReal": 0.1735,
+     "stability": 0.1359,
+     "stabilityCi": [
+      -0.0186,
+      0.2805
+     ],
+     "stabilityN": 185,
+     "label": "weak",
+     "drift": 0.00114312
+    }
+   }
+  },
+  "pr": {
+   "stats": {
+    "epaRet": {
+     "n": 276,
+     "mean": 0.1288,
+     "talentSd": 0.0826,
+     "playSd": 0.9121,
+     "reliability": 0.1719,
+     "halfSeasonSd": 0.2694,
+     "shareReal": 0.094,
+     "stability": 0.1264,
+     "stabilityCi": [
+      -0.0743,
+      0.3182
+     ],
+     "stabilityN": 103,
+     "label": "weak",
+     "drift": 0.00416262
+    },
+    "retAvg": {
+     "n": 175,
+     "mean": 10.3266,
+     "talentSd": 1.7492,
+     "playSd": 10.5848,
+     "reliability": 0.3457,
+     "halfSeasonSd": 3.8606,
+     "shareReal": 0.2053,
+     "stability": 0.2641,
+     "stabilityCi": [
+      -0.0638,
+      0.5526
+     ],
+     "stabilityN": 53,
+     "label": "moderate",
+     "drift": 0.30597
+    }
+   }
+  },
+  "kr": {
+   "stats": {
+    "epaRet": {
+     "n": 171,
+     "mean": 0.0965,
+     "talentSd": 0.1152,
+     "playSd": 1.0192,
+     "reliability": 0.1983,
+     "halfSeasonSd": 0.3473,
+     "shareReal": 0.11,
+     "stability": 0.1132,
+     "stabilityCi": [
+      -0.1457,
+      0.3518
+     ],
+     "stabilityN": 37,
+     "label": "weak",
+     "drift": 0.0013271
+    },
+    "retAvg": {
+     "n": 171,
+     "mean": 25.2492,
+     "talentSd": 2.4286,
+     "playSd": 13.0439,
+     "reliability": 0.4068,
+     "halfSeasonSd": 4.8169,
+     "shareReal": 0.2542,
+     "stability": 0.2137,
+     "stabilityCi": [
+      -0.0719,
+      0.4847
+     ],
+     "stabilityN": 37,
+     "label": "weak",
+     "drift": 0.58981
+    }
+   }
+  }
+ }
+}

@@ -3,6 +3,7 @@ import { ConfidenceChip, Delta, EarlyChip, TierChip } from "@/components/lab/pla
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import ProgressLine from "@/components/lab/players/ProgressLine"
 import Yardstick from "@/components/lab/players/Yardstick"
+import { isV2Site } from "@/lib/lab/labMethod"
 import { cardStyle, profileHref, teamNick } from "@/lib/lab/playerView"
 import {
 	GROUP_META,
@@ -27,6 +28,7 @@ import {
 	statInfo,
 	statOf,
 	tierOf,
+	V2_OBSERVED_KEY,
 	arcLine,
 	arcOf,
 } from "@/lib/lab/playersKit"
@@ -80,8 +82,8 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 						</div>
 					</div>
 					<div className="shrink-0 text-right">
-						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums" title={record ? undefined : o === null ? undefined : `Scouting grade ${Math.round(o)}; 50 is average`}>{record ? (record.mine[0]?.value ?? "–") : score === null ? "–" : score}</p>
-						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{record ? "Starts" : "Overall"}</p>
+						<p className="m-0 font-mono text-3xl font-bold leading-none tabular-nums" title={record ? undefined : o === null ? undefined : isV2Site() ? `Percentile among ${meta.peers} on this season's ${statInfo(player.group, V2_OBSERVED_KEY[player.group] ?? HEADLINE[player.group])?.label.toLowerCase() ?? "numbers"}. Not a projection.` : `Scouting grade ${Math.round(o)}; 50 is average`}>{record ? (record.mine[0]?.value ?? "–") : score === null ? "–" : score}</p>
+						<p className="m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{record ? "Starts" : isV2Site() ? "This season" : "Overall"}</p>
 					</div>
 				</header>
 				{record ? (
@@ -149,7 +151,7 @@ export default function PlayerCard({ data, player, log, note, href, className = 
 				</footer>
 			</div>
 			<p className="sr-only">
-				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, {record ? `${record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(", ")}; no overall grade for linemen` : "overall"} {record ? "" : score === null ? "not yet available" : `${score} out of 99 (scouting grade ${Math.round(o ?? 0)}), ${moveText(mover?.score ?? 0)} lately`}.
+				{player.name}, {teamNick(player.team)} {meta.single.toLowerCase()}, {record ? `${record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(", ")}; no overall grade for linemen` : isV2Site() ? "this-season percentile" : "overall"} {record ? "" : score === null ? "not yet available" : isV2Site() ? `${score} out of 99 among ${meta.peers}` : `${score} out of 99 (scouting grade ${Math.round(o ?? 0)}), ${moveText(mover?.score ?? 0)} lately`}.
 			</p>
 		</article>
 	)

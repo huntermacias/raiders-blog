@@ -1,4 +1,5 @@
 import { DOWN, EarlyChip, UP } from "@/components/lab/players/Bits"
+import { isV2Site } from "@/lib/lab/labMethod"
 import SectionHead from "@/components/lab/players/SectionHead"
 import {
 	type ContractsData,
@@ -181,7 +182,7 @@ export default function ContractSection({
 						</div>
 						<p className="m-0 mt-2 max-w-3xl text-sm leading-relaxed text-lab-soft">{valueSentence(row.name, row.group, value, rookie)}</p>
 						<div className="mt-4 grid gap-4 sm:grid-cols-2">
-							<Rail label="On the field (overall grade)" rank={value.gradeRank} of={value.of} good />
+							<Rail label={isV2Site() ? "On the field (this season)" : "On the field (overall grade)"} rank={value.gradeRank} of={value.of} good />
 							<Rail label="In pay" rank={value.payRank} of={value.of} good={false} />
 						</div>
 						<p className="m-0 mt-3 text-xs text-lab-muted">Ranks are among the {value.of} {GROUP_META[row.group].peers} on the teams we track who have both a grade and a contract. A rank near the right of a bar is better play or higher pay.</p>

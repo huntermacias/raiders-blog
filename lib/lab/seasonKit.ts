@@ -3,6 +3,7 @@
 // This turns one past season into a `PlayersData`, so everything built for the current season (percentiles, the comparison, the
 // cards) works on it unchanged, and lays a player's seasons side by side for his Career section. Pure: data in, plain objects out.
 
+import { isV2Site } from "./labMethod"
 import {
 	type PlayerGroup,
 	type PlayerRow,
@@ -10,6 +11,7 @@ import {
 	type PlayersData,
 	type Yard,
 	GROUP_ORDER,
+	OVERALL_WORD,
 	HEADLINE,
 	STAT,
 	formatStat,
@@ -56,6 +58,11 @@ const cache = new WeakMap<PlayersData, WeakMap<PlayerHistory, Map<number, Player
  * season's line as his "season", and that season's league yardstick. The current season comes back as it is. A man who changed his
  * job has one row per job, as in the current data.
  */
+/** How many players were ranked on a stat in a past season, from the league yardstick the history file keeps. */
+function yardN(history: PlayerHistory, season: number, group: string, key: string): number | undefined {
+	return (history.yard[String(season)] as Record<string, Record<string, { n?: number }>> | undefined)?.[group]?.[key]?.n
+}
+
 export function seasonData(data: PlayersData, history: PlayerHistory | null | undefined, season: number | null | undefined): PlayersData {
 	if (!history || season === null || season === undefined || season === data.season || !history.yard[String(season)]) return data
 	let byHistory = cache.get(data)
@@ -82,7 +89,7 @@ export function seasonData(data: PlayersData, history: PlayerHistory | null | un
 				group,
 				games,
 				snaps: { season: null, form: null, earlier: null },
-				stats: stats.map(([k, v, n, se, g, r]): PlayerStat => ({ k, season: { v, n, ...(se !== null ? { se } : {}), ...(g !== null ? { g } : {}), ...(r !== null ? { r } : {}) }, form: null, earlier: null })),
+				stats: stats.map(([k, v, n, se, g, r]): PlayerStat => ({ k, season: { v, n, ...(se !== null ? { se } : {}), ...(g !== null ? { g } : {}), ...(r !== null ? { r } : {}), ...(isV2Site() && r !== null && yardN(history, season, group, k) ? { of: yardN(history, season, group, k) as number } : {}) }, form: null, earlier: null })),
 				mover: null,
 				box: {},
 				like: [],
@@ -198,14 +205,15 @@ export function careerOf(data: PlayersData, history: PlayerHistory | null | unde
 export function careerLine(career: Career, data: PlayersData): string {
 	const graded = career.rows.filter((r) => r.overall !== null)
 	if (graded.length < 2) return ""
+	const W = OVERALL_WORD
 	const full = graded.filter((r) => !r.current)
 	const now = graded.find((r) => r.current)
 	const tail = full[full.length - 1]
 	const best = full.reduce((a, b) => ((b.overall as number) > (a.overall as number) ? b : a))
 	const parts: string[] = []
-	if (full.length === 1) parts.push(`His Overall was ${full[0].overall} in ${full[0].season}.`)
-	else if (full.length === 2) parts.push(`His Overall was ${full[0].overall} in ${full[0].season} and ${tail.overall} in ${tail.season}.`)
-	else parts.push(`His Overall went ${full.map((r) => r.overall).join(", ")} from ${full[0].season} to ${tail.season}.`)
+	if (full.length === 1) parts.push(`His ${W} was ${full[0].overall} in ${full[0].season}.`)
+	else if (full.length === 2) parts.push(`His ${W} was ${full[0].overall} in ${full[0].season} and ${tail.overall} in ${tail.season}.`)
+	else parts.push(`His ${W} went ${full.map((r) => r.overall).join(", ")} from ${full[0].season} to ${tail.season}.`)
 	const last = tail
 	if (full.length > 2 && best.season !== last.season && (best.overall as number) - (last.overall as number) >= 5) parts.push(`His best year was ${best.season}.`)
 	if (now) parts.push(`It is ${now.overall} so far in ${data.season}, through Week ${data.week}.`)

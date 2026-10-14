@@ -8,6 +8,8 @@ import CompareBars from "@/components/lab/players/CompareBars"
 import CompareControls from "@/components/lab/players/CompareControls"
 import ComparePicker from "@/components/lab/players/ComparePicker"
 import CompareHero from "@/components/lab/players/CompareHero"
+import V2Compare from "@/components/lab/v2/V2Compare"
+import { isV2, type V2Row } from "@/lib/lab/v2/types"
 import CompareRadar from "@/components/lab/players/CompareRadar"
 import CompareSeasons from "@/components/lab/players/CompareSeasons"
 import CompareShare from "@/components/lab/players/CompareShare"
@@ -39,7 +41,7 @@ import { getPlayerHistory } from "@/lib/lab/playerHistoryData"
 import { seasonsOf } from "@/lib/lab/seasonKit"
 import { labColorVarsB } from "@/lib/lab/colors"
 import { cardStyle, compareHref, sideColors } from "@/lib/lab/playerView"
-import { GROUP_META, HEADLINE, STAT, UNIT_NOTE, isCore, searchIndex, statInfo, trailOf } from "@/lib/lab/playersKit"
+import { GROUP_META, HEADLINE, STAT, UNIT_NOTE, isCore, lineRecord, searchIndex, statInfo, trailOf } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -181,6 +183,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 				<div className="lab-opp lab-opp2" style={pageStyle}>
 					<section className="container py-6 sm:py-10">
 						<CompareHero data={data} c={c} />
+						{isV2(data) && c.range === "season" && c.seasons.a === data.season && c.seasons.b === data.season && c.a.group === c.b.group && !lineRecord(data, c.a) ? <V2Compare data={data} a={c.a as V2Row} b={c.b as V2Row} colors={colors} /> : null}
 						{c.early.a || c.early.b ? (
 							<p className="m-0 mt-3 max-w-3xl text-xs leading-relaxed text-lab-muted" data-testid="early-note">
 								Early read: {c.early.a && c.early.b ? `${an} and ${bn} have` : `${c.early.a ? an : bn} has`} played little so far, so these numbers move fast.

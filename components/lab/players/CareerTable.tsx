@@ -1,3 +1,4 @@
+import { OVERALL_WORD } from "@/lib/lab/playersKit"
 import Link from "@/components/SiteLink"
 import { type Career, careerLine } from "@/lib/lab/seasonKit"
 import { type PlayerGroup, type PlayersData, ordinal, shownPct, statInfo } from "@/lib/lab/playersKit"
@@ -22,7 +23,7 @@ export default function CareerTable({ career, group, name, data, usesHistory, se
 							<th scope="col" className="sticky left-0 z-10 lab-solid-tint px-3 py-2">Season</th>
 							<th scope="col" className="px-2 py-2">Team</th>
 							<th scope="col" className="px-2 py-2 text-right">Games</th>
-							{hasOverall ? <th scope="col" className="border-l border-lab-line px-2 py-2 text-right">Overall</th> : null}
+							{hasOverall ? <th scope="col" className="border-l border-lab-line px-2 py-2 text-right">{OVERALL_WORD}</th> : null}
 							{career.keys.map((k) => (
 								<th key={k} scope="col" className="whitespace-nowrap border-l border-lab-line px-2 py-2 text-right">{statInfo(group, k)?.short ?? k}</th>
 							))}

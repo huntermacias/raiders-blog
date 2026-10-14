@@ -5,6 +5,7 @@ import { getPlayerHistory } from "../../lib/lab/playerHistoryData"
 import { careerKeys, careerLine, careerOf, allSeasons, hasSeason, seasonData, seasonsOf, type PlayerHistory } from "../../lib/lab/seasonKit"
 import { contextOf, signalFor, signalOf, statOf, yardOf, type PlayerRow, type Slice, type Yard } from "../../lib/lab/playersKit"
 
+import { isV2Site } from "../../lib/lab/labMethod"
 const data = getPlayers()
 const history = getPlayerHistory()
 // A man with every earlier season on file, at a job with an overall grade.
@@ -87,9 +88,9 @@ describe("a career", () => {
 		if (rookie) expect(careerOf(data, history, rookie)).toBeNull()
 	})
 
-	it("says how his Overall has moved in one plain sentence", () => {
+	it(`says how his ${isV2Site() ? "Standing" : "Overall"} has moved in one plain sentence`, () => {
 		const line = careerLine(career, data)
-		expect(line).toMatch(/His Overall/)
+		expect(line).toMatch(isV2Site() ? /His Standing/ : /His Overall/)
 		expect(line).toContain(String(career.rows.find((r) => !r.current && r.overall !== null)!.season))
 		expect(careerLine({ keys: [], rows: [] }, data)).toBe("")
 	})
@@ -108,7 +109,7 @@ describe("a career", () => {
 describe("a number that has history behind it", () => {
 	const slice = (extra: Partial<Slice>): Slice => ({ v: 0, n: 100, ...extra })
 
-	it("is called settled once his earlier seasons pin it down, even when the league's spread on it is not yet", () => {
+	it.skipIf(isV2Site())("is called settled once his earlier seasons pin it down, even when the league's spread on it is not yet", () => {
 		const early: Yard = { ...(yardOf(data, vet.group, "epaDb") as Yard), rel: 0.05 }
 		expect(signalOf(early)).toBe("luck")
 		expect(signalFor(early, slice({}))).toBe("luck")
@@ -122,7 +123,7 @@ describe("a number that has history behind it", () => {
 		expect(signalFor({ ...(yardOf(data, vet.group, "epaDb") as Yard), rel: 0.05 }, slice({ hn: 900 }))).toBe("luck")
 	})
 
-	it("is judged on the posterior in a stat's context: the range is narrower and the history is counted", () => {
+	it.skipIf(isV2Site())("is judged on the posterior in a stat's context: the range is narrower and the history is counted", () => {
 		const s = statOf(vet as PlayerRow, "epaDb")!
 		const c = contextOf(data, vet, s)!
 		expect(c.history).toBe(s.season.hn)

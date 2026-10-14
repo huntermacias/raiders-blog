@@ -591,7 +591,8 @@ def test_a_lines_shared_numbers_never_count_toward_a_lineman_or_his_look_alikes(
     # Two linemen on one line share every unit grade, and a third on another line is far from both on those grades; the match is
     # made on what is each man's own (penalties), so the third man, whose penalties match, is the closest.
     def row(pid, unit, pen, hold, fs):
-        g = lambda k, v: {"k": k, "season": {"g": v}}
+        g = lambda k, v: {"k": k, "season": {"v": v, "r": 1}}
         return {"id": pid, "stats": [g("runSucc", unit), g("sackRate", unit), g("penRate", pen), g("holdRate", hold), g("fsRate", fs)]}
     rows = [row("a", 70, 40, 40, 40), row("b", 70, 62, 62, 62), row("c", 30, 41, 41, 41)]
-    assert b.comparables(rows, "ol")["a"][0] == "c"
+    yard = {k: {"mean": 50.0, "sd": 10.0} for k in ("runSucc", "sackRate", "penRate", "holdRate", "fsRate")}
+    assert b.comparables(rows, "ol", yard)["a"][0] == "c"

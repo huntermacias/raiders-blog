@@ -1,6 +1,9 @@
 import Link from "@/components/SiteLink"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import GradeRing from "@/components/lab/players/GradeRing"
+import { isV2Site } from "@/lib/lab/labMethod"
+import { threeWay } from "@/lib/lab/v2/kit"
+import type { V2Data, V2Row } from "@/lib/lab/v2/types"
 import { type Comparison, lastName, nameOf } from "@/lib/lab/compareKit"
 import { cardStyle, profileHref, sideColors, teamName } from "@/lib/lab/playerView"
 import { type PlayerRow, type PlayersData, GROUP_META, countWord, lineRecord, logoUrl, overall, overallRank, rankPhrase } from "@/lib/lab/playersKit"
@@ -18,7 +21,10 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 	const record = lineRecord(view, p)
 	const seasonTag = view.season !== data.season ? `${view.season} season` : c.seasons.a !== c.seasons.b ? `${view.season} so far` : null
 	const meta = GROUP_META[p.group]
-	const leads = c.overall.lead === side
+	// v1: the number beside each name decides. v2: a lead is only called when the gap beats the two numbers' own uncertainty, the same call the
+	// three-question block makes, so the badge never says "higher" over a pair that block calls too close.
+	const v2Lead = isV2Site() && c.range === "season" && c.seasons.a === data.season && c.seasons.b === data.season && !record ? threeWay(data as V2Data, c.a as V2Row, c.b as V2Row)[0]?.lead : null
+	const leads = isV2Site() ? v2Lead === side : c.overall.lead === side
 	// The card's own colors: the first player's are the page's, the second's are set here so the headshot's backing and the ring follow him.
 	const vars = side === "a" ? cardStyle(p.team) : { ...cardStyle(p.team), ["--pc-accent" as string]: color, ["--pc-on" as string]: on }
 	return (
@@ -66,25 +72,25 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 							<span className="font-mono text-2xl font-bold tabular-nums leading-none">{score === null ? "–" : score}</span>
 						</GradeRing>
 						<div className="text-center sm:text-left">
-							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">Overall</p>
+							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{isV2Site() ? "This season" : "Overall"}</p>
 							{rank ? (
 								<p className="m-0 text-xs font-semibold leading-snug text-lab-ink sm:text-sm">
 									{rankPhrase(rank.rank, rank.of)} {meta.peers}
 								</p>
 							) : (
-								<p className="m-0 text-sm font-semibold text-lab-ink">{score === null ? "No grade yet" : "Grade for these games"}</p>
+								<p className="m-0 text-sm font-semibold text-lab-ink">{score === null ? "No grade yet" : isV2Site() ? "Not ranked yet" : "Grade for these games"}</p>
 							)}
-							{o !== null ? <p className="m-0 hidden text-[11px] leading-tight text-lab-muted sm:block">Scouting grade {Math.round(o)} (50 is average)</p> : null}
+							{o !== null && !isV2Site() ? <p className="m-0 hidden text-[11px] leading-tight text-lab-muted sm:block">Scouting grade {Math.round(o)} (50 is average)</p> : null}
 						</div>
 					</div>
 				)}
 				{leads ? (
 					<p className="m-0 mt-3 inline-flex items-center rounded-full border border-lab-line-strong px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--pc-accent)" }}>
-						Higher grade
+						{isV2Site() ? "Higher this season" : "Higher grade"}
 					</p>
 				) : null}
 			</div>
-			<span className="sr-only">{`${lastName(p)} overall ${score ?? "none"}`}</span>
+			<span className="sr-only">{`${lastName(p)} ${isV2Site() ? "this-season percentile" : "overall"} ${score ?? "none"}`}</span>
 		</article>
 	)
 }

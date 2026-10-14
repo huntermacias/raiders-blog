@@ -1,5 +1,6 @@
 "use client"
 
+import { isV2Site } from "@/lib/lab/labMethod"
 import * as React from "react"
 
 import Link from "@/components/SiteLink"
@@ -43,7 +44,7 @@ function Side({ c, side, picked, locked, win, onPick }: { c: Contender; side: "a
 			{c.line ? <span className="font-mono text-xs font-semibold tabular-nums text-lab-soft">{c.line}</span> : null}
 			{locked && c.grade !== null ? (
 				<span className={`font-mono text-sm font-bold tabular-nums ${win === true ? UP : win === false ? DOWN : "text-lab-soft"}`}>
-					Lab grade {c.grade}
+					{isV2Site() ? "This season" : "Lab grade"} {c.grade}
 				</span>
 			) : null}
 		</button>

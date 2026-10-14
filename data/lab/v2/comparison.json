@@ -1,0 +1,652 @@
+{
+ "cutoff": {
+  "season": 2026,
+  "week": 5,
+  "v1Week": 5
+ },
+ "qbDecomposition": [
+  {
+   "name": "Matthew Stafford",
+   "observed": {
+    "v1": {
+     "epaDb": 0.1059,
+     "n": 220.0
+    },
+    "v2": {
+     "epaDb": 0.112,
+     "n": 224.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 53.8
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 53.5
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 53.1
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 54.4
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 54.9
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 56.3
+    }
+   ],
+   "v1Rank": 10,
+   "v2Rank": 9,
+   "v2SeasonOnlyGrade": 52.4,
+   "v2ThisSeasonShare": 0.1402,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 56.3,
+    "lo": 50.5,
+    "hi": 62.1,
+    "rl": 0.8299,
+    "n": 224.0,
+    "cw": 0.1402,
+    "g0": 52.4,
+    "rank": 9,
+    "of": 40
+   }
+  },
+  {
+   "name": "Brock Purdy",
+   "observed": {
+    "v1": {
+     "epaDb": 0.4362,
+     "n": 142.0
+    },
+    "v2": {
+     "epaDb": 0.4382,
+     "n": 152.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 59.5
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 61.2
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 61.3
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 62.6
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 63.3
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 66.9
+    }
+   ],
+   "v1Rank": 1,
+   "v2Rank": 1,
+   "v2SeasonOnlyGrade": 63.0,
+   "v2ThisSeasonShare": 0.1171,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 66.9,
+    "lo": 60.5,
+    "hi": 73.3,
+    "rl": 0.7907,
+    "n": 152.0,
+    "cw": 0.1171,
+    "g0": 63.0,
+    "rank": 1,
+    "of": 40
+   }
+  },
+  {
+   "name": "Bryce Young",
+   "observed": {
+    "v1": {
+     "epaDb": 0.175,
+     "n": 167.0
+    },
+    "v2": {
+     "epaDb": 0.1899,
+     "n": 171.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 47.9
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 45.6
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 44.7
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 46.0
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 45.8
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 44.7
+    }
+   ],
+   "v1Rank": 25,
+   "v2Rank": 34,
+   "v2SeasonOnlyGrade": 54.9,
+   "v2ThisSeasonShare": 0.1297,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 44.7,
+    "lo": 38.4,
+    "hi": 51.0,
+    "rl": 0.7939,
+    "n": 171.0,
+    "cw": 0.1297,
+    "g0": 54.9,
+    "rank": 34,
+    "of": 40
+   }
+  },
+  {
+   "name": "Josh Allen",
+   "observed": {
+    "v1": {
+     "epaDb": 0.2141,
+     "n": 149.0
+    },
+    "v2": {
+     "epaDb": 0.2893,
+     "n": 162.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 55.9
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 57.1
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 58.8
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 60.3
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 60.9
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 64.1
+    }
+   ],
+   "v1Rank": 3,
+   "v2Rank": 2,
+   "v2SeasonOnlyGrade": 58.3,
+   "v2ThisSeasonShare": 0.1039,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 64.1,
+    "lo": 58.3,
+    "hi": 69.9,
+    "rl": 0.8257,
+    "n": 162.0,
+    "cw": 0.1039,
+    "g0": 58.3,
+    "rank": 2,
+    "of": 40
+   }
+  },
+  {
+   "name": "Lamar Jackson",
+   "observed": {
+    "v1": {
+     "epaDb": 0.3649,
+     "n": 101.0
+    },
+    "v2": {
+     "epaDb": 0.3868,
+     "n": 109.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 55.5
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 56.0
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 56.7
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 58.2
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 58.6
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 61.0
+    }
+   ],
+   "v1Rank": 4,
+   "v2Rank": 4,
+   "v2SeasonOnlyGrade": 59.0,
+   "v2ThisSeasonShare": 0.0806,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 61.0,
+    "lo": 54.7,
+    "hi": 67.3,
+    "rl": 0.799,
+    "n": 109.0,
+    "cw": 0.0806,
+    "g0": 59.0,
+    "rank": 4,
+    "of": 40
+   }
+  },
+  {
+   "name": "Patrick Mahomes",
+   "observed": {
+    "v1": {
+     "epaDb": 0.1327,
+     "n": 132.0
+    },
+    "v2": {
+     "epaDb": 0.1505,
+     "n": 140.0
+    }
+   },
+   "gradeSteps": [
+    {
+     "step": "v1",
+     "grade": 54.0
+    },
+    {
+     "step": "A0 current-season attribution (v1 history, v1-style estimator)",
+     "grade": 53.8
+    },
+    {
+     "step": "A1 + earlier seasons re-attributed",
+     "grade": 56.3
+    },
+    {
+     "step": "B + earlier seasons read against their own league",
+     "grade": 57.7
+    },
+    {
+     "step": "C + measured noise/drift constants",
+     "grade": 58.2
+    },
+    {
+     "step": "D + fixed scale = v2",
+     "grade": 60.6
+    }
+   ],
+   "v1Rank": 8,
+   "v2Rank": 5,
+   "v2SeasonOnlyGrade": 53.1,
+   "v2ThisSeasonShare": 0.0892,
+   "v2Interval": {
+    "k": "epaDb",
+    "g": 60.6,
+    "lo": 54.8,
+    "hi": 66.4,
+    "rl": 0.827,
+    "n": 140.0,
+    "cw": 0.0892,
+    "g0": 53.1,
+    "rank": 5,
+    "of": 40
+   }
+  }
+ ],
+ "reconciliation": {
+  "dropbacks": {
+   "team": 5806,
+   "quarterbacks": 5797,
+   "otherJobs": 9,
+   "nobody": 0,
+   "inPlayerTable": 5797,
+   "scrambles": 293,
+   "scramblesInPlayerTable": 293
+  },
+  "designedRuns": {
+   "team": 3730,
+   "backs": 3435,
+   "quarterbacks": 185,
+   "everyoneElse": 110,
+   "inBackTable": 3435,
+   "inQuarterbackTable": 185
+  },
+  "penaltyDropped": 157,
+  "playerTable": {
+   "jobs": {
+    "qb.epaDb": {
+     "of": "dropbacks",
+     "table": {
+      "n": 5797.0,
+      "total": 303.0
+     },
+     "plays": {
+      "n": 5797.0,
+      "total": 302.9
+     }
+    },
+    "qb.epaRun": {
+     "of": "designed runs",
+     "table": {
+      "n": 185.0,
+      "total": -4.2
+     },
+     "plays": {
+      "n": 185.0,
+      "total": -4.1
+     }
+    },
+    "rb.epaRush": {
+     "of": "carries",
+     "table": {
+      "n": 3435.0,
+      "total": -325.3
+     },
+     "plays": {
+      "n": 3435.0,
+      "total": -325.7
+     }
+    },
+    "rb.recEpaTgt": {
+     "of": "targets",
+     "table": {
+      "n": 836.0,
+      "total": -49.3
+     },
+     "plays": {
+      "n": 836.0,
+      "total": -49.1
+     }
+    },
+    "wr.epaTgt": {
+     "of": "targets",
+     "table": {
+      "n": 2863.0,
+      "total": 719.0
+     },
+     "plays": {
+      "n": 2863.0,
+      "total": 718.8
+     }
+    },
+    "te.epaTgt": {
+     "of": "targets",
+     "table": {
+      "n": 1182.0,
+      "total": 292.6
+     },
+     "plays": {
+      "n": 1182.0,
+      "total": 292.7
+     }
+    },
+    "k.koEpa": {
+     "of": "kickoffs",
+     "table": {
+      "n": 726.0,
+      "total": -197.3
+     },
+     "plays": {
+      "n": 726.0,
+      "total": -197.5
+     }
+    },
+    "p.epaPunt": {
+     "of": "punts",
+     "table": {
+      "n": 546.0,
+      "total": -28.4
+     },
+     "plays": {
+      "n": 546.0,
+      "total": -28.4
+     }
+    },
+    "pr.epaRet": {
+     "of": "returns",
+     "table": {
+      "n": 382.0,
+      "total": 8.9
+     },
+     "plays": {
+      "n": 382.0,
+      "total": 9.2
+     }
+    },
+    "kr.epaRet": {
+     "of": "returns",
+     "table": {
+      "n": 592.0,
+      "total": 147.2
+     },
+     "plays": {
+      "n": 592.0,
+      "total": 147.3
+     }
+    }
+   },
+   "off": []
+  }
+ },
+ "rbComponentOverlap": {
+  "crossHalf": {
+   "explosive~yco": {
+    "sameHalf": 0.474,
+    "crossHalf": 0.184,
+    "halfReliabilityA": 0.269,
+    "halfReliabilityB": 0.3,
+    "corrected": 0.648
+   },
+   "explosive~ryoe": {
+    "sameHalf": 0.515,
+    "crossHalf": 0.156,
+    "halfReliabilityA": 0.269,
+    "halfReliabilityB": 0.136,
+    "corrected": 0.814
+   },
+   "explosive~success": {
+    "sameHalf": 0.401,
+    "crossHalf": 0.145,
+    "halfReliabilityA": 0.269,
+    "halfReliabilityB": 0.255,
+    "corrected": 0.554
+   },
+   "ryoe~yco": {
+    "sameHalf": 0.486,
+    "crossHalf": 0.116,
+    "halfReliabilityA": 0.136,
+    "halfReliabilityB": 0.3,
+    "corrected": 0.574
+   },
+   "ryoe~success": {
+    "sameHalf": 0.345,
+    "crossHalf": 0.133,
+    "halfReliabilityA": 0.136,
+    "halfReliabilityB": 0.255,
+    "corrected": 0.714
+   },
+   "success~yco": {
+    "sameHalf": 0.308,
+    "crossHalf": 0.107,
+    "halfReliabilityA": 0.255,
+    "halfReliabilityB": 0.3,
+    "corrected": 0.388
+   },
+   "epaRush~explosive": {
+    "sameHalf": 0.556,
+    "crossHalf": 0.197,
+    "halfReliabilityA": 0.228,
+    "halfReliabilityB": 0.269,
+    "corrected": 0.797
+   },
+   "epaRush~yco": {
+    "sameHalf": 0.445,
+    "crossHalf": 0.118,
+    "halfReliabilityA": 0.228,
+    "halfReliabilityB": 0.3,
+    "corrected": 0.453
+   },
+   "epaRush~ryoe": {
+    "sameHalf": 0.528,
+    "crossHalf": 0.135,
+    "halfReliabilityA": 0.228,
+    "halfReliabilityB": 0.136,
+    "corrected": 0.768
+   },
+   "epaRush~success": {
+    "sameHalf": 0.725,
+    "crossHalf": 0.232,
+    "halfReliabilityA": 0.228,
+    "halfReliabilityB": 0.255,
+    "corrected": 0.962
+   }
+  },
+  "note": "cross-half r removes the plays two stats share; noise-corrected divides by the square root of each stat's half-season reliability"
+ },
+ "calibration": {
+  "qbShrinkageBacktestRelativeFrame": {
+   "n": 237,
+   "withHistory": {
+    "raw": {
+     "r": 0.4244,
+     "rmse": 0.163
+    },
+    "league": {
+     "r": 0.4321,
+     "rmse": 0.1136
+    },
+    "history": {
+     "r": 0.4288,
+     "rmse": 0.1145
+    }
+   },
+   "all": {
+    "raw": {
+     "r": 0.4729,
+     "rmse": 0.1611
+    },
+    "league": {
+     "r": 0.4775,
+     "rmse": 0.1162
+    },
+    "history": {
+     "r": 0.4704,
+     "rmse": 0.1169
+    }
+   },
+   "calibration": {
+    "zSd": 0.9735,
+    "within80": 0.7722,
+    "within95": 0.9325,
+    "intervalScale": 1.09,
+    "suggestedScale": 0.9967
+   },
+   "pairwise": {
+    "pairs": 3400,
+    "meanClaimed": 0.6619,
+    "didBetter": 0.6679,
+    "brier": 0.2112,
+    "brierCoinFlip": 0.25,
+    "bins": [
+     {
+      "claimed": "0.5-0.6",
+      "pairs": 1165,
+      "meanClaimed": 0.5502,
+      "didBetter": 0.5631
+     },
+     {
+      "claimed": "0.6-0.7",
+      "pairs": 1065,
+      "meanClaimed": 0.6479,
+      "didBetter": 0.6413
+     },
+     {
+      "claimed": "0.7-0.8",
+      "pairs": 740,
+      "meanClaimed": 0.7458,
+      "didBetter": 0.7757
+     },
+     {
+      "claimed": "0.8-0.9",
+      "pairs": 361,
+      "meanClaimed": 0.8413,
+      "didBetter": 0.8144
+     },
+     {
+      "claimed": "0.9-1.0",
+      "pairs": 69,
+      "meanClaimed": 0.9268,
+      "didBetter": 0.9275
+     }
+    ]
+   }
+  }
+ },
+ "weeklyStability2025": {
+  "centred": {
+   "3": 34,
+   "4": 37,
+   "5": 38,
+   "6": 41,
+   "8": 43,
+   "10": 45,
+   "12": 48,
+   "14": 50,
+   "17": 56
+  },
+  "raw": {
+   "3": 34,
+   "4": 37,
+   "5": 38,
+   "6": 41,
+   "8": 43,
+   "10": 45,
+   "12": 48,
+   "14": 50,
+   "17": 56
+  }
+ }
+}
