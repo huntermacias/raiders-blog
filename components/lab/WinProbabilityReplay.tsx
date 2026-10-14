@@ -4,6 +4,7 @@ import * as React from "react"
 import { Check, Link2, Pause, Play, RotateCcw } from "lucide-react"
 
 import Tip from "@/components/lab/Tip"
+import { hourStamp, stampedUrl } from "@/lib/shareStamp"
 import { LEGEND, SWING_HELP, SYMBOLS, WP_HELP } from "@/lib/lab/glossary"
 import { LAB } from "@/lib/lab/theme"
 import type { KeyPlay, WpPoint } from "@/lib/lab/types"
@@ -393,8 +394,9 @@ export default function WinProbabilityReplay({
 	const bubbleX = Math.min(W - M.right - 30, Math.max(M.left + 30, revealX))
 
 	const shareUrl = () => `${window.location.origin}${sharePath}`
+	// A new address each hour, so X does not keep showing the card it first saw.
 	const copyLink = async () => {
-		const url = `${shareUrl()}#t=${Math.round(tRef.current)}`
+		const url = `${stampedUrl(shareUrl(), hourStamp())}#t=${Math.round(tRef.current)}`
 		try {
 			await navigator.clipboard.writeText(url)
 			setCopied(true)
@@ -404,7 +406,7 @@ export default function WinProbabilityReplay({
 		}
 	}
 	const postOnX = () => {
-		const url = `${shareUrl()}?utm_source=x&utm_medium=social&utm_campaign=lab_share`
+		const url = stampedUrl(`${shareUrl()}?utm_source=x&utm_medium=social&utm_campaign=lab_share`, hourStamp())
 		const href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`
 		window.open(href, "_blank", "noopener,noreferrer")
 	}

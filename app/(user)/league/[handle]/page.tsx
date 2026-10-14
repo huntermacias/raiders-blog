@@ -1,3 +1,4 @@
+import ShareOnX from "@/components/ShareOnX"
 import Link from "@/components/SiteLink"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
@@ -66,7 +67,6 @@ export default async function LeagueProfile(props: { params: Promise<{ handle: s
     const shareText = row
 		? `I'm #${row.rank} in Beat the Blogger at Raiders Rundown with ${row.points} points. Think you can beat the blogger?`
 		: `I'm playing Beat the Blogger at Raiders Rundown. Think you can beat the blogger?`
-    const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: shareText, url: `${SITE_URL}/league/${player.handle}` }).toString()}`
 
     return (
 		<div className="container py-12">
@@ -87,9 +87,9 @@ export default async function LeagueProfile(props: { params: Promise<{ handle: s
 					</p>
 				)}
 				<div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-					<a href={shareHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
+					<ShareOnX text={shareText} url={`${SITE_URL}/league/${player.handle}`} className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
 						Share this profile<span className="sr-only"> (opens in a new tab)</span>
-					</a>
+					</ShareOnX>
 					<ChallengeLink handle={player.handle} />
 				</div>
 			</div>

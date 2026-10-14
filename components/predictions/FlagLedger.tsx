@@ -1,4 +1,5 @@
 import Link from "@/components/SiteLink"
+import ShareOnX from "@/components/ShareOnX"
 import { ArrowRight, Share2 } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
@@ -6,11 +7,9 @@ import { cn } from "@/lib/utils"
 import { type FlagPlant, summarizeFlags } from "@/lib/predictions"
 import { PickPill } from "./StatusPill"
 
-function shareUrl(flag: FlagPlant, pageUrl: string) {
+function shareText(flag: FlagPlant) {
 	const lead = flag.result === "hit" ? "Called it" : flag.result === "miss" ? "Swung and missed" : "Flag planted"
-	const text = `${lead}: ${flag.text}`
-	const params = new URLSearchParams({ text, url: `${pageUrl}#flag-${flag._id}` })
-	return `https://twitter.com/intent/tweet?${params.toString()}`
+	return `${lead}: ${flag.text}`
 }
 
 /**
@@ -66,15 +65,10 @@ export default function FlagLedger({ flags, pageUrl }: { flags: FlagPlant[]; pag
 								) : (
 									<span />
 								)}
-								<a
-									href={shareUrl(f, pageUrl)}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
-								>
+								<ShareOnX text={shareText(f)} url={`${pageUrl}#flag-${f._id}`} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline">
 									<Share2 aria-hidden className="h-3.5 w-3.5" /> Share on X
 									<span className="sr-only"> (opens in a new tab)</span>
-								</a>
+								</ShareOnX>
 							</div>
 						</Card>
 					</li>

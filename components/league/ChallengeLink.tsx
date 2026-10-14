@@ -4,6 +4,7 @@ import * as React from "react"
 import { Check, Link2 } from "lucide-react"
 
 import { challengeUrl } from "@/lib/league"
+import { hourStamp, stampedUrl } from "@/lib/shareStamp"
 
 /**
  * Copies a player's personal challenge link (or opens the share sheet on a phone). Whatever happens,
@@ -22,7 +23,7 @@ export default function ChallengeLink({ handle, className }: { handle: string; c
 	}
 
 	const go = async () => {
-		const url = challengeUrl(window.location.origin, handle)
+		const url = stampedUrl(challengeUrl(window.location.origin, handle), hourStamp())
 		try {
 			if (typeof navigator.share === "function" && /android|iphone|ipad|mobile/i.test(navigator.userAgent)) {
 				await navigator.share({ title: "Beat the Blogger", text: `Think you can out-pick ${handle}? Pick the scores and find out.`, url })

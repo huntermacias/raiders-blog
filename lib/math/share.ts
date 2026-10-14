@@ -32,9 +32,9 @@ function params(view: ShareView, extra: Record<string, string> = {}): URLSearchP
 	return p
 }
 
-/** The page address for a view, path only (`/rankings/math?team=LV&week=4`). */
-export function pagePath(view: ShareView = {}): string {
-	const q = params(view).toString()
+/** The page address for a view, path only (`/rankings/math?team=LV&week=4`). A `stamp` is for a link that is shared: it changes with the numbers, so a platform that already scraped the page fetches the card again. */
+export function pagePath(view: ShareView = {}, stamp?: number | string): string {
+	const q = params(view, stamp != null && stamp !== "" ? { v: String(stamp) } : {}).toString()
 	return `${MATH_PATH}${q ? `?${q}` : ""}`
 }
 

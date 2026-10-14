@@ -150,9 +150,10 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 	const filename = `${t.file}${variant ? `-${variant.id}` : ""}-${size}${hd ? "-hd" : ""}.png`
 	const px = SIZE_PIXELS[size]
 	const saved = hd ? { width: px.width * 2, height: px.height * 2 } : px
-	// The query, then any tracking parameters, joined with "&"; nothing to carry means no "?".
+	// The query, the data's stamp, then any tracking parameters, joined with "&". The stamp changes when the numbers do, so a link shared after a
+	// refresh is a new address: X and other apps keep the preview of an address they have seen for days, and would show the old card otherwise.
 	const linkFor = (origin: string, utm = "") => {
-		const qs = [t.linkQuery ?? query, utm.replace(/^&/, "")].filter(Boolean).join("&")
+		const qs = [t.linkQuery ?? query, stamp ? `v=${stamp}` : "", utm.replace(/^&/, "")].filter(Boolean).join("&")
 		return `${origin}${t.sharePath}${qs ? `?${qs}` : ""}`
 	}
 

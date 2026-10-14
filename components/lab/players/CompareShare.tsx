@@ -5,6 +5,7 @@ import { Link2, Share2 } from "lucide-react"
 
 import ShareCard, { type ShareVariant } from "@/components/lab/ShareCard"
 import { trackPlayers } from "@/lib/lab/track"
+import { stampedUrl } from "@/lib/shareStamp"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -38,7 +39,7 @@ export default function CompareShare({
 	const [loaded, setLoaded] = React.useState("")
 
 	const copyLink = async () => {
-		const url = `${window.location.origin}/lab/players/compare?${query}`
+		const url = stampedUrl(`${window.location.origin}/lab/players/compare?${query}`, stamp)
 		try {
 			await navigator.clipboard.writeText(url)
 			setNote("Link copied")
@@ -50,7 +51,7 @@ export default function CompareShare({
 	}
 
 	const postOnX = () => {
-		const url = `${SITE_URL}/lab/players/compare?${query}&utm_source=x&utm_medium=social&utm_campaign=compare_share`
+		const url = stampedUrl(`${SITE_URL}/lab/players/compare?${query}&utm_source=x&utm_medium=social&utm_campaign=compare_share`, stamp)
 		trackPlayers("player_compare_share", { a: a.slug, b: b.slug, group, method: "x", format: variant.id })
 		window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")
 	}

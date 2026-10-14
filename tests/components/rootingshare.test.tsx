@@ -35,7 +35,7 @@ describe("sharing a rooting guide", () => {
 		expect(u.searchParams.get("text")).toBe(props.text)
 		const shared = new URL(u.searchParams.get("url") as string)
 		expect(shared.origin + shared.pathname).toBe("https://www.raidersrundown.com/lab/rooting-guide")
-		expect(Object.fromEntries(shared.searchParams)).toEqual({ team: "KC", goal: "bye", week: "5", utm_source: "x", utm_medium: "social", utm_campaign: "rooting_guide" })
+		expect(Object.fromEntries(shared.searchParams)).toEqual({ team: "KC", goal: "bye", week: "5", v: "99", utm_source: "x", utm_medium: "social", utm_campaign: "rooting_guide" })
 		expect(vi.mocked(track)).toHaveBeenCalledWith("rooting_share_action", { method: "x", goal: "bye" })
 	})
 
@@ -46,7 +46,7 @@ describe("sharing a rooting guide", () => {
 		fireEvent.click(screen.getByRole("button", { name: /Share guide/ }))
 		fireEvent.click(screen.getByRole("button", { name: /Copy link/ }))
 		await waitFor(() => expect(writeText).toHaveBeenCalled())
-		expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lab\/rooting-guide\?team=KC&goal=bye&week=5$/))
+		expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lab\/rooting-guide\?team=KC&goal=bye&week=5&v=99$/))
 		expect(vi.mocked(track)).toHaveBeenCalledWith("rooting_link_copied", { team: "KC", goal: "bye" })
 	})
 })

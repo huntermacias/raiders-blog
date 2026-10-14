@@ -16,7 +16,7 @@ describe("ShareMenu", () => {
 		const u = new URL(post.href)
 		expect(u.origin + u.pathname).toBe("https://twitter.com/intent/tweet")
 		expect(u.searchParams.get("text")).toBe("Raiders talk")
-		expect(u.searchParams.get("url")).toBe("https://www.raidersrundown.com/rankings/math?team=LV&week=4")
+		expect(u.searchParams.get("url")).toBe("https://www.raidersrundown.com/rankings/math?team=LV&week=4&v=7")
 		expect(post.target).toBe("_blank")
 		expect(post.rel).toContain("noopener")
 		const card = screen.getByRole("link", { name: /Save card/ }) as HTMLAnchorElement

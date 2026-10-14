@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Lock, Share2 } from "lucide-react"
 
+import ShareOnX from "@/components/ShareOnX"
 import { cn, hasVoted, markVoted } from "@/lib/utils"
 import { teamInfo } from "@/lib/nfl"
 import type { Side } from "@/lib/predictions"
@@ -117,10 +118,7 @@ export default function HeroVote({ pick }: { pick: HeroPick }) {
 	const shareText = pickedNick
 		? `I'm taking the ${pickedNick} in ${away.nick} at ${home.nick}. Who you got?`
 		: `${away.nick} at ${home.nick}. Who you got?`
-	const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({
-		text: shareText,
-		url: `${SITE_URL}/predictions/pick/${pick._id}`,
-	}).toString()}`
+	const shareTarget = `${SITE_URL}/predictions/pick/${pick._id}`
 
 	return (
 		<div>
@@ -193,10 +191,9 @@ export default function HeroVote({ pick }: { pick: HeroPick }) {
 				</div>
 			)}
 
-			<a
-				href={shareHref}
-				target="_blank"
-				rel="noopener noreferrer"
+			<ShareOnX
+				text={shareText}
+				url={shareTarget}
 				className={cn(
 					"mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-zinc-50 hover:underline",
 					canVote && "opacity-90"
@@ -204,7 +201,7 @@ export default function HeroVote({ pick }: { pick: HeroPick }) {
 			>
 				<Share2 aria-hidden className="h-4 w-4" /> Challenge a friend
 				<span className="sr-only"> (opens in a new tab)</span>
-			</a>
+			</ShareOnX>
 		</div>
 	)
 }

@@ -178,7 +178,7 @@ describe("Season twins sharing", () => {
 			fireEvent.click(screen.getByRole("button", { name: /Copy link/ }))
 		})
 		expect(writeText).toHaveBeenCalledTimes(1)
-		expect(String(writeText.mock.calls[0]?.[0 as never])).toMatch(/\/lab\/season-twins\/share\?twin=\d{4}-[A-Z]{2,3}$/)
+		expect(String(writeText.mock.calls[0]?.[0 as never])).toMatch(/\/lab\/season-twins\/share\?twin=\d{4}-[A-Z]{2,3}&v=\d+$/)
 	})
 
 	it("opens on the match and twin a shared link names", () => {

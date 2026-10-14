@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "@/components/SiteLink"
+import ShareOnX from "@/components/ShareOnX"
 import { ArrowRight, Lock, Share2, Users } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
@@ -143,10 +144,7 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 				grade.result === "hit" ? " Called it." : grade.result === "miss" ? " Missed." : ""
 		  }`
 		: `My Week ${pick.week} pick: ${away.nick} ${pick.predictedAwayScore}, ${home.nick} ${pick.predictedHomeScore}. Who you got?`
-	const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({
-		text: shareText,
-		url: `${SITE_URL}/predictions/pick/${pick._id}`,
-	}).toString()}`
+	const shareTarget = `${SITE_URL}/predictions/pick/${pick._id}`
 
 	return (
 		<Card id={`pick-${pick._id}`} className={cn("flex h-full scroll-mt-24 flex-col overflow-hidden border-border/70", involvesRaiders(pick) && "ring-1 ring-foreground/20")}>
@@ -298,15 +296,10 @@ export default function GamePickCard({ pick }: { pick: GamePrediction }) {
 				)}
 
 				<div className="mt-3 flex justify-end">
-					<a
-						href={shareHref}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
-					>
+					<ShareOnX text={shareText} url={shareTarget} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">
 						<Share2 aria-hidden className="h-3.5 w-3.5" /> Share this pick
 						<span className="sr-only"> (opens in a new tab)</span>
-					</a>
+					</ShareOnX>
 				</div>
 			</div>
 		</Card>

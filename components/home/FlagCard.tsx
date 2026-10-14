@@ -1,4 +1,5 @@
 import Link from "@/components/SiteLink"
+import ShareOnX from "@/components/ShareOnX"
 import { ArrowRight, Check, Clock, Flag, Share2, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -21,7 +22,6 @@ export default function FlagCard({ flag, summary }: { flag: FlagPlant; summary: 
 		: hit
 			? `Flag planted, flag delivered: ${flag.text}.`
 			: `I planted a flag and missed: ${flag.text}. It's on the record either way.`
-	const shareHref = `https://twitter.com/intent/tweet?${new URLSearchParams({ text, url: `${SITE_URL}/predictions#flags` }).toString()}`
 
 	const Icon = hit ? Check : miss ? X : Clock
 
@@ -63,15 +63,10 @@ export default function FlagCard({ flag, summary }: { flag: FlagPlant; summary: 
 								<Icon aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
 								{hit ? "Delivered" : miss ? "Missed" : "Open: graded after the game"}
 							</span>
-							<a
-								href={shareHref}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline"
-							>
+							<ShareOnX text={text} url={`${SITE_URL}/predictions#flags`} className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
 								<Share2 aria-hidden className="h-4 w-4" /> Share this flag
 								<span className="sr-only"> (opens in a new tab)</span>
-							</a>
+							</ShareOnX>
 							<Link href="/predictions#flags" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 								The full ledger <ArrowRight aria-hidden className="h-3.5 w-3.5" />
 							</Link>

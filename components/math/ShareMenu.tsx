@@ -15,7 +15,7 @@ export default function ShareMenu({ view, text, stamp, tone = "light", className
 	const timer = useRef<number | undefined>(undefined)
 	useEffect(() => () => window.clearTimeout(timer.current), [])
 
-	const url = absolute(pagePath(view))
+	const url = absolute(pagePath(view, stamp))
 	const card = cardPath(view, stamp)
 	const btn = cn(
 		"inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
