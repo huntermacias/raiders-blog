@@ -1,5 +1,5 @@
 import type { RadarAxis } from "@/lib/lab/compareKit"
-import { shownPct } from "@/lib/lab/playersKit"
+import { ordinal, shownPct } from "@/lib/lab/playersKit"
 
 const S = 520
 const C = S / 2
@@ -35,10 +35,10 @@ export default function CompareRadar({ axes, aName, bName, colorA, colorB }: { a
 					return (
 						<g key={a.key}>
 							<circle cx={bx} cy={by} r={4.5} fill={colorB} stroke="var(--lab-surface)" strokeWidth={1.5}>
-								<title>{`${bName}: ${shownPct(a.b)}th percentile in ${a.label}`}</title>
+								<title>{`${bName}: ${ordinal(shownPct(a.b))} percentile in ${a.label}`}</title>
 							</circle>
 							<circle cx={ax} cy={ay} r={4.5} fill={colorA} stroke="var(--lab-surface)" strokeWidth={1.5}>
-								<title>{`${aName}: ${shownPct(a.a)}th percentile in ${a.label}`}</title>
+								<title>{`${aName}: ${ordinal(shownPct(a.a))} percentile in ${a.label}`}</title>
 							</circle>
 						</g>
 					)

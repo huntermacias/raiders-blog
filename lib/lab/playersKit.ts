@@ -12,7 +12,22 @@ export { ordinal }
 
 export type PlayerGroup = "qb" | "rb" | "wr" | "te" | "ol" | "edge" | "idl" | "lb" | "cb" | "saf" | "k" | "p" | "pr" | "kr"
 export type Side = "offense" | "defense" | "special"
-export type Slice = { v: number; n: number; se?: number | null; g?: number | null; r?: number | null }
+export type Slice = {
+	v: number
+	n: number
+	se?: number | null
+	g?: number | null
+	r?: number | null
+	/** The stabilized value the grade and rank are made on. */
+	a?: number | null
+	/**
+	 * Only when his earlier seasons are part of the grade: `hn` is the plays they add, `rl` how much of the league's spread in true level
+	 * the number now pins down (0 to 1), `pe` how far from his true level it could still be, in the stat's own units.
+	 */
+	hn?: number
+	rl?: number
+	pe?: number
+}
 export type PlayerStat = { k: string; season: Slice; form: Slice | null; earlier: Slice | null; delta?: number; z?: number }
 export type Mover = { score: number; driver: string; stats: number; agree: number; z?: number }
 /** [mean share of the team's snaps, games played, games counted]. A game he missed is a zero in the share; the other two say so. */
@@ -39,6 +54,8 @@ export type PlayerRow = {
 export type Yard = { n: number; mean: number; sd: number; q: [number, number, number, number, number]; rel?: number }
 export type PlayersData = {
 	season: number
+	/** The earlier seasons this season's grades start from, when the builder had a history file. */
+	priorSeasons?: number[]
 	week: number
 	team: string
 	generatedAt: string
@@ -425,6 +442,15 @@ export function signalOf(y: Yard | null | undefined): Signal {
 	if (!y || y.rel === undefined) return "partial"
 	return y.rel < 0.15 ? "luck" : y.rel < 0.45 ? "partial" : "real"
 }
+/**
+ * The same call for one player's own number. When his earlier seasons are part of it, what counts is how much of the league's spread in
+ * true level that number now pins down, never less than what the whole league's spread says: a quarterback with four years behind him
+ * has a settled EPA per dropback in week 5 even though the league as a whole does not yet.
+ */
+export function signalFor(y: Yard | null | undefined, s: Slice): Signal {
+	if (s.hn && s.rl !== undefined && y && y.rel !== undefined) return signalOf({ ...y, rel: Math.max(y.rel, s.rl) })
+	return signalOf(y)
+}
 export const SIGNAL_WORD: Record<Signal, string> = {
 	luck: "Mostly luck so far",
 	partial: "Partly signal, partly luck",
@@ -457,6 +483,8 @@ export type StatContext = {
 	yard: Yard | null
 	/** For a style stat, where he sits from "least" to "most" of the league, 0 to 100. */
 	stylePct: number | null
+	/** The plays from his earlier seasons that are part of this grade (0 when none are). */
+	history: number
 }
 
 /** The 90% range for his true level, kept inside what the stat can be: a rate cannot be below 0% or above 100%, a count per play cannot be negative. */
@@ -477,22 +505,27 @@ export function contextOf(data: PlayersData, p: PlayerRow, s: PlayerStat): StatC
 	const r = s.season.r ?? null
 	const of = info.higher === null ? null : (y?.n ?? null)
 	const pct = r !== null && of !== null ? pctFromRank(r, of) : null
-	const se = s.season.se ?? null
+	const sl = s.season
+	const se = sl.se ?? null
+	// With his earlier seasons in the grade, the number to trust is the stabilized one and its own, smaller, margin.
+	const withHistory = Boolean(sl.hn && sl.a !== undefined && sl.a !== null && sl.pe !== undefined)
+	const signal = info.higher === null ? "partial" : signalFor(y, sl)
 	return {
 		info,
 		key: s.k,
-		value: s.season.v,
-		n: s.season.n,
+		value: sl.v,
+		n: sl.n,
 		rank: r,
 		of,
 		pct,
-		tier: pct === null || signalOf(y) === "luck" ? null : tierOf(pct),
-		grade: s.season.g ?? null,
-		range: se === null ? null : boundedRange(info, y, s.season.v, se),
-		sure: sureness(se, y),
-		signal: info.higher === null ? "partial" : signalOf(y),
+		tier: pct === null || signal === "luck" ? null : tierOf(pct),
+		grade: sl.g ?? null,
+		range: withHistory ? boundedRange(info, y, sl.a as number, sl.pe as number) : se === null ? null : boundedRange(info, y, sl.v, se),
+		sure: sureness(withHistory ? (sl.pe as number) : se, y),
+		signal,
 		yard: y,
-		stylePct: info.higher === null && y ? valuePct(s.season.v, y) : null,
+		stylePct: info.higher === null && y ? valuePct(sl.v, y) : null,
+		history: sl.hn ?? 0,
 	}
 }
 
@@ -1309,7 +1342,7 @@ export function badgesFor(data: PlayersData, p: PlayerRow, top = 5, limit = 6): 
 	const out: Badge[] = []
 	for (const s of p.stats) {
 		const info = statInfo(p.group, s.k)
-		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top || signalOf(yardOf(data, p.group, s.k)) === "luck") continue
+		if (!info || info.higher === null || info.counts === false || s.season.r === undefined || s.season.r === null || s.season.r > top || signalFor(yardOf(data, p.group, s.k), s.season) === "luck") continue
 		// A stat where fewer is better ranks lowest-first, so "Best in missed tackle rate" must say it is the lowest, not the highest.
 		const text = info.higher === false ? (s.season.r === 1 ? `Lowest ${lc(info.label)}` : `${ordinal(s.season.r)} lowest ${lc(info.label)}`) : `${nth(s.season.r)} in ${lc(info.label)}`
 		out.push({ text, rank: s.season.r, kind: "stat", key: s.k, path: info.path })

@@ -1,6 +1,6 @@
 import Yardstick from "@/components/lab/players/Yardstick"
-import { type Comparison, type Metric, lastName, pctWord } from "@/lib/lab/compareKit"
-import { GROUP_META, SIGNAL_HELP, formatStat, ordinal, yardOf, type PlayersData } from "@/lib/lab/playersKit"
+import { type Comparison, type Metric, lastName, nameOf, pctWord } from "@/lib/lab/compareKit"
+import { GROUP_META, SIGNAL_HELP, formatStat, ordinal, yardOf } from "@/lib/lab/playersKit"
 
 /**
  * Stat by stat: his number on the left, hers on the right, and between them two bars growing out from the middle for each one's
@@ -8,8 +8,9 @@ import { GROUP_META, SIGNAL_HELP, formatStat, ordinal, yardOf, type PlayersData 
  * called a win. Each row opens onto the league's spread for that stat.
  */
 function sentence(c: Comparison, m: Metric): string {
-	const pa = lastName(c.a)
-	const pb = lastName(c.b)
+	const cross = c.seasons.a !== c.seasons.b
+	const pa = cross ? `${lastName(c.a)} ${c.seasons.a}` : lastName(c.a)
+	const pb = cross ? `${lastName(c.b)} ${c.seasons.b}` : lastName(c.b)
 	if (m.signal === "luck") return "Mostly luck so far"
 	if (m.lead === "even") return m.strength === "toss-up" ? "Too close to call" : "No clear lead"
 	const who = m.lead === "a" ? pa : pb
@@ -37,25 +38,27 @@ function Half({ pct, color, lit, mirror }: { pct: number | null; color: string; 
 	)
 }
 
-export default function CompareBars({ data, c, colorA, colorB }: { data: PlayersData; c: Comparison; colorA: string; colorB: string }) {
+export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colorA: string; colorB: string }) {
 	const rows = c.metrics.filter((m) => m.a.pct !== null || m.b.pct !== null)
 	if (!rows.length) return null
 	return (
 		<div className="overflow-hidden rounded-2xl border border-lab-line bg-lab-surface" data-testid="compare-bars">
 			<div className="hidden grid-cols-[7rem_1fr_7rem] gap-x-4 border-b border-lab-line px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-lab-muted sm:grid" aria-hidden="true">
 				<span className="truncate text-right" style={{ color: colorA }}>
-					{c.a.name}
+					{nameOf(c, "a")}
 				</span>
 				<span className="text-center">Percentile among {GROUP_META[c.group].peers} &middot; farther out is better</span>
 				<span className="truncate" style={{ color: colorB }}>
-					{c.b.name}
+					{nameOf(c, "b")}
 				</span>
 			</div>
 			<ul className="m-0 list-none p-0">
 				{rows.map((m) => {
 					const litA = m.signal !== "luck" && m.lead === "a"
 					const litB = m.signal !== "luck" && m.lead === "b"
-					const y = yardOf(data, c.group, m.key)
+					const yA = yardOf(c.views.a, c.group, m.key)
+						const yB = yardOf(c.views.b, c.group, m.key)
+						const same = c.views.a === c.views.b
 					return (
 						<li key={m.key} className="border-t border-lab-line first:border-t-0" data-testid="compare-row" data-lead={m.signal === "luck" ? "luck" : m.lead}>
 							<details className="group">
@@ -79,18 +82,37 @@ export default function CompareBars({ data, c, colorA, colorB }: { data: Players
 									<span className="mt-1 block text-center text-[11px] text-lab-muted group-open:hidden">Tap for the league spread</span>
 								</summary>
 								<div className="border-t border-dashed border-lab-line bg-lab-tint px-3 py-4 sm:px-5">
-									{y ? (
+									{same && yA ? (
 										<Yardstick
 											marks={[
 												{ v: m.a.value, se: m.a.se, name: c.a.name, color: colorA },
 												{ v: m.b.value, se: m.b.se, name: c.b.name, color: colorB },
 											]}
-											yard={y}
+											yard={yA}
 											higher={m.info.higher}
 											fmt={(v) => formatStat(c.group, m.key, v)}
 											peers={GROUP_META[c.group].peers}
 										/>
 									) : null}
+									{!same ? (
+										<div className="grid gap-5">
+											{([["a", yA, colorA], ["b", yB, colorB]] as const).map(([side, y, color]) =>
+												y ? (
+													<div key={side}>
+														<p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-lab-muted">{c.seasons[side]} league</p>
+														<Yardstick
+															marks={[{ v: (side === "a" ? m.a : m.b).value, se: (side === "a" ? m.a : m.b).se, name: nameOf(c, side), color }]}
+															yard={y}
+															higher={m.info.higher}
+															fmt={(v) => formatStat(c.group, m.key, v)}
+															peers={GROUP_META[c.group].peers}
+														/>
+													</div>
+												) : null,
+											)}
+										</div>
+									) : null}
+									{m.basis === "history" ? <p className="m-0 mt-3 max-w-2xl text-xs leading-relaxed text-lab-muted">The lead here is judged with both players&apos; earlier seasons as well as this one.</p> : null}
 									{m.signal !== "real" ? <p className="m-0 mt-3 max-w-2xl text-xs leading-relaxed text-lab-muted">{SIGNAL_HELP[m.signal]}</p> : null}
 								</div>
 							</details>

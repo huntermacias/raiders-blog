@@ -28,6 +28,10 @@ import { dealFor, mainRow, onRookieScale, payRank, valueFor } from "@/lib/lab/co
 import { getPlayers, getUnits } from "@/lib/lab/data"
 import { teamView } from "@/lib/lab/playerTeam"
 import { getPlayerLogs } from "@/lib/lab/playerData"
+import { getPlayerHistory } from "@/lib/lab/playerHistoryData"
+import { type Career, careerOf } from "@/lib/lab/seasonKit"
+import CareerTable from "@/components/lab/players/CareerTable"
+import { compareUrl } from "@/lib/lab/compareKit"
 import { getSituations } from "@/lib/lab/situationData"
 import { SIT_BOARDS, type Role, sitBoardHref, situationView } from "@/lib/lab/situationsKit"
 import { boardHref, cardStyle, compareHref, profileHref, teamName } from "@/lib/lab/playerView"
@@ -111,6 +115,14 @@ function similarBasis(group: PlayerGroup): string {
 	return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
 }
 
+/** The link that sets him against himself: his latest finished season against the one being played. */
+function selfOf(row: PlayerRow, career: Career | null, current: number): { href: string; season: number } | null {
+	const past = (career?.rows ?? []).filter((r) => r.season < current)
+	const last = past[past.length - 1]
+	if (!last) return null
+	return { href: compareUrl({ a: row.slug, b: row.slug, range: "season", metrics: null, group: row.group, sa: last.season, sb: null }), season: last.season }
+}
+
 function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const data = getPlayers()
 	const all = getPlayerLogs()
@@ -121,6 +133,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 	const team = teamView(getUnits(), data, row)
 	const contracts = getContracts()
 	const deal = primary && mainRow(data, row.slug)?.group === row.group ? dealFor(data, contracts, row.slug) : null
+	const career = careerOf(data, getPlayerHistory(), row)
 	const graded = row.stats.filter((s) => statInfo(row.group, s.k)?.higher !== null)
 	const style = row.stats.filter((s) => statInfo(row.group, s.k)?.higher === null)
 	const headFirst = graded.slice().sort((a, b) => (a.k === HEADLINE[row.group] ? -1 : b.k === HEADLINE[row.group] ? 1 : 0))
@@ -208,6 +221,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 		{ id: `stack-${g}`, label: "How he stacks up" },
 		{ id: `league-${g}`, label: "In the league" },
 		...(explorerStats.length ? [{ id: `progress-${g}`, label: "Progress" }] : []),
+		...(career ? [{ id: `career-${g}`, label: "Career" }] : []),
 		...(situations.length ? [{ id: `situations-${g}`, label: "Situational" }] : []),
 		{ id: `numbers-${g}`, label: "In context" },
 		...(style.length ? [{ id: `style-${g}`, label: "How he plays" }] : []),
@@ -308,6 +322,17 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 						<SectionHead id={`prog-${row.group}`} icon="progress" step={step("progress")} title="How he has progressed" blurb={<>Where he has ranked among {meta.peers} after each week, and every game behind it.</>} className="mb-1" />
 						<div className="mt-5">
 							<ProgressExplorer group={row.group} name={row.name} stats={explorerStats} trails={trails} weeks={data.weeks} formWeeks={finished} opp={opp} initial={HEADLINE[row.group]} per={per} />
+						</div>
+					</div>
+				</section>
+			) : null}
+
+			{career ? (
+				<section className={`scroll-mt-32 border-t border-lab-line ${tone()}`} aria-labelledby={`career-h-${row.group}`} id={`career-${row.group}`}>
+					<div className="container py-8 sm:py-10">
+						<SectionHead id={`career-h-${row.group}`} icon="career" step={step("career")} title="Career, season by season" blurb={<>The same grades for each of his last seasons, each against that season&apos;s league, so you can see whether he is rising, steady or slipping.</>} className="mb-1" />
+						<div className="mt-5">
+							<CareerTable career={career} group={row.group} name={row.name} data={data} usesHistory={row.stats.some((x) => Boolean(x.season.hn))} selfHref={selfOf(row, career, data.season)} />
 						</div>
 					</div>
 				</section>

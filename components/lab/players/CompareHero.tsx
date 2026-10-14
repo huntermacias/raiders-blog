@@ -1,7 +1,7 @@
 import Link from "@/components/SiteLink"
 import { Headshot, TeamLogo } from "@/components/lab/players/Media"
 import GradeRing from "@/components/lab/players/GradeRing"
-import { type Comparison, lastName } from "@/lib/lab/compareKit"
+import { type Comparison, lastName, nameOf } from "@/lib/lab/compareKit"
 import { cardStyle, profileHref, sideColors, teamName } from "@/lib/lab/playerView"
 import { type PlayerRow, type PlayersData, GROUP_META, countWord, lineRecord, logoUrl, overall, overallRank, rankPhrase } from "@/lib/lab/playersKit"
 
@@ -12,8 +12,11 @@ import { type PlayerRow, type PlayersData, GROUP_META, countWord, lineRecord, lo
 function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow; side: "a" | "b"; c: Comparison; color: string; on: string }) {
 	const o = overall(p, c.range)
 	const score = c.overall[side]
-	const rank = c.range === "season" ? overallRank(data, p) : null
-	const record = lineRecord(data, p)
+	// Each man is measured against his own season's league.
+	const view = c.views[side]
+	const rank = c.range === "season" ? overallRank(view, p) : null
+	const record = lineRecord(view, p)
+	const seasonTag = view.season !== data.season ? `${view.season} season` : c.seasons.a !== c.seasons.b ? `${view.season} so far` : null
 	const meta = GROUP_META[p.group]
 	const leads = c.overall.lead === side
 	// The card's own colors: the first player's are the page's, the second's are set here so the headshot's backing and the ring follow him.
@@ -23,7 +26,7 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 			className="lab-opp relative isolate overflow-hidden rounded-2xl border border-lab-line p-3 sm:rounded-3xl sm:p-6"
 			style={{ ...vars, backgroundImage: "linear-gradient(165deg, color-mix(in srgb, var(--pc-accent) 22%, var(--lab-surface)) 0%, var(--lab-surface) 62%)" }}
 			data-testid={`hero-${side}`}
-			aria-label={`${p.name}, ${teamName(p.team)} ${p.pos}`}
+			aria-label={`${p.name}${seasonTag ? `, ${seasonTag}` : ""}, ${teamName(p.team)} ${p.pos}`}
 		>
 			<div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-6 -z-10 opacity-[0.07]">
 				{/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,6 +50,11 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 						{p.name}
 					</Link>
 				</h2>
+				{seasonTag ? (
+					<p className="m-0 mt-1.5 inline-flex items-center rounded-full border border-lab-line-strong px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-lab-ink" data-testid={`season-tag-${side}`}>
+						{seasonTag}
+					</p>
+				) : null}
 				{record ? (
 					<p className="m-0 mt-3 text-sm text-lab-soft" data-testid="line-record">
 						{record.mine.map((m) => `${m.value} ${countWord(Number(m.value.replace(/,/g, "")), m.label.toLowerCase())}`).join(" · ")}
@@ -90,7 +98,7 @@ function Verdict({ c, colors }: { c: Comparison; colors: { a: string; b: string 
 			{decided ? (
 				<>
 					<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-muted">Stats led</p>
-					<p className="m-0 mt-1 flex items-baseline gap-2 font-mono text-5xl font-bold tabular-nums leading-none sm:text-6xl" aria-label={`${c.a.name} leads ${a} stats, ${c.b.name} leads ${b}`}>
+					<p className="m-0 mt-1 flex items-baseline gap-2 font-mono text-5xl font-bold tabular-nums leading-none sm:text-6xl" aria-label={`${nameOf(c, "a")} leads ${a} stats, ${nameOf(c, "b")} leads ${b}`}>
 						<span style={{ color: a >= b ? colors.a : "var(--lab-ink-muted)" }}>{a}</span>
 						<span className="text-2xl text-lab-muted">&ndash;</span>
 						<span style={{ color: b >= a ? colors.b : "var(--lab-ink-muted)" }}>{b}</span>

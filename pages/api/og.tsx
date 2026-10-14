@@ -21,7 +21,7 @@
 //   /api/og?type=rooting&team=LV&goal=playoffs|division|bye[&week=8][&size=wide|tall]   (the rooting guide: a team's goal and the top three games to root in)
 //   /api/og?type=playoffs[&s=<scenario code>][&t=KC][&size=wide|tall]   (the playoff machine: a team's seed and bracket in a scenario, or its odds as the race stands)
 //   /api/og?type=player&slug=brock-bowers[&pos=te]   (a Player Lab profile: grade, league-best badges and strongest numbers)
-//   /api/og?type=compare&a=brock-bowers&b=trey-mcbride[&r=form|earlier][&m=epaTgt,croe][&g=te][&f=h2h|radar|spot][&side=a|b][&size=wide|tall][&scale=2]
+//   /api/og?type=compare&a=brock-bowers&b=trey-mcbride[&r=form|earlier][&m=epaTgt,croe][&g=te][&y=2024|&ya=2022&yb=2025][&f=h2h|radar|spot][&side=a|b][&size=wide|tall][&scale=2]
 //           (two players side by side: head to head, radar or one player's case; scale=2 is the high-resolution download)
 //
 // Any `v` param is ignored here; pages add `&v=<_updatedAt ms>` so that a
@@ -281,6 +281,8 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		r: first(query.r),
 		m: first(query.m),
 		g: first(query.g),
+		ya: first(query.ya),
+		yb: first(query.yb),
 		f: first(query.f),
 		side: first(query.side),
 	})

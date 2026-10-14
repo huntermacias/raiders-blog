@@ -204,9 +204,19 @@ describe("offensive linemen", () => {
 })
 
 describe("an overall grade on stats that have not settled", () => {
+	const hasHistory = (p: (typeof data.players)[number]) => p.stats.some((s) => Boolean(s.season.hn))
+
 	it("is an early read for a player whose stats are all still mostly luck", () => {
 		expect(data.players.filter((p) => isEarly(data, p)).length).toBeGreaterThan(0)
+		// A man with nothing behind this season has only these few games to go on.
+		const fresh = data.players.filter((p) => p.group === "te" && !hasHistory(p) && p.stats.length >= 4)
+		expect(fresh.length).toBeGreaterThan(0)
+		for (const p of fresh) expect(isEarly(data, p)).toBe(true)
+	})
+
+	it("is not an early read once his earlier seasons settle the stats behind it", () => {
 		const bowers = data.players.find((p) => p.name === "Brock Bowers" && p.group === "te")!
-		expect(isEarly(data, bowers)).toBe(true)
+		expect(hasHistory(bowers)).toBe(true)
+		expect(isEarly(data, bowers)).toBe(false)
 	})
 })

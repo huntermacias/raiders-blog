@@ -9,6 +9,7 @@ import CompareControls from "@/components/lab/players/CompareControls"
 import ComparePicker from "@/components/lab/players/ComparePicker"
 import CompareHero from "@/components/lab/players/CompareHero"
 import CompareRadar from "@/components/lab/players/CompareRadar"
+import CompareSeasons from "@/components/lab/players/CompareSeasons"
 import CompareShare from "@/components/lab/players/CompareShare"
 import MoneyCompare from "@/components/lab/players/MoneyCompare"
 import ProgressLine from "@/components/lab/players/ProgressLine"
@@ -19,18 +20,23 @@ import {
 	MAX_METRICS,
 	RANGE_IDS,
 	buildComparison,
+	compareUrl,
 	configQuery,
 	featuredDebates,
+	nameOf,
 	rangeLabels,
 	readConfig,
 	resolvePair,
 	shareText,
 	spotlightOf,
+	viewsFor,
 } from "@/lib/lab/compareKit"
 import { getContracts } from "@/lib/lab/contractData"
 import { coverageWords, dealFor, moneyRows, payRank, valueFor, valueSentence } from "@/lib/lab/contractsKit"
 import { getPlayers } from "@/lib/lab/data"
 import { getPlayerLogs } from "@/lib/lab/playerData"
+import { getPlayerHistory } from "@/lib/lab/playerHistoryData"
+import { seasonsOf } from "@/lib/lab/seasonKit"
 import { labColorVarsB } from "@/lib/lab/colors"
 import { cardStyle, compareHref, sideColors } from "@/lib/lab/playerView"
 import { GROUP_META, HEADLINE, STAT, UNIT_NOTE, isCore, searchIndex, statInfo, trailOf } from "@/lib/lab/playersKit"
@@ -38,7 +44,7 @@ import { labWeeks } from "@/lib/lab/toolsData"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
-type Search = { a?: string; b?: string; r?: string; m?: string; g?: string }
+type Search = { a?: string; b?: string; r?: string; m?: string; g?: string; y?: string; ya?: string; yb?: string }
 
 const possessive = (n: string) => (n.endsWith("s") ? `${n}'` : `${n}'s`)
 
@@ -51,13 +57,13 @@ export async function generateMetadata(props: { searchParams: Promise<Search> })
 	const q = await props.searchParams
 	const data = getPlayers()
 	const cfg = readConfig(q)
-	const c = cfg.a && cfg.b ? buildComparison(data, cfg) : null
+	const c = cfg.a && cfg.b ? buildComparison(data, cfg, getPlayerHistory()) : null
 	const base = `${SITE_URL}/lab/players/compare`
-	const title = c ? `${c.a.name} vs ${c.b.name}: stats compared in context | Raiders Rundown` : "Compare any two NFL players in context | Raiders Rundown"
+	const title = c ? `${nameOf(c, "a")} vs ${nameOf(c, "b")}: stats compared in context | Raiders Rundown` : "Compare any two NFL players in context | Raiders Rundown"
 	const description = c ? `${c.headline} Percentiles, who leads each stat and what it means, from the Raiders Rundown Player Lab.` : "Two players, side by side on the stats that matter for their position: where each ranks in the league, who is clearly ahead and who is too close to call."
 	// The picture is the comparison's own graphic, so a link posted to X or anywhere else unfurls into these two players, this range and these stats.
 	const image = c ? `${SITE_URL}/api/og?type=compare&${configQuery({ ...cfg, a: c.a.slug, b: c.b.slug })}&size=wide&v=${stampOf(data.generatedAt)}` : `${SITE_URL}/og-default-v2.png`
-	const alt = c ? `${c.a.name} against ${c.b.name}: ${c.headline}` : "Raiders Rundown Player Lab: compare two players"
+	const alt = c ? `${nameOf(c, "a")} against ${nameOf(c, "b")}: ${c.headline}` : "Raiders Rundown Player Lab: compare two players"
 	return {
 		title,
 		description,
@@ -69,9 +75,13 @@ export async function generateMetadata(props: { searchParams: Promise<Search> })
 	}
 }
 
-function problemText(p: ReturnType<typeof resolvePair>): string | null {
+function problemText(p: ReturnType<typeof resolvePair>, cfg: CompareConfig, current: number): string | null {
 	if (!("problem" in p)) return null
-	if (p.problem === "same") return "That is one player twice. Pick someone else for the other side."
+	if (p.problem === "same") return "That is one player twice in the same season. Pick someone else for the other side, or set him against himself in another season."
+	if (p.problem === "missing" && (cfg.sa !== null || cfg.sb !== null)) {
+		const who = !p.a ? cfg.a : cfg.b
+		return `We have no ${(!p.a ? cfg.sa : cfg.sb) ?? current} line for ${who.replace(/-/g, " ")}. Try another season, or the one being played.`
+	}
 	if (p.problem === "jobs" && p.a && p.b) {
 		return `${p.a.name} is a ${GROUP_META[p.a.group].single.toLowerCase()} and ${p.b.name} is a ${GROUP_META[p.b.group].single.toLowerCase()}, and they are measured on different stats. Pick two players who do the same job.`
 	}
@@ -82,18 +92,24 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	const q = await props.searchParams
 	const data = getPlayers()
 	const logs = getPlayerLogs().logs
+	const history = getPlayerHistory()
 	const cfg: CompareConfig = readConfig(q)
 	const index = searchIndex(data)
 	const entry = (slug?: string) => (slug ? (index.find((e) => e.slug === slug) ?? null) : null)
-	const pair = cfg.a && cfg.b ? resolvePair(data, cfg) : null
-	const c = pair && !("problem" in pair) ? buildComparison(data, cfg) : null
+	const views = viewsFor(data, cfg, history)
+	const pair = cfg.a && cfg.b ? resolvePair(views.a, cfg, views.b) : null
+	const c = pair && !("problem" in pair) ? buildComparison(data, cfg, history) : null
+	// A past season is a whole, finished season: no recent-games ranges, no season-long trail by week, and the contract is today's.
+	const past = c ? c.seasons.a !== data.season || c.seasons.b !== data.season : false
+	const an = c ? nameOf(c, "a") : ""
+	const bn = c ? nameOf(c, "b") : ""
 	const stamp = stampOf(data.generatedAt)
 
 	const contracts = getContracts()
 	const A = c?.a ?? null
 	const B = c?.b ?? null
-	const dealA = A ? dealFor(data, contracts, A.slug) : null
-	const dealB = B ? dealFor(data, contracts, B.slug) : null
+	const dealA = A && !past ? dealFor(data, contracts, A.slug) : null
+	const dealB = B && !past ? dealFor(data, contracts, B.slug) : null
 	const money = A && B ? moneyRows(dealA, dealB, dealA ? payRank(data, contracts, A.slug) : null, dealB ? payRank(data, contracts, B.slug) : null) : []
 	const valueA = dealA && A ? valueFor(data, contracts, A.slug) : null
 	const valueB = dealB && B ? valueFor(data, contracts, B.slug) : null
@@ -104,30 +120,32 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	// What the controls offer: the three stretches (one with nothing to compare is greyed out), every stat for this job, and the default set.
 	const ranges = c
 		? RANGE_IDS.map((id) => {
+				if (past) return id === "season" ? { id, label: c.rangeName, weeks: c.rangeWeeks, disabled: false } : { id, label: rangeLabels(data, c.a, id).name, weeks: "", disabled: true }
 				const l = rangeLabels(data, c.a, id)
-				const has = id === c.range ? c.metrics.length > 0 : (buildComparison(data, { ...cfg, range: id, metrics: null })?.metrics.length ?? 0) > 0
+				const has = id === c.range ? c.metrics.length > 0 : (buildComparison(data, { ...cfg, range: id, metrics: null }, history)?.metrics.length ?? 0) > 0
 				return { id, label: l.name, weeks: l.weeks, disabled: !has }
 			})
 		: []
-	const defaults = c ? (cfg.metrics ? (buildComparison(data, { ...cfg, metrics: null })?.metrics ?? c.metrics) : c.metrics).map((m) => m.key) : []
+	const defaults = c ? (cfg.metrics ? (buildComparison(data, { ...cfg, metrics: null }, history)?.metrics ?? c.metrics) : c.metrics).map((m) => m.key) : []
 
 	// The graphics on offer: a head to head always; a radar when there are three stats with a percentile each; a case for each player when he has enough to say.
 	const variants: ShareVariant[] = c
 		? [
-				{ id: "h2h", name: "Head to head", hint: "Both players, both grades and the stats side by side. The default link preview.", params: "f=h2h", alt: `${c.a.name} against ${c.b.name}, stat by stat` },
-				...(c.radar.length >= 3 ? [{ id: "radar", name: "Radar", hint: "The shape of each player across the stats you chose.", params: "f=radar", alt: `Radar chart of ${c.a.name} and ${c.b.name}` }] : []),
+				{ id: "h2h", name: "Head to head", hint: "Both players, both grades and the stats side by side. The default link preview.", params: "f=h2h", alt: `${an} against ${bn}, stat by stat` },
+				...(c.radar.length >= 3 ? [{ id: "radar", name: "Radar", hint: "The shape of each player across the stats you chose.", params: "f=radar", alt: `Radar chart of ${an} and ${bn}` }] : []),
 				...(["a", "b"] as const)
 					.filter((side) => spotlightOf(c, side, 4).length >= 2)
 					.map((side) => {
 						const p = side === "a" ? c.a : c.b
-						return { id: `spot-${side}`, name: `${possessive(p.name.split(" ").slice(-1)[0])} case`, hint: `${p.name}'s strongest numbers against his position.`, params: `f=spot&side=${side}`, alt: `${p.name}'s strongest numbers` }
+						const shown = nameOf(c, side)
+						return { id: `spot-${side}`, name: `${possessive(p.name.split(" ").slice(-1)[0])} case`, hint: `${shown}'s strongest numbers against his position.`, params: `f=spot&side=${side}`, alt: `${shown}'s strongest numbers` }
 					}),
 			]
 		: []
 
 	// A line's chart opens on his own stat: his headline is the line's, which both men on one line share.
 	let trail: { key: string; label: string; pa: { w: number; pct: number | null }[]; pb: { w: number; pct: number | null }[] } | null = null
-	if (c && A && B) {
+	if (c && A && B && !past) {
 		const key = statInfo(A.group, HEADLINE[A.group])?.unit ? (Object.keys(STAT[A.group]).find((k) => isCore(A.group, k)) ?? HEADLINE[A.group]) : HEADLINE[A.group]
 		const pa = trailOf(logs[A.slug]?.[A.group], key).map((t) => ({ w: t[0], pct: t[3] }))
 		const pb = trailOf(logs[B.slug]?.[B.group], key).map((t) => ({ w: t[0], pct: t[3] }))
@@ -135,7 +153,9 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	}
 
 	const debates = featuredDebates(data, 10)
-	const note = pair ? problemText(pair) : null
+	const note = pair ? problemText(pair, cfg, data.season) : null
+	// A man set against nobody can be set against himself in another season.
+	const self = pair && "problem" in pair && pair.problem === "same" ? seasonsOf(data, history, cfg.a).filter((y) => y !== data.season) : []
 
 	return (
 		<div className="lab lab-opp min-h-screen bg-lab-page text-lab-ink">
@@ -150,9 +170,9 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Settle the debate</h1>
 					<p className="mt-3 max-w-2xl text-base leading-relaxed text-lab-soft">Put two players who do the same job side by side. For each stat you see where both rank in the league, who is ahead, and whether the gap is bigger than the noise a few plays create. Then post the graphic.</p>
 					<div className="mt-6 max-w-3xl">
-						<ComparePicker key={`${cfg.a}|${cfg.b}`} index={index} a={entry(c?.a.slug ?? cfg.a)} b={entry(c?.b.slug ?? cfg.b)} range={cfg.range} />
+						<ComparePicker key={`${cfg.a}|${cfg.b}|${cfg.sa}|${cfg.sb}`} index={index} a={entry(c?.a.slug ?? cfg.a)} b={entry(c?.b.slug ?? cfg.b)} range={cfg.range} sa={cfg.sa} sb={cfg.sb} />
 					</div>
-					{c ? <TrackView event="player_compare" props={{ a: c.a.slug, b: c.b.slug, group: c.group, range: c.range }} /> : null}
+					{c ? <TrackView event="player_compare" props={{ a: c.a.slug, b: c.b.slug, group: c.group, range: c.range, sa: c.seasons.a, sb: c.seasons.b }} /> : null}
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-5" />
 				</div>
 			</section>
@@ -163,15 +183,23 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 						<CompareHero data={data} c={c} />
 						{c.early.a || c.early.b ? (
 							<p className="m-0 mt-3 max-w-3xl text-xs leading-relaxed text-lab-muted" data-testid="early-note">
-								Early read: {c.early.a && c.early.b ? `${A.name} and ${B.name} have` : `${c.early.a ? A.name : B.name} has`} played little so far, so these numbers move fast.
+								Early read: {c.early.a && c.early.b ? `${an} and ${bn} have` : `${c.early.a ? an : bn} has`} played little so far, so these numbers move fast.
 							</p>
 						) : null}
 					</section>
 
 					<section className="border-t border-lab-line bg-lab-tint" aria-label="Choose what is compared">
 						<div className="container py-6">
+							<div className="mb-3">
+								<CompareSeasons
+									cfg={{ ...cfg, a: A.slug, b: B.slug }}
+									current={data.season}
+									a={{ name: A.name, seasons: seasonsOf(data, history, A.slug, c.group), shown: c.seasons.a }}
+									b={{ name: B.name, seasons: seasonsOf(data, history, B.slug, c.group), shown: c.seasons.b }}
+								/>
+							</div>
 							<CompareControls
-								cfg={{ ...cfg, a: A.slug, b: B.slug }}
+								cfg={{ ...cfg, a: A.slug, b: B.slug, range: c.range }}
 								ranges={ranges}
 								options={c.options.map((m) => ({ key: m.key, label: m.label, luck: m.signal === "luck" }))}
 								selected={c.metrics.map((m) => m.key)}
@@ -184,7 +212,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 					{c.metrics.length === 0 ? (
 						<section className="container py-10">
 							<p className="m-0 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-surface p-4 text-sm text-lab-soft">
-								{A.name} and {B.name} do not have a stat in common over {c.rangeName.toLowerCase()}. Try another stretch of games.
+								{an} and {bn} do not have a stat in common over {c.rangeName.toLowerCase()}. Try {past ? "another season" : "another stretch of games"}.
 							</p>
 						</section>
 					) : (
@@ -198,7 +226,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 													The shape of each player
 												</h2>
 												<p className="m-0 mb-3 mt-1 max-w-xl text-sm text-lab-soft">Each spoke is a stat. The farther out a point sits, the better he ranks at his job.</p>
-												<CompareRadar axes={c.radar} aName={A.name} bName={B.name} colorA={colors.a} colorB={colors.b} />
+												<CompareRadar axes={c.radar} aName={an} bName={bn} colorA={colors.a} colorB={colors.b} />
 											</div>
 										) : null}
 										<div className={c.radar.length >= 3 ? "" : "lg:col-span-2"}>
@@ -224,7 +252,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 										Stat by stat
 									</h2>
 									<p className="m-0 mb-4 mt-1 max-w-3xl text-sm text-lab-soft">{c.rangeName}. {c.rangeWeeks}.</p>
-									<CompareBars data={data} c={c} colorA={colors.a} colorB={colors.b} />
+									<CompareBars c={c} colorA={colors.a} colorB={colors.b} />
 									<p className="m-0 mt-4 max-w-3xl text-xs leading-relaxed text-lab-muted">&ldquo;Clear lead&rdquo; means the gap is bigger than what the plays behind each number could produce by chance. &ldquo;Slight edge&rdquo; points one way but could still be noise.</p>
 
 									{c.style.length ? (
@@ -235,7 +263,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 													<li key={m.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
 														<span className="font-semibold text-lab-ink">{m.label}</span>
 														<span className="mt-1 block text-lab-soft">
-															{A.name}: <span className="font-mono">{m.a.text}</span> &middot; {B.name}: <span className="font-mono">{m.b.text}</span>
+															{an}: <span className="font-mono">{m.a.text}</span> &middot; {bn}: <span className="font-mono">{m.b.text}</span>
 														</span>
 													</li>
 												))}
@@ -251,7 +279,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 													<li key={m.key} className="rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm">
 														<span className="font-semibold text-lab-ink">{m.label}</span>
 														<span className="mt-1 block text-lab-soft">
-															{A.name}: <span className="font-mono">{m.a.text}</span> &middot; {B.name}: <span className="font-mono">{m.b.text}</span>
+															{an}: <span className="font-mono">{m.a.text}</span> &middot; {bn}: <span className="font-mono">{m.b.text}</span>
 														</span>
 													</li>
 												))}
@@ -284,8 +312,8 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 										query={configQuery({ ...cfg, a: A.slug, b: B.slug })}
 										stamp={stamp}
 										text={shareText(c)}
-										a={{ slug: A.slug, name: A.name }}
-										b={{ slug: B.slug, name: B.name }}
+										a={{ slug: A.slug, name: an }}
+										b={{ slug: B.slug, name: bn }}
 										group={c.group}
 										variants={variants}
 									/>
@@ -294,6 +322,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 						</>
 					)}
 
+					{past ? null : (
 					<section className="border-t border-lab-line bg-lab-tint" aria-labelledby="money-h" id="money">
 						<div className="container py-8 sm:py-10">
 							<h2 id="money-h" className="m-0 font-serif text-2xl font-bold">
@@ -324,10 +353,22 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 							)}
 						</div>
 					</section>
+					)}
 				</div>
 			) : (
 				<section className="container py-10 sm:py-14">
 					{note ? <p className="m-0 mb-6 max-w-2xl rounded-xl border border-lab-line-strong bg-lab-surface p-4 text-sm text-lab-soft">{note}</p> : null}
+					{self.length ? (
+						<ul className="m-0 mb-6 flex list-none flex-wrap gap-2 p-0" data-testid="self-seasons">
+							{self.map((y) => (
+								<li key={y}>
+									<Link href={compareUrl({ ...cfg, sa: y, sb: null })} className="inline-flex min-h-[44px] items-center rounded-xl border border-lab-line-strong bg-lab-surface px-4 py-2 text-sm font-semibold text-lab-ink hover:border-lab-ink">
+										{y} against {data.season}
+									</Link>
+								</li>
+							))}
+						</ul>
+					) : null}
 					<h2 className="m-0 font-serif text-2xl font-bold">Start with a debate</h2>
 					<p className="m-0 mt-1 text-sm text-lab-soft">Each Raider against the best player at his job right now, and the top two at the biggest positions.</p>
 					<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="debates">

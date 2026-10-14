@@ -20,7 +20,7 @@ import { getPlayers } from "../../lib/lab/data"
 import { GROUP_ORDER, gradeScore, hasOverall, stretchGrade, overall, type PlayerGroup } from "../../lib/lab/playersKit"
 
 const data = getPlayers()
-const cfg = (a: string, b: string, extra: Partial<CompareConfig> = {}): CompareConfig => ({ a, b, range: "season", metrics: null, group: null, ...extra })
+const cfg = (a: string, b: string, extra: Partial<CompareConfig> = {}): CompareConfig => ({ a, b, range: "season", metrics: null, group: null, sa: null, sb: null, ...extra })
 const of = (g: PlayerGroup) => data.players.filter((p) => p.group === g && p.stats.length >= 4).sort((x, y) => y.games - x.games)
 
 describe("reading a comparison from the address", () => {
@@ -34,7 +34,7 @@ describe("reading a comparison from the address", () => {
 	})
 
 	it("falls back to the season, the default stats and no job when the address is junk", () => {
-		expect(readConfig({ r: "decade", g: "kicker-ish", m: "" })).toEqual({ a: "", b: "", range: "season", metrics: null, group: null })
+		expect(readConfig({ r: "decade", g: "kicker-ish", m: "" })).toEqual({ a: "", b: "", range: "season", metrics: null, group: null, sa: null, sb: null })
 	})
 
 	it("limits how many stats can be chosen", () => {
@@ -84,7 +84,9 @@ describe("the comparison, for any two players at the same job", () => {
 				}
 				// Whoever has the better number leads; "even" is only ever a toss-up or a style stat.
 				if (m.info.higher !== null && m.lead !== "even") {
-					const better = (m.a.value - m.b.value) * (m.info.higher ? 1 : -1)
+					// With both men's earlier seasons in their grades the lead follows the level each is now thought to be at.
+					const [va, vb] = m.basis === "history" ? [m.a.post!.v, m.b.post!.v] : [m.a.value, m.b.value]
+					const better = (va - vb) * (m.info.higher ? 1 : -1)
 					expect(m.lead).toBe(better > 0 ? "a" : "b")
 				}
 				if (m.info.higher === null) expect(m.lead).toBe("even")
@@ -128,7 +130,8 @@ describe("the comparison, for any two players at the same job", () => {
 				const c = buildComparison(data, cfg(a.slug, b.slug))
 				for (const m of c?.metrics ?? []) {
 					if (m.info.higher === false && m.lead !== "even") {
-						expect(m.lead).toBe(m.a.value < m.b.value ? "a" : "b")
+						const [va, vb] = m.basis === "history" ? [m.a.post!.v, m.b.post!.v] : [m.a.value, m.b.value]
+						expect(m.lead).toBe(va < vb ? "a" : "b")
 						checked++
 					}
 				}

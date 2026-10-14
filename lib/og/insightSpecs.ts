@@ -23,6 +23,7 @@ import { buildPlayerSpec } from "./playerCard"
 import { buildPlayerBoardSpec } from "./playerBoardCard"
 import { buildCompareSpec } from "./compareCards"
 import { readConfig } from "../lab/compareKit"
+import { getPlayerHistory } from "../lab/playerHistoryData"
 import { playoffsSpec } from "./playoffsSpec"
 import { rootingSpec } from "./rootingSpec"
 import { buildBottomSpec, buildChartSpec, buildChecklistSpec, buildFifthsSpec, buildSeasonSpec, buildWinsSpec } from "./lastCards"
@@ -37,7 +38,7 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { group?: string; pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string; r?: string; m?: string; g?: string; f?: string; side?: string }
+} & RawView & { group?: string; pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string; r?: string; m?: string; g?: string; y?: string; ya?: string; yb?: string; f?: string; side?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
@@ -49,13 +50,13 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 	}
 
 	if (q.type === "compare") {
-		const cfg = readConfig({ a: q.a, b: q.b, r: q.r, m: q.m, g: q.g })
+		const cfg = readConfig({ a: q.a, b: q.b, r: q.r, m: q.m, g: q.g, y: q.y, ya: q.ya, yb: q.yb })
 		if (!cfg.a || !cfg.b) return null
 		return buildCompareSpec(getPlayers(), cfg, {
 			format: q.f === "radar" || q.f === "spot" ? q.f : "h2h",
 			size: q.size === "tall" ? "tall" : "wide",
 			side: q.side === "b" ? "b" : "a",
-		})
+		}, getPlayerHistory())
 	}
 
 	if (q.type === "playerboard") {

@@ -10,17 +10,17 @@ import { trackPlayers } from "@/lib/lab/track"
 import type { SearchEntry } from "@/lib/lab/playersKit"
 
 /**
- * Two search boxes and a swap. A pick fills a slot, and when both are filled the page opens the pair. The stretch of games carries over,
+ * Two search boxes and a swap. A pick fills a slot, and when both are filled the page opens the pair. The stretch of games and the seasons carry over,
  * the chosen stats do not (a different job has different stats).
  */
-export default function ComparePicker({ index, a, b, range = "season" }: { index: SearchEntry[]; a?: SearchEntry | null; b?: SearchEntry | null; range?: RangeId }) {
+export default function ComparePicker({ index, a, b, range = "season", sa = null, sb = null }: { index: SearchEntry[]; a?: SearchEntry | null; b?: SearchEntry | null; range?: RangeId; sa?: number | null; sb?: number | null }) {
 	const router = useRouter()
 	const [left, setLeft] = React.useState<SearchEntry | null>(a ?? null)
 	const [right, setRight] = React.useState<SearchEntry | null>(b ?? null)
 	// A search box keeps its own text, so a swap or a new pair is shown by remounting the boxes.
 	const [epoch, setEpoch] = React.useState(0)
-	const go = (l: SearchEntry | null, r: SearchEntry | null) => {
-		if (l && r) router.push(compareUrl({ a: l.slug, b: r.slug, range, metrics: null, group: null }))
+	const go = (l: SearchEntry | null, r: SearchEntry | null, flip = false) => {
+		if (l && r) router.push(compareUrl({ a: l.slug, b: r.slug, range, metrics: null, group: null, sa: flip ? sb : sa, sb: flip ? sa : sb }))
 	}
 	const swap = () => {
 		if (!left || !right) return
@@ -28,7 +28,7 @@ export default function ComparePicker({ index, a, b, range = "season" }: { index
 		setLeft(right)
 		setRight(left)
 		setEpoch((n) => n + 1)
-		go(right, left)
+		go(right, left, true)
 	}
 	return (
 		<form

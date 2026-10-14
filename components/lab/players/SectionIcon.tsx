@@ -34,6 +34,13 @@ const PATHS: Record<string, ReactNode> = {
 			<path d="m7 15 3.5-4.5 3 2.5L19 6.5" />
 		</>
 	),
+	career: (
+		<>
+			<rect x="3.5" y="5" width="17" height="15" rx="2" />
+			<path d="M3.5 10h17M8 3.5V7M16 3.5V7" />
+			<path d="m7.5 17 3-3 2.5 2 3.5-4" />
+		</>
+	),
 	situations: (
 		<>
 			<circle cx="12" cy="12" r="8" />

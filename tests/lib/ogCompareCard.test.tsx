@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from "vitest"
 
 import { readConfig } from "../../lib/lab/compareKit"
 import { getPlayers } from "../../lib/lab/data"
+import { getPlayerHistory } from "../../lib/lab/playerHistoryData"
+import { seasonsOf } from "../../lib/lab/seasonKit"
 import { GROUP_ORDER } from "../../lib/lab/playersKit"
 import { TEAMS } from "../../lib/nfl"
 import { cardSize, renderCard } from "../../lib/og/cards"
@@ -149,5 +151,42 @@ describe("drawing the card", () => {
 				}
 			}
 		}
+	})
+})
+
+describe("the comparison card across seasons", () => {
+	const history = getPlayerHistory()
+	const x = data.players.find((p) => p.group === "qb" && seasonsOf(data, history, p.slug, "qb").length >= 3)!
+	const old = seasonsOf(data, history, x.slug, "qb")[0]
+
+	it("names each man's season, says which seasons on the card and prints the season in the link", () => {
+		const s = buildCompareSpec(data, readConfig({ a: x.slug, b: x.slug, ya: String(old) }), {}, history)!
+		expect(s).not.toBeNull()
+		expect(s.a.team).toContain(String(old))
+		expect(s.b.team).toContain(String(data.season))
+		expect(s.a.last).toBe(`${x.name.split(" ").slice(1).join(" ")} ${old}`)
+		expect(s.range).toBe(`${old} and ${data.season} seasons`)
+		expect(s.link).toContain(`ya=${old}`)
+		expect(s.headline).toContain(`(${old})`)
+	})
+
+	it("is one past season for both, and the card draws", async () => {
+		const y = seasonsOf(data, history, te[0].slug, "te").find((v) => v < data.season)
+		const peer = te.find((p) => seasonsOf(data, history, p.slug, "te").includes(y ?? 0) && p.slug !== te[0].slug)
+		if (!y || !peer) return
+		const s = buildCompareSpec(data, readConfig({ a: te[0].slug, b: peer.slug, y: String(y) }), { format: "h2h" }, history)!
+		expect(s.range).toBe(`${y} season · Full season`)
+		expect(s.a.last).toContain(String(y))
+		expect((await png(s)).length).toBeGreaterThan(10_000)
+	})
+
+	it("reads the season from the card's own query", () => {
+		const s = insightSpec(q({ a: x.slug, b: x.slug, ya: String(old) }))
+		expect(s && s.type === "compare" && s.a.team.includes(String(old))).toBe(true)
+	})
+
+	it("is the usual card when no history is given", () => {
+		const s = buildCompareSpec(data, readConfig({ a: x.slug, b: x.slug, ya: String(old) }))
+		expect(s).toBeNull()
 	})
 })

@@ -363,18 +363,46 @@ def stabilize(items: dict[str, tuple[float, float | None]]) -> tuple[dict[str, f
 
     Reliability is the share of the differences between players that is not sampling noise (0 to 1): 0.5 means half of what separates
     these players on this stat is real so far. It is what the pages use to say "mostly luck so far" or "a real signal"."""
+    shr, rel, sd, _ = stabilize_with_prior(items, None)
+    return shr, rel, sd
+
+
+def stabilize_with_prior(items: dict[str, tuple[float, float | None]], priors: dict[str, tuple[float, float, float]] | None
+                         ) -> tuple[dict[str, float], float, float, dict[str, tuple[float, float]]]:
+    """`stabilize`, with what a player did in earlier seasons as his starting point instead of the league's average.
+
+    `priors` is {id: (value, variance, volume)}: the level his earlier seasons put him at, how unsure that level still is for
+    this season (it grows with every year back, because players change), and the plays behind it. Without one, a player is pulled
+    toward the league's average exactly as before. With one, the starting point is the league's average and his own history,
+    each weighted by how sure it is, and this season's numbers move it from there. A rookie, or a stat nobody has history for,
+    is untouched.
+
+    The fourth result is {id: (reliability, standard error)} for the players that had a prior: the share of the league's spread
+    in true level that this player's number now pins down, and how far from his true level it could still be."""
     ids = list(items)
     v = np.array([items[i][0] for i in ids], dtype=float)
     se = np.array([items[i][1] if items[i][1] is not None else 0.0 for i in ids], dtype=float)
     var = float(v.var()) if len(v) else 0.0
     if len(v) < 3 or var <= 0:
-        return {i: float(x) for i, x in zip(ids, v)}, 0.0, float(np.sqrt(var))
+        return {i: float(x) for i, x in zip(ids, v)}, 0.0, float(np.sqrt(var)), {}
     noise = float(np.mean(se ** 2))
     rel = max(0.0, min(1.0, (var - noise) / var))
     tau2 = max(var - noise, FLOOR_REL * var)
-    w = tau2 / (tau2 + se ** 2)
     mu = float(v.mean())
-    return {i: float(mu + wi * (x - mu)) for i, x, wi in zip(ids, v, w)}, rel, float(np.sqrt(var))
+    out: dict[str, float] = {}
+    extra: dict[str, tuple[float, float]] = {}
+    for i, x, e in zip(ids, v, se):
+        pr = (priors or {}).get(i)
+        if pr is None or not np.isfinite(pr[0]) or not (pr[1] > 0):
+            out[i] = float(mu + tau2 / (tau2 + e ** 2) * (x - mu))
+            continue
+        pv, pvar, _ = pr
+        prec = 1.0 / tau2 + 1.0 / pvar
+        start = (mu / tau2 + pv / pvar) / prec
+        post_prec = prec + (1.0 / (e ** 2) if e > 0 else 1e9)
+        out[i] = float((start * prec + x / (e ** 2 if e > 0 else 1e-9)) / post_prec)
+        extra[i] = (round(max(0.0, min(1.0, 1.0 - (1.0 / post_prec) / tau2)), 3), round(float(np.sqrt(1.0 / post_prec)), 4))
+    return out, rel, float(np.sqrt(var)), extra
 
 
 def grades(values: dict[str, float], higher: bool, sd: float | None = None) -> dict[str, float]:
@@ -915,6 +943,47 @@ def r1(x) -> float:
     return round(float(x), 1)
 
 
+class PriorBook:
+    """What each player did in earlier seasons, read from `player-history.json` (see build_player_history.py).
+
+    `prior` pools his earlier seasons on one stat into a level and how sure that level is for the season being built. A season k
+    years back counts for less than the one before it: its variance is its own sampling noise plus k years of drift, and seasons
+    are combined by inverse variance. An empty book (no file, no history) gives nobody a prior."""
+
+    def __init__(self, hist: dict | None = None):
+        self.model = (hist or {}).get("model", {})
+        self.seasons: list[int] = sorted((hist or {}).get("seasons", []))
+        self.rows: dict[tuple[str, str], list[tuple[int, dict]]] = {}
+        for pid, entry in ((hist or {}).get("players") or {}).items():
+            for season, group, _team, _pos, _games, stats in entry["r"]:
+                self.rows.setdefault((pid, group), []).append((int(season), {k: (v, n, se) for k, v, n, se, _g, _r in stats}))
+
+    @classmethod
+    def load(cls, path: str | Path | None) -> "PriorBook":
+        if not path or not Path(path).exists():
+            return cls()
+        return cls(json.loads(Path(path).read_text()))
+
+    def prior(self, pid: str, group: str, key: str, season: int) -> tuple[float, float, float] | None:
+        m = self.model.get(group, {}).get(key)
+        if not m:
+            return None
+        num = den = vol = 0.0
+        for s, stats in self.rows.get((pid, group), []):
+            if s >= season or key not in stats:
+                continue
+            v, n, se = stats[key]
+            if se is None or v is None:
+                continue
+            var = float(se) ** 2 + (season - s) * m["drift"]
+            if var <= 0:
+                continue
+            num += v / var
+            den += 1.0 / var
+            vol += n
+        return (num / den, 1.0 / den, vol) if den > 0 else None
+
+
 @dataclass
 class Grouped:
     rows: list = field(default_factory=list)
@@ -934,7 +1003,7 @@ def posted(weeks_of: dict[str, dict[int, str]], team: str, week: int) -> bool:
 
 
 def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[int], names: dict, pos: dict, snaps: pd.DataFrame,
-                weeks_of: dict[str, dict[int, str]], last_week: int) -> Grouped:
+                weeks_of: dict[str, dict[int, str]], last_week: int, book: PriorBook | None = None, season: int = 0) -> Grouped:
     """Everything for one group: every player's slices, grades, ranks, uncertainty, movers, the yardstick and the game-by-game trail."""
     spec = GROUPS[g]
     stats = spec.stats
@@ -956,6 +1025,8 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
     rank: dict[str, dict] = {}
     adj: dict[str, dict[str, float]] = {}
     reliab: dict[str, float] = {}
+    priors: dict[str, dict] = {}
+    settled: dict[str, dict] = {}
     for key, st in stats.items():
         val[key], grade[key] = {}, {}
         for sl, need in zip(SLICES, st.need):
@@ -965,7 +1036,9 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                 # The season grade and rank are made on stabilized values; the last two games stay raw, because pulling a two-game
                 # sample toward the league would make every good player look like he is slipping.
                 items = {pid: (t[0], standard_error(st, t[2], t[3])) for pid, t in val[key][sl].items() if t[1] >= need}
-                shr, rel, sd = stabilize(items)
+                priors[key] = {pid: pr for pid in val[key][sl] if (pr := book.prior(pid, g, key, season) if book and season else None)}
+                shr, rel, sd, extra = stabilize_with_prior(items, priors[key])
+                settled[key] = extra
                 adj[key] = {pid: r4(x) for pid, x in shr.items()}
                 grade[key][sl] = grades(shr, st.higher, sd)
                 rank[key] = ranks(shr, st.higher)
@@ -1009,6 +1082,11 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                     if sl == "season":
                         d["r"] = rank[key].get(pid)
                         d["a"] = adj[key].get(pid)
+                        if pid in settled.get(key, {}):
+                            # His earlier seasons are in this number: how much of the league's spread in true level it now pins
+                            # down, how far from his true level it could still be, and the plays his history adds.
+                            d["rl"], d["pe"] = settled[key][pid]
+                            d["hn"] = int(round(priors[key][pid][2]))
                 one[sl] = d
             f, e = one.get("form"), one.get("earlier")
             if st.higher is not None and f and e and f.get("g") is not None and e.get("g") is not None:
@@ -1069,7 +1147,7 @@ def grade_group(g: str, df: pd.DataFrame, side_windows: dict, weeks_all: list[in
                     continue
                 items = {pid: (t[0], standard_error(st, t[2], t[3])) for pid, t in slice_values(part, st).items() if t[1] >= max(1.0, st.need[0] * max(frac, 0.6))}
                 # The same stabilized values the season rank is made on, so the last point of the line is where the season rank is.
-                vals = stabilize(items)[0] if len(items) >= 3 else {pid: x[0] for pid, x in items.items()}
+                vals = stabilize_with_prior(items, priors.get(key))[0] if len(items) >= 3 else {pid: x[0] for pid, x in items.items()}
                 for pid, p in percentiles(vals, st.higher).items():
                     cum_pct.setdefault(key, {}).setdefault(pid, {})[k] = p
         for pid, row in kept.items():
@@ -1149,7 +1227,7 @@ def comparables(rows: list[dict], group: str) -> dict[str, list[str]]:
 # ---------------------------------------------------------------------------------------------- the build
 
 
-def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
+def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV", book: PriorBook | None = None) -> dict:
     raw = site(src["pbp"], ("posteam", "defteam", "home_team", "away_team", "penalty_team"))
     raw = raw[raw["season_type"] == "REG"]
     games = finished_games(raw)
@@ -1222,7 +1300,7 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
         side = SIDE_OF[g]
         weeks = [w for w in all_weeks if w <= (last_def if side == "def" else last_off)]
         res = grade_group(g, comps.get(g), windows, weeks, names, pos, snaps, pfr_weeks if side == "def" else weeks_of,
-                          last_def if side == "def" else last_off)
+                          last_def if side == "def" else last_off, book, season)
         if not res.rows:
             continue
         rows += res.rows
@@ -1278,6 +1356,8 @@ def build(src: dict[str, pd.DataFrame], season: int, team: str = "LV") -> dict:
         "team": team,
         "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": LICENSE,
+        # The earlier seasons this season's grades start from (empty when there is no history file), so the pages can say so.
+        **({"priorSeasons": [x for x in book.seasons if x < season]} if book and any(x < season for x in book.seasons) else {}),
         "formGames": form_size(len(weeks_of.get(team, {})) or 0),
         "weeks": all_weeks,
         "formWeeks": sorted(off_form),
@@ -1350,10 +1430,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--team", default="LV")
     ap.add_argument("--input", help="folder with the source files instead of downloading them")
     ap.add_argument("--out", default="data/lab/players.json")
+    ap.add_argument("--history", default=None, help="player-history.json: start each veteran from his earlier seasons (default: the file beside --out, if there is one)")
     ap.add_argument("--logs-out", help="where the game-by-game trail goes; defaults to player-logs.json beside --out")
     args = ap.parse_args(argv)
 
-    result = build(load(args.season, args.input), args.season, args.team)
+    history = Path(args.history) if args.history else Path(args.out).with_name("player-history.json")
+    book = PriorBook.load(history)
+    result = build(load(args.season, args.input), args.season, args.team, book)
     if not result.get("players"):
         print("no finished games with player data yet; leaving the existing file alone", file=sys.stderr)
         return 0

@@ -51,7 +51,7 @@ describe("<CompareHero />", () => {
 
 describe("<CompareBars />", () => {
 	it("has a row per stat, marks who leads, and never marks a luck stat as a win", () => {
-		render(<CompareBars data={data} c={c} colorA="#fff" colorB="#f00" />)
+		render(<CompareBars c={c} colorA="#fff" colorB="#f00" />)
 		const rows = screen.getAllByTestId("compare-row")
 		expect(rows.length).toBe(c.metrics.filter((m) => m.a.pct !== null || m.b.pct !== null).length)
 		for (const [i, m] of Array.from(c.metrics.entries())) {
@@ -63,7 +63,7 @@ describe("<CompareBars />", () => {
 	})
 
 	it("opens each row onto the league spread", () => {
-		const { container } = render(<CompareBars data={data} c={c} colorA="#fff" colorB="#f00" />)
+		const { container } = render(<CompareBars c={c} colorA="#fff" colorB="#f00" />)
 		expect(container.querySelectorAll("details").length).toBe(c.metrics.length)
 	})
 })

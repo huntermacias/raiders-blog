@@ -14,6 +14,7 @@
 import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
+import type { PlayerHistory } from "../lab/seasonKit"
 import { type CompareConfig, type Comparison, type Metric, buildComparison, configQuery, lastName, pctWord, spotlightOf } from "../lab/compareKit"
 import { SIZE_PIXELS } from "../lab/lastShare"
 import { teamNick } from "../lab/playerView"
@@ -114,11 +115,14 @@ const headshotOf = (p: PlayerRow) => (p.espn ? headshotUrl(p.espn) : p.shot ? sh
 function playerOf(data: PlayersData, c: Comparison, side: "a" | "b", color: string): ComparePlayer {
 	const p = side === "a" ? c.a : c.b
 	const o = side === "a" ? c.overall.a : c.overall.b
-	const rank = c.range === "season" ? overallRank(data, p) : null
+	const rank = c.range === "season" ? overallRank(c.views[side], p) : null
+	// A season is named on the card when it is not the one being played, or when the two men are not in the same one.
+	const year = c.seasons[side]
+	const named = year !== data.season || c.seasons.a !== c.seasons.b
 	return {
 		name: p.name,
-		last: lastName(p),
-		team: teamNick(p.team),
+		last: named ? `${lastName(p)} ${year}` : lastName(p),
+		team: named ? `${teamNick(p.team)} ${year}` : teamNick(p.team),
 		pos: p.pos,
 		color,
 		initials: initialsOf(p.name),
@@ -135,8 +139,8 @@ function printedLink(cfg: CompareConfig, a: string, b: string): string {
 }
 
 /** The spec for one graphic of a comparison, or null when the pair cannot be compared (unknown player, two different jobs, the same man twice). */
-export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { format?: CompareFormat; size?: CompareSize; side?: "a" | "b" } = {}): CompareCardSpec | null {
-	const c = buildComparison(data, cfg)
+export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { format?: CompareFormat; size?: CompareSize; side?: "a" | "b" } = {}, history?: PlayerHistory | null): CompareCardSpec | null {
+	const c = buildComparison(data, cfg, history)
 	if (!c || !c.metrics.length) return null
 	const size: CompareSize = opts.size === "tall" ? "tall" : "wide"
 	let format: CompareFormat = opts.format ?? "h2h"
@@ -190,7 +194,7 @@ export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { 
 		peers: GROUP_META[c.group].peers,
 		a,
 		b,
-		range: `${c.rangeName} · ${c.rangeWeeks}`,
+		range: c.seasons.a !== c.seasons.b ? `${c.seasons.a} and ${c.seasons.b} seasons` : c.seasons.a !== data.season ? `${c.seasons.a} season · Full season` : `${c.rangeName} · ${c.rangeWeeks}`,
 		rows,
 		radar: c.radar.map((r) => ({ label: clip(r.short, 15), a: r.a, b: r.b })),
 		tally: { a: c.tally.a, b: c.tally.b, even: c.tally.even, noise: c.tally.noise },
