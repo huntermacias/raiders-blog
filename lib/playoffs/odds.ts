@@ -13,7 +13,7 @@
 // not know about injuries, rest or the spread.
 
 import { type Ratings, START_RATING, homeWinProbability, runElo } from "../math/elo"
-import { NFL_LEAGUE, buildSeason, openGamesFor } from "./season"
+import { NFL_LEAGUE, buildSeason, openGamesFor, recordOf, winValue } from "./season"
 import { seedConference } from "./standings"
 import type { Conference, Game, League, Outcome, Predictions } from "./types"
 
@@ -50,6 +50,24 @@ export type GameLeverage = {
 	swing: number | null
 }
 
+/** One game's pull on the tracked team's playoff odds, whoever is playing. */
+export type RootingLeverage = {
+	gameId: string
+	week: number
+	home: string
+	away: string
+	/** The tracked team's playoff odds in the simulated seasons where the home / away team wins. Null when too few seasons to say. */
+	ifHome: number | null
+	ifAway: number | null
+	/** Absolute difference in points of odds (0 to 1). Null when either side is null. */
+	swing: number | null
+	/** The team the tracked team is better off with winning, or null when it makes no clear difference. */
+	rootFor: string | null
+}
+
+/** How often the tracked team made the playoffs when it finished with this many wins, across the simulated seasons. */
+export type WinsRow = { wins: number; seasons: number; made: number }
+
 export type OddsResult = {
 	sims: number
 	/** True when no game is open: the answer is the table itself, not an estimate. */
@@ -57,6 +75,10 @@ export type OddsResult = {
 	teams: Record<string, Odds>
 	/** The tracked team's next open games, soonest first. Empty when no team is tracked. */
 	leverage: GameLeverage[]
+	/** Every open game ranked by how much it moves the tracked team's odds. Empty unless `rootAll` was asked for. */
+	rooting: RootingLeverage[]
+	/** The tracked team's win totals across the simulated seasons, fewest wins first. Empty when no team is tracked. */
+	winsTable: WinsRow[]
 }
 
 export type OddsInput = {
@@ -70,6 +92,8 @@ export type OddsInput = {
 	track?: string
 	/** How many of its next open games to score. */
 	trackGames?: number
+	/** Also score every open game, whoever plays in it, for the tracked team's odds. */
+	rootAll?: boolean
 }
 
 /** Elo ratings from the games already played this season (every team starts at 1500, as in the site's model). */
@@ -128,6 +152,10 @@ export function oddsRun(input: OddsInput): OddsRun {
 	const track = input.track && league.teams.some((t) => t.id === input.track) ? input.track : null
 	const watched = track ? open.map((g, i) => ({ g, i })).filter(({ g }) => g.homeTeam === track || g.awayTeam === track).sort((a, b) => a.g.week - b.g.week).slice(0, Math.max(0, input.trackGames ?? 3)) : []
 	const lever = watched.map(() => ({ win: 0, winIn: 0, lose: 0, loseIn: 0 }))
+	// For rooting: per open game, how often the home team won and the tracked team got in then, and the same for the away team.
+	const rootAll = Boolean(track && input.rootAll)
+	const roots = rootAll ? open.map(() => ({ h: 0, hIn: 0, a: 0, aIn: 0 })) : []
+	const winsSeen = new Map<number, { seasons: number; made: number }>()
 
 	let played = 0
 
@@ -150,6 +178,25 @@ export function oddsRun(input: OddsInput): OddsRun {
 				if (id === track) trackedIn = true
 			})
 			for (const id of s.winners) (tally.get(id) as { division: number }).division++
+		}
+		if (track) {
+			const wins = Math.round(winValue(recordOf(season, track).overall))
+			const row = winsSeen.get(wins) ?? { seasons: 0, made: 0 }
+			row.seasons++
+			if (trackedIn) row.made++
+			winsSeen.set(wins, row)
+		}
+		if (rootAll) {
+			for (let i = 0; i < open.length; i++) {
+				const r = roots[i]
+				if (homeWon[i]) {
+					r.h++
+					if (trackedIn) r.hIn++
+				} else {
+					r.a++
+					if (trackedIn) r.aIn++
+				}
+			}
 		}
 		watched.forEach(({ g, i }, w) => {
 			const wins = (g.homeTeam === track) === homeWon[i]
@@ -187,7 +234,20 @@ export function oddsRun(input: OddsInput): OddsRun {
 				swing: ifWin !== null && ifLose !== null ? ifWin - ifLose : null,
 			}
 		})
-		return { sims: played, exact, teams, leverage }
+		const rooting: RootingLeverage[] = rootAll
+			? open
+					.map((g, i) => {
+						const r = roots[i]
+						const ifHome = r.h >= MIN_BUCKET ? r.hIn / r.h : null
+						const ifAway = r.a >= MIN_BUCKET ? r.aIn / r.a : null
+						const swing = ifHome !== null && ifAway !== null ? Math.abs(ifHome - ifAway) : null
+						const rootFor = swing === null || swing < 0.01 ? null : (ifHome as number) > (ifAway as number) ? g.homeTeam : g.awayTeam
+						return { gameId: g.id, week: g.week, home: g.homeTeam, away: g.awayTeam, ifHome, ifAway, swing, rootFor }
+					})
+					.sort((x, y) => (y.swing ?? -1) - (x.swing ?? -1) || x.week - y.week || x.gameId.localeCompare(y.gameId))
+			: []
+		const winsTable: WinsRow[] = Array.from(winsSeen, ([wins, v]) => ({ wins, ...v })).sort((x, y) => x.wins - y.wins)
+		return { sims: played, exact, teams, leverage, rooting, winsTable }
 	}
 
 	return {

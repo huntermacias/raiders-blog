@@ -309,8 +309,9 @@ describe("the Lab section", () => {
 
 		it("has a share card: a Share window on the page, a landing page that is kept out of search, and the card in the link preview", () => {
 			const machine = read("components/playoffs/PlayoffMachine.tsx")
-			expect(machine).toMatch(/<ShareCard/)
-			expect(machine).toMatch(/type: "playoffs"/)
+			const bar = read("components/playoffs/ScenarioBar.tsx")
+			expect(bar).toMatch(/<ShareCard/)
+			expect(bar).toMatch(/type: "playoffs"/)
 			expect(machine).toMatch(/PLAYOFFS_SHARE_PATH/)
 			const landing = read("app/(user)/lab/playoff-machine/share/page.tsx")
 			expect(landing).toMatch(/index: false/)

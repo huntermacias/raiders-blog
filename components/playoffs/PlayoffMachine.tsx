@@ -1,91 +1,182 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, RotateCcw, Shuffle, Undo2 } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { trackPlayoff } from "@/lib/analytics"
 import { teamByAbbr } from "@/lib/nfl"
+import { type Branch, addBranch, loadBranches, removeBranch, saveBranches } from "@/lib/playoffs/branches"
+import { gameChances, simulateRemaining } from "@/lib/playoffs/autosim"
 import { rivalsOf } from "@/lib/playoffs/format"
-import { firstOpenWeek, weekProgress } from "@/lib/playoffs/picks"
+import { ratingsFor } from "@/lib/playoffs/odds"
+import { clearPicks, firstOpenWeek, pickHomeTeams, pickTeamGames, weekProgress } from "@/lib/playoffs/picks"
 import { PLAYOFFS_SHARE_PATH, scenarioQuery } from "@/lib/playoffs/share"
-import ShareCard from "@/components/lab/ShareCard"
-import type { Conference, Game } from "@/lib/playoffs/types"
+import type { Conference, Game, Outcome, Predictions } from "@/lib/playoffs/types"
+import AutoSim from "./AutoSim"
 import BracketView from "./BracketView"
-import GameCard from "./GameCard"
-import NeedsPanel from "./NeedsPanel"
+import CompareMode from "./CompareMode"
+import ReplayMode from "./ReplayMode"
+import ScenarioBar from "./ScenarioBar"
+import SeasonGrid from "./SeasonGrid"
 import StandingsTable from "./StandingsTable"
-import TeamOutlook from "./TeamOutlook"
+import TeamMode from "./TeamMode"
 import TeamPicker from "./TeamPicker"
+import TeamSchedule from "./TeamSchedule"
+import WeekView from "./WeekView"
 import { useOdds } from "./useOdds"
 import { usePlayoffScenario } from "./usePlayoffScenario"
+import { focusRing } from "./ui"
 
-type Tab = "games" | "standings" | "bracket" | "needs"
-type Fill = "week" | "all"
+type Mode = "pick" | "replay" | "team" | "compare"
+type View = "week" | "grid" | "team"
 
+const MODES: { id: Mode; label: string; short: string }[] = [
+	{ id: "pick", label: "Pick games", short: "Pick" },
+	{ id: "replay", label: "Season replay", short: "Replay" },
+	{ id: "team", label: "Team explorer", short: "Team" },
+	{ id: "compare", label: "Compare", short: "Compare" },
+]
+const MODE_PARAM = "m"
 
-const btn =
-	"inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-lab-line bg-lab-surface px-4 text-sm font-semibold text-lab-ink transition hover:border-lab-line-strong hover:bg-lab-tint disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lab-ink"
+function storage(): Storage | null {
+	try {
+		return typeof window === "undefined" ? null : window.localStorage
+	} catch {
+		return null
+	}
+}
+
+function writeMode(mode: Mode) {
+	try {
+		const url = new URL(window.location.href)
+		if (mode === "pick") url.searchParams.delete(MODE_PARAM)
+		else url.searchParams.set(MODE_PARAM, mode)
+		window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash)
+	} catch {
+		// the address bar is a convenience
+	}
+}
 
 export default function PlayoffMachine({ games, season, throughWeek, stamp }: { games: Game[]; season: number; throughWeek: number; stamp: number }) {
 	const s = usePlayoffScenario(games, season)
 	const { sim, picks } = s
-	const [tab, setTab] = useState<Tab>("games")
-	const [week, setWeek] = useState(() => firstOpenWeek(games))
-	const [conference, setConference] = useState<Conference>("AFC")
-	const [fill, setFill] = useState<Fill>("all")
-	const [keep, setKeep] = useState(true)
-	const chips = useRef<HTMLDivElement>(null)
-
-	const progress = useMemo(() => weekProgress(games, picks), [games, picks])
-	const weeks = progress.map((w) => w.week)
-	const current = progress.find((w) => w.week === week)
-	const pickedCount = Object.keys(picks).length
 	const team = s.team
 	const info = teamByAbbr(team)
-	const focusTeam = s.focus ? team : null
-	const rivals = useMemo(() => rivalsOf(sim, team), [sim, team])
-	const myDivision = sim.teams[team]?.division ?? ""
-	const divisionMates = useMemo(() => new Set(Object.values(sim.teams).filter((t) => t.division === myDivision && t.team !== team).map((t) => t.team)), [sim, myDivision, team])
-	const { odds, working } = useOdds(games, picks, team, s.ready)
-	const mine = (g: Game) => g.homeTeam === team || g.awayTeam === team
+	const [mode, setModeState] = useState<Mode>("pick")
+	const [view, setView] = useState<View>("week")
+	const [week, setWeek] = useState(() => firstOpenWeek(games))
+	const [conference, setConference] = useState<Conference>("AFC")
+	const [simNumber, setSimNumber] = useState(1)
+	// Games a simulation filled in, and what it put there. A pick changed by the reader, or by undo, stops being "simulated".
+	const [simmed, setSimmed] = useState<ReadonlyMap<string, Outcome>>(new Map())
+	const [branches, setBranches] = useState<Branch[]>([])
 
-	const weekGames = useMemo(() => {
-		const list = games.filter((g) => g.week === week)
-		const rank = (g: Game) => (s.focus && mine(g) ? 0 : s.focus && (rivals.has(g.homeTeam) || rivals.has(g.awayTeam)) && g.status !== "final" ? 1 : 2)
-		return [...list].sort((a, b) => rank(a) - rank(b) || `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`) || a.id.localeCompare(b.id))
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [games, week, s.focus, rivals, team])
-
-	// Keep the chosen week's chip in view on a narrow screen.
 	useEffect(() => {
-		const el = chips.current?.querySelector<HTMLElement>('[aria-current="true"]')
-		el?.scrollIntoView({ block: "nearest", inline: "center" })
-	}, [week, tab])
+		setBranches(loadBranches(storage(), season, games))
+		try {
+			const m = new URLSearchParams(window.location.search).get(MODE_PARAM)
+			if (m === "replay" || m === "team" || m === "compare") setModeState(m)
+		} catch {
+			// no URL to read
+		}
+	}, [season, games])
 
-	const scope = fill === "week" ? { weeks: [week], keepPicks: keep } : { keepPicks: keep }
-	const shareQuery = scenarioQuery(s.code, team)
+	const setMode = useCallback((m: Mode) => {
+		setModeState(m)
+		writeMode(m)
+		trackPlayoff("playoff_mode_opened", { mode: m })
+	}, [])
+
+	const simulated = useMemo(() => new Set(Array.from(simmed).filter(([id, o]) => picks[id] === o).map(([id]) => id)), [simmed, picks])
+	const chances = useMemo(() => gameChances(games, ratingsFor(games)), [games])
+	const progress = useMemo(() => weekProgress(games, picks), [games, picks])
+	const { odds, working } = useOdds(games, picks, team, s.ready)
+	const rivals = useMemo(() => rivalsOf(sim, team), [sim, team])
+	const openGames = sim.openGames
+
+	const onPick = useCallback(
+		(id: string, outcome: Outcome) => {
+			setSimmed((m) => {
+				if (!m.has(id)) return m
+				const next = new Map(m)
+				next.delete(id)
+				return next
+			})
+			s.pick(id, outcome)
+		},
+		[s],
+	)
+
+	const runSim = useCallback(
+		(scope: "week" | "rest", rule: "model" | "favorites") => {
+			const weeks = scope === "week" ? [week] : undefined
+			const inScope = (id: string) => !weeks || weeks.includes(games.find((g) => g.id === id)?.week ?? -1)
+			// Re-rolling replaces earlier simulated games in scope, never a game the reader picked.
+			const base: Record<string, Outcome> = { ...picks }
+			const kept = new Map<string, Outcome>()
+			for (const [id, o] of Array.from(simmed)) {
+				if (picks[id] !== o) continue
+				if (inScope(id)) delete base[id]
+				else kept.set(id, o)
+			}
+			const next = simulateRemaining(games, base, { rule, seed: simNumber, weeks, keepPicks: true })
+			const fresh = new Map(kept)
+			for (const id of Object.keys(next)) if (!Object.prototype.hasOwnProperty.call(base, id)) fresh.set(id, next[id])
+			s.setAll(scope === "week" ? `simulate week ${week}` : rule === "favorites" ? "favorites win" : "simulate season", next)
+			setSimmed(fresh)
+			setSimNumber((n) => n + 1)
+			trackPlayoff("playoff_simulated", { scope, rule })
+		},
+		[games, picks, simmed, simNumber, week, s],
+	)
+
+	const onResult = useCallback((id: string, result: "W" | "L") => s.bulk(`${id} ${result === "W" ? "win out" : "lose out"}`, (p) => pickTeamGames(games, p, id, result)), [s, games])
+	const clearWeek = useCallback(() => s.bulk(`clear week ${week}`, (p) => clearPicks(games, p, { weeks: [week] })), [s, games, week])
+	const homeTeams = useCallback(() => s.bulk("home teams", (p) => pickHomeTeams(games, p, { keepPicks: true })), [s, games])
+	const reset = useCallback(() => {
+		setSimmed(new Map())
+		s.reset()
+	}, [s])
+	const clearOne = useCallback((id: string, outcome: Outcome | null) => {
+		if (outcome === null && picks[id]) onPick(id, picks[id])
+	}, [onPick, picks])
+
+	const goToGame = useCallback(
+		(g: Game) => {
+			setWeek(g.week)
+			setView("week")
+			setMode("pick")
+			if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" })
+		},
+		[setMode],
+	)
+
+	const saveBranch = useCallback(
+		(name: string) => {
+			const next = addBranch(branches, name, picks)
+			setBranches(next)
+			saveBranches(storage(), season, next)
+		},
+		[branches, picks, season],
+	)
+	const deleteBranch = useCallback(
+		(id: string) => {
+			const next = removeBranch(branches, id)
+			setBranches(next)
+			saveBranches(storage(), season, next)
+		},
+		[branches, season],
+	)
+	const useScenario = useCallback((next: Predictions, label: string) => s.setAll(label, next), [s])
+
+	const pickedCount = Object.keys(picks).length
 	const shareText = pickedCount
 		? `My ${season} NFL playoff scenario: the ${info.nick}' road to the playoffs, ${pickedCount} ${pickedCount === 1 ? "pick" : "picks"} in. Build yours:`
 		: `The ${season} NFL playoff race and what the ${info.nick} need. Build your own scenario:`
 
-	const tabs: { id: Tab; label: string }[] = [
-		{ id: "games", label: "Games" },
-		{ id: "standings", label: "Standings" },
-		{ id: "bracket", label: "Bracket" },
-		...(s.focus ? [{ id: "needs" as const, label: "Odds" }] : []),
-	]
-	const activeTab: Tab = tab === "needs" && !s.focus ? "games" : tab
-
 	const confSwitch = (
 		<div role="group" aria-label="Conference" className="inline-flex rounded-lg border border-lab-line bg-lab-surface p-0.5">
 			{(["AFC", "NFC"] as const).map((c) => (
-				<button
-					key={c}
-					type="button"
-					aria-pressed={conference === c}
-					onClick={() => setConference(c)}
-					className={`min-h-[40px] min-w-[64px] rounded-md px-4 text-sm font-bold transition ${conference === c ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}
-				>
+				<button key={c} type="button" aria-pressed={conference === c} onClick={() => setConference(c)} className={`min-h-[36px] min-w-[56px] rounded-md px-3 text-sm font-bold transition ${focusRing} ${conference === c ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}>
 					{c}
 				</button>
 			))}
@@ -93,67 +184,21 @@ export default function PlayoffMachine({ games, season, throughWeek, stamp }: { 
 	)
 
 	return (
-		<div className="space-y-5">
-			<div className="flex flex-wrap items-center gap-2">
-				<TeamPicker value={team} onChange={s.setTeam} />
-				<button type="button" role="switch" aria-checked={s.focus} onClick={() => s.setFocus(!s.focus)} className={`${btn} pr-3`}>
-					<span>{info.nick} mode</span>
-					<span aria-hidden="true" className={`relative block h-5 w-9 rounded-full transition ${s.focus ? "bg-lab-ink" : "bg-lab-line-strong"}`}>
-						<span className={`absolute top-0.5 block h-4 w-4 rounded-full bg-lab-page transition-all ${s.focus ? "left-[18px]" : "left-0.5"}`} />
-					</span>
-				</button>
-				<ShareCard
-					target={{ type: "playoffs", query: shareQuery, sharePath: PLAYOFFS_SHARE_PATH, name: "Playoff scenario", file: `${team.toLowerCase()}-playoff-scenario` }}
-					stamp={stamp}
-					text={shareText}
-					alt={`${info.nick} playoff scenario: seeds, bracket and playoff odds`}
-					className="!min-h-[44px] !rounded-lg !border-lab-line !text-sm !font-semibold !normal-case !tracking-normal"
-					onAction={(method) => trackPlayoff("playoff_scenario_shared", { picks: pickedCount, method })}
-				/>
-				<button type="button" onClick={s.reset} disabled={pickedCount === 0} className={btn}>
-					<RotateCcw className="h-4 w-4" aria-hidden="true" />
-					Reset
-				</button>
-				{s.undo ? (
-					<button type="button" onClick={s.undoLast} className={btn}>
-						<Undo2 className="h-4 w-4" aria-hidden="true" />
-						Undo {s.undo.label}
-					</button>
-				) : null}
-			</div>
-
-			<details className="rounded-xl border border-lab-line bg-lab-surface">
-				<summary className="flex min-h-[44px] cursor-pointer items-center gap-2 px-4 text-sm font-semibold">
-					<Shuffle className="h-4 w-4" aria-hidden="true" />
-					Quick fill
-					<span className="ml-auto text-xs font-normal text-lab-muted">{pickedCount} of {sim.openGames + sim.pickedGames} picked</span>
-				</summary>
-				<div className="space-y-3 border-t border-lab-line p-4">
-					<div className="flex flex-wrap items-center gap-3">
-						<div role="group" aria-label="Which games" className="inline-flex rounded-lg border border-lab-line p-0.5">
-							{([["all", "All remaining weeks"], ["week", `Week ${week} only`]] as const).map(([id, label]) => (
-								<button key={id} type="button" aria-pressed={fill === id} onClick={() => setFill(id)} className={`min-h-[40px] rounded-md px-3 text-sm font-semibold ${fill === id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}>
-									{label}
-								</button>
-							))}
-						</div>
-						<label className="inline-flex min-h-[40px] items-center gap-2 text-sm text-lab-soft">
-							<input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="h-4 w-4" />
-							Keep the picks I made
-						</label>
-					</div>
-					<div className="flex flex-wrap gap-2">
-						<button type="button" className={btn} onClick={() => s.fillHome(scope)}>
-							Pick home teams
-						</button>
-						<button type="button" className={btn} onClick={() => s.fillRandom(scope)}>
-							<Shuffle className="h-4 w-4" aria-hidden="true" />
-							Randomize
-						</button>
-					</div>
-					<p className="m-0 text-xs text-lab-muted">Fills in games nobody has played. Undo is one tap away. Each pick updates the standings at once.</p>
-				</div>
-			</details>
+		<div className="space-y-4">
+			<ScenarioBar
+				games={games}
+				throughWeek={throughWeek}
+				picked={pickedCount}
+				simulated={simulated.size}
+				undo={s.undo}
+				redo={s.redo}
+				lastChange={s.lastChange}
+				picks={picks}
+				onUndo={s.undoLast}
+				onRedo={s.redoLast}
+				onReset={reset}
+				share={{ query: scenarioQuery(s.code, team), stamp, text: shareText, alt: `${info.nick} playoff scenario: seeds, bracket and playoff odds`, file: `${team.toLowerCase()}-playoff-scenario`, onAction: (method) => trackPlayoff("playoff_scenario_shared", { picks: pickedCount, method }), sharePath: PLAYOFFS_SHARE_PATH }}
+			/>
 
 			{s.notice?.kind === "shared" ? (
 				<div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-lab-line-strong bg-lab-tint px-4 py-3 text-sm">
@@ -171,95 +216,63 @@ export default function PlayoffMachine({ games, season, throughWeek, stamp }: { 
 				</div>
 			) : null}
 
-			{s.focus ? <TeamOutlook sim={sim} team={team} picked={pickedCount} odds={odds} working={working} /> : null}
-
-			<div role="tablist" aria-label="Playoff machine sections" className="grid gap-1 rounded-xl border border-lab-line bg-lab-surface p-1 lg:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
-				{tabs.map((t) => (
-					<button
-						key={t.id}
-						type="button"
-						role="tab"
-						id={`tab-${t.id}`}
-						aria-selected={activeTab === t.id}
-						aria-controls={`panel-${t.id}`}
-						onClick={() => setTab(t.id)}
-						className={`min-h-[44px] rounded-lg text-sm font-bold transition ${activeTab === t.id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}
-					>
-						{t.label}
-					</button>
-				))}
+			<div className="flex flex-wrap items-center gap-2">
+				<div role="tablist" aria-label="Playoff machine modes" className="grid min-w-0 basis-full grid-cols-4 sm:flex-1 sm:basis-auto gap-1 rounded-xl border border-lab-line bg-lab-surface p-1 sm:max-w-xl">
+					{MODES.map((m) => (
+						<button key={m.id} type="button" role="tab" id={`mode-${m.id}`} aria-selected={mode === m.id} aria-controls="mode-panel" onClick={() => setMode(m.id)} className={`min-h-[44px] rounded-lg text-sm font-bold transition ${focusRing} ${mode === m.id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}>
+							<span className="sm:hidden">{m.short}</span>
+							<span className="hidden sm:inline">{m.label}</span>
+						</button>
+					))}
+				</div>
+				<TeamPicker value={team} onChange={s.setTeam} />
 			</div>
 
-			{s.focus ? (
-				<div id="panel-needs" role="tabpanel" aria-labelledby="tab-needs" className={`${activeTab === "needs" ? "block" : "hidden"} lg:block`}>
-					<NeedsPanel team={team} odds={odds} working={working} picked={pickedCount} />
-				</div>
-			) : null}
-
-			<div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-8">
-				<section id="panel-games" role="tabpanel" aria-labelledby="tab-games" className={`${activeTab === "games" ? "block" : "hidden"} lg:col-span-5 lg:block`}>
-					<h2 className="sr-only">Games</h2>
-					<div ref={chips} role="group" aria-label="Week" className="-mx-4 flex snap-x gap-1.5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-						{weeks.map((w) => {
-							const p = progress.find((x) => x.week === w)!
-							const done = p.open === 0
-							return (
-								<button
-									key={w}
-									type="button"
-									aria-current={w === week ? "true" : undefined}
-									aria-label={`Week ${w}${p.played === p.total ? ", played" : done ? ", all picked" : `, ${p.open} left to pick`}`}
-									onClick={() => setWeek(w)}
-									className={`relative min-h-[44px] min-w-[52px] shrink-0 snap-center rounded-lg border px-2.5 text-sm font-bold tabular-nums transition ${
-										w === week ? "border-lab-ink bg-lab-ink text-lab-page" : p.played === p.total ? "border-lab-line text-lab-muted hover:text-lab-ink" : "border-lab-line bg-lab-surface text-lab-ink hover:border-lab-line-strong"
-									}`}
-								>
-									<span className="block text-[9px] font-semibold uppercase leading-none tracking-[0.12em] opacity-70">Wk</span>
-									{w}
-									{p.played < p.total && done ? <Check className="absolute right-1 top-1 h-3 w-3" aria-hidden="true" /> : null}
-								</button>
-							)
-						})}
-					</div>
-
-					<div className="mt-3 flex items-center justify-between gap-3">
-						<h3 className="m-0 font-serif text-xl font-bold">Week {week}</h3>
-						<p className="m-0 text-xs text-lab-muted">
-							{current ? (current.played === current.total ? "All played" : `${current.played} played · ${current.picked} picked · ${current.open} open`) : ""}
-						</p>
-					</div>
-					{week <= throughWeek && current && current.played > 0 ? <p className="m-0 mt-1 text-xs text-lab-muted">Games that have been played are locked to their real result.</p> : null}
-
-					<ul className="m-0 mt-3 list-none space-y-3 p-0">
-						{weekGames.map((g) => (
-							<li key={g.id}>
-								<GameCard game={g} pick={picks[g.id]} sim={sim} onPick={s.pick} divisionMates={s.focus ? divisionMates : undefined} divisionLabel={myDivision} focusLabel={`${info.nick} game`} focus={s.focus ? (mine(g) ? "mine" : rivals.has(g.homeTeam) || rivals.has(g.awayTeam) ? "rival" : null) : null} />
-							</li>
-						))}
-					</ul>
-				</section>
-
-				<div className="lg:col-span-7">
-					<div className="hidden items-center justify-between gap-3 lg:flex">{confSwitch}</div>
-
-					<section id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" className={`${activeTab === "standings" ? "block" : "hidden"} lg:mt-4 lg:block`}>
-						<div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
-							<h2 className="m-0 font-serif text-xl font-bold">Standings</h2>
-							{confSwitch}
+			<div id="mode-panel" role="tabpanel" aria-labelledby={`mode-${mode}`}>
+				{mode === "pick" ? (
+					<div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-8">
+						<div className="space-y-4 lg:col-span-7">
+							<AutoSim week={week} team={team} openLeft={openGames} simNumber={simNumber} onSimulate={runSim} onHome={homeTeams} onTeam={(r) => onResult(team, r)} onClearWeek={clearWeek} />
+							<div role="group" aria-label="How to see the schedule" className="inline-flex rounded-lg border border-lab-line bg-lab-surface p-0.5">
+								{([["week", "By week"], ["grid", "Season grid"], ["team", `${info.nick} schedule`]] as const).map(([id, label]) => (
+									<button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)} className={`min-h-[36px] rounded-md px-3 text-sm font-bold ${focusRing} ${view === id ? "bg-lab-ink text-lab-page" : "text-lab-soft hover:text-lab-ink"}`}>
+										{label}
+									</button>
+								))}
+							</div>
+							{view === "week" ? (
+								<WeekView games={games} week={week} setWeek={setWeek} progress={progress} picks={picks} simulated={simulated} sim={sim} chances={chances} onPick={onPick} team={s.focus ? team : null} throughWeek={throughWeek} />
+							) : view === "grid" ? (
+								<SeasonGrid games={games} picks={picks} simulated={simulated} sim={sim} onPick={onPick} onSet={clearOne} team={s.focus ? team : null} />
+							) : (
+								<TeamSchedule games={games} team={team} picks={picks} simulated={simulated} sim={sim} chances={chances} onPick={onPick} important={new Map((odds?.base.rooting ?? []).filter((r) => r.swing !== null).map((r) => [r.gameId, r.swing as number]))} />
+							)}
 						</div>
-						<h2 className="sr-only lg:not-sr-only lg:mb-3 lg:font-serif lg:text-xl lg:font-bold">{conference} standings</h2>
-						<StandingsTable sim={sim} conference={conference} team={focusTeam} rivals={rivals} odds={odds?.base.teams ?? null} oddsWorking={working} oddsExact={odds?.base.exact} />
-					</section>
-
-					<section id="panel-bracket" role="tabpanel" aria-labelledby="tab-bracket" className={`${activeTab === "bracket" ? "block" : "hidden"} mt-0 lg:mt-8 lg:block`}>
-						<div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
-							<h2 className="m-0 font-serif text-xl font-bold">Bracket</h2>
-							{confSwitch}
+						<div className="mt-6 space-y-6 lg:sticky lg:top-16 lg:col-span-5 lg:mt-0">
+							<section aria-labelledby="pm-standings">
+								<div className="mb-2 flex items-center justify-between gap-3">
+									<h2 id="pm-standings" className="m-0 font-serif text-xl font-bold">
+										{conference} standings
+									</h2>
+									{confSwitch}
+								</div>
+								<StandingsTable sim={sim} conference={conference} team={s.focus ? team : null} rivals={rivals} odds={odds?.base.teams ?? null} oddsWorking={working} oddsExact={odds?.base.exact} />
+							</section>
+							<section aria-labelledby="pm-bracket">
+								<h2 id="pm-bracket" className="mb-2 mt-0 font-serif text-xl font-bold">
+									{conference} bracket
+								</h2>
+								<BracketView sim={sim} conference={conference} team={s.focus ? team : null} />
+							</section>
 						</div>
-						<h2 className="sr-only lg:not-sr-only lg:mb-3 lg:font-serif lg:text-xl lg:font-bold">{conference} playoff bracket</h2>
-						<BracketView sim={sim} conference={conference} team={focusTeam} />
-					</section>
-				</div>
+					</div>
+				) : mode === "replay" ? (
+					<ReplayMode games={games} picks={picks} team={team} openGames={openGames} onSimulate={() => runSim("rest", "model")} onTeamMode={(id) => { s.setTeam(id); setMode("team") }} />
+				) : mode === "team" ? (
+					<TeamMode games={games} picks={picks} simulated={simulated} sim={sim} team={team} odds={odds} working={working} chances={chances} onPick={onPick} onGoToGame={goToGame} onResult={onResult} />
+				) : (
+					<CompareMode games={games} picks={picks} team={team} branches={branches} onSave={saveBranch} onDelete={deleteBranch} onUse={useScenario} />
+				)}
 			</div>
 		</div>
 	)
