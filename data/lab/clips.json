@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-10-12T01:22:41.106Z",
+ "generatedAt": "2026-10-17T07:19:33.023Z",
  "games": {
   "1": {
    "week": 1,
@@ -8,17 +8,17 @@
    "seconds": 14.8,
    "files": {
     "landscape": "/lab/clips/week-1-landscape.mp4",
-    "vertical": "/lab/clips/week-1-vertical.mp4",
-    "square": "/lab/clips/week-1-square.mp4",
     "gif": "/lab/clips/week-1.gif",
-    "poster": "/lab/clips/week-1-poster.jpg"
+    "poster": "/lab/clips/week-1-poster.jpg",
+    "vertical": "/lab/clips/week-1-vertical.mp4",
+    "square": "/lab/clips/week-1-square.mp4"
    },
    "bytes": {
-    "landscape": 172136,
-    "vertical": 187105,
-    "square": 133021,
+    "landscape": 171532,
     "gif": 280574,
-    "poster": 56546
+    "poster": 56562,
+    "vertical": 187105,
+    "square": 133021
    }
   },
   "2": {
@@ -27,17 +27,17 @@
    "seconds": 14.8,
    "files": {
     "landscape": "/lab/clips/week-2-landscape.mp4",
-    "vertical": "/lab/clips/week-2-vertical.mp4",
-    "square": "/lab/clips/week-2-square.mp4",
     "gif": "/lab/clips/week-2.gif",
-    "poster": "/lab/clips/week-2-poster.jpg"
+    "poster": "/lab/clips/week-2-poster.jpg",
+    "vertical": "/lab/clips/week-2-vertical.mp4",
+    "square": "/lab/clips/week-2-square.mp4"
    },
    "bytes": {
     "landscape": 199253,
-    "vertical": 226438,
-    "square": 161843,
     "gif": 284365,
-    "poster": 61164
+    "poster": 61164,
+    "vertical": 226438,
+    "square": 161843
    }
   },
   "3": {
@@ -46,17 +46,17 @@
    "seconds": 14.8,
    "files": {
     "landscape": "/lab/clips/week-3-landscape.mp4",
-    "vertical": "/lab/clips/week-3-vertical.mp4",
-    "square": "/lab/clips/week-3-square.mp4",
     "gif": "/lab/clips/week-3.gif",
-    "poster": "/lab/clips/week-3-poster.jpg"
+    "poster": "/lab/clips/week-3-poster.jpg",
+    "vertical": "/lab/clips/week-3-vertical.mp4",
+    "square": "/lab/clips/week-3-square.mp4"
    },
    "bytes": {
     "landscape": 190144,
-    "vertical": 214944,
-    "square": 153310,
     "gif": 303041,
-    "poster": 59121
+    "poster": 59121,
+    "vertical": 214944,
+    "square": 153310
    }
   },
   "4": {
@@ -65,17 +65,17 @@
    "seconds": 13.3,
    "files": {
     "landscape": "/lab/clips/week-4-landscape.mp4",
-    "vertical": "/lab/clips/week-4-vertical.mp4",
-    "square": "/lab/clips/week-4-square.mp4",
     "gif": "/lab/clips/week-4.gif",
-    "poster": "/lab/clips/week-4-poster.jpg"
+    "poster": "/lab/clips/week-4-poster.jpg",
+    "vertical": "/lab/clips/week-4-vertical.mp4",
+    "square": "/lab/clips/week-4-square.mp4"
    },
    "bytes": {
     "landscape": 186831,
-    "vertical": 213503,
-    "square": 151390,
     "gif": 264484,
-    "poster": 62174
+    "poster": 62174,
+    "vertical": 213499,
+    "square": 151346
    }
   },
   "5": {
