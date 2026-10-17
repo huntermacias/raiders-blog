@@ -354,19 +354,26 @@ describe("share images", () => {
 
 describe("the flag off changes nothing", () => {
 	it("keeps v1's catalog, headline stats, labels and loaders", async () => {
-		vi.stubEnv("NEXT_PUBLIC_LAB_METHOD", "")
-		vi.resetModules()
-		const k = await import("../../lib/lab/playersKit")
-		const d = await import("../../lib/lab/data")
-		expect(k.HEADLINE.wr).toBe("epaTgt")
-		expect(k.OVERALL_WORD).toBe("Overall")
-		expect(k.STAT.rb.tgtShare).toBeUndefined()
-		expect(k.STAT.wr.share.higher).toBe(true)
-		const v1 = d.getPlayers() as unknown as { method?: unknown }
-		expect(v1.method).toBeUndefined()
-		// Restore the v2 modules for any test that runs after this block.
-		vi.stubEnv("NEXT_PUBLIC_LAB_METHOD", "v2")
-		vi.resetModules()
+		try {
+			vi.stubEnv("NEXT_PUBLIC_LAB_METHOD", "")
+			vi.resetModules()
+			const k = await import("../../lib/lab/playersKit")
+			const d = await import("../../lib/lab/data")
+			expect(k.HEADLINE.wr).toBe("epaTgt")
+			expect(k.OVERALL_WORD).toBe("Overall")
+			expect(k.STAT.rb.tgtShare).toBeUndefined()
+			expect(k.STAT.wr.share.higher).toBe(true)
+			// The loader reads the v1 file, not the staged v2 one. (The data job now writes the same method block into both files, so
+			// the file's own stamp is what tells them apart, not whether a block is present.)
+			const v1File = (await import("../../data/lab/players.json")).default as { generatedAt: string; week: number }
+			const got = d.getPlayers() as unknown as { generatedAt: string; week: number }
+			expect(got.generatedAt).toBe(v1File.generatedAt)
+			expect(got.week).toBe(v1File.week)
+		} finally {
+			// Restore the v2 modules for any test that runs after this block, even when an assertion above fails.
+			vi.stubEnv("NEXT_PUBLIC_LAB_METHOD", "v2")
+			vi.resetModules()
+		}
 	})
 })
 
