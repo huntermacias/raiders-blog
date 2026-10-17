@@ -29,6 +29,13 @@ export type AuditAction =
 	| "policy.freeze"
 	| "policy.revise"
 	| "competition.configure"
+	| "sync.blogger_pick_drift"
+	| "entry.void"
+	| "event.move_lock"
+	| "event.cancel"
+	| "event.restore"
+	| "entry.restore"
+	| "pick.submit"
 
 const REASON_REQUIRED: readonly AuditAction[] = [
 	"account.disable",
@@ -43,6 +50,11 @@ const REASON_REQUIRED: readonly AuditAction[] = [
 	"result.correct",
 	"standings.recalculate",
 	"policy.revise",
+	"entry.void",
+	"event.move_lock",
+	"event.cancel",
+	"event.restore",
+	"entry.restore",
 ]
 
 export const requiresReason = (a: AuditAction): boolean => REASON_REQUIRED.indexOf(a) >= 0

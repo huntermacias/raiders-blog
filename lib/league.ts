@@ -401,6 +401,14 @@ export function challengeUrl(origin: string, handle: string): string {
 }
 
 const RESERVED = new Set([
+	"account",
+	"register",
+	"upgrade",
+	"verified",
+	"nfl",
+	"signin",
+	"login",
+	"logout",
 	"admin",
 	"administrator",
 	"moderator",

@@ -168,12 +168,17 @@ export function planGrading(args: {
 
 	if (event.state !== "final" || !event.result) return plan
 	const hash = resultHash(event.result)
+	const tied = event.result.away === event.result.home
 
 	entries.forEach((e) => {
 		const cur = currentByEntry[e.id]
 		// Already graded against this very result under this policy: nothing to do.
-		if (cur && !cur.voided && cur.policyId === policy.id && cur.resultHash === hash) return void plan.skipped++
+		if (cur && cur.policyId === policy.id && cur.resultHash === hash) return void plan.skipped++
 		const key = gradeKey(e.id, policy.id, hash, generation[e.id] || 0)
+		// A tie has no winner to pick, so a winner or confidence pick on it is a push: it neither scores nor counts.
+		if (tied && (policy.kind === "winner" || policy.kind === "confidence")) {
+			return void plan.create.push({ key, entryId: e.id, eventId: e.eventId, playerId: e.playerId, policyId: policy.id, resultHash: hash, points: 0, detail: { correct: false, marginError: null, exact: false }, voided: true, gradedAt: now, supersedes: cur ? cur.key : null })
+		}
 		const draft = gradePayload(policy, e.payload, event.result as EventResult, snapshot)
 		if (!draft) return void plan.unreadable.push(e.id)
 		plan.create.push({

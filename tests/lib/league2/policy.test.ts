@@ -40,3 +40,24 @@ describe("policy versions", () => {
 		expect(UPSET_V1.rules.tierBoundaries.length).toBe(2)
 	})
 })
+
+describe("validateRules", () => {
+	it("accepts the shipped rule sets", async () => {
+		const { CLASSIC_V1, WINNER_V1, CONFIDENCE_V1, UPSET_V1, validateRules } = await import("../../../lib/league2/domain")
+		expect(validateRules("score-pick", CLASSIC_V1.rules)).toBeNull()
+		expect(validateRules("winner", WINNER_V1.rules)).toBeNull()
+		expect(validateRules("confidence", CONFIDENCE_V1.rules)).toBeNull()
+		expect(validateRules("upset", UPSET_V1.rules)).toBeNull()
+	})
+	it("rejects malformed, negative, fractional and out-of-order rules", async () => {
+		const { validateRules } = await import("../../../lib/league2/domain")
+		expect(validateRules("score-pick", null)).not.toBeNull()
+		expect(validateRules("score-pick", { winner: 1.5, margin: [], exactScore: 1 })).not.toBeNull()
+		expect(validateRules("score-pick", { winner: 1, margin: [{ max: 5, pts: 1 }, { max: 2, pts: 1 }], exactScore: 1 })).not.toBeNull()
+		expect(validateRules("score-pick", { winner: 1, margin: [{ max: 2, pts: -1 }], exactScore: 1 })).not.toBeNull()
+		expect(validateRules("winner", { correct: 0 })).not.toBeNull()
+		expect(validateRules("confidence", { perRank: "2" })).not.toBeNull()
+		expect(validateRules("upset", { base: 1, perTier: 1, tierBoundaries: [0.8, 0.65] })).not.toBeNull()
+		expect(validateRules("upset", { base: 1, perTier: 1, tierBoundaries: [0.4] })).not.toBeNull()
+	})
+})

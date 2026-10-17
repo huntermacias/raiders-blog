@@ -88,7 +88,7 @@ describe("cancelled games", () => {
 })
 
 describe("other policies", () => {
-	it("scores winners, with a tie as no winner", () => {
+	it("scores winners, and treats a tie as a push that neither scores nor counts", () => {
 		const e = [
 			{ id: "a", playerId: "a", eventId: "g1", payload: { pick: "home" } },
 			{ id: "b", playerId: "b", eventId: "g1", payload: { pick: "away" } },
@@ -96,7 +96,12 @@ describe("other policies", () => {
 		const plan = planGrading({ event: base, entries: e, existing: [], policy: WINNER_V1, now: NOW })
 		expect(plan.create.map((g) => g.points)).toEqual([1, 0])
 		const tie = planGrading({ event: { ...base, result: { away: 20, home: 20 } }, entries: e, existing: [], policy: WINNER_V1, now: NOW })
-		expect(tie.create.map((g) => g.points)).toEqual([0, 0])
+		expect(tie.create.map((g) => [g.points, g.voided])).toEqual([[0, true], [0, true]])
+		// Re-running on the same tie adds nothing; a corrected score supersedes the push.
+		const again = planGrading({ event: { ...base, result: { away: 20, home: 20 } }, entries: e, existing: tie.create, policy: WINNER_V1, now: NOW })
+		expect(again.create).toEqual([])
+		const fixed = planGrading({ event: { ...base, result: { away: 20, home: 23 } }, entries: e, existing: tie.create, policy: WINNER_V1, now: NOW })
+		expect(fixed.create.map((g) => [g.points, g.voided, g.supersedes !== null])).toEqual([[1, false, true], [0, false, true]])
 	})
 
 	it("scores confidence by the rank assigned", () => {

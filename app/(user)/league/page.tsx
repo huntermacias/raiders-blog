@@ -20,6 +20,9 @@ import { cn } from "../../../lib/utils"
 import LeagueEntry from "../../../components/league/LeagueEntry"
 import Leaderboard from "../../../components/league/Leaderboard"
 import YourRank from "../../../components/league/YourRank"
+import LeagueHome from "../../../components/league/home/LeagueHome"
+import { loadBtbHome } from "../../../lib/league2/homeData"
+import { currentAccount } from "../../../lib/league2/session"
 
 // Standings depend on the clock (which games are open) and on documents that
 // change whenever someone picks, so never serve a cached copy.
@@ -84,6 +87,13 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
 
 export default async function LeaguePage(props: { searchParams?: Promise<SearchParams> }) {
     const searchParams = await props.searchParams;
+
+    // Accounts mode: the Postgres-backed League. While it is off, or not loaded with data yet, the page below is
+    // exactly the League that has always run.
+    const account = await currentAccount()
+    const home = await loadBtbHome(account, { challengerHandle: HANDLE_RE.test(searchParams?.challenge ?? "") ? searchParams?.challenge : undefined })
+    if (home) return <LeagueHome home={home} />
+
     const loaded = await loadLeague()
     const { data, ok } = loaded
     const challenger = await challengerOf(searchParams?.challenge, loaded)

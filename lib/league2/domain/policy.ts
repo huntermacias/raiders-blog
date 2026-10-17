@@ -167,3 +167,43 @@ export function policyFor<P extends ScoringPolicy>(policies: readonly P[], famil
 	}
 	return best
 }
+
+const isInt = (n: unknown, min: number, max: number): n is number => typeof n === "number" && Number.isInteger(n) && n >= min && n <= max
+
+/**
+ * Check rules typed in by an admin before they become a policy version. Returns a message for the first problem, or
+ * null when the rules are usable. The shapes mirror the policy types above.
+ */
+export function validateRules(kind: ScoringPolicy["kind"], rules: unknown): string | null {
+	const r = (rules && typeof rules === "object" ? rules : {}) as Record<string, unknown>
+	switch (kind) {
+		case "score-pick": {
+			if (!isInt(r.winner, 0, 1000) || !isInt(r.exactScore, 0, 1000)) return "Winner and exact-score points must be whole numbers from 0 to 1000"
+			const m = r.margin
+			if (!Array.isArray(m) || m.length > 8) return "Margin tiers must be a list of up to 8 tiers"
+			let last = -1
+			for (let i = 0; i < m.length; i++) {
+				const t = m[i] as { max?: unknown; pts?: unknown }
+				if (!t || !isInt(t.max, 0, 99) || !isInt(t.pts, 0, 1000)) return "Each margin tier needs a whole-number margin (0 to 99) and points (0 to 1000)"
+				if (t.max <= last) return "Margin tiers must go from the tightest margin to the widest"
+				last = t.max
+			}
+			return null
+		}
+		case "winner":
+			return isInt(r.correct, 1, 1000) ? null : "Points for a correct pick must be a whole number from 1 to 1000"
+		case "confidence":
+			return isInt(r.perRank, 1, 1000) ? null : "Points per confidence rank must be a whole number from 1 to 1000"
+		case "upset": {
+			if (!isInt(r.base, 0, 1000) || !isInt(r.perTier, 0, 1000)) return "Base and per-tier points must be whole numbers from 0 to 1000"
+			const b = r.tierBoundaries
+			if (!Array.isArray(b) || b.length > 6) return "Tier boundaries must be a list of up to 6 numbers"
+			let last = 0.5
+			for (let i = 0; i < b.length; i++) {
+				if (typeof b[i] !== "number" || !(b[i] > last) || !(b[i] < 1)) return "Tier boundaries must rise between 0.5 and 1"
+				last = b[i]
+			}
+			return null
+		}
+	}
+}

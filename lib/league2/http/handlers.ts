@@ -1,10 +1,14 @@
 // HTTP handlers for League accounts. Route files only wrap these. Every handler answers 404 while accounts are off,
 // checks the request came from this site, and rate-limits by address before doing any work.
 
+import { SEASON } from "../../predictions"
 import { siteUrl, getRuntime, type Runtime } from "../auth/server"
 import { bindClaim, chooseHandle, finalizeVerifiedUser, peekClaim, reserveHandle, startClaim } from "../services/accounts"
 import { disablePlayer, linkLegacyByReview, memberDetail, requireAdmin, restorePlayer, revokeSessions, rollbackClaim, searchMembers, sendResetLink } from "../services/admin"
+import { adminEvents, adminOverview, auditLog, cancelEvent, correctBloggerPick, correctResult, freezePolicyVersion, memberEntries, moveLock, publishPolicyVersion, recalculate, releaseResultPin, restoreEntry, restoreEvent, setCompetitionEnabled, voidEntry } from "../services/adminLeague"
+import { parseSettings, saveSettings } from "../services/profileSettings"
 import { checkPassword, normalizeEmail } from "../services/passwords"
+import { submitPick } from "../services/picks"
 import { allow } from "../services/ratelimit"
 import { STRONG_EVIDENCE, type EvidenceKind } from "../domain/legacyClaim"
 
@@ -61,7 +65,7 @@ const str = (v: unknown, max = 200) => (typeof v === "string" ? v.slice(0, max) 
 
 async function signUp(rt: Runtime, req: Request, a: { name: string; email: string; password: string }): Promise<{ userId: string | null }> {
 	try {
-		const r = await rt.auth.api.signUpEmail({ body: { name: a.name, email: a.email, password: a.password }, headers: req.headers })
+		const r = await rt.auth.api.signUpEmail({ body: { name: a.name, email: a.email, password: a.password, callbackURL: "/league/verified" }, headers: req.headers })
 		return { userId: r?.user?.id ?? null }
 	} catch (e) {
 		// Do not distinguish failures the visitor could use to probe for accounts.
@@ -153,6 +157,19 @@ export async function handle(req: Request): Promise<Response> {
 	return r.ok ? json({ ok: true, handle: r.handle }) : fail(r.code === "taken" ? 409 : 400, r.message, r.code)
 }
 
+/** Save what the signed-in player shows on their public page. */
+export async function profileSettings(req: Request): Promise<Response> {
+	const g = await gate(req, { name: "profile", max: 30, windowMs: 60 * 60_000 })
+	if (g instanceof Response) return g
+	const { rt, data } = g
+	const user = await currentUser(rt, req)
+	if (!user || !user.emailVerified) return fail(401, "Sign in first")
+	const parsed = parseSettings(data)
+	if (!parsed.ok) return fail(400, parsed.message)
+	const saved = await saveSettings(rt.db, user.id, parsed.value)
+	return saved ? json({ ok: true, settings: parsed.value }) : fail(404, "No player on this account")
+}
+
 /** One door for every admin action. The admin check runs first and is the only thing that mints an AdminContext. */
 export async function admin(req: Request): Promise<Response> {
 	const g = await gate(req, { name: "admin", max: 120, windowMs: 10 * 60_000 })
@@ -194,12 +211,82 @@ export async function admin(req: Request): Promise<Response> {
 				const r = await linkLegacyByReview(rt.db, ctx, { handleLower: str(data.handleLower, 40), claimantUserId: str(data.claimantUserId, 64), evidence, notes: str(data.notes, 2000) }, now)
 				return r.ok ? json({ ok: true }) : fail(400, r.message)
 			}
+			case "overview":
+				return json({ ok: true, ...(await adminOverview(rt.db, ctx)) })
+			case "events":
+				return json({ ok: true, events: await adminEvents(rt.db, ctx, str(data.competitionId, 60)) })
+			case "member_entries":
+				return json({ ok: true, entries: await memberEntries(rt.db, ctx, player) })
+			case "audit":
+				return json({ ok: true, rows: await auditLog(rt.db, ctx, { action: str(data.filterAction, 60) || undefined, subject: str(data.filterSubject, 120) || undefined, beforeId: Number.isInteger(data.beforeId) ? (data.beforeId as number) : undefined }) })
+			case "cancel_event":
+				return json(await cancelEvent(rt.db, ctx, str(data.eventId, 64), reason, now))
+			case "restore_event":
+				return json(await restoreEvent(rt.db, ctx, str(data.eventId, 64), reason, now))
+			case "move_lock": {
+				const r = await moveLock(rt.db, ctx, str(data.eventId, 64), data.lockAt === null ? null : str(data.lockAt, 40), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "set_result": {
+				const r = await correctResult(rt.db, ctx, str(data.eventId, 64), Number(data.away), Number(data.home), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "release_pin":
+				return json(await releaseResultPin(rt.db, ctx, str(data.eventId, 64), reason, now))
+			case "blogger_pick": {
+				const r = await correctBloggerPick(rt.db, ctx, str(data.eventId, 64), Number(data.away), Number(data.home), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "void_entry":
+				return json(await voidEntry(rt.db, ctx, str(data.entryId, 64), reason, now))
+			case "restore_entry":
+				return json(await restoreEntry(rt.db, ctx, str(data.entryId, 64), reason, now))
+			case "recalculate": {
+				const r = await recalculate(rt.db, ctx, str(data.competitionId, 60), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "set_enabled": {
+				const r = await setCompetitionEnabled(rt.db, ctx, str(data.competitionId, 60), data.enabled === true, reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "freeze_policy": {
+				const r = await freezePolicyVersion(rt.db, ctx, str(data.policyId, 80), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
+			case "publish_policy": {
+				const r = await publishPolicyVersion(rt.db, ctx, str(data.family, 60), data.rules, str(data.effectiveFrom, 40), reason, now)
+				return r.ok ? json(r) : fail(400, r.message)
+			}
 			default:
 				return fail(400, "Unknown action")
 		}
 	} catch (e) {
-		// Services throw on a missing reason or a failed audit write; say which, never the SQL.
+		// Services throw on a missing reason, a failed audit write or a missing record; say which, never the SQL.
 		const m = (e as Error).message
-		return fail(400, /reason|audit/i.test(m) ? m : "Action failed")
+		return fail(400, /reason|audit|not found/i.test(m) ? m : "Action failed")
 	}
+}
+
+/** Save a pick for the signed-in player. `competition` is "btb" (score picks) or "winners" (the public NFL league). */
+export async function pick(req: Request): Promise<Response> {
+	const g = await gate(req, { name: "pick", max: 240, windowMs: 10 * 60_000 })
+	if (g instanceof Response) return g
+	const { rt, data } = g
+	const user = await currentUser(rt, req)
+	if (!user || !user.emailVerified) return fail(401, "Sign in to make picks", "signed_out")
+	const player = (await rt.db.query<{ id: string }>(`select id from league_players where user_id = $1 and disabled_at is null`, [user.id])).rows[0]
+	if (!player) return fail(403, "This account cannot make picks", "not_allowed")
+	if (!(await allow(rt.db, `pick:user:${user.id}`, 120, 10 * 60_000))) return fail(429, "Slow down a little and try again.")
+	const season = currentSeason()
+	const competitionId = data.competition === "winners" ? `nfl-winners-${season}` : `btb-${season}`
+	const r = await submitPick(rt.db, { competitionId, playerId: player.id, eventId: data.eventId, payload: data.payload, now: Date.now() })
+	if (r.ok) return json({ ok: true, change: r.change, submittedAt: r.submittedAt })
+	const status = r.error === "closed" ? 409 : r.error === "not_found" ? 404 : r.error === "not_allowed" ? 403 : 400
+	return fail(status, r.message, r.error)
+}
+
+/** The season the League is playing. Overridable for tests and for the first week of a new year. */
+export function currentSeason(): number {
+	const fromEnv = Number(process.env.LEAGUE_SEASON)
+	return Number.isInteger(fromEnv) && fromEnv > 2000 ? fromEnv : SEASON
 }

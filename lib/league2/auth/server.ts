@@ -38,7 +38,10 @@ export function depsFor(base: Pick<AuthDeps, "pool" | "secret" | "baseURL" | "pr
 
 export type Runtime = { auth: LeagueAuth; db: Db; adminEmails: string[]; mailer: Mailer }
 
-let cached: Runtime | null | undefined
+// Held on globalThis so every route bundle shares one runtime (and one connection pool and, in development, one
+// in-memory mailbox) instead of building its own copy.
+type Holder = { __leagueRuntime?: Runtime | null }
+const holder = globalThis as unknown as Holder
 
 export function siteUrl(): string {
 	return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.raidersrundown.com"
@@ -51,21 +54,21 @@ export function accountsEnabled(): boolean {
 
 /** The live runtime, or null when accounts are off. */
 export function getRuntime(): Runtime | null {
-	if (cached !== undefined) return cached
-	if (!accountsEnabled()) return (cached = null)
+	if (holder.__leagueRuntime !== undefined) return holder.__leagueRuntime
+	if (!accountsEnabled()) return (holder.__leagueRuntime = null)
 	const pool = sharedPool()!
 	const db = dbFromPool(pool)
 	const production = process.env.NODE_ENV === "production"
 	const key = process.env.RESEND_API_KEY
 	const from = process.env.LEAGUE_FROM_EMAIL
 	// Without an email provider, sign-up cannot work in production; in development messages are kept in memory.
-	if (production && (!key || !from)) return (cached = null)
+	if (production && (!key || !from)) return (holder.__leagueRuntime = null)
 	const mailer: Mailer = key && from ? resendMailer(key, from) : memoryMailer()
 	const auth = createLeagueAuth(depsFor({ pool, secret: process.env.BETTER_AUTH_SECRET as string, baseURL: siteUrl(), production, mailer }, db))
-	return (cached = { auth, db, adminEmails: parseAllowList(process.env.LEAGUE_ADMIN_EMAILS), mailer })
+	return (holder.__leagueRuntime = { auth, db, adminEmails: parseAllowList(process.env.LEAGUE_ADMIN_EMAILS), mailer })
 }
 
 /** Test hook: forget the cached runtime. */
 export function resetRuntimeForTests(): void {
-	cached = undefined
+	holder.__leagueRuntime = undefined
 }

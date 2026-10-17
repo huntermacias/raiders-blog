@@ -47,7 +47,7 @@ export default function ChallengeLink({ handle, className }: { handle: string; c
 			<button
 				type="button"
 				onClick={go}
-				className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				className="inline-flex min-h-[28px] items-center gap-1.5 py-1 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 			>
 				{note.startsWith("Challenge") ? <Check aria-hidden className="h-4 w-4" /> : <Link2 aria-hidden className="h-4 w-4" />}
 				Challenge a friend

@@ -6,6 +6,7 @@ import { withEspnFinals } from "../../../lib/live/service"
 import { authenticate } from "../../../lib/league.server"
 import { UNAVAILABLE, readBody } from "../../../lib/league.api"
 import { clientIp, createLimiter } from "../../../lib/rateLimit"
+import { guardLegacyKey } from "../../../lib/league2/legacyGuard"
 
 const limiter = createLimiter({ max: 120, windowMs: 10 * 60 * 1000 })
 
@@ -36,6 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 	try {
 		const auth = await authenticate(body.handle, body.key)
 		if (!auth.ok) return res.status(auth.status).json({ message: auth.message })
+		const gate = await guardLegacyKey(auth.lower, UNAVAILABLE)
+		if (gate.blocked) return res.status(gate.status).json({ message: gate.message, upgraded: gate.status === 403 })
 
 		const game = await client.fetch(
 			`*[_type == "gamePrediction" && _id == $id && !(_id in path('drafts.**'))][0]{ _id, season, week, awayTeam, homeTeam, kickoff, actualAwayScore, actualHomeScore }`,

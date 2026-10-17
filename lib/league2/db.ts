@@ -34,7 +34,8 @@ export function dbFromPool(pool: Pool): Db {
 	}
 }
 
-let shared: Pool | null = null
+// On globalThis so separately bundled routes share one pool.
+const poolHolder = globalThis as unknown as { __leaguePool?: Pool | null }
 
 /** The connection string comes from the environment; it should be the pooled one on serverless. */
 export function leagueDatabaseUrl(): string | null {
@@ -45,6 +46,6 @@ export function leagueDatabaseUrl(): string | null {
 export function sharedPool(): Pool | null {
 	const url = leagueDatabaseUrl()
 	if (!url) return null
-	if (!shared) shared = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 8_000 })
-	return shared
+	if (!poolHolder.__leaguePool) poolHolder.__leaguePool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 8_000 })
+	return poolHolder.__leaguePool as Pool
 }

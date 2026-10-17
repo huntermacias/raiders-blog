@@ -5,6 +5,7 @@ import { SEASON } from "../../../lib/predictions"
 import { authenticate } from "../../../lib/league.server"
 import { UNAVAILABLE, readBody } from "../../../lib/league.api"
 import { clientIp, createLimiter } from "../../../lib/rateLimit"
+import { guardLegacyKey } from "../../../lib/league2/legacyGuard"
 
 const byIp = createLimiter({ max: 40, windowMs: 10 * 60 * 1000 })
 const byHandle = createLimiter({ max: 15, windowMs: 10 * 60 * 1000 })
@@ -29,6 +30,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 	try {
 		const auth = await authenticate(body.handle, body.key)
 		if (!auth.ok) return res.status(auth.status).json({ message: auth.message })
+		const gate = await guardLegacyKey(auth.lower, UNAVAILABLE)
+		if (gate.blocked) return res.status(gate.status).json({ message: gate.message, upgraded: gate.status === 403 })
 
 		const picks = await client.fetch(
 			`*[_type == 'leaguePick' && player == $player && season == $season && !(_id in path('drafts.**'))]{ predictionId, awayScore, homeScore }`,
