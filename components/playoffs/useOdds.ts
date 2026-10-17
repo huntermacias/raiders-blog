@@ -58,7 +58,7 @@ export function useOdds(games: readonly Game[], picks: Predictions, team: string
 		}
 
 		const start = () => {
-			play({ games, predictions: picks, ratings, sims: SIMS, track: team, trackGames: 3 }, (base) => {
+			play({ games, predictions: picks, ratings, sims: SIMS, track: team, trackGames: 3, rootAll: true }, (base) => {
 				if (cancelled) return
 				// Publish the main odds at once; the two what-ifs follow a moment later.
 				setOdds({ base, winOut: null, loseOut: null })

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { trackPlayoff } from "@/lib/analytics"
 import { crossedMilestone, newlyCompletedWeeks } from "@/lib/playoffs/events"
+import { EMPTY_HISTORY, type History, record, redo as redoHistory, undo as undoHistory } from "@/lib/playoffs/history"
 import { type Scope, clearPicks, pickHomeTeams, pickRandom, sanitizePicks, seededRandom, setPick } from "@/lib/playoffs/picks"
 import { loadPrefs, loadScenario, savePrefs, saveScenario } from "@/lib/playoffs/persist"
 import { DEFAULT_TEAM, SCENARIO_PARAM, TEAM_PARAM, decodeScenario, encodeScenario, readTeam } from "@/lib/playoffs/share"
@@ -54,7 +55,9 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 	const teamRef = useRef(DEFAULT_TEAM)
 	const [ready, setReady] = useState(false)
 	const [notice, setNotice] = useState<Notice>(null)
-	const [undo, setUndo] = useState<{ picks: Predictions; label: string } | null>(null)
+	const [history, setHistory] = useState<History>(EMPTY_HISTORY)
+	// The picks as they were before the latest change, so every mode can say what that change did.
+	const [lastChange, setLastChange] = useState<{ before: Predictions; label: string } | null>(null)
 	const mine = useRef<Predictions | null>(null)
 	const reportedWeeks = useRef(new Set<number>())
 	const opened = useRef(false)
@@ -121,15 +124,21 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 		[games, season],
 	)
 
-	const pick = useCallback((gameId: string, outcome: Outcome) => commit(setPick(games, picks, gameId, outcome), picks), [commit, games, picks])
-
-	const bulk = useCallback(
-		(label: string, make: (p: Predictions) => Predictions) => {
-			setUndo({ picks, label })
-			commit(make(picks), picks)
+	/** Replaces the picks with `next`, remembering how to get back. Nothing happens when nothing changes. */
+	const setAll = useCallback(
+		(label: string, next: Predictions) => {
+			const clean = sanitizePicks(games, next)
+			if (JSON.stringify(clean) === JSON.stringify(picks)) return
+			setHistory((h) => record(h, picks, label))
+			setLastChange({ before: picks, label })
+			commit(clean, picks)
 		},
-		[commit, picks],
+		[commit, games, picks],
 	)
+
+	const pick = useCallback((gameId: string, outcome: Outcome) => setAll("pick", setPick(games, picks, gameId, outcome)), [setAll, games, picks])
+
+	const bulk = useCallback((label: string, make: (p: Predictions) => Predictions) => setAll(label, make(picks)), [setAll, picks])
 
 	const fillHome = useCallback((scope: Scope) => bulk("home teams", (p) => pickHomeTeams(games, p, scope)), [bulk, games])
 	const fillRandom = useCallback(
@@ -146,16 +155,25 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 	}, [bulk, games, picks])
 
 	const undoLast = useCallback(() => {
-		if (!undo) return
-		const target = undo.picks
-		setUndo(null)
-		commit(target, picks)
-	}, [commit, picks, undo])
+		const step = undoHistory(history, picks)
+		if (!step) return
+		setHistory(step.history)
+		setLastChange(null)
+		commit(step.picks, picks)
+	}, [commit, history, picks])
+
+	const redoLast = useCallback(() => {
+		const step = redoHistory(history, picks)
+		if (!step) return
+		setHistory(step.history)
+		setLastChange(null)
+		commit(step.picks, picks)
+	}, [commit, history, picks])
 
 	const restoreMine = useCallback(() => {
-		commit(mine.current ?? {}, picks)
+		setAll("back to my picks", mine.current ?? {})
 		mine.current = null
-	}, [commit, picks])
+	}, [setAll])
 
 	const setFocus = useCallback((on: boolean) => {
 		setFocusState(on)
@@ -180,5 +198,8 @@ export function usePlayoffScenario(games: readonly Game[], season: number) {
 	const sim = useMemo(() => simulateSeason({ games, predictions: picks }), [games, picks])
 	const code = useMemo(() => encodeScenario(games, picks), [games, picks])
 
-	return { picks, sim, code, ready, notice, undo, pick, fillHome, fillRandom, reset, undoLast, restoreMine, dismissNotice, team, setTeam, focus, setFocus }
+	const undo = history.past.length ? { label: history.past[history.past.length - 1].label } : null
+	const redo = history.future.length ? { label: history.future[history.future.length - 1].label } : null
+
+	return { picks, sim, code, ready, notice, undo, redo, lastChange, pick, setAll, bulk, fillHome, fillRandom, reset, undoLast, redoLast, restoreMine, dismissNotice, team, setTeam, focus, setFocus }
 }

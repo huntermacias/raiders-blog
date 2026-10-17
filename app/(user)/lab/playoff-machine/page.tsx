@@ -16,7 +16,7 @@ const SITE_URL = "https://www.raidersrundown.com"
 const PAGE_URL = `${SITE_URL}/lab/playoff-machine`
 const season = getSchedule().season
 const TITLE = `NFL Playoff Machine ${season} | Raiders Rundown`
-const DESCRIPTION = `Pick the winner of every remaining NFL game and watch the ${season} standings, seeds and playoff bracket update with the real tiebreakers. See the playoff odds and what it takes for the Raiders, or any team, and share your scenario.`
+const DESCRIPTION = `Pick or simulate every remaining NFL game, then replay the ${season} playoff race week by week. Real tiebreakers, playoff odds, a path to the playoffs for every team, scenario comparison, and a link you can share.`
 // The card for the race as it stands. A shared scenario has its own card, from the share page.
 const CARD = `${SITE_URL}/api/og?type=playoffs&size=wide&v=${Date.parse(getSchedule().generatedAt) || 0}`
 
@@ -61,8 +61,8 @@ export default function PlayoffMachinePage() {
 					</p>
 					<h1 className="mt-2 max-w-3xl font-serif text-3xl font-bold leading-[1.05] tracking-tight sm:mt-3 sm:text-6xl">NFL Playoff Machine {schedule.season}</h1>
 					<p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-lab-soft sm:mt-4 sm:text-lg">
-						Pick the winner of every game left on the schedule. The standings, the seeds and the bracket update as you go, with the NFL&rsquo;s real tiebreakers, and the odds
-						show what your team needs. Follow the Raiders, or any team you like.
+						Pick the winner of every game left, or simulate the rest of the season in one tap. Then replay how the playoff race unfolds week by week, follow any team&rsquo;s path to the
+						postseason, change a single game and see what moves, and compare one timeline with another. The NFL&rsquo;s real tiebreakers run underneath it all.
 					</p>
 					<UpdatedStamp at={schedule.generatedAt} kind="results" className="mt-4" />
 				</div>
@@ -79,6 +79,30 @@ export default function PlayoffMachinePage() {
 						It turns the rest of the {schedule.season} schedule into a set of picks you control. Every game that has been played is locked to its real score. Every game that has
 						not is yours to call: tap a team to pick it, tap it again to take the pick back, or call a tie. After every tap the whole league is worked out again, so you can
 						see the records, the division races, the seven playoff teams in each conference and the first-round games they would play.
+					</p>
+
+					<h2 className="mt-10 font-serif text-2xl font-bold">The four modes</h2>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						<strong>Pick games</strong> shows one week at a time as a compact grid, or the whole season on one screen (every team against every week), or a single team&rsquo;s schedule.
+						A game is one result, so choosing a winner changes both teams at once. <strong>Season replay</strong> steps through the weeks of your scenario: a line for each team and
+						a standings table that slide together, with the events that mattered (a team taking a division lead, entering the playoff picture, clinching, being eliminated).
+						Weeks you have not yet decided repeat the week before, so fill the season in first. <strong>Team explorer</strong> shows one team&rsquo;s whole schedule with a win and loss switch on
+						every open game, what the standings prove about its division and top-seed chances, how many wins it takes in the simulated seasons, and the games that move its odds most.
+						<strong> Compare</strong> sets your scenario against the real results, a win-out or lose-out, a saved scenario, or your scenario with one game flipped, and lists only what changes.
+					</p>
+
+					<h2 className="mt-10 font-serif text-2xl font-bold">What is a fact, and what is a model</h2>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						Four different things appear on the page and they are labeled apart. <strong>Your scenario</strong> is the picks you or a simulation made: a result in that scenario is
+						true only in that scenario. <strong>Simulated games</strong> come from the model below and are drawn dashed so they are never mistaken for your own picks.
+						<strong> Verified</strong> statements (clinched, eliminated, &ldquo;cannot win the division&rdquo;) come from the standings alone, using the wins a team has and the most it can still reach,
+						so they are true however the remaining games go. <strong>Model estimates</strong> (playoff odds, wins needed, games that matter most) come from simulating the rest of the season
+						thousands of times. They are never shown as certain.
+					</p>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						Simulating the season uses the same Elo ratings as the odds, so the two never disagree. Each game gets a roll that depends only on the simulation number and the game, so
+						simulation number 12 is always the same season, and changing one pick does not re-roll the others. &ldquo;Favorites win&rdquo; gives every game to the team the model prefers, which
+						is the likeliest result of each game, not the likeliest season. The model has no injuries, no spread and no ties.
 					</p>
 
 					<h2 className="mt-10 font-serif text-2xl font-bold">How your predictions work</h2>
