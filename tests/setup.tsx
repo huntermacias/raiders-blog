@@ -1,6 +1,11 @@
 import type { ComponentProps, ReactNode } from "react"
 import { beforeEach, vi } from "vitest"
 
+// The League's account settings live in the environment, and a deploy that turns accounts on (a Preview, say) runs these
+// tests with them set. Tests must never depend on the machine they run on, so they start from "accounts off" and any
+// test that needs them on sets them itself.
+for (const k of ["LEAGUE_ACCOUNTS", "LEAGUE_DATABASE_URL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "LEAGUE_ADMIN_EMAILS", "LEAGUE_DEV_OUTBOX", "RESEND_API_KEY", "LEAGUE_FROM_EMAIL"]) delete process.env[k]
+
 // next/link and next/image need the Next runtime (router context, image
 // loader config). The components under test only need them to render a normal
 // anchor and image.
