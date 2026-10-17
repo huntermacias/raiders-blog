@@ -9,6 +9,9 @@ import { loadLeague } from "../../../../lib/league.data"
 import { HANDLE_RE, buildProfile, oneDecimal, recordText, signed } from "../../../../lib/league"
 import { cn } from "../../../../lib/utils"
 import ChallengeLink from "../../../../components/league/ChallengeLink"
+import ProfileV2 from "../../../../components/league/home/ProfileV2"
+import { loadProfile } from "../../../../lib/league2/homeData"
+import { currentAccount } from "../../../../lib/league2/session"
 
 export const dynamic = "force-dynamic"
 
@@ -46,6 +49,13 @@ function Tile({ label, value, foot }: { label: string; value: string; foot?: str
 export default async function LeagueProfile(props: { params: Promise<{ handle: string }> }) {
     const params = await props.params;
     if (!HANDLE_RE.test(params.handle)) notFound()
+
+    // Accounts mode: players come from Postgres, which includes people who joined with an email.
+    const v2 = await loadProfile(params.handle)
+    if (v2) {
+		const acct = await currentAccount()
+		return <ProfileV2 p={v2} isMe={acct?.player?.id === v2.playerId} />
+	}
 
     const { data, ok } = await loadLeague()
     const profile = buildProfile(data.games, data.players, data.picks, params.handle)

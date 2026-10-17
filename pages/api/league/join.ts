@@ -6,6 +6,7 @@ import { generateKey, hashKey } from "../../../lib/league.server"
 import { UNAVAILABLE, readBody } from "../../../lib/league.api"
 import { clientIp, createLimiter } from "../../../lib/rateLimit"
 import { sanitizeUtm } from "../../../lib/utm"
+import { guardLegacyJoin } from "../../../lib/league2/legacyGuard"
 
 // Handles are free, so keep one address from claiming a pile of them.
 const limiter = createLimiter({ max: 5, windowMs: 60 * 60 * 1000 })
@@ -27,6 +28,9 @@ function acquisition(utm: ReturnType<typeof sanitizeUtm>) {
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" })
+
+	const closed = guardLegacyJoin()
+	if (closed.blocked) return res.status(closed.status).json({ message: closed.message, accounts: true })
 
 	const hit = limiter.hit(clientIp(req))
 	if (!hit.ok) {
