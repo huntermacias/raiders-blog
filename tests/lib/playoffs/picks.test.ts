@@ -21,6 +21,10 @@ import type { Game, Predictions } from "@/lib/playoffs/types"
 const games = getGames()
 const open = games.filter((g) => actualOutcome(g) === null)
 const week = (w: number) => open.filter((g) => g.week === w)
+// The schedule moves with every data refresh, so the tests name weeks by what is left to pick, not by number.
+const openWeeks = Array.from(new Set(open.map((g) => g.week))).sort((a, b) => a - b)
+const W1 = openWeeks[0]
+const W2 = openWeeks[1]
 
 describe("making picks", () => {
 	it("picks a winner, switches it, and takes it back when the same team is tapped again", () => {
@@ -59,23 +63,23 @@ describe("filling in many games", () => {
 	})
 
 	it("can be limited to a week, and keeps picks from other weeks", () => {
-		const before = { [week(7)[0].id]: "A" as const }
-		const picks = pickHomeTeams(games, before, { weeks: [6] })
-		expect(Object.keys(picks)).toHaveLength(week(6).length + 1)
-		expect(picks[week(7)[0].id]).toBe("A")
+		const before = { [week(W2)[0].id]: "A" as const }
+		const picks = pickHomeTeams(games, before, { weeks: [W1] })
+		expect(Object.keys(picks)).toHaveLength(week(W1).length + 1)
+		expect(picks[week(W2)[0].id]).toBe("A")
 	})
 
 	it("can fill in only the games that have no pick yet", () => {
-		const mine = { [week(6)[0].id]: "A" as const, [week(7)[0].id]: "T" as const }
+		const mine = { [week(W1)[0].id]: "A" as const, [week(W2)[0].id]: "T" as const }
 		const home = pickHomeTeams(games, mine, { keepPicks: true })
-		expect(home[week(6)[0].id]).toBe("A")
-		expect(home[week(7)[0].id]).toBe("T")
+		expect(home[week(W1)[0].id]).toBe("A")
+		expect(home[week(W2)[0].id]).toBe("T")
 		expect(Object.keys(home)).toHaveLength(open.length)
-		const rand = pickRandom(games, mine, seededRandom(1), { keepPicks: true, weeks: [6] })
-		expect(rand[week(6)[0].id]).toBe("A")
-		expect(Object.keys(rand)).toHaveLength(week(6).length + 1)
+		const rand = pickRandom(games, mine, seededRandom(1), { keepPicks: true, weeks: [W1] })
+		expect(rand[week(W1)[0].id]).toBe("A")
+		expect(Object.keys(rand)).toHaveLength(week(W1).length + 1)
 		// Without it, the fill replaces what was there.
-		expect(pickHomeTeams(games, mine)[week(6)[0].id]).toBe("H")
+		expect(pickHomeTeams(games, mine)[week(W1)[0].id]).toBe("H")
 	})
 
 	it("randomizes the same way for the same seed and differently for another", () => {
@@ -105,21 +109,24 @@ describe("filling in many games", () => {
 	it("resets everything, or just some weeks", () => {
 		const all = pickHomeTeams(games, {})
 		expect(clearPicks(games, all)).toEqual({})
-		const partial = clearPicks(games, all, { weeks: [6] })
-		expect(Object.keys(partial)).toHaveLength(open.length - week(6).length)
+		const partial = clearPicks(games, all, { weeks: [W1] })
+		expect(Object.keys(partial)).toHaveLength(open.length - week(W1).length)
 	})
 })
 
 describe("progress through the season", () => {
 	it("finds the first week with something left to pick", () => {
 		expect(firstOpenWeek(games)).toBe(Math.min(...open.map((g) => g.week)))
-		expect(firstOpenWeek(games.filter((g) => g.status === "final"))).toBe(5)
+		// With nothing left to pick, it lands on the last week that has been played.
+		const playedOnly = games.filter((g) => g.status === "final")
+		expect(firstOpenWeek(playedOnly)).toBe(Math.max(...playedOnly.map((g) => g.week)))
 	})
 
 	it("counts played, picked and open games for each week", () => {
-		const picks = { [week(6)[0].id]: "H" as const }
-		const w6 = weekProgress(games, picks).find((w) => w.week === 6)!
-		expect(w6).toMatchObject({ played: 0, picked: 1, total: week(6).length, open: week(6).length - 1 })
+		const picks = { [week(W1)[0].id]: "H" as const }
+		const wk = weekProgress(games, picks).find((w) => w.week === W1)!
+		const played = games.filter((g) => g.week === W1 && actualOutcome(g) !== null).length
+		expect(wk).toMatchObject({ played, picked: 1, total: week(W1).length + played, open: week(W1).length - 1 })
 	})
 })
 
@@ -134,10 +141,10 @@ describe("when analytics should hear about picks", () => {
 	})
 
 	it("reports a week once, when its last open game gets a pick", () => {
-		const w = week(6)
+		const w = week(W1)
 		const almost = Object.fromEntries(w.slice(1).map((g) => [g.id, "H" as const]))
 		const done = { ...almost, [w[0].id]: "A" as const }
-		expect(newlyCompletedWeeks(games, almost, done)).toEqual([6])
+		expect(newlyCompletedWeeks(games, almost, done)).toEqual([W1])
 		expect(newlyCompletedWeeks(games, done, { ...done })).toEqual([])
 		expect(newlyCompletedWeeks(games, {}, {})).toEqual([])
 	})
@@ -163,8 +170,8 @@ describe("picking a team's games", () => {
 
   it("honors a scope, and does not change the picks it was given", () => {
     const given = Object.freeze({}) as Predictions
-    const w = pickTeamGames(games, given, "LV", "W", { weeks: [6] })
-    expect(Object.keys(w).every((id) => (games.find((g) => g.id === id) as Game).week === 6)).toBe(true)
+    const w = pickTeamGames(games, given, "LV", "W", { weeks: [W1] })
+    expect(Object.keys(w).every((id) => (games.find((g) => g.id === id) as Game).week === W1)).toBe(true)
     expect(Object.keys(given)).toHaveLength(0)
     const first = open.find((g) => g.homeTeam === "LV" || g.awayTeam === "LV") as Game
     const kept = pickTeamGames(games, { [first.id]: "T" }, "LV", "W", { keepPicks: true })
