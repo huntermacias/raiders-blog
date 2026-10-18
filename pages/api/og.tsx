@@ -271,6 +271,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		stat: first(query.stat),
 		scope: first(query.scope),
 		team: first(query.team),
+		of: first(query.of),
 		po: first(query.po),
 		years: first(query.years),
 		pin: first(query.pin),

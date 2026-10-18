@@ -200,3 +200,18 @@ describe("/api/og", () => {
 		})
 	})
 })
+
+describe("/api/og, Will it last for another team", () => {
+	// The route copies each query parameter it understands into the card builder. `of` was once left out, so every team's card was drawn for the Raiders.
+	it("draws a different card when the request names a team", async () => {
+		const draw = async (query: Record<string, string>) => {
+			const res = mockRes()
+			await handler(get({ type: "last", kind: "checklist", size: "wide", ...query }), res)
+			expect(res.statusCode).toBe(200)
+			return Buffer.from(res.rawBody as Uint8Array).toString("base64")
+		}
+		const raiders = await draw({})
+		expect(await draw({ of: "LV" })).toBe(raiders)
+		expect(await draw({ of: "BUF" })).not.toBe(raiders)
+	})
+})
