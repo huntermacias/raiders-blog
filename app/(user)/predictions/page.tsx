@@ -18,6 +18,7 @@ import PicksFeed from "../../../components/predictions/PicksFeed"
 import SeasonTracker from "../../../components/predictions/SeasonTracker"
 import FlagLedger from "../../../components/predictions/FlagLedger"
 import VegasBoard from "../../../components/predictions/VegasBoard"
+import MyPicksStrip from "../../../components/league/MyPicksStrip"
 import { getGames } from "../../../lib/lab/data"
 import { buildVegasBoard } from "../../../lib/vegas"
 
@@ -137,6 +138,7 @@ export default async function PredictionsPage() {
 						How grading works
 					</a>
 				</nav>
+				<MyPicksStrip bare className="mt-4" />
 			</div>
 
 			<ScoreboardHero summary={summary} season={SEASON} keys={keysSummary} flags={flagSummary} />

@@ -2,9 +2,10 @@ import seasonJson from "@/data/lab/season.json"
 import scoutingJson from "@/data/lab/scouting.json"
 import historyJson from "@/data/lab/history.json"
 import unitsJson from "@/data/lab/units.json"
+import trailJson from "@/data/lab/trail.json"
 import type { LabGame, LabSeason } from "./types"
 import type { ScoutingData } from "./scouting"
-import type { HistoryData } from "./history"
+import type { HistoryData, TrailData } from "./history"
 import type { UnitsData } from "./unitsKit"
 import type { PlayersData } from "./playersKit"
 
@@ -26,6 +27,11 @@ export function getUnits(): UnitsData {
 
 export function getHistory(): HistoryData {
 	return history
+}
+
+/** Each team's stats and ranks after every game it has played this season (scripts/lab/build_trail.py). */
+export function getTrail(): TrailData {
+	return trailJson as unknown as TrailData
 }
 
 export function getScouting(): ScoutingData {

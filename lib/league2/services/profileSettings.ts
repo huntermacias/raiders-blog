@@ -25,3 +25,15 @@ export async function saveSettings(q: Queryable, userId: string, s: ProfileSetti
 	const r = await q.query(`update league_players set favorite_team = $2, show_profile = $3, show_history = $4 where user_id = $1 and disabled_at is null`, [userId, s.favoriteTeam, s.showProfile, s.showHistory])
 	return (r.rowCount ?? 0) > 0
 }
+
+/** Just the favorite team, for the "My team" button around the site. Leaves the privacy settings alone. */
+export function parseFavoriteTeam(raw: unknown): { ok: true; value: string | null } | { ok: false; message: string } {
+	if (raw === null || raw === "" || raw === undefined) return { ok: true, value: null }
+	if (typeof raw !== "string" || TEAM_ABBRS.indexOf(raw) < 0) return { ok: false, message: "Pick a team from the list" }
+	return { ok: true, value: raw }
+}
+
+export async function saveFavoriteTeam(q: Queryable, userId: string, team: string | null): Promise<boolean> {
+	const r = await q.query(`update league_players set favorite_team = $2 where user_id = $1 and disabled_at is null`, [userId, team])
+	return (r.rowCount ?? 0) > 0
+}

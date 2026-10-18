@@ -214,10 +214,10 @@ export function Leaderboard({
 					{shown.list.length < shown.total ? `Showing ${shown.list.length} of ${shown.total} teams.` : `${shown.total} team${shown.total === 1 ? "" : "s"}.`} Select a team to pin it in the chart.
 				</p>
 			</div>
-			<div className="mt-3 max-h-[26rem] overflow-auto rounded-lg border border-lab-line">
+			<div className="relative mt-3 max-h-[26rem] overflow-auto rounded-lg border border-lab-line [contain:paint]" role="region" aria-label="Every team in the chart" tabIndex={0}>
 				<table className="w-full min-w-[640px] border-collapse text-left text-xs tabular-nums">
 					<caption className="sr-only">
-						Highlighted teams, closest to the {season} Raiders first unless you sort, with their {story.unit} through {meta.n} games and over the rest of the season, their records and whether they made the playoffs.
+						Highlighted teams, closest to the {season} {story.subject.name} first unless you sort, with their {story.unit} through {meta.n} games and over the rest of the season, their records and whether they made the playoffs.
 					</caption>
 					<thead>
 						<tr>

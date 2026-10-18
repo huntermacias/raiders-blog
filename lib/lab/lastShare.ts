@@ -21,6 +21,8 @@ export const SIZE_PIXELS: Record<ShareSize, { width: number; height: number }> =
 /** The page a shared link opens: it carries the card in its link preview, then sends the reader on to the chart. */
 export const SHARE_PATH = "/lab/will-it-last/share"
 export const PAGE_PATH = "/lab/will-it-last"
+/** The page for a team: the Raiders' is the main one, every other team has its own under it. */
+export const pagePath = (of: string | null | undefined): string => (of && of !== "LV" ? `${PAGE_PATH}/${of.toLowerCase()}` : PAGE_PATH)
 
 /** The element on the page each card belongs to, so a shared link can scroll to it. */
 export const SECTION_IDS: Record<ShareKind, string> = {
@@ -42,6 +44,8 @@ export const KIND_NAMES: Record<ShareKind, string> = {
 }
 
 export type ShareView = {
+	/** The team the page is about, when it is not the Raiders ("KC"). */
+	of: string | null
 	stat: string | null
 	filter: Filter
 	/** A team-season as the data names it: "2016 LV". */
@@ -51,6 +55,7 @@ export type ShareView = {
 }
 
 export const DEFAULT_VIEW: ShareView = {
+	of: null,
 	stat: null,
 	filter: DEFAULT_FILTER,
 	pin: null,
@@ -70,6 +75,8 @@ export const pinParam = (row: string): string => row.replace(" ", "-")
 
 /** What a link or card request carries, before anything has been checked against the data. */
 export type RawView = {
+	/** The team the page is about; the Raiders when it is missing. */
+	of?: string
 	kind?: string
 	size?: string
 	stat?: string
@@ -101,6 +108,7 @@ export function readView(
 	const size = isSize(raw.size) ? raw.size : "wide"
 	const stat = raw.stat && STAT.test(raw.stat) ? raw.stat : null
 	const team = raw.team && TEAM.test(raw.team) && known.teams.has(raw.team) ? raw.team : null
+	const of = raw.of && TEAM.test(raw.of) && raw.of !== "LV" && known.teams.has(raw.of) ? raw.of : null
 	const years = Array.from(
 		new Set(
 			(raw.years ?? "")
@@ -113,6 +121,7 @@ export function readView(
 	const m = raw.pin ? PIN.exec(raw.pin) : null
 	const pin = m && known.rows.has(`${m[1]} ${m[2]}`) ? `${m[1]} ${m[2]}` : null
 	return {
+		of,
 		kind,
 		size,
 		stat,
@@ -132,6 +141,7 @@ export function viewQuery(view: Partial<ShareView>, extra: { kind?: ShareKind; s
 	const q: [string, string][] = []
 	if (extra.kind) q.push(["kind", extra.kind])
 	if (extra.size) q.push(["size", extra.size])
+	if (view.of) q.push(["of", view.of])
 	if (view.stat) q.push(["stat", view.stat])
 	const f = view.filter
 	if (f) {

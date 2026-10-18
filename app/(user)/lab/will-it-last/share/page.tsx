@@ -5,14 +5,14 @@ import ShareRedirect from "@/components/lab/ShareRedirect"
 import { getScouting } from "@/lib/lab/data"
 import { getHistoryView } from "@/lib/lab/history"
 import { abbrOf } from "@/lib/lab/historyKit"
-import { KIND_NAMES, PAGE_PATH, SECTION_IDS, type CheckedView, type RawView, readView, viewQuery } from "@/lib/lab/lastShare"
+import { KIND_NAMES, SECTION_IDS, type CheckedView, type RawView, pagePath, readView, viewQuery } from "@/lib/lab/lastShare"
 
 // Where a shared "Will it last?" link lands. The link preview (the card for the part that was shared) is read from this
 // page's HTML, and a reader is sent straight on to the interactive chart with the same stat, filters and pinned team.
 // It reads the query, so it is built per request; it is kept out of search results because the real page is /lab/will-it-last.
 
 const SITE_URL = "https://www.raidersrundown.com"
-const DESCRIPTION = "The Raiders' hot and cold stats, tested against every NFL team since 1999 that started the same way, with who made the playoffs."
+const descriptionFor = (name: string): string => `The ${name}' hot and cold stats, tested against every NFL team since 1999 that started the same way, with who made the playoffs.`
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> }
 
@@ -20,8 +20,9 @@ const one = (v: string | string[] | undefined): string | undefined => (Array.isA
 
 async function resolve(props: Props) {
 	const sp = (await props.searchParams) ?? {}
-	const raw: RawView = { kind: one(sp.kind), size: one(sp.size), stat: one(sp.stat), scope: one(sp.scope), team: one(sp.team), po: one(sp.po), years: one(sp.years), pin: one(sp.pin), y: one(sp.y) }
-	const data = getHistoryView()
+	const raw: RawView = { of: one(sp.of), kind: one(sp.kind), size: one(sp.size), stat: one(sp.stat), scope: one(sp.scope), team: one(sp.team), po: one(sp.po), years: one(sp.years), pin: one(sp.pin), y: one(sp.y) }
+	const of = one(sp.of)
+	const data = getHistoryView(of && /^[A-Z]{2,3}$/.test(of) ? of : "LV")
 	if (!data) return null
 	const view: CheckedView = readView(raw, { first: data.first, last: data.last, teams: new Set(data.meta.teams.map(abbrOf)), rows: new Set(data.meta.teams) })
 	const stat = view.stat ?? data.stories[0]?.key ?? null
@@ -35,20 +36,24 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	const card = found ? `${SITE_URL}/api/og?type=last&${viewQuery(found.view, { kind: found.view.kind, size: "wide" })}&v=${stamp}` : `${SITE_URL}/og-default-v2.png`
 	const what = found ? (found.label && found.view.kind !== "checklist" && found.view.kind !== "bottom" ? `${KIND_NAMES[found.view.kind]}: ${found.label}` : KIND_NAMES[found.view.kind]) : "Will it last?"
 	const title = `${what} | Will it last? | Raiders Rundown`
+	const name = found?.data.subject.name ?? "Raiders"
+	const canonical = `${SITE_URL}${pagePath(found?.view.of)}`
+	const description = descriptionFor(name)
 	return {
 		title,
-		description: DESCRIPTION,
+		description,
 		robots: { index: false, follow: true },
-		alternates: { canonical: `${SITE_URL}${PAGE_PATH}` },
-		openGraph: { type: "website", title, description: DESCRIPTION, url: `${SITE_URL}${PAGE_PATH}`, siteName: "Raiders Rundown", images: [card] },
-		twitter: { card: "summary_large_image", title, description: DESCRIPTION, images: [card] },
+		alternates: { canonical },
+		openGraph: { type: "website", title, description, url: canonical, siteName: "Raiders Rundown", images: [card] },
+		twitter: { card: "summary_large_image", title, description, images: [card] },
 	}
 }
 
 export default async function ShareLandingPage(props: Props) {
 	const found = await resolve(props)
 	const stamp = Date.parse(getScouting().generatedAt) || 0
-	const href = found ? `${PAGE_PATH}?${viewQuery(found.view, { kind: found.view.kind })}#${SECTION_IDS[found.view.kind]}` : PAGE_PATH
+	// The team is in the path on the page itself, so it is not repeated in the query.
+	const href = found ? `${pagePath(found.view.of)}?${viewQuery({ ...found.view, of: null }, { kind: found.view.kind })}#${SECTION_IDS[found.view.kind]}` : pagePath(null)
 	const image = found ? `/api/og?type=last&${viewQuery(found.view, { kind: found.view.kind, size: "wide" })}&v=${stamp}` : null
 
 	return (

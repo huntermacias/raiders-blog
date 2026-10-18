@@ -176,18 +176,29 @@ describe("the Lab section", () => {
 		})
 	})
 	describe("will it last", () => {
-		const page = "app/(user)/lab/will-it-last/page.tsx"
+		// The Raiders' route and the other 31 teams' ([team]) share one page component, which holds the markup.
+		const page = "components/lab/WillItLastPage.tsx"
+		const routes = ["app/(user)/lab/will-it-last/page.tsx", "app/(user)/lab/will-it-last/[team]/page.tsx"]
 
 		it("is a static page built from the JSON in the repo, with no revalidate", () => {
-			expect(read(page)).not.toMatch(/export const revalidate/)
-			expect(read(page)).not.toMatch(/force-dynamic/)
-			expect(read(page)).not.toMatch(/readClient|sanity/i)
+			for (const f of [page, ...routes]) {
+				expect(read(f), f).not.toMatch(/export const revalidate/)
+				expect(read(f), f).not.toMatch(/force-dynamic/)
+				expect(read(f), f).not.toMatch(/readClient|sanity/i)
+			}
+		})
+
+		it("has a page for every team, none beyond them, and the Raiders' address stays the main one", () => {
+			expect(read(routes[1])).toMatch(/export const dynamicParams = false/)
+			expect(read(routes[1])).toMatch(/generateStaticParams/)
+			expect(read(routes[1])).toMatch(/permanentRedirect\("\/lab\/will-it-last"\)/)
+			expect(read("pages/sitemap.xml.tsx")).toMatch(/lab\/will-it-last\/\$\{t\.abbr\.toLowerCase\(\)\}/)
 		})
 
 		it("credits nflverse and its license, names the history years, and has no dark-only colors", () => {
 			expect(read(page)).toMatch(/Credit/)
 			expect(read(page)).toMatch(/History covers every regular season/)
-			for (const f of [page, "components/lab/WillItLast.tsx", "components/lab/WillItLastParts.tsx"]) {
+			for (const f of [page, "components/lab/WillItLast.tsx", "components/lab/WillItLastParts.tsx", "components/lab/WillItLastExtras.tsx"]) {
 				const src = read(f)
 				expect(src).not.toMatch(/\b(text|bg|border|divide|outline|accent)-white\b/)
 				expect(src).not.toMatch(/bg-\[#0/)

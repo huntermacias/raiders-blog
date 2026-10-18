@@ -14,7 +14,7 @@ vi.setConfig({ testTimeout: 60_000 })
 
 const get = (query: Record<string, string>) => mockReq({ method: "GET", query })
 const isPng = (b: unknown) => (Buffer.isBuffer(b) || b instanceof Uint8Array) && Buffer.from(b as Uint8Array).subarray(1, 4).toString() === "PNG"
-const q = (o: Partial<Record<"type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin" | "a" | "b" | "sort" | "show", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
+const q = (o: Partial<Record<"of" | "type" | "slug" | "view" | "rank" | "opp" | "week" | "stat" | "kind" | "size" | "scope" | "team" | "po" | "years" | "pin" | "y" | "mode" | "twin" | "a" | "b" | "sort" | "show", string>>) => ({ type: "", slug: "", view: "", rank: "", opp: "", week: "", ...o })
 
 beforeEach(() => {
 	vi.spyOn(console, "error").mockImplementation(() => {})
@@ -141,6 +141,29 @@ describe("insightSpec", () => {
 	})
 })
 
+describe("will it last cards for another team", () => {
+	const text = (spec: unknown) => JSON.stringify(spec)
+	it("are about that team and never name the Raiders", () => {
+		for (const kind of ["chart", "wins", "fifths", "checklist", "bottom"]) {
+			const spec = insightSpec(q({ type: "last", of: "KC", kind, stat: "off.epaRush" }))
+			expect(spec?.type, kind).toBe("last")
+			expect(text(spec), kind).toContain("Chiefs")
+			expect(text(spec), kind).not.toContain("Raiders")
+		}
+		const season = insightSpec(q({ type: "last", of: "KC", kind: "season", stat: "off.epaRush", pin: "2017-KC" }))
+		expect(text(season)).toContain("Chiefs")
+		expect(text(season)).not.toContain("Raiders")
+	})
+
+	it("keep the Raiders' cards as they were when no team is named, or the team is the Raiders or made up", () => {
+		const plain = text(insightSpec(q({ type: "last", stat: "def.turnovers" })))
+		expect(text(insightSpec(q({ type: "last", of: "LV", stat: "def.turnovers" })))).toBe(plain)
+		expect(plain).toContain("Raiders")
+		const bogus = insightSpec(q({ type: "last", of: "ZZ", stat: "def.turnovers" }))
+		expect(bogus).toBeNull()
+	})
+})
+
 describe("playBlurb", () => {
 	it("drops tackler names and ends on a whole sentence", () => {
 		const t = "P.Mahomes pass deep left to T.Thornton to LV 5 for 55 yards (T.Stukes). KC-T.Thornton was injured during the play. PENALTY on LV-Q.Walker, Unnecessary Roughness, 15 yards, enforced at LV 5. Extra words to make it long enough to cut."
@@ -172,6 +195,13 @@ describe("/api/og insight cards", () => {
 		["will it last, a team's season", { type: "last", kind: "season", stat: "def.turnovers", pin: "2016-LV" }],
 		["will it last, a team's season, tall", { type: "last", kind: "season", size: "tall", stat: "def.turnovers", pin: "2016-LV" }],
 		["will it last, the bottom line", { type: "last", kind: "bottom" }],
+		["will it last, another team's chart", { type: "last", of: "KC", stat: "off.epaRush" }],
+		["will it last, another team's chart, tall", { type: "last", of: "KC", kind: "chart", size: "tall", stat: "off.epaRush", pin: "2017-KC" }],
+		["will it last, another team's wins and playoffs", { type: "last", of: "KC", kind: "wins", stat: "off.epaRush" }],
+		["will it last, another team's playoff odds by fifth, tall", { type: "last", of: "BUF", kind: "fifths", size: "tall", stat: "def.turnovers" }],
+		["will it last, another team's checklist", { type: "last", of: "KC", kind: "checklist" }],
+		["will it last, another team's season", { type: "last", of: "KC", kind: "season", stat: "off.epaRush", pin: "2017-KC" }],
+		["will it last, another team's bottom line, tall", { type: "last", of: "KC", kind: "bottom", size: "tall" }],
 		["will it last, the bottom line, tall", { type: "last", kind: "bottom", size: "tall" }],
 		["season twins", { type: "twins" }],
 		["season twins, tall", { type: "twins", size: "tall" }],

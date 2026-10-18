@@ -54,6 +54,7 @@ ${getGames().map((g) => url(`${SITE_URL}/lab/${gameSlug(g)}`, undefined, "0.7", 
 ${url(`${SITE_URL}/lab/top-plays`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/scouting`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/will-it-last`, undefined, "0.7", "weekly")}
+${TEAMS.filter((t) => t.abbr !== "LV").map((t) => url(`${SITE_URL}/lab/will-it-last/${t.abbr.toLowerCase()}`, undefined, "0.5", "weekly")).join("\n")}
 ${url(`${SITE_URL}/lab/season-twins`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/players`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/lab/players/compare`, undefined, "0.5", "weekly")}

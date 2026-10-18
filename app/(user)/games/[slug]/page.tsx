@@ -22,6 +22,7 @@ import CommentField from "../../../../components/CommentField"
 import RelatedGameReports from "../../../../components/RelatedGameReports"
 import GameReportNav from "../../../../components/GameReportNav"
 import SubscribeBox from "../../../../components/SubscribeBox"
+import MyPicksStrip from "../../../../components/league/MyPicksStrip"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import LabTake from "../../../../components/games/LabTake"
 import { labGameFor } from "../../../../lib/lab/match"
@@ -324,6 +325,8 @@ async function GameReportPage(props: Props) {
 				{game.potmCandidates && game.potmCandidates.length > 0 && (
 					<PlayerOfTheGame docId={game._id} candidates={game.potmCandidates} />
 				)}
+
+				<MyPicksStrip bare className="mt-8" />
 
 				<SubscribeBox source="recap" />
 

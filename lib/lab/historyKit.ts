@@ -54,9 +54,21 @@ export function teamLabel(row: string): string {
 
 export const abbrOf = (row: string): string => row.split(" ")[1] ?? ""
 export const seasonOf = (row: string): number => Number(row.split(" ")[0])
-export function isRaiders(row: string): boolean {
+/** Whether a "2016 LV" row is one of the given team's seasons. The Raiders also appear as OAK in older data, defensively. */
+export function isTeamRow(row: string, abbr: string): boolean {
 	const a = abbrOf(row)
-	return a === "LV" || a === "OAK"
+	return a === abbr || (abbr === "LV" && a === "OAK")
+}
+export function isRaiders(row: string): boolean {
+	return isTeamRow(row, "LV")
+}
+
+/** The team a page is about. The page was built for the Raiders; every other team gets the same page with its own numbers. */
+export type Subject = { abbr: string; name: string }
+export const RAIDERS: Subject = { abbr: "LV", name: "Raiders" }
+export function subjectOf(abbr: string): Subject | null {
+	const name = TEAM_NAMES[abbr]
+	return name ? { abbr, name } : null
 }
 
 /** "3-1", or "3-1-1" with a tie. */
@@ -122,6 +134,7 @@ export type Row = {
 	inGroup: boolean
 	toward: boolean
 	po: boolean
+	/** One of the page's own team's seasons (the Raiders unless the page is about another team). */
 	raiders: boolean
 }
 
@@ -139,7 +152,19 @@ export type Outcomes = {
 
 export type Fifth = { rate: number; teams: number; lo: number; hi: number }
 
+/** How the typical-finish method did on past seasons, each predicted without that season's own data. */
+export type Track = {
+	/** Past team-seasons with a start this far from average (the most extreme 40%). */
+	teams: number
+	/** Share of them where the typical-finish estimate landed closer to the real finish than assuming the number would hold. */
+	closer: number
+	/** Average miss of the estimate, and of assuming the number holds, in the stat's own units. */
+	missModel: number
+	missHold: number
+}
+
 export type Analysis = {
+	subject: Subject
 	key: string
 	label: string
 	short: string
@@ -163,6 +188,9 @@ export type Analysis = {
 	toward: number
 	band: [number, number]
 	typical: number
+	/** What happened to the like-minded teams over the rest of their seasons: the range 80% of them finished in. */
+	forecast: { lo: number; hi: number; teams: number }
+	track: Track | null
 	kept: number
 	verdict: { id: VerdictId; text: string }
 	earlier: { count: number; toward: number }
@@ -178,6 +206,8 @@ export type Analysis = {
 	restText: string
 	baseText: string
 	typicalText: string
+	forecastText: string
+	trackText: string
 }
 
 /** How teams with a given record after n games finished. */
@@ -210,6 +240,59 @@ function slopeOf(start: number[], rest: number[]): number {
 		sxx += (start[i] - mx) ** 2
 	}
 	return sxx > 0 ? sxy / sxx : 0
+}
+
+/**
+ * How well "typical finish" (the early gap times the share that carried over) would have done on every past team-season, with each
+ * season predicted from the other seasons only so the method is never graded on its own answers. Looks at the most extreme 40% of
+ * starts, because that is where the method says something different from "it will stay the same".
+ */
+export function trackRecord(start: number[], rest: number[], seasons: number[]): Track | null {
+	const n = start.length
+	if (n < 100) return null
+	const tot = { n, sx: sum(start), sy: sum(rest), sxx: 0, sxy: 0 }
+	for (let i = 0; i < n; i++) {
+		tot.sxx += start[i] * start[i]
+		tot.sxy += start[i] * rest[i]
+	}
+	const per = new Map<number, { n: number; sx: number; sy: number; sxx: number; sxy: number }>()
+	for (let i = 0; i < n; i++) {
+		const a = per.get(seasons[i]) ?? { n: 0, sx: 0, sy: 0, sxx: 0, sxy: 0 }
+		a.n++
+		a.sx += start[i]
+		a.sy += rest[i]
+		a.sxx += start[i] * start[i]
+		a.sxy += start[i] * rest[i]
+		per.set(seasons[i], a)
+	}
+	const fit = new Map<number, { base: number; kept: number }>()
+	for (const [season, a] of Array.from(per.entries())) {
+		const m = tot.n - a.n
+		if (m < 50) continue
+		const sx = tot.sx - a.sx
+		const sy = tot.sy - a.sy
+		const sxx = tot.sxx - a.sxx - (sx * sx) / m
+		const sxy = tot.sxy - a.sxy - (sx * sy) / m
+		fit.set(season, { base: sx / m, kept: sxx > 0 ? sxy / sxx : 0 })
+	}
+	const gaps = start.map((v, i) => Math.abs(v - (fit.get(seasons[i])?.base ?? mean(start)))).sort((a, b) => a - b)
+	const cut = quantile(gaps, 0.6)
+	let teams = 0
+	let closer = 0
+	let missModel = 0
+	let missHold = 0
+	for (let i = 0; i < n; i++) {
+		const f = fit.get(seasons[i])
+		if (!f || Math.abs(start[i] - f.base) < cut) continue
+		const model = f.base + f.kept * (start[i] - f.base)
+		const a = Math.abs(rest[i] - model)
+		const b = Math.abs(rest[i] - start[i])
+		teams++
+		missModel += a
+		missHold += b
+		if (a < b) closer++
+	}
+	return teams >= 50 ? { teams, closer: closer / teams, missModel: missModel / teams, missHold: missHold / teams } : null
 }
 
 function verdictFor(kept: number, good: boolean): Analysis["verdict"] {
@@ -268,7 +351,7 @@ const FIFTH_NAMES = ["best fifth", "second fifth", "middle fifth", "fourth fifth
 export const fifthName = (k: number): string => FIFTH_NAMES[k] ?? ""
 
 /** One stat, the Raiders' number against the history, for the group the filter picks. Null with too little data. */
-export function analyze(meta: Meta, t: Table, season: number, filter: Filter = DEFAULT_FILTER): Analysis | null {
+export function analyze(meta: Meta, t: Table, season: number, filter: Filter = DEFAULT_FILTER, subject: Subject = RAIDERS): Analysis | null {
 	const n = meta.n
 	const measured: number[] = []
 	for (let i = 0; i < t.start.length; i++) if (t.start[i] !== null && t.rest[i] !== null) measured.push(i)
@@ -295,6 +378,7 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 	}
 	const likeSet = new Set(like)
 
+	const likeKind = kind
 	let group = filter.scope === "all" ? measured : measured.filter((i) => likeSet.has(i))
 	if (filter.scope === "all") kind = "all"
 	if (filter.team) group = group.filter((i) => abbrOf(meta.teams[i]) === filter.team)
@@ -312,7 +396,7 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 		inGroup: inGroup.has(i),
 		toward: Math.abs(Rr(i) - base) < Math.abs(S(i) - base),
 		po: meta.po[i] === 1,
-		raiders: isRaiders(meta.teams[i]),
+		raiders: isTeamRow(meta.teams[i], subject.abbr),
 	}))
 	const members = rows.filter((r) => r.inGroup)
 	const toward = members.length ? members.filter((r) => r.toward).length / members.length : NaN
@@ -321,6 +405,9 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 	const restSorted = members.map((r) => r.rest).sort((a, b) => a - b)
 	const band: [number, number] = [quantile(restSorted, 0.25), quantile(restSorted, 0.75)]
 	const typical = base + kept * (value - base)
+	const likeRest = like.map(Rr).sort((a, b) => a - b)
+	const forecast = { lo: quantile(likeRest, 0.1), hi: quantile(likeRest, 0.9), teams: likeRest.length }
+	const track = trackRecord(measured.map(S), measured.map(Rr), measured.map((i) => seasonOf(meta.teams[i])))
 	const outcomes = outcomesFor(meta, group, measured)
 	const { fifths, raidersFifth } = fifthsOf(meta, { start: t.start, higherIsBetter: t.higherIsBetter }, value)
 
@@ -333,6 +420,7 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 
 	const fmt = (v: number) => formatStat(t, v)
 	const earlierRows = members.filter((r) => r.raiders)
+	const nm = subject.name
 	const how = good ? "well" : "poorly"
 	const filtered = filter.scope === "all" || !!filter.team || filter.playoffs !== "any" || filter.years.length > 0
 	const when = filter.years.length ? yearsText(filter.years) : `since ${meta.first}`
@@ -341,14 +429,19 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 		(filter.playoffs === "made" ? " that made the playoffs" : filter.playoffs === "missed" ? " that missed the playoffs" : "")
 	const headline = !filtered
 		? kind === "atLeast"
-			? `${members.length} teams since ${meta.first} started at least as ${how} as the ${season} Raiders at ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
-			: `The ${members.length} teams since ${meta.first} closest to the ${season} Raiders' ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
+			? `${members.length} teams since ${meta.first} started at least as ${how} as the ${season} ${nm} at ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
+			: `The ${members.length} teams since ${meta.first} closest to the ${season} ${nm}' ${t.short} through ${n} games. ${pctText(toward)} finished the year closer to average.`
 		: members.length
-			? `${members.length} ${who} ${when}${filter.scope === "like" ? `, among those that started ${kind === "closest" ? "closest to" : `at least as ${how} as`} the Raiders at ${t.short}` : ""}. They averaged ${fmt(avgStart)} through ${n} games and ${fmt(avgRest)} after.`
+			? `${members.length} ${who} ${when}${filter.scope === "like" ? `, among those that started ${kind === "closest" ? "closest to" : `at least as ${how} as`} the ${nm} at ${t.short}` : ""}. They averaged ${fmt(avgStart)} through ${n} games and ${fmt(avgRest)} after.`
 			: `No ${who}${filter.years.length ? ` ${when}` : ""} match these filters. Try widening them.`
-	const sub = `Each dot is one team in one season: its ${t.unit} through its first ${n} games, then over the rest of that season. The Raiders are at ${fmt(value)}, ${ordinalOf(t.rank)} of 32 teams.`
+	const sub = `Each dot is one team in one season: its ${t.unit} through its first ${n} games, then over the rest of that season. The ${nm} are at ${fmt(value)}, ${ordinalOf(t.rank)} of 32 teams.`
 
+	const forecastText = `${pctText(0.8)} of the ${likeRest.length} teams that started ${likeKind === "closest" ? "closest to" : `at least as ${how} as`} the ${nm} finished between ${fmt(forecast.lo)} and ${fmt(forecast.hi)} over the rest of their seasons.`
+	const trackText = track
+		? `We checked this method on ${track.teams} past starts this far from average, predicting each season from the others only. The typical-finish estimate was closer than "it will stay the same" ${pctText(track.closer)} of the time, and missed by ${formatStat(t, track.missModel).replace(/^[+−]/, "")} on average against ${formatStat(t, track.missHold).replace(/^[+−]/, "")} for assuming no change.`
+		: ""
 	return {
+		subject,
 		key: t.key,
 		label: t.label,
 		short: t.short,
@@ -370,6 +463,8 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 		toward,
 		band,
 		typical,
+		forecast,
+		track,
 		kept: Math.min(1, Math.max(0, kept)),
 		verdict: verdictFor(kept, good),
 		earlier: { count: earlierRows.length, toward: earlierRows.filter((r) => r.toward).length },
@@ -384,6 +479,8 @@ export function analyze(meta: Meta, t: Table, season: number, filter: Filter = D
 		restText: fmt(avgRest),
 		baseText: fmt(base),
 		typicalText: fmt(typical),
+		forecastText,
+		trackText,
 	}
 }
 
