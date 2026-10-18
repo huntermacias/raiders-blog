@@ -58,9 +58,14 @@ jobs:
         # Each Raiders player's advanced stats against the league, over the season, the last two games and the games before.
         run: python scripts/lab/build_players.py --season "$SEASON" --out data/lab/players.json
 
+      - name: Build the player movers for the v2 method
+        # The site reads data/lab/v2/* when it is built with NEXT_PUBLIC_LAB_METHOD=v2 (production is), so these files have to be rebuilt on the same schedule
+        # as the v1 ones or the player pages stay on an old week. Same script; the method and history files beside the output are the v2 ones.
+        run: python scripts/lab/build_players.py --season "$SEASON" --out data/lab/v2/players.json
+
       - name: Commit if changed
         run: |
-          git add data/lab/units.json data/lab/scouting.json data/lab/trail.json data/lab/players.json data/lab/player-logs.json data/lab/player-situations.json
+          git add data/lab/units.json data/lab/scouting.json data/lab/trail.json data/lab/players.json data/lab/player-logs.json data/lab/player-situations.json data/lab/v2/players.json data/lab/v2/player-logs.json data/lab/v2/player-situations.json
           if git diff --cached --quiet; then
             echo "Nothing new."
             exit 0
@@ -70,4 +75,4 @@ jobs:
           git commit -m "data: refresh team grades, scouting and player profiles"
           # Another job or a person may have pushed to main since this run started. The script rebuilds this commit on top of
           # the new main (our files win) rather than stopping on a rebase conflict. See scripts/ci/push-data.sh.
-          bash scripts/ci/push-data.sh data/lab/units.json data/lab/scouting.json data/lab/trail.json data/lab/players.json data/lab/player-logs.json data/lab/player-situations.json
+          bash scripts/ci/push-data.sh data/lab/units.json data/lab/scouting.json data/lab/trail.json data/lab/players.json data/lab/player-logs.json data/lab/player-situations.json data/lab/v2/players.json data/lab/v2/player-logs.json data/lab/v2/player-situations.json
