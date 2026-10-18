@@ -159,12 +159,23 @@ export async function withEspnRecords<T extends { team: string; wins?: number | 
 }
 
 /** One regular-season week's games from ESPN, cached ten minutes. Scores are null until a game is final. */
-export async function weekGames(week: number, season: number = SEASON): Promise<SeasonGame[]> {
-	const res = await cached(`results:${season}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${season}&seasontype=2&week=${week}&limit=100`, 3000)))
+export async function weekGames(week: number, season: number = SEASON, revalidateSeconds?: number): Promise<SeasonGame[]> {
+	const res = await cached(`results:${season}:${week}`, 600_000, async () => parseScoreboard(await getJson(`${BASE}/scoreboard?dates=${season}&seasontype=2&week=${week}&limit=100`, revalidateSeconds ? 5000 : 3000, revalidateSeconds)))
 	return res.value.map((g): SeasonGame => {
 		const done = g.state === "post"
 		return { week, id: g.id, kickoff: g.kickoff, home: g.home.abbr, away: g.away.abbr, homeScore: done ? g.home.score : null, awayScore: done ? g.away.score : null }
 	})
+}
+
+/**
+ * Every game of weeks 1 through `throughWeek`, or null if any week could not be read. Null on purpose: a
+ * record built from some of the weeks would be wrong, and the caller should show none rather than that.
+ */
+export async function gamesThrough(throughWeek: number, season: number = SEASON): Promise<SeasonGame[] | null> {
+	const weeks = Array.from({ length: Math.max(0, Math.min(18, throughWeek)) }, (_, i) => i + 1)
+	const got = await Promise.allSettled(weeks.map((w) => weekGames(w, season, 300)))
+	if (got.some((r) => r.status === "rejected")) return null
+	return got.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
 }
 
 /** The finished games among `games`, in the shape the Elo ratings read. */
