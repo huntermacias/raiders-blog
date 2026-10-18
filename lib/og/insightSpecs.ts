@@ -22,6 +22,8 @@ import { GROUP_ORDER } from "../lab/playersKit"
 import { buildPlayerSpec } from "./playerCard"
 import { buildPlayerBoardSpec } from "./playerBoardCard"
 import { buildCompareSpec } from "./compareCards"
+import { readFlagsView, sizeOf } from "../lab/flagsShare"
+import { buildFlagsSpec } from "./flagsSpec"
 import { readConfig } from "../lab/compareKit"
 import { getPlayerHistory } from "../lab/playerHistoryData"
 import { getHub } from "../lab/hub"
@@ -40,11 +42,16 @@ export type InsightQuery = {
 	rank: string
 	opp: string
 	week: string
-} & RawView & { group?: string; pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string; r?: string; m?: string; g?: string; y?: string; ya?: string; yb?: string; f?: string; side?: string }
+} & RawView & { season?: string; id?: string; board?: string; ty?: string; dim?: string; group?: string; pos?: string; mode?: string; twin?: string; a?: string; b?: string; sort?: string; show?: string; s?: string; t?: string; goal?: string; r?: string; m?: string; g?: string; y?: string; ya?: string; yb?: string; f?: string; side?: string }
 
 /** A card for `view=play`, `type=scout` or `type=last`; null when the request is not one of those or has no data. */
 export function insightSpec(q: InsightQuery): CardSpec | null {
 	const team = getSeason().team
+
+	if (q.type === "flags") {
+		const view = readFlagsView({ kind: q.kind, season: q.season, id: q.id, team: q.team, a: q.a, b: q.b, slug: q.slug, board: q.board, ty: q.ty, dim: q.dim })
+		return view ? buildFlagsSpec(view, sizeOf(q.size)) : null
+	}
 
 	if (q.type === "player") {
 		if (!SLUG.test(q.slug)) return null

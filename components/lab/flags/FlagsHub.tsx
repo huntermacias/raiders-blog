@@ -5,19 +5,24 @@ import * as React from "react"
 
 import Link from "@/components/SiteLink"
 import FlagCard from "@/components/lab/flags/FlagCard"
+import FlagShare from "@/components/lab/flags/FlagShare"
+import { useQueryParam } from "@/components/lab/flags/useQueryParam"
 import { TeamLogo } from "@/components/lab/players/Media"
 import type { SeasonSlice } from "@/lib/lab/flagsData"
-import { type Flag, type FlagPlayer, playerFlagsHref, teamFlagsHref, turnoversText } from "@/lib/lab/flagsKit"
+import { COMPARE_PATH, type Flag, type FlagPlayer, SITUATIONS_PATH, penaltyHref, playerFlagsHref, teamFlagsHref, turnoversText } from "@/lib/lab/flagsKit"
 import { cardStyle, teamName } from "@/lib/lab/playerView"
 
-type Tab = "latest" | "worst" | "players" | "teams"
+type Tab = "latest" | "worst" | "players" | "teams" | "types"
 type Sort = "cost" | "flags" | "costly"
 const TABS: { id: Tab; label: string }[] = [
 	{ id: "latest", label: "Latest costly flags" },
 	{ id: "worst", label: "Biggest of the year" },
 	{ id: "players", label: "Players" },
 	{ id: "teams", label: "Teams" },
+	{ id: "types", label: "Penalties" },
 ]
+const TAB_IDS = TABS.map((x) => x.id)
+const SEASON_FALLBACK = ""
 const BAD = "text-rose-700 dark:text-rose-400"
 
 const SORTS: { id: Sort; label: string }[] = [
@@ -32,8 +37,11 @@ const SORTS: { id: Sort; label: string }[] = [
  */
 export default function FlagsHub({ slices, roster, teams }: { slices: SeasonSlice[]; roster: Record<string, FlagPlayer>; teams: { abbr: string; name: string }[] }) {
 	const router = useRouter()
-	const [season, setSeason] = React.useState(slices[0]?.season ?? 0)
-	const [tab, setTab] = React.useState<Tab>("latest")
+	const [seasonParam, setSeasonParam] = useQueryParam("season", slices.map((x) => String(x.season)), SEASON_FALLBACK)
+	const season = Number(seasonParam) || (slices[0]?.season ?? 0)
+	const [tabParam, setTabParam] = useQueryParam("tab", TAB_IDS, "latest")
+	const tab = tabParam as Tab
+	const setTab = (x: Tab) => setTabParam(x)
 	const [sort, setSort] = React.useState<Sort>("cost")
 	const [q, setQ] = React.useState("")
 	const [shown, setShown] = React.useState(25)
@@ -46,12 +54,13 @@ export default function FlagsHub({ slices, roster, teams }: { slices: SeasonSlic
 	}, [cur, q, sort])
 	const teamList = React.useMemo(() => [...(cur?.teams ?? [])].sort((a, b) => (sort === "flags" ? b.flags - a.flags : sort === "costly" ? b.costly - a.costly : 0) || b.cost - a.cost), [cur, sort])
 	if (!cur) return null
+	const stamp = Math.floor(Date.parse(cur.generatedAt) / 1000) || 0
 	const t = cur.totals
 	const feed = (list: Flag[], empty: string) =>
 		list.length ? (
 			<ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
 				{list.map((f) => (
-					<FlagCard key={f.id} f={f} players={roster} showTeam per={cur.turnoverCost} />
+					<FlagCard key={f.id} f={f} players={roster} showTeam per={cur.turnoverCost} share={{ season: cur.season, stamp }} />
 				))}
 			</ul>
 		) : (
@@ -86,7 +95,7 @@ export default function FlagsHub({ slices, roster, teams }: { slices: SeasonSlic
 								type="button"
 								aria-pressed={s.season === cur.season}
 								onClick={() => {
-									setSeason(s.season)
+									setSeasonParam(s.season === slices[0]?.season ? "" : String(s.season))
 									setShown(25)
 								}}
 								className={`min-h-11 rounded-full border px-4 text-sm font-semibold ${s.season === cur.season ? "border-lab-ink bg-lab-ink text-lab-page" : "border-lab-line-strong text-lab-soft hover:border-lab-ink hover:text-lab-ink"}`}
@@ -113,6 +122,15 @@ export default function FlagsHub({ slices, roster, teams }: { slices: SeasonSlic
 				))}
 			</dl>
 
+			<p className="m-0 mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold">
+				<Link href={COMPARE_PATH} className="text-lab-ink underline underline-offset-4">
+					Compare two teams
+				</Link>
+				<Link href={SITUATIONS_PATH} className="text-lab-ink underline underline-offset-4">
+					When flags come: score, down, field, clock
+				</Link>
+			</p>
+
 			<div role="tablist" aria-label="Flag lists" className="mt-8 flex gap-1.5 overflow-x-auto pb-1">
 				{TABS.map((x) => (
 					<button
@@ -133,9 +151,72 @@ export default function FlagsHub({ slices, roster, teams }: { slices: SeasonSlic
 				))}
 			</div>
 
+			{tab !== "types" ? (
+				<div className="mt-3 flex justify-end">
+					<FlagShare
+						view={{ kind: "board", board: tab, season: cur.season }}
+						name="This list"
+						file={`flags-${tab}`}
+						stamp={stamp}
+						text={`${TABS.find((x) => x.id === tab)?.label ?? "Flags"}, ${cur.season}: the penalty flags that cost the most.`}
+						alt={`${TABS.find((x) => x.id === tab)?.label ?? "Flags"} in ${cur.season}`}
+						label="Share this list"
+					/>
+				</div>
+			) : (
+				<div className="mt-3 flex justify-end">
+					<FlagShare view={{ kind: "board", board: "types", season: cur.season }} name="The costliest penalties" file="flags-penalties" stamp={stamp} text={`The costliest penalties in the NFL, ${cur.season}:`} alt={`The costliest kinds of penalty in ${cur.season}`} label="Share this list" />
+				</div>
+			)}
+
 			<div id="flags-panel" role="tabpanel" aria-labelledby={`flags-tab-${tab}`} className="mt-4">
 				{tab === "latest" ? feed(cur.latest, "No costly flags yet this season.") : null}
 				{tab === "worst" ? feed(cur.worst, "No flags yet this season.") : null}
+				{tab === "types" ? (
+					<div role="region" aria-label="Penalties by cost" tabIndex={0} className="overflow-x-auto [contain:paint]">
+						<table className="w-full border-collapse text-sm">
+							<caption className="sr-only">Every kind of penalty, by points lost</caption>
+							<thead>
+								<tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-lab-muted">
+									<th scope="col" className="w-8 py-1.5 pr-1 font-semibold">
+										#
+									</th>
+									<th scope="col" className="py-1.5 pr-2 font-semibold">
+										Penalty
+									</th>
+									<th scope="col" className="px-2 py-1.5 text-right font-semibold">
+										Flags
+									</th>
+									<th scope="col" className="px-2 py-1.5 text-right font-semibold">
+										Each
+									</th>
+									<th scope="col" className="px-2 py-1.5 text-right font-semibold">
+										Costly
+									</th>
+									<th scope="col" className="py-1.5 pl-2 text-right font-semibold">
+										Cost
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{cur.types.map((r, i) => (
+									<tr key={r.type} className="border-t border-lab-line">
+										<td className="py-2 pr-1 font-mono text-xs text-lab-muted">{i + 1}</td>
+										<th scope="row" className="py-2 pr-2 text-left font-semibold">
+											<Link href={penaltyHref(r.type)} className="text-lab-ink underline-offset-4 hover:underline">
+												{r.type}
+											</Link>
+										</th>
+										<td className="px-2 py-2 text-right font-mono tabular-nums">{r.flags}</td>
+										<td className="px-2 py-2 text-right font-mono tabular-nums text-lab-soft">{r.avg.toFixed(1)}</td>
+										<td className={`px-2 py-2 text-right font-mono tabular-nums ${r.costly ? BAD : "text-lab-muted"}`}>{r.costly}</td>
+										<td className="py-2 pl-2 text-right font-mono tabular-nums">{r.cost.toFixed(1)}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				) : null}
 				{tab === "players" || tab === "teams" ? (
 					<div>
 						<div className="mb-3 flex flex-wrap items-center gap-2">

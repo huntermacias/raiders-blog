@@ -208,3 +208,48 @@ def test_the_command_writes_a_file_and_leaves_it_alone_when_nothing_changed(tmp_
     assert bf.main() == 0
     assert "nothing changed" in capsys.readouterr().out
     assert out.read_text() == before
+
+
+@pytest.mark.parametrize(
+    "fp, team, yl",
+    [("LV 38", "LV", 38), ("LV 38", "KC", 62), ("KC 3", "LV", 97), ("MID 50", "LV", 50), ("LV 0", "LV", 0), ("garbage", "LV", None), ("LV 80", "LV", None), ("LV x", "LV", None)],
+)
+def test_yards_from_the_committing_team_s_own_goal(fp, team, yl):
+    assert bf.yards_from_own_goal(fp, team) == yl
+
+
+def test_a_flag_carries_its_field_position_from_the_committing_team_s_side():
+    off = one([flag(yrdln="LV 25")])
+    assert off["yl"] == 25
+    # The defense (KC) is flagged with the ball on LV's 25: that is 75 yards from KC's own goal.
+    dfn = one([flag(penalty_team="KC", penalty_type="Defensive Holding", yrdln="LV 25")])
+    assert dfn["yl"] == 75
+    assert one([flag(yrdln="MID 50")])["yl"] == 50
+
+
+def test_games_played_counts_each_team_s_regular_season_games_once():
+    df = pd.DataFrame(
+        [
+            {"game_id": "a", "home_team": "KC", "away_team": "LV", "season_type": "REG"},
+            {"game_id": "a", "home_team": "KC", "away_team": "LV", "season_type": "REG"},
+            {"game_id": "b", "home_team": "LV", "away_team": "OAK", "season_type": "REG"},
+            {"game_id": "c", "home_team": "KC", "away_team": "LV", "season_type": "POST"},
+        ]
+    )
+    assert bf.games_played(df) == {"KC": 1, "LV": 3}
+    assert bf.games_played(pd.DataFrame({"x": [1]})) == {}
+
+
+def test_players_carry_the_photo_the_share_cards_use():
+    flags = [{"pid": "00-1", "pn": "A.Espn", "t": "LV", "w": 1, "ck": "player"}, {"pid": "00-2", "pn": "B.League", "t": "LV", "w": 1, "ck": "player"}, {"pid": "00-3", "pn": "C.None", "t": "LV", "w": 1, "ck": "player"}]
+    roster = pd.DataFrame(
+        [
+            {"gsis_id": "00-1", "full_name": "A Espn", "position": "OL", "espn_id": 123.0, "headshot_url": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/zzz"},
+            {"gsis_id": "00-2", "full_name": "B League", "position": "DB", "espn_id": None, "headshot_url": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/abc123"},
+            {"gsis_id": "00-3", "full_name": "C None", "position": "TE", "espn_id": None, "headshot_url": None},
+        ]
+    )
+    out = bf.build_players(flags, roster, {})
+    assert out["00-1"]["e"] == 123 and "h" not in out["00-1"]
+    assert out["00-2"]["h"] == "abc123" and "e" not in out["00-2"]
+    assert "e" not in out["00-3"] and "h" not in out["00-3"]

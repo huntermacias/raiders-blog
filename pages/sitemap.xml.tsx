@@ -4,8 +4,8 @@ import { groq } from "next-sanity"
 import { readClient as client } from "../lib/sanity.client"
 import { gameSlug, getGames, getPlayers, getUnits } from "../lib/lab/data"
 import { GROUP_ORDER, boards, profileSlugs } from "../lib/lab/playersKit"
-import { getFlagFiles, getRoster } from "../lib/lab/flagsData"
-import { FLAGS_PATH, playerFlagsHref, teamFlagsHref } from "../lib/lab/flagsKit"
+import { getFlagFiles, getRoster, penaltyPages } from "../lib/lab/flagsData"
+import { FLAGS_PATH, SITUATIONS_PATH, penaltyHref, playerFlagsHref, teamFlagsHref } from "../lib/lab/flagsKit"
 import { SIT_BOARDS, sitBoardHref } from "../lib/lab/situationsKit"
 import { matchupPath } from "../lib/lab/unitsKit"
 import { TEAMS } from "../lib/nfl"
@@ -39,13 +39,13 @@ function playerPaths(): string[] {
 	return [...groups.flatMap((g) => boards(g).map((b) => `/lab/players/leaders/${g}/${b.path}`)), ...SIT_BOARDS.map((b) => sitBoardHref(b.slug)), ...profileSlugs(data).map((s) => `/lab/players/${s}`)]
 }
 
-/** The flags hub, every team's page and the page of each player flagged in the newest season on file. */
+/** The flags hub, the compare and situations pages, every penalty's page, every team's page and the page of each player flagged in the newest season on file. */
 function flagPaths(): string[] {
 	const newest = getFlagFiles()[0]
 	const ids = new Set((newest?.flags ?? []).map((f) => f.pid).filter((x): x is string => !!x))
 	const roster = getRoster().byId
 	const players = Array.from(ids).filter((id) => roster[id]).map((id) => playerFlagsHref(roster[id].s)).sort()
-	return [FLAGS_PATH, ...TEAMS.map((t) => teamFlagsHref(t.abbr)), ...players]
+	return [FLAGS_PATH, SITUATIONS_PATH, ...Object.values(penaltyPages()).map(penaltyHref).sort(), ...TEAMS.map((t) => teamFlagsHref(t.abbr)), ...players]
 }
 
 function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {

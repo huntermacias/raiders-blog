@@ -1,6 +1,7 @@
 import { TEAMS } from "@/lib/nfl"
 
-import { type Flag, type FlagFile, type FlagPlayer, type Row, type TeamRow, type Totals, costliest, latestCostly, playerRows, teamRows, totals } from "./flagsKit"
+import { type TypeRow, typeRows } from "./flagsSituations"
+import { type Flag, type FlagFile, type FlagPlayer, type Row, type TeamRow, type Totals, costliest, latestCostly, playerRows, teamRows, totals, typeSlug } from "./flagsKit"
 
 // The flags files, read at build time by the server pages. A new season is one more line here and one more file from build_flags.py.
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -36,7 +37,9 @@ export function getRoster(): Roster {
 				if (bySlug[s] && bySlug[s] !== id) s = `${s}-${id.replace(/\D/g, "").slice(-4)}`
 				bySlug[s] = id
 			}
-			byId[id] = { n: p.n, t: p.t, p: p.p ?? had?.p ?? null, s }
+			const e = p.e ?? had?.e
+			const h = p.h ?? had?.h
+			byId[id] = { n: p.n, t: p.t, p: p.p ?? had?.p ?? null, s, ...(e ? { e } : h ? { h } : {}) }
 		}
 	}
 	roster = { byId, bySlug }
@@ -57,6 +60,8 @@ export type SeasonSlice = {
 	latest: Flag[]
 	/** The costliest flags of the season. */
 	worst: Flag[]
+	/** Every penalty name that season, the costliest in total first. */
+	types: TypeRow[]
 }
 
 const TEAM_ABBRS = TEAMS.map((t) => t.abbr)
@@ -73,6 +78,7 @@ export function hubSlice(file: FlagFile, roster: Record<string, FlagPlayer> = ge
 		players: playerRows(file.flags, roster).slice(0, topPlayers),
 		latest: latestCostly(file.flags, 30),
 		worst: costliest(file.flags, 30),
+		types: typeRows(file.flags),
 	}
 }
 
@@ -87,3 +93,15 @@ export function rosterFor(flags: readonly Flag[], from: Record<string, FlagPlaye
 }
 
 export const flagsOfPlayer = (file: FlagFile, pid: string): Flag[] => file.flags.filter((f) => f.pid === pid)
+
+/** Seconds since the epoch of the newest file, for a share card's cache stamp: a new card is fetched whenever the data changes. */
+export function flagsStamp(): number {
+	return Math.max(0, ...getFlagFiles().map((f) => Math.floor(Date.parse(f.generatedAt) / 1000) || 0))
+}
+
+/** Every penalty name that appears in any season, by page name. */
+export function penaltyPages(): Record<string, string> {
+	const out: Record<string, string> = {}
+	for (const f of getFlagFiles()) for (const fl of f.flags) out[typeSlug(fl.ty)] ??= fl.ty
+	return out
+}

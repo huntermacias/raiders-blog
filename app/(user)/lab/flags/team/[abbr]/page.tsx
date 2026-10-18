@@ -10,7 +10,7 @@ import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { TeamLogo } from "@/components/lab/players/Media"
 import TrackView from "@/components/lab/players/TrackView"
 import { labColorVars } from "@/lib/lab/colors"
-import { flagsOfTeam, getFlagFiles, rosterFor } from "@/lib/lab/flagsData"
+import { flagsOfTeam, flagsStamp, getFlagFiles, rosterFor } from "@/lib/lab/flagsData"
 import { FLAGS_PATH, rankOf, teamFlagsHref, teamRows, totals } from "@/lib/lab/flagsKit"
 import { cardStyle } from "@/lib/lab/playerView"
 import { labWeeks } from "@/lib/lab/toolsData"
@@ -88,7 +88,7 @@ export default async function TeamFlagsPage(props: { params: Promise<{ abbr: str
 			</section>
 			<section className="container py-8 sm:py-10" aria-label={`${t.nick} flags`}>
 				{seasons.some((s) => s.flags.length) ? (
-					<FlagsExplorer seasons={seasons} players={roster} subject={{ kind: "team", name: t.nick }} />
+					<FlagsExplorer seasons={seasons} players={roster} subject={{ kind: "team", name: t.nick, id: t.abbr }} stamp={flagsStamp()} />
 				) : (
 					<p className="m-0 rounded-2xl border border-dashed border-lab-line-strong p-5 text-sm text-lab-soft">No flags on file for the {t.nick} yet.</p>
 				)}

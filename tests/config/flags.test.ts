@@ -66,4 +66,17 @@ describe("the flags pages", () => {
 		}
 		expect(read("scripts/lab/build_flags.py")).toMatch(/CC BY 4\.0/)
 	})
+
+	it("add the compare, situations, penalty and share pages, with the penalty pages built from the JSON only", () => {
+		for (const f of ["app/(user)/lab/flags/compare/page.tsx", "app/(user)/lab/flags/situations/page.tsx", "app/(user)/lab/flags/penalty/[slug]/page.tsx", "app/(user)/lab/flags/share/page.tsx"]) expect(existsSync(join(root, f)), f).toBe(true)
+		expect(read("app/(user)/lab/flags/penalty/[slug]/page.tsx")).toContain("export const dynamicParams = false")
+		const sitemap = read("pages/sitemap.xml.tsx")
+		expect(sitemap).toMatch(/SITUATIONS_PATH/)
+		expect(sitemap).toMatch(/penaltyHref/)
+	})
+
+	it("keep shared links out of search results and compare out of the sitemap", () => {
+		expect(read("app/(user)/lab/flags/share/page.tsx")).toMatch(/robots: \{ index: false/)
+		expect(read("app/(user)/lab/flags/compare/page.tsx")).toMatch(/robots: \{ index: false/)
+	})
 })
