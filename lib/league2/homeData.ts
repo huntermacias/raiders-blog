@@ -4,14 +4,14 @@
 import { after } from "next/server"
 
 import { getRuntime } from "./auth/server"
-import { nflEnabled } from "./nflData"
+import { nflModesOpen } from "./nflData"
 import { currentSeason } from "./http/handlers"
 import { maybeSyncBtb } from "./sanitySync"
 import { loadCompetition } from "./services/read"
 import type { Account } from "./session"
 import { type HomeView, buildHome } from "./view/btb"
 
-export type BtbHome = { view: HomeView; account: Account | null; signedInNoPlayer: boolean; nflOpen: boolean }
+export type BtbHome = { view: HomeView; account: Account | null; signedInNoPlayer: boolean; modes: Awaited<ReturnType<typeof nflModesOpen>> }
 
 export async function loadBtbHome(account: Account | null, opts: { challengerHandle?: string } = {}): Promise<BtbHome | null> {
 	const rt = getRuntime()
@@ -23,8 +23,8 @@ export async function loadBtbHome(account: Account | null, opts: { challengerHan
 		if (c.rows.length === 0) return null
 		after(() => maybeSyncBtb(rt, season))
 		const data = await loadCompetition(rt.db, competitionId, account?.player?.id ?? null)
-		const nflOpen = await nflEnabled()
-		return { view: buildHome(data, season, account?.player ? { id: account.player.id } : null, Date.now(), opts), account, signedInNoPlayer: Boolean(account && !account.player), nflOpen }
+		const modes = await nflModesOpen()
+		return { view: buildHome(data, season, account?.player ? { id: account.player.id } : null, Date.now(), opts), account, signedInNoPlayer: Boolean(account && !account.player), modes }
 	} catch (e) {
 		console.log("league: home load failed:", (e as Error).message)
 		return null

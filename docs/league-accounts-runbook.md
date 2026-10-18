@@ -31,6 +31,19 @@ The existing League (recovery keys, Sanity) keeps working throughout, and keeps 
 3. Production: set `LEAGUE_ACCOUNTS=on`. Legacy keys keep working until a player completes their upgrade (confirming the email).
    Nothing is deleted: a key hash is never removed, even after the upgrade.
 
+## NFL game winners, confidence picks and upset challenge
+
+All three run on the same NFL games and each is its own competition, created **switched off** the first time the NFL schedule syncs:
+`nfl-winners-<season>`, `nfl-confidence-<season>` and `nfl-upset-<season>`. Migration `0007_league_nfl_formats.sql` adds the table that
+holds each game's underdog line, so apply it (`migrate.mjs --apply`) before enabling the upset challenge.
+
+1. Enable one at a time in the admin Overview (a written reason is required and is audited). Pages answer 404 until their competition is on, and the format tabs and the home page only list what is on.
+2. Underdog lines are set once, when the game's week has opened, from the site's own Elo ratings (this season's finished games, starting from last season's ratings pulled toward the middle). They live in `league_upset_lines` and a database trigger refuses any change, so a later rating move never re-prices a call.
+3. The weekly call cap (default 5) is `config.maxUpsets` on the upset competition. Confidence ranks run 1 to the number of games that week and a correct pick scores its rank.
+4. A corrected final score re-grades all three competitions for that game (new grades supersede the old ones; nothing is edited).
+5. Not built: a Monday-night total tiebreak. Ties are split by correct picks, then by who finished earlier.
+6. Share cards are `/api/og?type=nflleague&mode=winners|confidence|upset&view=me|board|alert&week=N[&handle=<handle>]`. A player card needs a public profile, shows only games that have started, and falls back to the plain invite card otherwise.
+
 ## Rollback
 
 * Switch off: unset `LEAGUE_ACCOUNTS`. Every account route returns 404; legacy sign-in is untouched.

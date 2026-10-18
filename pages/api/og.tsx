@@ -5,6 +5,7 @@
 //   /api/og?type=pick&id=<gamePrediction id>
 //   /api/og?type=scoreboard
 //   /api/og?type=rankings   (the top of the ladder, the Raiders' spot and all 32 teams)
+//   /api/og?type=nflleague&mode=winners|confidence|upset[&week=N][&view=me|board|alert][&handle=<league handle>][&size=wide|tall]   (the public NFL formats: a player's week, the week's standings, the upset of the week)
 //   /api/og?type=league[&handle=<league handle>]
 //   /api/og?type=live[&game=<ESPN event id>]   (the live page; the Raiders' game when no id is given)
 //   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
@@ -48,6 +49,7 @@ import { client } from "../../lib/sanity.client"
 import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
 import { buildLiveSpec } from "../../lib/og/liveCard"
 import { buildLeagueSpec } from "../../lib/og/leagueCard"
+import { loadNflCardSpec } from "../../lib/league2/ogData"
 import { buildMathSpec } from "../../lib/og/mathCard"
 import { buildLabSpec } from "../../lib/og/labCard"
 import { insightSpec } from "../../lib/og/insightSpecs"
@@ -231,6 +233,11 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		return buildLeagueSpec(data, SEASON, first(query.handle), { view: first(query.view) })
 	}
 
+	if (type === "nflleague") {
+		const size = first(query.size) === "tall" ? "tall" : "wide"
+		return loadNflCardSpec({ mode: first(query.mode), week: first(query.week), view: first(query.view), handle: first(query.handle), size })
+	}
+
 	if (type === "live") {
 		const id = first(query.game)
 		let gameId = id
@@ -345,7 +352,7 @@ function cacheFor(spec: CardSpec): string {
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
 	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare" || spec.type === "hub") return "public, s-maxage=604800, stale-while-revalidate=2592000"
-	if (spec.type === "league" || spec.type === "math") return "public, s-maxage=3600, stale-while-revalidate=86400"
+	if (spec.type === "league" || spec.type === "math" || spec.type === "nflleague") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }
 

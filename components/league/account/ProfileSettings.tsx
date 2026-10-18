@@ -39,14 +39,14 @@ export default function ProfileSettings({ initial }: { initial: Settings }) {
 			<fieldset className="grid gap-3">
 				<legend className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">What others can see</legend>
 				<label className="flex items-start gap-3 text-sm">
-					<input type="checkbox" checked={showProfile} onChange={(e) => setShowProfile(e.target.checked)} className="mt-1 h-4 w-4" />
+					<input type="checkbox" checked={showProfile} onChange={(e) => setShowProfile(e.target.checked)} className="mt-0.5 h-6 w-6 shrink-0" />
 					<span>
 						<span className="font-semibold">Show my profile page</span>
 						<span className="block text-muted-foreground">Your handle and points still appear on the standings. Turn this off and your page shows only your handle.</span>
 					</span>
 				</label>
 				<label className="flex items-start gap-3 text-sm">
-					<input type="checkbox" checked={showHistory && showProfile} disabled={!showProfile} onChange={(e) => setShowHistory(e.target.checked)} className="mt-1 h-4 w-4" />
+					<input type="checkbox" checked={showHistory && showProfile} disabled={!showProfile} onChange={(e) => setShowHistory(e.target.checked)} className="mt-0.5 h-6 w-6 shrink-0" />
 					<span>
 						<span className="font-semibold">Show my game-by-game picks</span>
 						<span className="block text-muted-foreground">Only games that have already locked are ever shown.</span>

@@ -70,13 +70,21 @@ export async function gradeCompetition(q: Queryable, a: { competitionId: string;
 		const ev = toLeagueEvent(row)
 		const policy = policyFor(policies, comp.rows[0].policy_family, ev.lockAt ?? ev.kickoff)
 		if (!policy) continue
-		const entries = await q.query<{ id: string; player_id: string; event_id: string; payload: unknown }>(`select id, player_id, event_id, payload from league_entries where competition_id = $1 and event_id = $2 and voided_at is null`, [a.competitionId, ev.id])
+		// An upset call that was taken back before the game is not a pick, so it is never graded.
+		const entries = await q.query<{ id: string; player_id: string; event_id: string; payload: unknown }>(`select id, player_id, event_id, payload from league_entries where competition_id = $1 and event_id = $2 and voided_at is null and coalesce(payload->>'pick', '') <> 'none'`, [a.competitionId, ev.id])
+		// The upset challenge scores against the line set when the week opened, never against today's ratings.
+		let snapshot: { underdog: "away" | "home"; favouriteWinChance: number } | undefined
+		if (policy.kind === "upset") {
+			const line = await q.query<{ underdog: "away" | "home"; favourite_win_chance: string }>(`select underdog, favourite_win_chance from league_upset_lines where event_id = $1`, [ev.id])
+			if (line.rows[0]) snapshot = { underdog: line.rows[0].underdog, favouriteWinChance: Number(line.rows[0].favourite_win_chance) }
+		}
 		const existing = await q.query<GradeRow>(`select g.* from league_grades g join league_entries n on n.id = g.entry_id where n.competition_id = $1 and g.event_id = $2`, [a.competitionId, ev.id])
 		const plan = planGrading({
 			event: ev,
 			entries: entries.rows.map((e) => ({ id: e.id, playerId: e.player_id, eventId: e.event_id, payload: e.payload })),
 			existing: existing.rows.map(toGrade),
 			policy,
+			snapshot,
 			now: nowIso,
 		})
 		out.created += await insertGrades(q, plan.create)

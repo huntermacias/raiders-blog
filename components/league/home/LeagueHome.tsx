@@ -99,7 +99,7 @@ export default function LeagueHome({ home }: { home: BtbHome }) {
 
 			<section aria-labelledby="chal-h" className="mt-12">
 				<SectionHeading id="chal-h" title="More ways to play" />
-				<Challenges signedIn={Boolean(handle)} nflOpen={home.nflOpen} />
+				<Challenges signedIn={Boolean(handle)} modes={home.modes} />
 			</section>
 
 			<section aria-labelledby="rules-h" className="mt-12">
