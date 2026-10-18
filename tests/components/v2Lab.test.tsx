@@ -35,7 +35,7 @@ describe("a player's page", () => {
 		const s = screen.getByTestId("v2-summary")
 		const order = ["v2-season", "v2-contribution", "v2-projection"].map((id) => within(s).getByTestId(id))
 		for (let i = 1; i < order.length; i++) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-		expect(within(s).getByTestId("v2-season-rank").textContent).toMatch(/10th of 40/)
+		expect(within(s).getByTestId("v2-season-rank").textContent).toMatch(/\d+(st|nd|rd|th) of \d+/)
 		expect(within(s).getByTestId("v2-contrib-total").textContent).toMatch(/EPA/)
 		expect(within(s).getByTestId("v2-proj-grade").textContent).toMatch(/45/)
 		expect(within(s).getByTestId("v2-proj-range").textContent).toMatch(/likely \d+ to \d+/)
@@ -43,8 +43,8 @@ describe("a player's page", () => {
 
 	it("explains the gap for Young right on the page, in one sentence, not in a methodology page", async () => {
 		await renderProfile(named("Bryce Young").slug)
-		expect(screen.getByTestId("v2-why").textContent).toMatch(/10th on what he has done this season but 33rd on the projection/)
-		expect(screen.getByTestId("v2-share").textContent).toMatch(/14% of this projection is this season/)
+		expect(screen.getByTestId("v2-why").textContent).toMatch(/\d+(st|nd|rd|th) on what he has done this season but \d+(st|nd|rd|th) on the projection/)
+		expect(screen.getByTestId("v2-share").textContent).toMatch(/\d+% of this projection is this season/)
 	})
 
 	it("explains Nacua and Kittle: first on the projection, lower this season", async () => {

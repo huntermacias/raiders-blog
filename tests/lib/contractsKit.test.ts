@@ -26,7 +26,8 @@ const bareContracts = {
 	players: contracts.players.map((p) => {
 		if (p.name !== "Marvin Harrison Jr.") return p
 		const { terms: _terms, ...rest } = p
-		return rest
+		// The pay line follows him if he is traded, so the test does not depend on which team the rosters have him on this week.
+		return { ...rest, team: data.players.find((r) => r.slug === "marvin-harrison-jr")?.team ?? p.team }
 	}),
 }
 
