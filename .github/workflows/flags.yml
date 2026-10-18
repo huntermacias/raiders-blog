@@ -1,0 +1,57 @@
+name: Refresh penalty flags
+
+# The penalty flags (/lab/flags): every accepted penalty of the season with who committed it, the down and distance and what it cost, built from
+# nflverse's play-by-play and rosters by scripts/lab/build_flags.py. A run downloads two files and takes about twenty seconds. The file is written
+# only when the flags changed, so a run that finds nothing new makes no commit and no deploy. A game's flags appear once its plays are in nflverse.
+#
+# The times are UTC and match the team grades (units.yml): Sunday to Wednesday every two hours, Thursday to Saturday three times a day.
+on:
+  schedule:
+    - cron: "50 */2 * * 0-3"
+    - cron: "50 4,12,20 * * 4-6"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Shares a group with lab-data.yml, units.yml, injuries.yml and rooting.yml, so two jobs never edit data/lab at the same time.
+concurrency:
+  group: lab-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SEASON: ${{ vars.LAB_SEASON || '2026' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: pip install pandas numpy pytest
+
+      - name: Test the script
+        run: python -m pytest scripts/lab/test_build_flags.py -q
+
+      - name: Build the flags
+        # Page names come from the player profiles, so a flag's player links to the same name everywhere.
+        run: python scripts/lab/build_flags.py --season "$SEASON" --out "data/lab/flags-$SEASON.json" --players data/lab/players.json
+
+      - name: Commit if changed
+        run: |
+          git add "data/lab/flags-$SEASON.json"
+          if git diff --cached --quiet; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh penalty flags"
+          # Another job or a person may have pushed to main since this run started. The script rebuilds this commit on top of
+          # the new main (our file wins) rather than stopping on a rebase conflict. See scripts/ci/push-data.sh.
+          bash scripts/ci/push-data.sh "data/lab/flags-$SEASON.json"
