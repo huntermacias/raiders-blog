@@ -46,6 +46,15 @@ export const LAB_TOOLS: LabTool[] = [
 		weekly: "results",
 	},
 	{
+		id: "flags",
+		href: "/lab/flags",
+		title: "Flags that cost like a turnover",
+		short: "Every penalty, who got it, what it cost, and the ones that act like a giveaway.",
+		text: "Every accepted penalty in the league with who committed it, the down and distance and what it cost. Find the flags that handed a team a first down on fourth down, cancelled a takeaway or a touchdown, or cost as much as a turnover, then check your team or open any player's flag log.",
+		group: "start",
+		isNew: true,
+	},
+	{
 		id: "matchups",
 		href: "/lab/matchups",
 		title: "This week's matchups",

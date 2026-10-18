@@ -4,6 +4,8 @@ import { groq } from "next-sanity"
 import { readClient as client } from "../lib/sanity.client"
 import { gameSlug, getGames, getPlayers, getUnits } from "../lib/lab/data"
 import { GROUP_ORDER, boards, profileSlugs } from "../lib/lab/playersKit"
+import { getFlagFiles, getRoster } from "../lib/lab/flagsData"
+import { FLAGS_PATH, playerFlagsHref, teamFlagsHref } from "../lib/lab/flagsKit"
 import { SIT_BOARDS, sitBoardHref } from "../lib/lab/situationsKit"
 import { matchupPath } from "../lib/lab/unitsKit"
 import { TEAMS } from "../lib/nfl"
@@ -37,6 +39,15 @@ function playerPaths(): string[] {
 	return [...groups.flatMap((g) => boards(g).map((b) => `/lab/players/leaders/${g}/${b.path}`)), ...SIT_BOARDS.map((b) => sitBoardHref(b.slug)), ...profileSlugs(data).map((s) => `/lab/players/${s}`)]
 }
 
+/** The flags hub, every team's page and the page of each player flagged in the newest season on file. */
+function flagPaths(): string[] {
+	const newest = getFlagFiles()[0]
+	const ids = new Set((newest?.flags ?? []).map((f) => f.pid).filter((x): x is string => !!x))
+	const roster = getRoster().byId
+	const players = Array.from(ids).filter((id) => roster[id]).map((id) => playerFlagsHref(roster[id].s)).sort()
+	return [FLAGS_PATH, ...TEAMS.map((t) => teamFlagsHref(t.abbr)), ...players]
+}
+
 function generateSiteMap(posts: Entry[], games: Entry[], liveEvents: Entry[]) {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -59,6 +70,7 @@ ${url(`${SITE_URL}/lab/players`, undefined, "0.8", "daily")}
 ${url(`${SITE_URL}/lab/players/compare`, undefined, "0.5", "weekly")}
 ${url(`${SITE_URL}/lab/players/value`, undefined, "0.6", "weekly")}
 ${playerPaths().map((p) => url(`${SITE_URL}${p}`, undefined, "0.5", "weekly")).join("\n")}
+${flagPaths().map((p, i) => url(`${SITE_URL}${p}`, undefined, i === 0 ? "0.8" : "0.5", "weekly")).join("\n")}
 ${url(`${SITE_URL}/lab/teams`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/matchups`, undefined, "0.7", "weekly")}
 ${url(`${SITE_URL}/lab/playoff-machine`, undefined, "0.8", "weekly")}
