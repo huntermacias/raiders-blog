@@ -14,12 +14,20 @@ export type Records = Record<string, { w: number; l: number; t: number }>
 type Props = {
 	/** Oldest to newest. */
 	boards: RankingsWeek[]
-	records?: Records
+	/** Each week's records, as they stood when that week's rankings were posted. */
+	recordsByWeek?: Record<number, Records>
+	/** ISO time each week's records are through (when the rankings were posted). */
+	recordsAsOf?: Record<number, string>
 	season: number
 }
 
 const FILTERS = ["All", "AFC", "NFC", ...DIVISIONS] as const
 type Filter = (typeof FILTERS)[number]
+
+/** "Oct 15", in Pacific time so server and browser agree. */
+function asOfText(iso: string) {
+	return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" })
+}
 
 function recText(r?: { w: number; l: number; t: number }) {
 	if (!r) return null
@@ -133,12 +141,14 @@ function MoverList({ title, items, kind }: { title: string; items: { team: strin
 	)
 }
 
-export default function RankingsBoard({ boards, records, season }: Props) {
+export default function RankingsBoard({ boards, recordsByWeek, recordsAsOf, season }: Props) {
 	const latest = boards[boards.length - 1]
 	const [week, setWeek] = useState<number>(latest?.week ?? 0)
 	const [filter, setFilter] = useState<Filter>("All")
 
 	const board = boards.find((b) => b.week === week) ?? latest
+	const records = board ? recordsByWeek?.[board.week] : undefined
+	const asOf = board ? recordsAsOf?.[board.week] : undefined
 	const hasPrev = board ? board.rows.some((r) => r.history.length > 1) : false
 
 	const rows = useMemo(() => {
@@ -278,6 +288,7 @@ export default function RankingsBoard({ boards, records, season }: Props) {
 			)}
 			<p className="mt-4 text-xs text-muted-foreground">
 				{season} season. Rankings are my own opinion, updated weekly; the little line shows each team's rank week by week with No. 1 at the top.
+				{records && asOf ? ` Records are through the games that were final when these rankings were posted (${asOfText(asOf)}).` : ""}
 			</p>
 		</div>
 	)

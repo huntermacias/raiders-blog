@@ -4,7 +4,8 @@ import Link from "@/components/SiteLink"
 
 import { readClient as client } from "../../../lib/sanity.client"
 import { SEASON } from "../../../lib/predictions"
-import { withEspnRecords } from "../../../lib/live/service"
+import { gamesThrough } from "../../../lib/live/service"
+import { recordsAsOf } from "../../../lib/live/standings"
 import { type RankingsDoc, buildBoards, noLabel, raidersRow } from "../../../lib/rankings"
 import RankingsBoard, { type Records } from "../../../components/rankings/RankingsBoard"
 
@@ -21,12 +22,6 @@ const rankingsQuery = groq`
 		_id, season, week, headline, _updatedAt,
 		"post": post->{ "slug": slug.current, title },
 		teams[]{ _key, team, note }
-	}
-`
-
-const recordsQuery = groq`
-	*[_type == 'seasonPredictions' && season == $season && !(_id in path('drafts.**'))] | order(_updatedAt desc)[0] {
-		teams[]{ team, wins, losses, ties }
 	}
 `
 
@@ -59,16 +54,27 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RankingsPage() {
-	const [docs, season]: [Doc[], { teams?: { team: string; wins?: number | null; losses?: number | null; ties?: number | null }[] } | null] =
-		await Promise.all([client.fetch(rankingsQuery, { season: SEASON }), client.fetch(recordsQuery, { season: SEASON })])
+	const docs: Doc[] = (await client.fetch(rankingsQuery, { season: SEASON })) ?? []
 
-	const boards = buildBoards(docs ?? [])
+	const boards = buildBoards(docs)
 	const latest = boards[boards.length - 1]
 
-	const records: Records = {}
-	// ESPN's standings over the typed records, so a finished game moves everyone's record on its own.
-	for (const t of await withEspnRecords(season?.teams)) {
-		if (t.team) records[t.team] = { w: t.wins ?? 0, l: t.losses ?? 0, t: t.ties ?? 0 }
+	// Each week's records are what ESPN's results said when that week's rankings were posted: games from
+	// that week and earlier that were over by the time the document was last saved. Live standings would
+	// run ahead of the write-ups while a week is still being played, and the hand-typed records in the
+	// Season Predictions doc are only as fresh as the last time someone typed them. If ESPN can't be
+	// read, no records are shown rather than wrong ones.
+	const postedAt = new Map<number, string>()
+	for (const d of docs) if (d.teams && d.teams.length > 0 && d._updatedAt) postedAt.set(d.week, d._updatedAt)
+	const games = latest ? await gamesThrough(latest.week) : null
+	const recordsByWeek: Record<number, Records> = {}
+	const recordsAsOfByWeek: Record<number, string> = {}
+	if (games) {
+		for (const b of boards) {
+			const at = postedAt.get(b.week) ?? null
+			recordsByWeek[b.week] = recordsAsOf(games, b.week, at ? Date.parse(at) : null)
+			if (at) recordsAsOfByWeek[b.week] = at
+		}
 	}
 
 	const lv = latest ? raidersRow(latest.rows) : null
@@ -119,7 +125,7 @@ export default async function RankingsPage() {
 			)}
 
 			{latest ? (
-				<RankingsBoard boards={boards} records={records} season={SEASON} />
+				<RankingsBoard boards={boards} recordsByWeek={recordsByWeek} recordsAsOf={recordsAsOfByWeek} season={SEASON} />
 			) : (
 				<div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
 					The first power rankings of {SEASON} haven't been posted yet. Check back soon.
