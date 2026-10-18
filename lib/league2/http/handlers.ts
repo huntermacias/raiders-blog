@@ -6,7 +6,8 @@ import { siteUrl, getRuntime, type Runtime } from "../auth/server"
 import { bindClaim, chooseHandle, finalizeVerifiedUser, peekClaim, reserveHandle, startClaim } from "../services/accounts"
 import { disablePlayer, linkLegacyByReview, memberDetail, requireAdmin, restorePlayer, revokeSessions, rollbackClaim, searchMembers, sendResetLink } from "../services/admin"
 import { adminEvents, adminOverview, auditLog, cancelEvent, correctBloggerPick, correctResult, freezePolicyVersion, memberEntries, moveLock, publishPolicyVersion, recalculate, releaseResultPin, restoreEntry, restoreEvent, setCompetitionEnabled, voidEntry } from "../services/adminLeague"
-import { parseSettings, saveSettings } from "../services/profileSettings"
+import { parseFavoriteTeam, parseSettings, saveFavoriteTeam, saveSettings } from "../services/profileSettings"
+import { loadStrip } from "../stripData"
 import { checkPassword, normalizeEmail } from "../services/passwords"
 import { saveConfidenceWeek, submitPick } from "../services/picks"
 import { competitionForMode, isNflMode } from "../competitions"
@@ -169,6 +170,38 @@ export async function profileSettings(req: Request): Promise<Response> {
 	if (!parsed.ok) return fail(400, parsed.message)
 	const saved = await saveSettings(rt.db, user.id, parsed.value)
 	return saved ? json({ ok: true, settings: parsed.value }) : fail(404, "No player on this account")
+}
+
+/**
+ * The strip on public pages. Visitors without a session cookie get an answer without touching the database. A signed-in player gets
+ * their favorite team and where their picks stand. Never cached: it is about one person.
+ */
+export async function strip(req: Request): Promise<Response> {
+	const rt = getRuntime()
+	if (!rt) return notFound()
+	if (req.method !== "GET") return fail(405, "Method not allowed")
+	if (!/session_token=/.test(req.headers.get("cookie") || "")) return json({ signedIn: false })
+	if (!(await allow(rt.db, `http:strip:${clientIp(req)}`, 240, 10 * 60_000))) return fail(429, "Too many requests. Try again later.")
+	try {
+		const user = await currentUser(rt, req)
+		if (!user || !user.emailVerified) return json({ signedIn: false })
+		return json(await loadStrip(rt.db, user, currentSeason(), Date.now()))
+	} catch (e) {
+		console.log("league: strip failed:", (e as Error).message)
+		return json({ signedIn: false })
+	}
+}
+
+/** "Make this my team": saves just the favorite team on the signed-in player. */
+export async function favoriteTeam(req: Request): Promise<Response> {
+	const g = await gate(req, { name: "team", max: 60, windowMs: 60 * 60_000 })
+	if (g instanceof Response) return g
+	const { rt, data } = g
+	const user = await currentUser(rt, req)
+	if (!user || !user.emailVerified) return fail(401, "Sign in first")
+	const parsed = parseFavoriteTeam(data.favoriteTeam)
+	if (!parsed.ok) return fail(400, parsed.message)
+	return (await saveFavoriteTeam(rt.db, user.id, parsed.value)) ? json({ ok: true, favoriteTeam: parsed.value }) : fail(404, "No player on this account")
 }
 
 /** One door for every admin action. The admin check runs first and is the only thing that mints an AdminContext. */

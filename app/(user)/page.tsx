@@ -27,6 +27,7 @@ import StatStrip, { type HomeRank } from "../../components/home/StatStrip";
 import FeaturedStories, { type FeaturedPost } from "../../components/home/FeaturedStories";
 import FlagCard from "../../components/home/FlagCard";
 import LeagueTeaser from "../../components/league/LeagueTeaser";
+import MyPicksStrip from "../../components/league/MyPicksStrip";
 import LabBand from "../../components/home/LabBand";
 import { labCopy, labPhase, labTools } from "../../lib/homeLab";
 import { loadRootingSnapshot } from "../../lib/homeLab.server";
@@ -269,6 +270,8 @@ export default async function page() {
 		  <FeaturedStories posts={featured} />
 
 		  {!labFirst && labBand}
+
+		  <MyPicksStrip className="pt-10" />
 
 		  <LeagueTeaser players={league.data.players.length} top={leagueRows} lastWeek={leagueLast} open={leagueOpen} />
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { parseSettings } from "../../../lib/league2/services/profileSettings"
+import { parseFavoriteTeam, parseSettings } from "../../../lib/league2/services/profileSettings"
 
 describe("profile settings", () => {
 	it("accepts a real team or none, and two switches", () => {
@@ -16,5 +16,17 @@ describe("profile settings", () => {
 		expect(parseSettings({ favoriteTeam: { a: 1 }, showProfile: true, showHistory: true })).toMatchObject({ ok: false })
 		expect(parseSettings({ favoriteTeam: "LV", showProfile: "yes", showHistory: true })).toMatchObject({ ok: false })
 		expect(parseSettings({ favoriteTeam: "LV", showProfile: true })).toMatchObject({ ok: false })
+	})
+})
+
+describe("favorite team on its own", () => {
+	it("accepts a real team, or none to clear it", () => {
+		expect(parseFavoriteTeam("KC")).toEqual({ ok: true, value: "KC" })
+		expect(parseFavoriteTeam(null)).toEqual({ ok: true, value: null })
+		expect(parseFavoriteTeam("")).toEqual({ ok: true, value: null })
+		expect(parseFavoriteTeam(undefined)).toEqual({ ok: true, value: null })
+	})
+	it("refuses anything else", () => {
+		for (const bad of ["XX", "kc", 5, true, {}, ["KC"], "KC; drop table"]) expect(parseFavoriteTeam(bad)).toMatchObject({ ok: false })
 	})
 })

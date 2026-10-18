@@ -4,6 +4,7 @@ import { client } from "../../../lib/sanity.client"
 import { cardImageUrl, hotspotPosition } from "../../../lib/urlFor"
 import StoryCard from "../../../components/StoryCard"
 import { Badge } from "@/components/ui/badge"
+import MyPicksStrip from "@/components/league/MyPicksStrip"
 import type { Metadata } from "next"
 
 // Always render fresh from Sanity. Time-based ISR (revalidate) only refreshes
@@ -54,6 +55,7 @@ export default async function GamesPage() {
 				<p className="mt-2 text-muted-foreground">
 					Box scores, recaps, and analysis from every Raiders game.
 				</p>
+				<MyPicksStrip bare className="mt-4" />
 			</div>
 
 			{games.length === 0 ? (
