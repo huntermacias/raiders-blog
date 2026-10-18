@@ -148,7 +148,10 @@ describe("simulating the rest of the season", () => {
 		const kept = simulateRemaining(games, mine, { seed: 5, keepPicks: true })
 		expect(kept[open[3].id]).toBe("A")
 		expect(kept[open[40].id]).toBe("H")
-		const other = simulateRemaining(games, { [open[3].id]: "H" }, { seed: 5, keepPicks: true })
+		// Same second pick, different first pick: every other game must come out the same. (Dropping the second pick
+		// would make this depend on how that one game happens to roll for the current ratings.)
+		const other = simulateRemaining(games, { [open[3].id]: "H", [open[40].id]: "H" }, { seed: 5, keepPicks: true })
+		expect(other[open[3].id]).toBe("H")
 		for (const g of open.filter((x) => x.id !== open[3].id)) expect(other[g.id]).toBe(kept[g.id])
 	})
 
