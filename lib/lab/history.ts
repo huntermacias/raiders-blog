@@ -6,13 +6,13 @@
 // and worst, by league rank), and writes the bottom line. The analysis itself lives in historyKit.ts, which
 // the browser also runs so fans can filter by team and playoff result.
 
-import { getHistory, getScouting } from "./data"
-import { raidersStart } from "./raidersStart"
-import { type Analysis, type CheckRow, type Fmt, type Meta, type StartRecord, type Table, analyze, checklist } from "./historyKit"
+import { getHistory, getScouting, getTrail } from "./data"
+import { teamStart } from "./raidersStart"
+import { type Analysis, type CheckRow, type Fmt, type Meta, type StartRecord, type Subject, type Table, DEFAULT_FILTER, RAIDERS, analyze, checklist, subjectOf } from "./historyKit"
 import type { Key } from "./scouting"
 
-export { formatStat, isRaiders, teamLabel, analyze, checklist, outcomesFor, winsLine, fifthsOf, MIN_SIMILAR, MAX_SIMILAR } from "./historyKit"
-export type { Analysis, Outcomes, StartRecord, VerdictId, Meta, Table, Filter, Row, CheckRow } from "./historyKit"
+export { formatStat, isRaiders, isTeamRow, subjectOf, RAIDERS, teamLabel, analyze, checklist, outcomesFor, winsLine, fifthsOf, MIN_SIMILAR, MAX_SIMILAR } from "./historyKit"
+export type { Subject, Track, Analysis, Outcomes, StartRecord, VerdictId, Meta, Table, Filter, Row, CheckRow } from "./historyKit"
 /** Older name for one analysed stat. */
 export type Story = Analysis
 
@@ -85,7 +85,22 @@ export function statDef(key: string): StatDef | undefined {
 	return STAT_DEFS.find((x) => x.key === key)
 }
 
+/** One stat's standing and verdict after one game count, from the weekly trail. */
+export type TrailWeek = { n: number; rank: number; valueText: string; verdict: Analysis["verdict"]; typicalText: string }
+export type TrailStat = { key: string; label: string; weeks: TrailWeek[] }
+/** How the verdicts have moved from week to week, and what moved most since the week before. */
+export type TrailView = {
+	stats: TrailStat[]
+	/** The game count the comparison is against, or null with only one week on file. */
+	since: number | null
+	changes: { key: string; label: string; from: number; to: number; verdictFrom: string; verdictTo: string; verdictChanged: boolean }[]
+	movers: { key: string; label: string; from: number; to: number; higherIsBetter: boolean }[]
+}
+
+export type TrailData = { keys: string[]; generatedAt?: string; seasons: Record<string, Record<string, Record<string, Record<string, [number, number]>>>> }
+
 export type HistoryView = {
+	subject: Subject
 	season: number
 	n: number
 	first: number
@@ -98,34 +113,53 @@ export type HistoryView = {
 	stories: Analysis[]
 	checklist: CheckRow[]
 	record: StartRecord | null
-	/** The Raiders' own record through n games, when none was a tie. */
+	trail: TrailView | null
+	/** The team's own record through n games, when none was a tie. */
 	start: { wins: number; losses: number } | null
 	bottomLine: { title: string; body: string }
 }
 
-/** The Raiders' value and rank (1 is best) for a stat, from the scouting file. Null when it is not there. */
-function raidersStanding(def: StatDef, scouting: ReturnType<typeof getScouting>): { value: number; rank: number } | null {
-	const teams = scouting.teams
-	if (!teams.LV) return null
-	if (def.stat) {
-		const m = teams.LV[def.side as "off" | "def"][def.stat]
-		return m ? { value: m.v, rank: m.rank } : null
+export type Standing = { value: number; rank: number }
+export type StandingFn = (def: StatDef) => Standing | null
+
+/** A team's value and rank (1 is best) for a stat, from the scouting file. Null when it is not there. */
+export function scoutingStanding(scouting: ReturnType<typeof getScouting>, team = "LV"): StandingFn {
+	return (def) => {
+		const teams = scouting.teams
+		const me = teams[team]
+		if (!me) return null
+		if (def.stat) {
+			const m = me[def.side as "off" | "def"][def.stat]
+			return m ? { value: m.v, rank: m.rank } : null
+		}
+		const net = (t: (typeof teams)[string]): number | null => {
+			if (def.key === "net.points") return t.off.points && t.def.points ? t.off.points.v - t.def.points.v : null
+			return t.off.turnovers && t.def.turnovers ? t.def.turnovers.v - t.off.turnovers.v : null
+		}
+		const all = Object.values(teams).flatMap((t) => {
+			const v = net(t)
+			return v === null ? [] : [v]
+		})
+		const mine = net(me)
+		if (mine === null) return null
+		return { value: mine, rank: 1 + all.filter((v) => (def.higherIsBetter ? v > mine : v < mine)).length }
 	}
-	const net = (t: (typeof teams)[string]): number | null => {
-		if (def.key === "net.points") return t.off.points && t.def.points ? t.off.points.v - t.def.points.v : null
-		return t.off.turnovers && t.def.turnovers ? t.def.turnovers.v - t.off.turnovers.v : null
-	}
-	const all = Object.values(teams).flatMap((t) => {
-		const v = net(t)
-		return v === null ? [] : [v]
-	})
-	const mine = net(teams.LV)
-	if (mine === null) return null
-	return { value: mine, rank: 1 + all.filter((v) => (def.higherIsBetter ? v > mine : v < mine)).length }
 }
 
-/** The history cut at `n` games as the lists the analysis reads, and one table per stat the Raiders have a number for. */
-export function buildTables(history: HistoryData, n: number, scouting: ReturnType<typeof getScouting>): { meta: Meta; tables: Table[] } | null {
+/** The same, from a week's snapshot in the trail ({ "off.epaPass": [value, rank] }). */
+export function trailStanding(snap: Record<string, [number, number]>): StandingFn {
+	return (def) => {
+		const m = snap[def.key]
+		return m ? { value: m[0], rank: m[1] } : null
+	}
+}
+
+/** The history cut at `n` games as the lists the analysis reads, and one table per stat the team has a number for. */
+export function buildTables(history: HistoryData, n: number, scouting: ReturnType<typeof getScouting>, team = "LV"): { meta: Meta; tables: Table[] } | null {
+	return buildTablesFrom(history, n, scoutingStanding(scouting, team))
+}
+
+export function buildTablesFrom(history: HistoryData, n: number, standing: StandingFn): { meta: Meta; tables: Table[] } | null {
 	const block = history.n[String(n)]
 	if (!block) return null
 	const k = history.scale
@@ -133,7 +167,7 @@ export function buildTables(history: HistoryData, n: number, scouting: ReturnTyp
 	const col = (src: Record<string, (number | null)[]>, key: string) => src[key]?.map((v) => (v === null ? null : v / k)) ?? null
 	const tables: Table[] = []
 	for (const def of STAT_DEFS) {
-		const me = raidersStanding(def, scouting)
+		const me = standing(def)
 		if (!me) continue
 		let start: (number | null)[] | null
 		let rest: (number | null)[] | null
@@ -172,7 +206,7 @@ function listOf(labels: string[]): string {
 	return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-export function bottomLine(stories: Analysis[], record: StartRecord | null, n: number, season: number, first: number): HistoryView["bottomLine"] {
+export function bottomLine(stories: Analysis[], record: StartRecord | null, n: number, season: number, first: number, subject: Subject = RAIDERS): HistoryView["bottomLine"] {
 	const fade = stories.filter((s) => s.verdict.id === "fade")
 	const improve = stories.filter((s) => s.verdict.id === "improve")
 	const stay = stories.filter((s) => s.verdict.id === "hold" || s.verdict.id === "linger")
@@ -190,7 +224,7 @@ export function bottomLine(stories: Analysis[], record: StartRecord | null, n: n
 	if (fade.length) parts.push(`${listOf(fade.map((s) => s.label))} ${fade.length === 1 ? "is the kind of number that cools off" : "are the kind of numbers that cool off"}: teams that started this well gave back most of the edge.`)
 	if (improve.length) parts.push(`${listOf(improve.map((s) => s.label))} ${improve.length === 1 ? "is the kind that bounces back" : "are the kind that bounce back"}: teams that started this poorly usually got closer to average.`)
 	if (stay.length) parts.push(`${listOf(stay.map((s) => s.label))} ${stay.length === 1 ? "has" : "have"} tended to stay put, which makes ${stay.length === 1 ? "it" : "them"} more likely to be real.`)
-	parts.push(`None of this is a prediction for one game. It is what happened to teams that looked like the ${season} Raiders after ${n} games.`)
+	parts.push(`None of this is a prediction for one game. It is what happened to teams that looked like the ${season} ${subject.name} after ${n} games.`)
 	if (record) parts.push(`Of the ${record.teams} teams since ${first} that started ${record.wins}-${record.losses}, ${Math.round((record.playoffs / record.teams) * 100)}% made the playoffs and the average one finished with ${record.avgWins.toFixed(1)} wins.`)
 	return { title, body: parts.join(" ") }
 }
@@ -214,36 +248,87 @@ export function recordStory(history: HistoryData, n: number, games: { result: st
 	return { wins, losses: n - wins, teams, playoffs, avgWins: total / teams }
 }
 
-/** Everything the page needs, or null when the Raiders have not played enough games (or have played too many) for the comparison. */
-export function getHistoryView(): HistoryView | null {
+/** Teams whose pages exist: every team with a row in the scouting file. */
+export function teamAbbrs(): string[] {
+	return Object.keys(getScouting().teams).filter((a) => subjectOf(a)).sort()
+}
+
+/** The weekly trail for a team: the verdict on each standout stat after each game count on file, and what moved since the week before. */
+export function buildTrail(history: HistoryData, team: string, season: number, standouts: string[], current: { n: number; tables: Table[]; stories: Analysis[] }, subject: Subject): TrailView | null {
+	const bySeason = getTrail().seasons[String(season)]?.[team] ?? {}
+	const weeks: Record<number, { tables: Table[]; stories: Analysis[] }> = {}
+	for (const key of Object.keys(bySeason)) {
+		const n = Number(key)
+		if (!Number.isInteger(n) || n < MIN_GAMES || n >= current.n) continue
+		const built = buildTablesFrom(history, n, trailStanding(bySeason[key]))
+		if (!built) continue
+		const stories = standouts.flatMap((k) => {
+			const t = built.tables.find((x) => x.key === k)
+			const a = t ? analyze(built.meta, t, season, DEFAULT_FILTER, subject) : null
+			return a ? [a] : []
+		})
+		weeks[n] = { tables: built.tables, stories }
+	}
+	weeks[current.n] = { tables: current.tables, stories: current.stories }
+	const ns = Object.keys(weeks).map(Number).sort((a, b) => a - b)
+	const stats: TrailStat[] = standouts.flatMap((key) => {
+		const ws: TrailWeek[] = ns.flatMap((n) => {
+			const a = weeks[n].stories.find((x) => x.key === key)
+			return a ? [{ n, rank: a.rank, valueText: a.valueText, verdict: a.verdict, typicalText: a.typicalText }] : []
+		})
+		const label = weeks[current.n].stories.find((x) => x.key === key)?.label
+		return label && ws.length ? [{ key, label, weeks: ws }] : []
+	})
+	const prev = ns.filter((n) => n < current.n).pop() ?? null
+	if (prev === null) return stats.length ? { stats, since: null, changes: [], movers: [] } : null
+	const changes = stats.flatMap((st) => {
+		const a = st.weeks.find((w) => w.n === prev)
+		const b = st.weeks.find((w) => w.n === current.n)
+		return a && b ? [{ key: st.key, label: st.label, from: a.rank, to: b.rank, verdictFrom: a.verdict.text, verdictTo: b.verdict.text, verdictChanged: a.verdict.id !== b.verdict.id }] : []
+	})
+	const movers = current.tables
+		.flatMap((t) => {
+			const before = weeks[prev].tables.find((x) => x.key === t.key)
+			return before && Math.abs(before.rank - t.rank) >= 4 ? [{ key: t.key, label: t.label, from: before.rank, to: t.rank, higherIsBetter: t.higherIsBetter }] : []
+		})
+		.sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from))
+		.slice(0, 3)
+	return { stats, since: prev, changes, movers }
+}
+
+/** Everything the page needs for a team (the Raiders by default), or null when it has not played enough games (or has played too many) for the comparison. */
+export function getHistoryView(team = "LV"): HistoryView | null {
 	const history = getHistory()
 	const scouting = getScouting()
-	const lv = scouting.teams.LV
-	if (!lv || lv.g < MIN_GAMES || lv.g > MAX_GAMES) return null
-	const n = lv.g
-	const built = buildTables(history, n, scouting)
+	const subject = subjectOf(team)
+	const me = scouting.teams[team]
+	if (!subject || !me || me.g < MIN_GAMES || me.g > MAX_GAMES) return null
+	const n = me.g
+	const built = buildTables(history, n, scouting, team)
 	if (!built) return null
 	const standouts = pickStandouts(built.tables)
 	const stories = standouts.flatMap((key) => {
 		const t = built.tables.find((x) => x.key === key)
-		const a = t ? analyze(built.meta, t, scouting.season) : null
+		const a = t ? analyze(built.meta, t, scouting.season, DEFAULT_FILTER, subject) : null
 		return a ? [a] : []
 	})
 	if (!stories.length) return null
-	const start = raidersStart(n)
-	// Only the wins and losses matter to the record, not the order, so the Raiders' record stands in for the game log.
+	const start = teamStart(n, team)
+	// Only the wins and losses matter to the record, not the order, so the team's record stands in for the game log.
 	const record = recordStory(history, n, start ? [...Array(start.wins).fill({ result: "W" }), ...Array(start.losses).fill({ result: "L" })] : [])
-	return { season: scouting.season, n, first: history.first, last: history.last, meta: built.meta, tables: built.tables, standouts, stories, checklist: checklist(built.meta, built.tables), record, start, bottomLine: bottomLine(stories, record, n, scouting.season, history.first) }
+	const trail = buildTrail(history, team, scouting.season, standouts, { n, tables: built.tables, stories }, subject)
+	return { subject, season: scouting.season, n, first: history.first, last: history.last, meta: built.meta, tables: built.tables, standouts, stories, checklist: checklist(built.meta, built.tables), record, trail, start, bottomLine: bottomLine(stories, record, n, scouting.season, history.first, subject) }
 }
 
 /** One stat's analysis by key, for any stat in the catalog (the share cards ask for these), or null when the history does not apply yet. */
-export function getStory(key: string): { story: Analysis; n: number; first: number; last: number } | null {
+export function getStory(key: string, team = "LV"): { story: Analysis; n: number; first: number; last: number } | null {
 	const history = getHistory()
 	const scouting = getScouting()
-	const lv = scouting.teams.LV
-	if (!statDef(key) || !lv || lv.g < MIN_GAMES || lv.g > MAX_GAMES) return null
-	const built = buildTables(history, lv.g, scouting)
+	const me = scouting.teams[team]
+	const subject = subjectOf(team)
+	if (!statDef(key) || !me || !subject || me.g < MIN_GAMES || me.g > MAX_GAMES) return null
+	const built = buildTables(history, me.g, scouting, team)
 	const t = built?.tables.find((x) => x.key === key)
-	const story = built && t ? analyze(built.meta, t, scouting.season) : null
-	return story ? { story, n: lv.g, first: history.first, last: history.last } : null
+	const story = built && t ? analyze(built.meta, t, scouting.season, DEFAULT_FILTER, subject) : null
+	return story ? { story, n: me.g, first: history.first, last: history.last } : null
 }

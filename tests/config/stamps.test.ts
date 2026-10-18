@@ -13,7 +13,8 @@ describe("the Lab pages that carry a stamp", () => {
 		["matchup/[pair]/page.tsx", "data.generatedAt", "grades"],
 		["scouting/page.tsx", "data.generatedAt", "grades"],
 		["scouting/[abbr]/page.tsx", "data.generatedAt", "grades"],
-		["will-it-last/page.tsx", "scouting.generatedAt", "grades"],
+		// One page for every team, shared by the Raiders' route and the other 31 (will-it-last/[team]).
+		["../../../components/lab/WillItLastPage.tsx", "scouting.generatedAt", "grades"],
 		["season-twins/page.tsx", "scouting.generatedAt", "grades"],
 		["players/page.tsx", "data.generatedAt", "grades"],
 		["playoff-machine/page.tsx", "schedule.generatedAt", "results"],

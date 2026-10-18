@@ -47,6 +47,7 @@ export type LastPlot = {
 	ticks: { x: number; label: string }[]
 	raiders: number
 	raidersText: string
+	team: string
 	base: number
 	band: [number, number]
 	avgA: number
@@ -62,6 +63,8 @@ export type LastPlot = {
 
 type Base = {
 	type: "last"
+	/** The team the card is about, by nickname. */
+	team: string
 	size: ShareSize
 	n: number
 	first: number
@@ -147,6 +150,8 @@ export type BottomCard = Base & {
 export type LastCardSpec = ChartCard | SeasonCard | WinsCard | FifthsCard | ChecklistCard | BottomCard
 
 export type Ctx = {
+	/** The team's nickname; the Raiders when missing. */
+	team?: string
 	size: ShareSize
 	n: number
 	first: number
@@ -159,8 +164,8 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 const r3 = (v: number) => Math.round(v * 1000) / 1000
 
 /** "Teams that started like the Raiders · Chiefs · Made the playoffs · in 2016". */
-export function filterText(f: Filter, first: number): string {
-	const parts = [f.scope === "all" ? `Every team since ${first}` : "Teams that started like the Raiders"]
+export function filterText(f: Filter, first: number, team = "Raiders"): string {
+	const parts = [f.scope === "all" ? `Every team since ${first}` : `Teams that started like the ${team}`]
 	if (f.team) parts.push(`${teamName(f.team)} only`)
 	if (f.playoffs === "made") parts.push("Made the playoffs")
 	if (f.playoffs === "missed") parts.push("Missed the playoffs")
@@ -174,12 +179,13 @@ export const isFiltered = (f: Filter): boolean => f.scope !== DEFAULT_FILTER.sco
 /** `line` replaces the filter line for the cards the filters do not apply to; `lead` goes in front of it (the stat a card is about). */
 const base = (ctx: Ctx, story: Analysis | null, filter: Filter, tone?: Tone, extra: { line?: string; lead?: string } = {}): Base => ({
 	type: "last",
+	team: ctx.team ?? "Raiders",
 	size: ctx.size,
 	n: ctx.n,
 	first: ctx.first,
 	last: ctx.last,
 	season: ctx.season,
-	filter: [extra.lead, extra.line ?? filterText(filter, ctx.first)].filter(Boolean).join(" · "),
+	filter: [extra.lead, extra.line ?? filterText(filter, ctx.first, ctx.team)].filter(Boolean).join(" · "),
 	tone: tone ?? (story ? toneOf(story) : "even"),
 })
 
@@ -225,6 +231,7 @@ export function buildPlot(story: Analysis, meta: Meta, ctx: Ctx, opts: { pin?: s
 		}),
 		raiders: at(story.value),
 		raidersText: story.valueText,
+		team: ctx.team ?? "Raiders",
 		base: at(story.base),
 		band: [at(story.band[0]), at(story.band[1])],
 		avgA: at(story.avgStart),
@@ -272,7 +279,7 @@ export function buildChartSpec(story: Analysis, meta: Meta, ctx: Ctx, view: { pi
 		...base(ctx, story, story.filter),
 		kind: "chart",
 		title: story.label,
-		rank: `Raiders ${ordinalOf(story.rank)} of 32 · ${story.valueText}`,
+		rank: `${ctx.team ?? "Raiders"} ${ordinalOf(story.rank)} of 32 · ${story.valueText}`,
 		verdict: story.verdict.text,
 		line: filtered
 			? `${story.groupSize} team-seasons match these filters. ${pctText(story.toward)} finished closer to average.`
@@ -303,7 +310,7 @@ export function buildSeasonSpec(story: Analysis, meta: Meta, ctx: Ctx, pin: stri
 		statRank: `${ordinalOf(story.rank)} of 32`,
 		moveText: `${formatStat(story, row.start)} to ${formatStat(story, row.rest)}`,
 		toward: row.toward,
-		line: `${teamLabel(pin)} ${row.toward ? "drifted toward the league average" : "moved further from the league average"} over the rest of its season (${formatStat(story, move)}). The ${ctx.season} Raiders are at ${story.valueText}.`,
+		line: `${teamLabel(pin)} ${row.toward ? "drifted toward the league average" : "moved further from the league average"} over the rest of its season (${formatStat(story, move)}). The ${ctx.season} ${ctx.team ?? "Raiders"} are at ${story.valueText}.`,
 		tiles: [
 			{
 				k: `Through ${ctx.n} games`,
@@ -343,7 +350,7 @@ export function buildWinsSpec(story: Analysis, ctx: Ctx, startRecord: { wins: nu
 				v: o.startWin,
 				all: raidersWin,
 				text: pctText(o.startWin),
-				note: raidersWin !== null && startRecord ? `The Raiders now: ${startRecord.wins}-${startRecord.losses}, ${pctText(raidersWin)}` : "",
+				note: raidersWin !== null && startRecord ? `The ${ctx.team ?? "Raiders"} now: ${startRecord.wins}-${startRecord.losses}, ${pctText(raidersWin)}` : "",
 			},
 			{
 				label: "Won over the rest of the season",
@@ -373,7 +380,7 @@ export function buildFifthsSpec(story: Analysis, ctx: Ctx): FifthsCard {
 		stat: story.label,
 		value: story.valueText,
 		rank: ordinalOf(story.rank),
-		line: `The Raiders are in the ${fifthName(story.raidersFifth)} of teams, where ${pctText(mine.rate)} made the playoffs.`,
+		line: `The ${ctx.team ?? "Raiders"} are in the ${fifthName(story.raidersFifth)} of teams, where ${pctText(mine.rate)} made the playoffs.`,
 		all: story.outcomes.allPlayoffs,
 		bars: story.fifths.map((f, k) => ({
 			name: fifthName(k),
@@ -389,16 +396,16 @@ export function buildChecklistSpec(rows: CheckRow[], ctx: Ctx): ChecklistCard | 
 	const top = rows[0]
 	return {
 		...base(ctx, null, DEFAULT_FILTER, "improve", {
-			line: `The ${ctx.season} Raiders against every team since ${ctx.first}`,
+			line: `The ${ctx.season} ${ctx.team ?? "Raiders"} against every team since ${ctx.first}`,
 		}),
 		kind: "checklist",
-		line: `How often teams that stood where the ${ctx.season} Raiders stand made the playoffs, stat by stat, from the stat that has separated playoff teams best.`,
+		line: `How often teams that stood where the ${ctx.season} ${ctx.team ?? "Raiders"} stand made the playoffs, stat by stat, from the stat that has separated playoff teams best.`,
 		best: `${top.label}: ${pctText(top.best)} of the best fifth made it, ${pctText(top.worst)} of the worst`,
 		total: rows.length,
 		rows: rows.map((c) => ({
 			label: c.label,
 			rate: c.rate,
-			note: `Raiders ${c.valueText} · ${ordinalOf(c.rank)} of 32`,
+			note: `${ctx.team ?? "Raiders"} ${c.valueText} · ${ordinalOf(c.rank)} of 32`,
 			fifth: fifthName(c.fifth),
 		})),
 	}
@@ -436,7 +443,7 @@ export function buildBottomSpec(
 	].filter((g) => g.names)
 	return {
 		...base(ctx, null, DEFAULT_FILTER, "even", {
-			line: `The ${ctx.season} Raiders against every team since ${ctx.first}`,
+			line: `The ${ctx.season} ${ctx.team ?? "Raiders"} against every team since ${ctx.first}`,
 		}),
 		kind: "bottom",
 		title: bottomTitle,
@@ -448,7 +455,7 @@ export function buildBottomSpec(
 					note: `The average one finished with ${record.avgWins.toFixed(1)} wins`,
 				}
 			: null,
-		footnote: `Not a prediction for one game: what happened to teams that looked like the ${ctx.season} Raiders after ${ctx.n} games.`,
+		footnote: `Not a prediction for one game: what happened to teams that looked like the ${ctx.season} ${ctx.team ?? "Raiders"} after ${ctx.n} games.`,
 	}
 }
 
@@ -566,7 +573,7 @@ function Shell({ spec, d, legend, children }: { spec: LastCardSpec; d: Dims; leg
 							color: DIM,
 						}}
 					>
-						{typeof legend === "string" ? legend : legend ? "Blue: made the playoffs · Orange ring: missed · Gold: the Raiders" : `Data: nflverse, CC BY 4.0 · every season ${spec.first} to ${spec.last}`}
+						{typeof legend === "string" ? legend : legend ? `Blue: made the playoffs · Orange ring: missed · Gold: the ${spec.team}` : `Data: nflverse, CC BY 4.0 · every season ${spec.first} to ${spec.last}`}
 					</div>
 				</div>
 			</div>
@@ -648,7 +655,7 @@ function Plot({ p, w, h, big }: { p: LastPlot; w: number; h: number; big: boolea
 	for (const b of p.bg) bg += circlePath(X(b.x), Y(b.y), r * 0.5)
 	const raiders = p.dots.filter((d) => d.raiders)
 
-	const chipText = `Raiders now ${p.raidersText}`
+	const chipText = `${p.team} now ${p.raidersText}`
 	const chipFont = big ? 21 : 17
 	const chipW = Math.round(chipText.length * chipFont * 0.55 + 28)
 	const chipX = Math.max(6, Math.min(w - chipW - 6, X(p.raiders) - chipW / 2))
@@ -1282,7 +1289,7 @@ function renderWins(spec: WinsCard, d: Dims): ReactElement {
 	if (d.tall) {
 		const bw = 440
 		return (
-			<Shell spec={spec} d={d} legend="Gold tick: the Raiders now (first bar) · every team (the others)">
+			<Shell spec={spec} d={d} legend={`Gold tick: the ${spec.team} now (first bar) · every team (the others)`}>
 				<div style={{ display: "flex", flexDirection: "column" }}>
 					{hero(300, 44)}
 					<div
@@ -1351,7 +1358,7 @@ function renderWins(spec: WinsCard, d: Dims): ReactElement {
 		)
 	}
 	return (
-		<Shell spec={spec} d={d} legend="Gold tick: the Raiders now (first bar) · every team (the others)">
+		<Shell spec={spec} d={d} legend={`Gold tick: the ${spec.team} now (first bar) · every team (the others)`}>
 			<div
 				style={{
 					display: "flex",
@@ -1451,7 +1458,7 @@ function Fifths({ spec, w, h, big }: { spec: FifthsCard; w: number; h: number; b
 										...caps,
 									}}
 								>
-									Raiders
+									{spec.team}
 								</div>
 							) : null}
 						</div>
@@ -1596,7 +1603,7 @@ function renderFifths(spec: FifthsCard, d: Dims): ReactElement {
 							color: SILVER,
 							...caps,
 						}}
-					>{`Raiders ${spec.rank} of 32 · ${spec.value}`}</div>
+					>{`${spec.team} ${spec.rank} of 32 · ${spec.value}`}</div>
 					<div
 						style={{
 							display: "flex",
@@ -1646,7 +1653,7 @@ function renderFifths(spec: FifthsCard, d: Dims): ReactElement {
 						color: SILVER,
 						...caps,
 					}}
-				>{`Raiders ${spec.rank} of 32 · ${spec.value}`}</div>
+				>{`${spec.team} ${spec.rank} of 32 · ${spec.value}`}</div>
 				<div
 					style={{
 						display: "flex",
@@ -1783,7 +1790,7 @@ function renderChecklist(spec: ChecklistCard, d: Dims): ReactElement {
 							...caps,
 						}}
 					>
-						The Raiders&rsquo; playoff checklist
+						The {spec.team}&rsquo; playoff checklist
 					</div>
 					<div
 						style={{
@@ -1825,7 +1832,7 @@ function renderChecklist(spec: ChecklistCard, d: Dims): ReactElement {
 						...caps,
 					}}
 				>
-					The Raiders&rsquo; playoff checklist
+					The {spec.team}&rsquo; playoff checklist
 				</div>
 				<div
 					style={{

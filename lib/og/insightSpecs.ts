@@ -125,7 +125,8 @@ export function insightSpec(q: InsightQuery): CardSpec | null {
 
 /** A "will it last?" card for the part of the page, the stat, the filters and the pinned team the request names; null when there is nothing to show. */
 function lastSpec(q: RawView): CardSpec | null {
-	const data = getHistoryView()
+	const team = q.of && /^[A-Z]{2,3}$/.test(q.of) ? q.of : "LV"
+	const data = getHistoryView(team)
 	if (!data) return null
 	const { meta, tables } = data
 	const view = readView(q, {
@@ -135,6 +136,7 @@ function lastSpec(q: RawView): CardSpec | null {
 		rows: new Set(meta.teams),
 	})
 	const ctx = {
+		team: data.subject.name,
 		size: view.size,
 		n: data.n,
 		first: data.first,
@@ -149,7 +151,7 @@ function lastSpec(q: RawView): CardSpec | null {
 	const table = tables.find((t) => t.key === key)
 	if (!table) return null
 	// The fifths and the bottom line are about every team, so the filters only apply to the cards that show a group.
-	const story = analyze(meta, table, data.season, view.kind === "fifths" ? undefined : view.filter)
+	const story = analyze(meta, table, data.season, view.kind === "fifths" ? undefined : view.filter, data.subject)
 	if (!story || (view.kind !== "fifths" && story.groupSize === 0)) return null
 
 	if (view.kind === "wins") return buildWinsSpec(story, ctx, data.start)

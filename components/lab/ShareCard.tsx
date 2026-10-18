@@ -136,7 +136,7 @@ export default function ShareCard({ kind, view = {}, target, sizes = ["wide", "t
 		query: viewQuery(view, { kind: kind ?? "chart" }),
 		sharePath: SHARE_PATH,
 		name: KIND_NAMES[kind ?? "chart"],
-		file: `raiders-will-it-last-${kind ?? "chart"}${view.stat ? `-${view.stat.replace(".", "-")}` : ""}`,
+		file: `${view.of ? view.of.toLowerCase() : "raiders"}-will-it-last-${kind ?? "chart"}${view.stat ? `-${view.stat.replace(".", "-")}` : ""}`,
 	}
 	const query = t.query
 	const campaign = t.campaign ?? "lab_share"

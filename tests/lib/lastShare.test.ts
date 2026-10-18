@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { DEFAULT_FILTER } from "../../lib/lab/historyKit"
-import { SECTION_IDS, SHARE_KINDS, readView, viewQuery } from "../../lib/lab/lastShare"
+import { SECTION_IDS, SHARE_KINDS, pagePath, readView, viewQuery } from "../../lib/lab/lastShare"
 
 const known = { first: 1999, last: 2025, teams: new Set(["LV", "KC", "OAK"]), rows: new Set(["2016 LV", "2021 LV", "2010 KC"]) }
 
@@ -46,5 +46,26 @@ describe("viewQuery", () => {
 describe("SECTION_IDS", () => {
 	it("names a page section for every kind", () => {
 		for (const k of SHARE_KINDS) expect(SECTION_IDS[k]).toBeTruthy()
+	})
+})
+
+describe("the team a page is about", () => {
+	const known2 = { first: 1999, last: 2025, teams: new Set(["KC", "LV", "BUF"]), rows: new Set(["2016 LV"]) }
+	it("is read from `of`, is none for the Raiders, and drops anything that is not a team in the data", () => {
+		expect(readView({ of: "KC" }, known2).of).toBe("KC")
+		expect(readView({ of: "LV" }, known2).of).toBeNull()
+		expect(readView({ of: "ZZZ" }, known2).of).toBeNull()
+		expect(readView({ of: "../x" }, known2).of).toBeNull()
+		expect(readView({}, known2).of).toBeNull()
+	})
+	it("goes into the query only when it is not the Raiders, and is a different thing from the team filter", () => {
+		expect(viewQuery({ of: "KC" }, { kind: "wins" })).toBe("kind=wins&of=KC")
+		expect(viewQuery({ of: null }, { kind: "wins" })).toBe("kind=wins")
+		expect(viewQuery({ of: "KC", filter: { scope: "like", team: "BUF", playoffs: "any", years: [] } })).toBe("of=KC&team=BUF")
+	})
+	it("has a page address for every team, with the Raiders' the main one", () => {
+		expect(pagePath(null)).toBe("/lab/will-it-last")
+		expect(pagePath("LV")).toBe("/lab/will-it-last")
+		expect(pagePath("KC")).toBe("/lab/will-it-last/kc")
 	})
 })

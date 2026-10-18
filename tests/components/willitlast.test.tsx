@@ -16,15 +16,26 @@ import { fakeLeague } from "../helpers/historyFake"
 
 const view = getHistoryView()!
 
-function mount(extra: { raidersLogo?: string | null } = {}) {
-	return render(<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} {...extra} />)
+/** The filters and the Raiders seasons sit behind one button so the chart stays near the top on a phone. */
+function openFilters() {
+	const b = screen.getByRole("button", { name: /Filter the teams or compare/ })
+	if (b.getAttribute("aria-expanded") === "false") act(() => void fireEvent.click(b))
+}
+
+function mount(extra: { raidersLogo?: string | null; filters?: boolean } = {}) {
+	const { filters = true, ...props } = extra
+	const out = render(<WillItLast meta={view.meta} tables={view.tables} standouts={view.standouts} checklist={view.checklist} season={view.season} n={view.n} first={view.first} last={view.last} stamp={123} start={view.start} {...props} />)
+	if (filters) openFilters()
+	return out
 }
 
 /** The same chart on a small made-up league, for things that must not depend on this week's real numbers. */
 function mountFake(edit?: (meta: ReturnType<typeof fakeLeague>["meta"]) => void) {
 	const { meta, table } = fakeLeague(400, 0.3)
 	edit?.(meta)
-	return render(<WillItLast meta={meta} tables={[table]} standouts={[table.key]} checklist={buildChecklist(meta, [table])} season={2026} n={4} first={2000} last={2024} stamp={1} start={{ wins: 3, losses: 1 }} />)
+	const out = render(<WillItLast meta={meta} tables={[table]} standouts={[table.key]} checklist={buildChecklist(meta, [table])} season={2026} n={4} first={2000} last={2024} stamp={1} start={{ wins: 3, losses: 1 }} />)
+	openFilters()
+	return out
 }
 
 const svg = () => document.querySelector("svg[role=img]")!
@@ -279,7 +290,7 @@ describe("<WillItLast />", () => {
 	it("shows the numbers that sum it up", () => {
 		mount()
 		const s = view.stories[0]
-		const cards = document.querySelector("dl")!.textContent!
+		const cards = Array.from(document.querySelectorAll("dl")).find((d) => d.textContent!.includes("Their average start"))!.textContent!
 		expect(cards).toContain(s.startText)
 		expect(cards).toContain(s.restText)
 		expect(cards).toContain(s.typicalText)
@@ -594,5 +605,96 @@ describe("the share landing page", () => {
 		const meta = await shareMetadata({ searchParams: Promise.resolve({ kind: "x", stat: "../y", team: "ZZZ" }) })
 		const url = new URL((meta.openGraph?.images as string[])[0])
 		expect(Object.fromEntries(url.searchParams)).toMatchObject({ type: "last", kind: "chart", size: "wide", stat: view.stories[0].key })
+	})
+})
+
+describe("phone-first layout", () => {
+	it("keeps the filters and the Raiders seasons behind one button until asked", () => {
+		mount({ filters: false })
+		const b = screen.getByRole("button", { name: /Filter the teams or compare a Raiders season/ })
+		expect(b.getAttribute("aria-expanded")).toBe("false")
+		expect(screen.queryByRole("group", { name: "Raiders seasons" })).toBeNull()
+		expect(document.getElementById("wil-filters")!.hasAttribute("hidden")).toBe(true)
+		fireEvent.click(b)
+		expect(b.getAttribute("aria-expanded")).toBe("true")
+		expect(screen.getByRole("group", { name: "Raiders seasons" })).toBeTruthy()
+		fireEvent.click(screen.getByRole("button", { name: "Made playoffs" }))
+		expect(b.textContent).toContain("1 on")
+	})
+
+	it("puts the verdict on each of the Raiders' standout tabs, in words and an icon", () => {
+		mount({ filters: false })
+		const tabs = within(screen.getByRole("group", { name: "Choose a stat" })).getAllByRole("button")
+		expect(tabs).toHaveLength(view.standouts.length)
+		tabs.forEach((t, i) => expect(t.textContent).toMatch(/fade|improve|holds|mixed/i))
+		expect(tabs[0].textContent).toContain(view.stories[0].label)
+	})
+
+	it("shows what to expect: now, typical finish and the range, with every marker named", () => {
+		mount({ filters: false })
+		const box = screen.getByLabelText("What to expect over the rest of the season")
+		const s = view.stories[0]
+		expect(box.textContent).toContain(s.valueText)
+		expect(box.textContent).toContain(s.typicalText)
+		expect(within(box).getByText(/Typical finish/)).toBeTruthy()
+		expect(within(box).getByText(/Range \(80%\)/)).toBeTruthy()
+		expect(within(box).getByRole("img").getAttribute("aria-label")).toMatch(/80% of similar teams finished between/)
+	})
+
+	it("explains how the method has done on past seasons, behind a summary", () => {
+		mount({ filters: false })
+		const box = screen.getByLabelText("What to expect over the rest of the season")
+		const d = box.querySelector("details")!
+		expect(d.textContent).toMatch(/predicting each season from the others only/)
+		expect(d.textContent).toMatch(/not a guarantee/)
+	})
+})
+
+describe("a page for every team", () => {
+	it("is about that team, never the Raiders, with its own link preview card", async () => {
+		const { default: Team, generateStaticParams, generateMetadata: teamMeta } = await import("../../app/(user)/lab/will-it-last/[team]/page")
+		expect(generateStaticParams()).toHaveLength(32)
+		expect(generateStaticParams()).toContainEqual({ team: "kc" })
+		const meta = await teamMeta({ params: Promise.resolve({ team: "kc" }) })
+		expect(String(meta.title)).toContain("Chiefs")
+		expect(meta.alternates?.canonical).toBe("https://www.raidersrundown.com/lab/will-it-last/kc")
+		const card = new URL((meta.openGraph?.images as string[])[0])
+		expect(card.searchParams.get("of")).toBe("KC")
+		render(await Team({ params: Promise.resolve({ team: "kc" }) }))
+		expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Will the Chiefs' start last?")
+		// The page itself, not the "More from the Lab" strip below it, which is about the Raiders' own tools.
+		const text = document.body.textContent!.split("More from the Lab")[0]
+		expect(text).not.toMatch(/the Raiders|Raiders teams|Raiders season/)
+		expect(screen.getByRole("group", { name: "Choose a stat" })).toBeTruthy()
+		const links = within(screen.getByRole("list", { name: "Teams" })).getAllByRole("link")
+		expect(links).toHaveLength(32)
+		expect(links.find((l) => l.textContent === "Chiefs")!.getAttribute("href")).toBe("/lab/will-it-last/kc")
+		expect(links.find((l) => l.textContent === "Raiders")!.getAttribute("href")).toBe("/lab/will-it-last")
+	})
+
+	it("sends the Raiders' own team address to the main page, and anything else is a 404", async () => {
+		const { default: Team } = await import("../../app/(user)/lab/will-it-last/[team]/page")
+		await expect(Team({ params: Promise.resolve({ team: "lv" }) })).rejects.toMatchObject({ digest: expect.stringContaining("/lab/will-it-last") })
+		await expect(Team({ params: Promise.resolve({ team: "zzz" }) })).rejects.toMatchObject({ digest: expect.stringContaining("404") })
+	})
+
+	it("sends a shared team link on to that team's page, carrying the rest of the view", async () => {
+		const props = { searchParams: Promise.resolve({ of: "KC", kind: "fifths", stat: "def.turnovers" }) }
+		const meta = await shareMetadata(props)
+		expect(new URL((meta.openGraph?.images as string[])[0]).searchParams.get("of")).toBe("KC")
+		expect(meta.alternates?.canonical).toBe("https://www.raidersrundown.com/lab/will-it-last/kc")
+		const replace = vi.fn()
+		Object.defineProperty(window, "location", { configurable: true, value: { ...window.location, replace } })
+		render(await ShareLanding(props))
+		expect(replace).toHaveBeenCalledWith(expect.stringMatching(/^\/lab\/will-it-last\/kc\?kind=fifths&stat=def\.turnovers#/))
+	})
+
+	it("shares the team in the link and the card request", () => {
+		const { default: C } = { default: WillItLast }
+		const h = getHistoryView("KC")!
+		render(<C meta={h.meta} tables={h.tables} standouts={h.standouts} checklist={h.checklist} season={h.season} n={h.n} first={h.first} last={h.last} stamp={1} start={h.start} subject={h.subject} />)
+		fireEvent.click(screen.getAllByRole("button", { name: /Share/ })[0])
+		const img = document.querySelector('img[src*="/api/og"]') as HTMLImageElement
+		expect(img.getAttribute("src")).toContain("of=KC")
 	})
 })
