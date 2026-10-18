@@ -52,6 +52,10 @@ jobs:
       - name: Build scouting numbers
         run: python scripts/lab/build_scouting.py --season "$SEASON" --out data/lab/scouting.json
 
+      - name: Keep the week-by-week trail
+        # One snapshot of every team's stats and ranks per game played, so "Will it last?" can show how a verdict has moved.
+        run: python scripts/lab/build_trail.py
+
       - name: Build position-group matchups
         # Grades, coaches, injuries and the coming slate for every team. Needs the coaches and spreads file as well.
         run: python scripts/lab/build_units.py --season "$SEASON" --out data/lab/units.json

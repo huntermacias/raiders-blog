@@ -23,13 +23,15 @@ describe("the team grades refresh", () => {
 		}
 	})
 
-	it("tests the scripts, builds only the grades, scouting and player profiles, and commits only those four files", () => {
+	it("tests the scripts, builds only the grades, scouting and player profiles, and commits only those files (the trail rides along with the scouting numbers)", () => {
 		expect(wf).toContain("pytest scripts/lab/test_build_units.py")
 		expect(wf).toContain("scripts/lab/build_units.py")
 		expect(wf).toContain("scripts/lab/build_scouting.py")
 		expect(wf).toContain("scripts/lab/test_build_players.py")
 		expect(wf).toContain("scripts/lab/build_players.py")
-		expect(wf).toMatch(/git add data\/lab\/units\.json data\/lab\/scouting\.json data\/lab\/players\.json data\/lab\/player-logs\.json data\/lab\/player-situations\.json\n/)
+		expect(wf).toContain("scripts/lab/test_build_trail.py")
+		expect(wf).toContain("scripts/lab/build_trail.py")
+		expect(wf).toMatch(/git add data\/lab\/units\.json data\/lab\/scouting\.json data\/lab\/trail\.json data\/lab\/players\.json data\/lab\/player-logs\.json data\/lab\/player-situations\.json\n/)
 		expect(wf).not.toMatch(/git add (-A|\.)/)
 		expect(wf).toContain("git diff --cached --quiet")
 	})
