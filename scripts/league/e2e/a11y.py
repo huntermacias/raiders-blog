@@ -62,21 +62,24 @@ def audit(page, label):
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
     handle = sql("select handle from league_players where legacy_handle_lower is not null order by handle limit 1")
+    # A_VP=mobile or A_VP=desktop runs one viewport, for machines where a dev server cannot hold both runs in memory.
     for vpname, vp in [("mobile", {"width": 390, "height": 844}), ("desktop", {"width": 1280, "height": 900})]:
+        if os.environ.get("A_VP") and os.environ["A_VP"] != vpname:
+            continue
         ctx = b.new_context(viewport=vp); page = ctx.new_page()
-        for path in ["/league", "/league/board", "/league/nfl", "/league/nfl?week=5", f"/league/{handle}", "/league/sign-in", "/league/register", "/league/forgot-password", "/league/upgrade"]:
+        for path in ["/league", "/league/board", "/league/nfl", "/league/nfl?week=5", "/league/nfl/confidence", "/league/nfl/confidence?week=5", "/league/nfl/upsets", "/league/nfl/upsets?week=5", "/league/nfl/share?mode=confidence&week=5&view=board", f"/league/{handle}", "/league/sign-in", "/league/register", "/league/forgot-password", "/league/upgrade"]:
             page.goto(BASE + path); audit(page, f"{vpname} visitor {path}")
         ctx.close()
         # signed-in player and admin
         for who, em in [("player", None), ("admin", "admin@example.com")]:
             if who == "player":
-                em = sql("select email from \"user\" where email like 'nfl%@example.com' order by \"createdAt\" desc limit 1")
+                em = sql("select email from \"user\" where email like 'nfl%@example.com' or email like 'fmt%@example.com' order by \"createdAt\" desc limit 1")
             if not em:
                 print("SKIP", who, "(no such account; run nfl.py/admin.py first)"); continue
             ctx = b.new_context(viewport=vp); page = ctx.new_page()
             page.goto(BASE + "/league/sign-in"); page.fill("#si-email", em); page.fill("#si-pw", PW)
             page.get_by_role("button", name="Sign in").click(); page.wait_for_url(re.compile(r".*/league(/.*)?$"), timeout=20000); page.wait_for_load_state("networkidle"); time.sleep(2)
-            for path in ["/league", "/league/nfl", "/league/account"] + (["/league/admin"] if who == "admin" else []):
+            for path in ["/league", "/league/nfl", "/league/nfl/confidence?week=7", "/league/nfl/upsets?week=7", "/league/nfl/confidence?week=5", "/league/account"] + (["/league/admin"] if who == "admin" else []):
                 page.goto(BASE + path); audit(page, f"{vpname} {who} {path}")
             if who == "admin":
                 page.goto(BASE + "/league/admin")

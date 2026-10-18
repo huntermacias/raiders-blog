@@ -18,6 +18,7 @@ import { type PlayoffsCardSpec, playoffsCardSize, renderPlayoffsCard } from "./p
 import { type RootingCardSpec, renderRootingCard, rootingCardSize } from "./rootingCard"
 import { type LabCardSpec, renderLabCard } from "./labCard"
 import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
+import { type NflLeagueCardSpec, nflCardSize, renderNflLeagueCard } from "./nflLeagueCard"
 import { type LiveCardSpec, renderLiveCard } from "./liveCard"
 import { type PlayerCardSpec, renderPlayerCard } from "./playerCard"
 import { type PlayerBoardCardSpec, renderPlayerBoardCard } from "./playerBoardCard"
@@ -93,10 +94,11 @@ export type CardSpec =
 			flags?: { hit: number; miss: number } | null
 	  }
 	| LiveCardSpec
+	| NflLeagueCardSpec
 
 /** The pixel size of a card: 1200x630 for every card but the tall version of a "will it last?", "season twins", playoff machine or matchup card (1080x1350). */
 export function cardSize(spec: CardSpec): { width: number; height: number } {
-	return spec.type === "compare" ? compareCardSize(spec) : spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
+	return spec.type === "compare" ? compareCardSize(spec) : spec.type === "nflleague" ? nflCardSize(spec) : spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
 }
 
 /** Trim to a word boundary so a title never runs off the card. */
@@ -469,6 +471,9 @@ export function renderCard(spec: CardSpec): ReactElement {
 
 		case "league":
 			return renderLeagueCard(spec)
+
+		case "nflleague":
+			return renderNflLeagueCard(spec)
 
 		case "live":
 			return renderLiveCard(spec)

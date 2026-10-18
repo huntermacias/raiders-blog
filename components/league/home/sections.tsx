@@ -370,35 +370,35 @@ export function PlayList({ view, signedIn }: { view: HomeView; signedIn: boolean
 	)
 }
 
-export function Challenges({ signedIn, nflOpen = true }: { signedIn: boolean; nflOpen?: boolean }) {
+type ChallengeModes = { winners: boolean; confidence: boolean; upset: boolean }
+
+const CHALLENGES: { mode: keyof ChallengeModes; title: string; blurb: string; href: string; cta: [string, string] }[] = [
+	{ mode: "winners", title: "NFL game winners", blurb: "Pick the winner of every game each week and chase the weekly title. One tap per game.", href: "/league/nfl", cta: ["Make this week's picks", "See the league"] },
+	{ mode: "confidence", title: "Confidence picks", blurb: "Rank your weekly picks by how sure you are. Your boldest call is worth the most.", href: "/league/nfl/confidence", cta: ["Rank this week's picks", "See the league"] },
+	{ mode: "upset", title: "Upset challenge", blurb: "Call the week's biggest upsets. Bigger underdogs pay more.", href: "/league/nfl/upsets", cta: ["Call this week's upsets", "See the league"] },
+]
+
+export function Challenges({ signedIn, modes }: { signedIn: boolean; modes: ChallengeModes }) {
 	return (
 		<ul className="grid gap-3 md:grid-cols-3">
-			{nflOpen ? (
-				<li className="rounded-xl border border-border bg-card p-5 shadow-sm">
-					<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Open now</p>
-					<h3 className="mt-1 font-serif text-xl font-bold">NFL game winners</h3>
-					<p className="mt-1 text-sm text-muted-foreground">Pick the winner of every game each week and chase the weekly title. One tap per game.</p>
-					<Link href="/league/nfl" className="mt-3 inline-flex items-center text-sm font-semibold underline-offset-4 hover:underline">
-						{signedIn ? "Make this week's picks" : "See the league"} <ArrowRight aria-hidden className="ml-1 h-4 w-4" />
-					</Link>
-				</li>
-			) : (
-				<li className="rounded-xl border border-dashed border-border p-5">
-					<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Coming soon</p>
-					<h3 className="mt-1 font-serif text-xl font-bold">NFL game winners</h3>
-					<p className="mt-1 text-sm text-muted-foreground">Pick the winner of every game each week and chase the weekly title. One tap per game.</p>
-				</li>
+			{CHALLENGES.map((c) =>
+				modes[c.mode] ? (
+					<li key={c.mode} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+						<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Open now</p>
+						<h3 className="mt-1 font-serif text-xl font-bold">{c.title}</h3>
+						<p className="mt-1 text-sm text-muted-foreground">{c.blurb}</p>
+						<Link href={c.href} className="mt-3 inline-flex items-center text-sm font-semibold underline-offset-4 hover:underline">
+							{signedIn ? c.cta[0] : c.cta[1]} <ArrowRight aria-hidden className="ml-1 h-4 w-4" />
+						</Link>
+					</li>
+				) : (
+					<li key={c.mode} className="rounded-xl border border-dashed border-border p-5">
+						<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Coming soon</p>
+						<h3 className="mt-1 font-serif text-xl font-bold">{c.title}</h3>
+						<p className="mt-1 text-sm text-muted-foreground">{c.blurb}</p>
+					</li>
+				)
 			)}
-			<li className="rounded-xl border border-dashed border-border p-5">
-				<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Coming next</p>
-				<h3 className="mt-1 font-serif text-xl font-bold">Confidence picks</h3>
-				<p className="mt-1 text-sm text-muted-foreground">Rank your weekly picks by how sure you are. Your boldest call is worth the most.</p>
-			</li>
-			<li className="rounded-xl border border-dashed border-border p-5">
-				<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Coming next</p>
-				<h3 className="mt-1 font-serif text-xl font-bold">Upset challenge</h3>
-				<p className="mt-1 text-sm text-muted-foreground">Call the week&rsquo;s biggest upsets. Bigger underdogs pay more.</p>
-			</li>
 		</ul>
 	)
 }

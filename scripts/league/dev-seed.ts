@@ -7,6 +7,7 @@ import type { RawExport } from "../../lib/league2/backfill"
 import { dbFromPool } from "../../lib/league2/db"
 import { syncBtbFromFeed } from "../../lib/league2/services/sync"
 import { gradeCompetition } from "../../lib/league2/services/grade"
+import { CONFIDENCE_COMPETITION, UPSET_COMPETITION } from "../../lib/league2/competitions"
 import { type NflFeedGame, NFL_COMPETITION, syncNflFromFeed } from "../../lib/league2/services/syncNfl"
 import { uuidV5 } from "../../lib/league2/ids"
 import { TEAMS } from "../../lib/nfl"
@@ -28,7 +29,7 @@ function rng(seed: number) {
 async function main() {
 	const pool = new Pool({ connectionString: url })
 	const db = dbFromPool(pool)
-	await pool.query(`truncate league_audit_log, league_grades, league_entry_revisions, league_entries, league_blogger_pick_revisions, league_blogger_picks, league_result_snapshots, league_events, league_competitions, league_legacy_identities, league_handle_reservations, league_admins, league_support_cases, league_notification_prefs, league_rate_limits, league_players, "session", "account", "verification", "rateLimit", "user" restart identity cascade`)
+	await pool.query(`truncate league_audit_log, league_grades, league_entry_revisions, league_entries, league_blogger_pick_revisions, league_blogger_picks, league_result_snapshots, league_upset_lines, league_events, league_competitions, league_legacy_identities, league_handle_reservations, league_admins, league_support_cases, league_notification_prefs, league_rate_limits, league_players, "session", "account", "verification", "rateLimit", "user" restart identity cascade`)
 	const now = Date.now()
 	const iso = (ms: number) => new Date(ms).toISOString()
 	const H = 3600_000
@@ -80,7 +81,9 @@ async function main() {
 	}
 	// Week 5 starts unscored so picks can be seeded "before kickoff", then the finals arrive.
 	const pre = nfl.map((g) => (g.week === 5 ? { ...g, awayScore: null, homeScore: null } : g))
-	await syncNflFromFeed(db, pre, 2026, now)
+	// Ratings to set the underdogs from: spread out so some games are close and some are long shots.
+	const prior = Object.fromEntries(TEAMS.map((t) => [t.abbr, 1380 + Math.floor(r() * 240)]))
+	await syncNflFromFeed(db, pre, 2026, now, { currentWeek: 5, priorRatings: prior })
 	const evs = (await pool.query(`select id, nfl_game_id, week, kickoff from league_events where nfl_game_id like 'dev-nfl-%'`)).rows
 	const pids = (await pool.query(`select id from league_players where legacy_handle_lower is not null order by handle`)).rows.map((x) => x.id as string)
 	for (const pid of pids) {
@@ -93,9 +96,34 @@ async function main() {
 			await pool.query(`insert into league_entry_revisions (entry_id, n, payload, at) select id, 1, payload, submitted_at from league_entries where id = $1`, [id])
 		}
 	}
-	const fin = await syncNflFromFeed(db, nfl, 2026, now)
-	await pool.query(`update league_competitions set enabled = true where id = $1`, [NFL_COMPETITION(2026)])
-	await gradeCompetition(db, { competitionId: NFL_COMPETITION(2026), now })
+	// Confidence slates (each player ranks the games of a week 1..N with a few ranks left unused) and upset calls
+	// (up to five underdogs a week, only on games that have a line).
+	const lineOf = new Map((await pool.query(`select event_id, underdog from league_upset_lines`)).rows.map((x) => [x.event_id as string, x.underdog as "away" | "home"]))
+	const put = async (comp: string, pid: string, e: { id: string; kickoff: Date }, payload: unknown) => {
+		const id = uuidV5(`entry:${pid}:${e.id}:${comp}`)
+		const at = iso(Date.parse(e.kickoff as unknown as string) - 30 * H)
+		await pool.query(`insert into league_entries (id, competition_id, player_id, event_id, payload, first_submitted_at, submitted_at) values ($1, $2, $3, $4, $5::jsonb, $6, $6)`, [id, comp, pid, e.id, JSON.stringify(payload), at])
+		await pool.query(`insert into league_entry_revisions (entry_id, n, payload, at) select id, 1, payload, submitted_at from league_entries where id = $1`, [id])
+	}
+	for (const pid of pids) {
+		for (const w of [5, 6]) {
+			const wk = evs.filter((e) => e.week === w)
+			const ranks = wk.map((_, i) => i + 1).sort(() => r() - 0.5)
+			let calls = 0
+			for (let i = 0; i < wk.length; i++) {
+				const e = wk[i]
+				if (r() < 0.8 && !(w === 6 && r() < 0.5)) await put(CONFIDENCE_COMPETITION(2026), pid, e, { pick: r() < 0.5 ? "away" : "home", rank: ranks[i] })
+				const dog = lineOf.get(e.id)
+				if (dog && calls < 5 && r() < 0.35 && !(w === 6 && r() < 0.5)) {
+					calls++
+					await put(UPSET_COMPETITION(2026), pid, e, { pick: dog })
+				}
+			}
+		}
+	}
+	const fin = await syncNflFromFeed(db, nfl, 2026, now, { currentWeek: 7, priorRatings: prior })
+	await pool.query(`update league_competitions set enabled = true where id like 'nfl-%'`)
+	for (const c of [NFL_COMPETITION(2026), CONFIDENCE_COMPETITION(2026), UPSET_COMPETITION(2026)]) await gradeCompetition(db, { competitionId: c, now })
 	console.log("seeded nfl", JSON.stringify(fin))
 	await pool.end()
 }

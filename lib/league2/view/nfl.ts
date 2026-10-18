@@ -46,13 +46,13 @@ export type NflWeekView = {
 	champions: { week: number; handles: string[]; points: number }[]
 }
 
-const chip = (name: string): TeamChip => {
+export const chip = (name: string): TeamChip => {
 	const t = teamInfo(name)
 	return { name: t.name, nick: t.nick, abbr: t.abbr, color: t.color }
 }
 
-const lockMs = (e: EventView) => Date.parse(e.lockAt ?? e.kickoff)
-const done = (e: EventView) => e.state === "final" || e.state === "cancelled"
+export const lockMs = (e: EventView) => Date.parse(e.lockAt ?? e.kickoff)
+export const done = (e: EventView) => e.state === "final" || e.state === "cancelled"
 
 export function statusOf(e: EventView, nowMs: number): NflGame["status"] {
 	if (e.state === "cancelled") return "cancelled"
@@ -68,13 +68,20 @@ export function defaultWeek(events: readonly EventView[], nowMs: number): number
 	return live.length > 0 ? Math.min(...weeks) : Math.max(...weeks)
 }
 
-const topWithMe = (rows: NflBoardRow[], limit: number): NflBoardRow[] => {
+export const topWithMe = (rows: NflBoardRow[], limit: number): NflBoardRow[] => {
 	const head = rows.slice(0, limit)
 	const me = rows.find((r) => r.isMe)
 	return me && head.indexOf(me) < 0 ? head.concat(me) : head
 }
 
-export function buildNflWeek(data: CompetitionData, season: number, me: { id: string } | null, nowMs: number, wanted: number | null): NflWeekView | null {
+export type NflWeekOptions = {
+	/** Entries a champion needs are 80% of this many games. Defaults to the week's decided games; the upset challenge passes 1. */
+	championSlate?: number
+	/** A week is not crowned when the best score is below this. */
+	minChampionPoints?: number
+}
+
+export function buildNflWeek(data: CompetitionData, season: number, me: { id: string } | null, nowMs: number, wanted: number | null, opts: NflWeekOptions = {}): NflWeekView | null {
 	const weeks = Array.from(new Set(data.events.map((e) => e.week))).sort((a, b) => a - b)
 	const week = wanted !== null && weeks.indexOf(wanted) >= 0 ? wanted : defaultWeek(data.events, nowMs)
 	if (week === null) return null
@@ -158,10 +165,10 @@ export function buildNflWeek(data: CompetitionData, season: number, me: { id: st
 			if (champions.length >= 3 || w > week) return
 			const evs = data.events.filter((e) => e.week === w)
 			if (evs.length === 0 || !evs.every(done)) return
-			const slate = evs.filter((e) => e.state === "final" && e.result && e.result.away !== e.result.home).length
+			const slate = opts.championSlate ?? evs.filter((e) => e.state === "final" && e.result && e.result.away !== e.result.home).length
 			if (slate === 0) return
 			const top = weeklyChampions(buildRows(data.grades, info, PUBLIC_TIEBREAKS, { week: w }), slate)
-			if (top.length > 0) champions.push({ week: w, handles: top.map((r) => r.handle), points: top[0].points })
+			if (top.length > 0 && top[0].points >= (opts.minChampionPoints ?? 0)) champions.push({ week: w, handles: top.map((r) => r.handle), points: top[0].points })
 		})
 
 	return {

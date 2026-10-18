@@ -8,7 +8,8 @@ import { disablePlayer, linkLegacyByReview, memberDetail, requireAdmin, restoreP
 import { adminEvents, adminOverview, auditLog, cancelEvent, correctBloggerPick, correctResult, freezePolicyVersion, memberEntries, moveLock, publishPolicyVersion, recalculate, releaseResultPin, restoreEntry, restoreEvent, setCompetitionEnabled, voidEntry } from "../services/adminLeague"
 import { parseSettings, saveSettings } from "../services/profileSettings"
 import { checkPassword, normalizeEmail } from "../services/passwords"
-import { submitPick } from "../services/picks"
+import { saveConfidenceWeek, submitPick } from "../services/picks"
+import { competitionForMode, isNflMode } from "../competitions"
 import { allow } from "../services/ratelimit"
 import { STRONG_EVIDENCE, type EvidenceKind } from "../domain/legacyClaim"
 
@@ -267,7 +268,10 @@ export async function admin(req: Request): Promise<Response> {
 	}
 }
 
-/** Save a pick for the signed-in player. `competition` is "btb" (score picks) or "winners" (the public NFL league). */
+/**
+ * Save picks for the signed-in player. `competition` is "btb" (score picks), "winners" (NFL game winners), "upset"
+ * (call or take back an underdog, one game at a time) or "confidence" (`items`: pick and rank for several games at once).
+ */
 export async function pick(req: Request): Promise<Response> {
 	const g = await gate(req, { name: "pick", max: 240, windowMs: 10 * 60_000 })
 	if (g instanceof Response) return g
@@ -278,7 +282,13 @@ export async function pick(req: Request): Promise<Response> {
 	if (!player) return fail(403, "This account cannot make picks", "not_allowed")
 	if (!(await allow(rt.db, `pick:user:${user.id}`, 120, 10 * 60_000))) return fail(429, "Slow down a little and try again.")
 	const season = currentSeason()
-	const competitionId = data.competition === "winners" ? `nfl-winners-${season}` : `btb-${season}`
+	if (data.competition === "confidence") {
+		// A confidence slate is saved as a whole: ranks must be unique across the week, so single picks make no sense.
+		const w = await saveConfidenceWeek(rt.db, { competitionId: competitionForMode("confidence", season), playerId: player.id, items: data.items, now: Date.now() })
+		if (w.ok) return json({ ok: true, saved: w.saved, changed: w.changed })
+		return fail(w.error === "closed" ? 409 : w.error === "not_found" ? 404 : w.error === "not_allowed" ? 403 : 400, w.message, w.error)
+	}
+	const competitionId = isNflMode(data.competition) ? competitionForMode(data.competition, season) : `btb-${season}`
 	const r = await submitPick(rt.db, { competitionId, playerId: player.id, eventId: data.eventId, payload: data.payload, now: Date.now() })
 	if (r.ok) return json({ ok: true, change: r.change, submittedAt: r.submittedAt })
 	const status = r.error === "closed" ? 409 : r.error === "not_found" ? 404 : r.error === "not_allowed" ? 403 : 400

@@ -14,6 +14,7 @@ run "seed" node_modules/.bin/vite-node scripts/league/dev-seed.ts
 run "account journeys" python3 scripts/league/e2e/journeys.py "$BASE"
 run "seed" node_modules/.bin/vite-node scripts/league/dev-seed.ts
 run "NFL journeys" python3 scripts/league/e2e/nfl.py "$BASE"
+run "NFL confidence and upset journeys" python3 scripts/league/e2e/nfl_formats.py "$BASE"
 run "admin journeys" python3 scripts/league/e2e/admin.py "$BASE"
 run "accessibility audit" python3 scripts/league/e2e/a11y.py "$BASE"
 exit $fail

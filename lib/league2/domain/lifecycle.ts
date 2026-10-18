@@ -156,9 +156,11 @@ export function validateConfidence(
 	next: readonly ConfidenceEntry[],
 	previous: readonly ConfidenceEntry[],
 	events: Readonly<Record<string, LeagueEvent>>,
-	nowMs: number
+	nowMs: number,
+	/** Highest rank in play. Defaults to the number of picks; the public league passes the week's game count so ranks can leave gaps. */
+	max: number = next.length
 ): string | null {
-	const n = next.length
+	const n = max
 	const seen: Record<number, true> = {}
 	for (let i = 0; i < next.length; i++) {
 		const e = next[i]

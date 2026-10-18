@@ -34,7 +34,7 @@ const EVENT = (id = "00000000-0000-0000-0000-000000000001") =>
 run("the League schema on a real Postgres", () => {
 	it("applies every migration to an empty database and seeds the Classic v1 policy, frozen", () => {
 		// The migrations ran when the database was prepared; here we check their result.
-		expect(files).toEqual(["0001_league_core.sql", "0002_league_seed_policies.sql", "0003_better_auth_tables.sql", "0004_league_accounts.sql", "0005_league_sync.sql", "0006_league_admin_tools.sql"])
+		expect(files).toEqual(["0001_league_core.sql", "0002_league_seed_policies.sql", "0003_better_auth_tables.sql", "0004_league_accounts.sql", "0005_league_sync.sql", "0006_league_admin_tools.sql", "0007_league_nfl_formats.sql"])
 		const r = psql(`select id, frozen_at is not null from league_scoring_policies where family = 'btb-classic'`)
 		expect(r.out).toBe("btb-classic-v1|t")
 		// The seeded rules are the JSON for the live scoring (checked against lib/league in policy parity test).
