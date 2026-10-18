@@ -22,6 +22,8 @@ export type Flag = {
 	dn: number | null
 	yd: number | null
 	fp: string | null
+	/** Yards from the committing team's own goal line to the ball (0 to 100), or null when the feed has no spot. */
+	yl: number | null
 	/** Score margin from the committing team's side before the play. */
 	mg: number
 	/** Penalty name and yards. */
@@ -47,7 +49,8 @@ export type Flag = {
 	ds: string
 }
 
-export type FlagPlayer = { n: string; t: string; p: string | null; s: string }
+/** A flagged player: name, latest team, position, page name, and where his photo is (his ESPN id, or the league's photo id when ESPN has none). */
+export type FlagPlayer = { n: string; t: string; p: string | null; s: string; e?: number; h?: string }
 
 export type FlagFile = {
 	season: number
@@ -56,6 +59,8 @@ export type FlagFile = {
 	source: string
 	turnoverCost: number
 	bigShare: number
+	/** Regular-season games played by each team, for per-game rates. */
+	games: Record<string, number>
 	players: Record<string, FlagPlayer>
 	flags: Flag[]
 }
@@ -343,3 +348,14 @@ export const byGame = (flags: readonly Flag[]): Group[] => {
 	const label = new Map(flags.map((f) => [f.g, `Wk ${f.w} ${versus(f)}`]))
 	return group(flags, (f) => f.g, (k) => label.get(k) ?? k).sort((a, b) => a.key.localeCompare(b.key))
 }
+
+/** A penalty name as a page name: "Roughing the Kicker" is "roughing-the-kicker". */
+export const typeSlug = (type: string): string =>
+	type
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+
+export const penaltyHref = (type: string) => `${FLAGS_PATH}/penalty/${typeSlug(type)}`
+export const COMPARE_PATH = `${FLAGS_PATH}/compare`
+export const SITUATIONS_PATH = `${FLAGS_PATH}/situations`

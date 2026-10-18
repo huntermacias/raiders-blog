@@ -10,7 +10,7 @@ import UpdatedStamp from "@/components/lab/UpdatedStamp"
 import { TeamLogo } from "@/components/lab/players/Media"
 import TrackView from "@/components/lab/players/TrackView"
 import { getPlayers } from "@/lib/lab/data"
-import { flagsOfPlayer, getFlagFiles, getRoster, playerIdOf } from "@/lib/lab/flagsData"
+import { flagsOfPlayer, flagsStamp, getFlagFiles, getRoster, playerIdOf } from "@/lib/lab/flagsData"
 import { FLAGS_PATH, playerFlagsHref, playerRows, teamFlagsHref, totals } from "@/lib/lab/flagsKit"
 import { cardStyle, profileHref, teamName } from "@/lib/lab/playerView"
 import { profileSlugs } from "@/lib/lab/playersKit"
@@ -100,7 +100,7 @@ export default async function PlayerFlagsPage(props: { params: Promise<{ slug: s
 				</div>
 			</section>
 			<section className="container py-8 sm:py-10" aria-label={`${p.n} flags`}>
-				<FlagsExplorer seasons={withFlags} players={{ [id]: p }} subject={{ kind: "player", name: p.n }} />
+				<FlagsExplorer seasons={withFlags} players={{ [id]: p }} subject={{ kind: "player", name: p.n, id: slug }} stamp={flagsStamp()} />
 				<FlagsMethod per={files[0]?.turnoverCost} />
 			</section>
 			<section className="border-t border-lab-line">

@@ -125,6 +125,20 @@ def play_kind(play_type, desc: str) -> str:
     return "run"
 
 
+def yards_from_own_goal(fp: str, team: str) -> int | None:
+    """Yards from the committing team's own goal line to the ball, from the feed's "LV 38" or "MID 50": 38 on its own side, 62 on the other."""
+    try:
+        head, tail = fp.split(" ", 1)
+        n = int(tail)
+    except (ValueError, AttributeError):
+        return None
+    if not 0 <= n <= 50:
+        return None
+    if head == "MID":
+        return 50
+    return n if head == team else 100 - n
+
+
 def culprit_of(row: dict, qb: tuple[str, str] | None, special_formation: bool) -> tuple[str, str | None, str | None]:
     """(kind, id, name) for who the flag is on. See the module note for the rules."""
     ptype = row["penalty_type"]
@@ -205,9 +219,11 @@ def build_flags(pbp: pd.DataFrame) -> list[dict]:
             sd = _num(x["score_differential"])
             home = x["home_team"]
             fp = x["yrdln"]
+            yl = None
             if isinstance(fp, str) and " " in fp:
                 head, tail = fp.split(" ", 1)
                 fp = f"{site(head)} {tail}"
+                yl = yards_from_own_goal(fp, site(pteam_raw))
             unit = "special" if kind in ("punt", "kickoff", "fg", "xp") else ("offense" if committed_by_offense else "defense")
             out.append(
                 {
@@ -223,6 +239,7 @@ def build_flags(pbp: pd.DataFrame) -> list[dict]:
                     "dn": int(_num(x["down"])) or None,
                     "yd": int(_num(x["ydstogo"])) if _num(x["down"]) else None,
                     "fp": fp if isinstance(fp, str) else None,
+                    "yl": yl,
                     "mg": int(sd if committed_by_offense else -sd),
                     "ty": str(x["penalty_type"]),
                     "yds": int(_num(x["penalty_yards"])),
@@ -247,15 +264,23 @@ def build_flags(pbp: pd.DataFrame) -> list[dict]:
 
 
 def build_players(flags: list[dict], roster: pd.DataFrame | None, known: dict[str, dict]) -> dict[str, dict]:
-    """{id: {n: name, t: latest team, p: position, s: page slug}} for everyone a flag is on. `known` maps ids to the site's own player pages."""
+    """{id: {n: name, t: latest team, p: position, s: page slug, e: ESPN id or h: league photo id}} for everyone a flag is on. `known` maps ids to the site's own player pages."""
     pos = {}
     names = {}
+    espn: dict[str, int] = {}
+    shots: dict[str, str] = {}
     if roster is not None and len(roster):
         for r in roster.itertuples():
             gid = getattr(r, "gsis_id", None)
             if isinstance(gid, str):
                 pos[gid] = getattr(r, "position", None)
                 names[gid] = getattr(r, "full_name", None)
+                e = _num(getattr(r, "espn_id", None))
+                if e:
+                    espn[gid] = int(e)
+                h = getattr(r, "headshot_url", None)
+                if isinstance(h, str) and "/league/" in h:
+                    shots[gid] = h.rsplit("/league/", 1)[1]
     latest: dict[str, dict] = {}
     for f in flags:
         if f["pid"]:
@@ -271,6 +296,11 @@ def build_players(flags: list[dict], roster: pd.DataFrame | None, known: dict[st
         taken[slug] = pid
         position = known.get(pid, {}).get("pos") or pos.get(pid)
         out[pid] = {"n": name, "t": info["t"], "p": position if isinstance(position, str) else None, "s": slug}
+        # His photo for the share cards: ESPN's when we have his id, otherwise the league's.
+        if pid in espn:
+            out[pid]["e"] = espn[pid]
+        elif pid in shots:
+            out[pid]["h"] = shots[pid]
     # A quarterback charged with a delay of game is a quarterback.
     for f in flags:
         if f["ck"] == "qb" and f["pid"] in out and not out[f["pid"]]["p"]:
@@ -301,6 +331,18 @@ def known_players(path: Path) -> dict[str, dict]:
     return {p["id"]: {"slug": p.get("slug"), "pos": p.get("pos")} for p in rows if p.get("id")}
 
 
+def games_played(pbp: pd.DataFrame) -> dict[str, int]:
+    """Regular-season games with plays in the file, by team: what a team's flags are divided by to be compared with another's."""
+    if not {"game_id", "home_team", "away_team", "season_type"} <= set(pbp.columns):
+        return {}
+    g = pbp[pbp["season_type"] == "REG"].drop_duplicates("game_id")
+    count: dict[str, int] = {}
+    for col in ("home_team", "away_team"):
+        for t in g[col].dropna():
+            count[site(str(t))] = count.get(site(str(t)), 0) + 1
+    return dict(sorted(count.items()))
+
+
 def build(season: int, folder: str | None, players_file: Path) -> dict:
     pbp_src = str(Path(folder) / f"play_by_play_{season}.csv.gz") if folder else PBP_URL.format(season=season)
     pbp = _read(pbp_src)
@@ -320,6 +362,7 @@ def build(season: int, folder: str | None, players_file: Path) -> dict:
         "source": LICENSE,
         "turnoverCost": TURNOVER_COST,
         "bigShare": BIG_SHARE,
+        "games": games_played(pbp),
         "players": build_players(flags, roster, known_players(players_file)),
         "flags": flags,
     }
@@ -339,7 +382,7 @@ def main() -> int:
     if out.exists():
         try:
             old = json.loads(out.read_text())
-            if all(old.get(k) == result[k] for k in ("flags", "players", "week", "turnoverCost", "bigShare")):
+            if all(old.get(k) == result[k] for k in ("flags", "players", "week", "turnoverCost", "bigShare", "games")):
                 print("flags: nothing changed")
                 return 0
         except ValueError:

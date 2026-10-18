@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "@/components/SiteLink"
+import FlagShare from "@/components/lab/flags/FlagShare"
 import { TeamLogo } from "@/components/lab/players/Media"
 import { cardStyle, teamNick } from "@/lib/lab/playerView"
 import { type Flag, type FlagPlayer, TAG_INFO, TAG_ORDER, clockText, costText, culpritText, downText, marginText, playerFlagsHref, resultLine, teamFlagsHref, turnoversText, versus } from "@/lib/lab/flagsKit"
@@ -30,6 +31,7 @@ export default function FlagCard({
 	showTeam = false,
 	showWho = true,
 	per,
+	share,
 }: {
 	f: Flag
 	players: Record<string, FlagPlayer>
@@ -38,6 +40,8 @@ export default function FlagCard({
 	/** Show who got the flag; a player's own page leaves it out. */
 	showWho?: boolean
 	per?: number
+	/** Adds a Share button: the card for this one flag. The season it is from and the data's stamp, so a new card is fetched when the data changes. */
+	share?: { season: number; stamp: number }
 }) {
 	const p = f.pid ? players[f.pid] : undefined
 	const who = culpritText(f)
@@ -95,6 +99,18 @@ export default function FlagCard({
 				</summary>
 				<p className="m-0 mt-1.5 leading-relaxed">{f.ds}</p>
 			</details>
+			{share ? (
+				<div className="mt-2.5 flex justify-end">
+					<FlagShare
+						view={{ kind: "flag", id: f.id, season: share.season }}
+						name="This flag"
+						file={`flag-${f.t.toLowerCase()}-week-${f.w}`}
+						stamp={share.stamp}
+						text={`${teamNick(f.t)} ${f.ty}, week ${f.w} ${versus(f)}: ${downText(f.dn, f.yd)}, ${costText(f.c)}.`}
+						alt={`${teamNick(f.t)} ${f.ty} in week ${f.w}, ${costText(f.c)}`}
+					/>
+				</div>
+			) : null}
 			{showTeam ? <span className="sr-only">Committed by the {teamNick(f.t)}</span> : null}
 		</li>
 	)

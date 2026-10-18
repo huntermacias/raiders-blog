@@ -24,6 +24,7 @@ import { type PlayerCardSpec, renderPlayerCard } from "./playerCard"
 import { type PlayerBoardCardSpec, renderPlayerBoardCard } from "./playerBoardCard"
 import { type HubCardSpec, renderHubCard } from "./hubCard"
 import { type CompareCardSpec, compareCardSize, renderCompareCard } from "./compareCards"
+import { type FlagsCardSpec, flagsCardSize, renderFlagsCard } from "./flagsCards"
 import { type MathCardSpec, renderMathCard } from "./mathCard"
 import { type RankingsCardSpec, renderRankingsCard } from "./rankingsCard"
 
@@ -83,6 +84,7 @@ export type CardSpec =
 	| PlayerBoardCardSpec
 	| HubCardSpec
 	| CompareCardSpec
+	| FlagsCardSpec
 	| {
 			type: "scoreboard"
 			season: number
@@ -98,7 +100,7 @@ export type CardSpec =
 
 /** The pixel size of a card: 1200x630 for every card but the tall version of a "will it last?", "season twins", playoff machine or matchup card (1080x1350). */
 export function cardSize(spec: CardSpec): { width: number; height: number } {
-	return spec.type === "compare" ? compareCardSize(spec) : spec.type === "nflleague" ? nflCardSize(spec) : spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
+	return spec.type === "flags" ? flagsCardSize(spec) : spec.type === "compare" ? compareCardSize(spec) : spec.type === "nflleague" ? nflCardSize(spec) : spec.type === "last" ? lastCardSize(spec) : spec.type === "twins" ? twinsCardSize(spec) : spec.type === "playoffs" ? playoffsCardSize(spec) : spec.type === "rooting" ? rootingCardSize(spec) : spec.type === "matchup" || spec.type === "slate" || spec.type === "board" ? matchupCardSize(spec) : { width: OG_WIDTH, height: OG_HEIGHT }
 }
 
 /** Trim to a word boundary so a title never runs off the card. */
@@ -292,6 +294,9 @@ function pct(n: number | null): string {
 
 export function renderCard(spec: CardSpec): ReactElement {
 	switch (spec.type) {
+		case "flags":
+			return renderFlagsCard(spec)
+
 		case "article": {
 			const title = clip(spec.title, 110)
 			return (

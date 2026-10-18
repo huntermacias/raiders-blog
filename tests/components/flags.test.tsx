@@ -8,7 +8,7 @@ import FlagsHub from "../../components/lab/flags/FlagsHub"
 import { flagSeason, getFlagFiles, getRoster, hubSlice, rosterFor } from "../../lib/lab/flagsData"
 import { flagsOfTeam } from "../../lib/lab/flagsData"
 import { teamFlagsHref } from "../../lib/lab/flagsKit"
-import { flag } from "../lib/flagsKit.test"
+import { flag } from "../helpers/flags"
 
 const push = vi.fn()
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/lab/flags", useSearchParams: () => new URLSearchParams() }))
@@ -62,7 +62,7 @@ describe("<FlagsExplorer />", () => {
 	const base = [mk(2026), { ...mk(2025, [flag({ c: 0.4 })]), flags: [flag({ c: 0.4 })] }]
 
 	it("shows the season's totals and lists the costly flags first", () => {
-		render(<FlagsExplorer seasons={base} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={base} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		const t = screen.getByTestId("flag-totals").textContent ?? ""
 		expect(t).toMatch(/Flags3/)
 		expect(t).toMatch(/Cost6\.0/)
@@ -72,14 +72,14 @@ describe("<FlagsExplorer />", () => {
 	})
 
 	it("switches seasons and says so when a team has no costly flag", () => {
-		render(<FlagsExplorer seasons={base} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={base} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		fireEvent.click(screen.getByRole("button", { name: "2025" }))
 		expect(screen.getByTestId("flag-totals").textContent).toMatch(/Flags1/)
 		expect(screen.getByText(/None so far in 2025/)).toBeTruthy()
 	})
 
 	it("filters the log by down and costly, and sorts it", () => {
-		render(<FlagsExplorer seasons={[base[0]]} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={[base[0]]} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		const log = screen.getByRole("heading", { name: "Every flag" }).closest("section")!
 		expect(within(log).getAllByTestId("flag-card")).toHaveLength(3)
 		fireEvent.click(within(log).getByRole("button", { name: "4th" }))
@@ -95,7 +95,7 @@ describe("<FlagsExplorer />", () => {
 
 	it("pages through a long log twenty at a time", () => {
 		const many = Array.from({ length: 45 }, (_, i) => flag({ c: 0.1 + i / 100 }))
-		render(<FlagsExplorer seasons={[mk(2026, many)]} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={[mk(2026, many)]} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		const log = screen.getByRole("heading", { name: "Every flag" }).closest("section")!
 		expect(within(log).getAllByTestId("flag-card")).toHaveLength(20)
 		fireEvent.click(within(log).getByRole("button", { name: "Show 20 more" }))
@@ -106,29 +106,29 @@ describe("<FlagsExplorer />", () => {
 
 	it("lists a team's players with a link to each, and counts the team flags apart", () => {
 		const list = [flag({ pid: "00-1", c: 1 }), flag({ ck: "team", pid: null, pn: null, ty: "Illegal Substitution", c: 0.3 })]
-		render(<FlagsExplorer seasons={[mk(2026, list)]} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={[mk(2026, list)]} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		const who = screen.getByRole("heading", { name: "Who gets them" }).closest("section")!
 		expect(within(who).getByRole("link", { name: "Alex Player" }).getAttribute("href")).toBe("/lab/flags/player/alex-player")
 		expect(who.textContent).toMatch(/1 more is the team's and its coaches'/)
 	})
 
 	it("leaves the players table off a player's own page and names the season when there is nothing", () => {
-		render(<FlagsExplorer seasons={[mk(2026)]} players={players} subject={{ kind: "player", name: "Alex Player" }} />)
+		render(<FlagsExplorer seasons={[mk(2026)]} players={players} subject={{ kind: "player", name: "Alex Player", id: "quay-walker" }} stamp={1} />)
 		expect(screen.queryByRole("heading", { name: "Who gets them" })).toBeNull()
 		cleanup()
-		render(<FlagsExplorer seasons={[mk(2026, [])]} players={players} subject={{ kind: "player", name: "Alex Player" }} />)
+		render(<FlagsExplorer seasons={[mk(2026, [])]} players={players} subject={{ kind: "player", name: "Alex Player", id: "quay-walker" }} stamp={1} />)
 		expect(screen.getByText(/No accepted penalties in 2026 for Alex Player/)).toBeTruthy()
 	})
 
 	it("says where a team ranks, with the worst first", () => {
-		render(<FlagsExplorer seasons={[{ ...mk(2026), rank: { rank: 3, of: 32 } }]} players={players} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={[{ ...mk(2026), rank: { rank: 3, of: 32 } }]} players={players} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		expect(screen.getByText(/The Raiders rank 3rd of 32 teams/)).toBeTruthy()
 	})
 
 	it("works on the real files: the Raiders' page has its flags, costly ones first and every table labelled", () => {
 		const files = getFlagFiles()
 		const seasons = files.map((f) => ({ season: f.season, week: f.week, turnoverCost: f.turnoverCost, flags: flagsOfTeam(f, "LV") }))
-		render(<FlagsExplorer seasons={seasons} players={rosterFor(seasons.flatMap((s) => s.flags))} subject={{ kind: "team", name: "Raiders" }} />)
+		render(<FlagsExplorer seasons={seasons} players={rosterFor(seasons.flatMap((s) => s.flags))} subject={{ kind: "team", name: "Raiders", id: "LV" }} stamp={1} />)
 		expect(screen.getByTestId("flag-totals").textContent).toMatch(new RegExp(`^Flags${seasons[0].flags.length}\\d+ yards`))
 		for (const region of Array.from(document.querySelectorAll("[role=region]"))) expect(region.getAttribute("aria-label")).toBeTruthy()
 	})

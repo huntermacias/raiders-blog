@@ -20,6 +20,8 @@
 //   /api/og?type=board[&sort=composite|off|def|qb|ol|rec|run|rush|rund|cov][&show=AFC|NFC|<division>][&team=XX][&size=wide|tall]   (the league's position-group heat map)
 //   /api/og?type=twins[&size=wide|tall][&mode=off|def][&twin=2022-JAX]   (season twins: the Raiders' closest team-season)
 //   /api/og?type=rooting&team=LV&goal=playoffs|division|bye[&week=8][&size=wide|tall]   (the rooting guide: a team's goal and the top three games to root in)
+//   /api/og?type=flags&kind=flag&id=2026_04_KC_LV-1234|team&team=LV|player&slug=<slug>|compare&a=LV&b=KC|board&board=latest|worst|players|teams|types|penalty&ty=<penalty-name>|situation&dim=score[&team=LV]
+//           [&season=2026][&size=wide|tall]   (the penalty flags: a flag, a team, a player, two teams, a leaderboard, a penalty, a situation)
 //   /api/og?type=hub   (the Lab hub: the week's findings on one card)
 //   /api/og?type=playoffs[&s=<scenario code>][&t=KC][&size=wide|tall]   (the playoff machine: a team's seed and bracket in a scenario, or its odds as the race stands)
 //   /api/og?type=player&slug=brock-bowers[&pos=te]   (a Player Lab profile: grade, league-best badges and strongest numbers)
@@ -294,11 +296,21 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		yb: first(query.yb),
 		f: first(query.f),
 		side: first(query.side),
+		season: first(query.season),
+		id: first(query.id),
+		board: first(query.board),
+		ty: first(query.ty),
+		dim: first(query.dim),
 	})
 	if (insight) {
 		if (insight.type === "compare") {
 			const [pa, pb] = await Promise.all([insight.a.headshot ? headshotDataUri(insight.a.headshot) : null, insight.b.headshot ? headshotDataUri(insight.b.headshot) : null])
 			return { ...insight, a: { ...insight.a, photo: pa }, b: { ...insight.b, photo: pb } }
+		}
+		if (insight.type === "flags") {
+			// Every face on the card, fetched together: each is cut off after 3 seconds, so a slow image host costs one wait, not eight.
+			const photos = await Promise.all(insight.heads.map((h) => (h.url ? headshotDataUri(h.url) : Promise.resolve(null))))
+			return { ...insight, heads: insight.heads.map((h, i) => ({ ...h, photo: photos[i] })) }
 		}
 		if (insight.type === "player" && insight.headshot) return { ...insight, photo: await headshotDataUri(insight.headshot) }
 		if (insight.type === "hub") {
@@ -312,7 +324,7 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		}
 		return insight
 	}
-	if (type === "scout" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard" || type === "compare" || type === "hub") return null
+	if (type === "scout" || type === "flags" || type === "last" || type === "twins" || type === "playoffs" || type === "rooting" || type === "matchup" || type === "slate" || type === "board" || type === "player" || type === "playerboard" || type === "compare" || type === "hub") return null
 
 	if (type === "lab") {
 		const slug = first(query.slug)
@@ -352,6 +364,7 @@ function cacheFor(spec: CardSpec): string {
 	}
 	// The league cards show standings and the open game, and the pages stamp their links hourly.
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
+	if (spec.type === "flags") return "public, s-maxage=86400, stale-while-revalidate=604800"
 	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare" || spec.type === "hub") return "public, s-maxage=604800, stale-while-revalidate=2592000"
 	if (spec.type === "league" || spec.type === "math" || spec.type === "nflleague") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"

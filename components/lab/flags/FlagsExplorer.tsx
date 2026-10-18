@@ -4,12 +4,15 @@ import * as React from "react"
 
 import Link from "@/components/SiteLink"
 import FlagCard from "@/components/lab/flags/FlagCard"
+import FlagShare from "@/components/lab/flags/FlagShare"
 import {
 	type Filter,
 	type Flag,
 	type FlagPlayer,
 	type Group,
+	COMPARE_PATH,
 	NO_FILTER,
+	SITUATIONS_PATH,
 	applyFilter,
 	byDown,
 	byGame,
@@ -102,10 +105,14 @@ export default function FlagsExplorer({
 	seasons,
 	players,
 	subject,
+	stamp,
 }: {
 	seasons: SeasonFlags[]
 	players: Record<string, FlagPlayer>
-	subject: { kind: "team"; name: string } | { kind: "player"; name: string }
+	/** Who the page is about: `id` is the team's code or the player's page name, which the share card is made from. */
+	subject: { kind: "team"; name: string; id: string } | { kind: "player"; name: string; id: string }
+	/** Changes when the data does, so a shared card is fetched fresh. */
+	stamp: number
 }) {
 	const [season, setSeason] = React.useState(seasons[0]?.season ?? 0)
 	const [filter, setFilter] = React.useState<Filter>(NO_FILTER)
@@ -134,23 +141,37 @@ export default function FlagsExplorer({
 
 	return (
 		<div>
-			{seasons.length > 1 ? (
-				<div role="group" aria-label="Season" className="mb-5 flex flex-wrap gap-1.5">
-					{seasons.map((s) => (
-						<Chip
-							key={s.season}
-							on={s.season === cur.season}
-							onClick={() => {
-								setSeason(s.season)
-								setFilter(NO_FILTER)
-								setShown(PAGE)
-							}}
-						>
-							{s.season}
-						</Chip>
-					))}
-				</div>
-			) : null}
+			<div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+				{seasons.length > 1 ? (
+					<div role="group" aria-label="Season" className="flex flex-wrap gap-1.5">
+						{seasons.map((s) => (
+							<Chip
+								key={s.season}
+								on={s.season === cur.season}
+								onClick={() => {
+									setSeason(s.season)
+									setFilter(NO_FILTER)
+									setShown(PAGE)
+								}}
+							>
+								{s.season}
+							</Chip>
+						))}
+					</div>
+				) : (
+					<span />
+				)}
+				{flags.length ? (
+					<FlagShare
+						view={isTeam ? { kind: "team", team: subject.id, season: cur.season } : { kind: "player", slug: subject.id, season: cur.season }}
+						name={isTeam ? `${subject.name} penalties` : `${subject.name}'s flags`}
+						file={`flags-${subject.id.toLowerCase()}`}
+						stamp={stamp}
+						text={isTeam ? `${subject.name} penalties, ${cur.season}: ${t.flags} flags, ${t.cost.toFixed(1)} points lost, ${t.costly} that cost like a turnover.` : `${subject.name}'s penalties, ${cur.season}: ${t.flags} flags, ${t.cost.toFixed(1)} points lost.`}
+						alt={`${subject.name} penalties in ${cur.season}`}
+					/>
+				) : null}
+			</div>
 
 			{flags.length === 0 ? (
 				<p className="m-0 rounded-2xl border border-dashed border-lab-line-strong p-5 text-sm text-lab-soft">
@@ -182,6 +203,17 @@ export default function FlagsExplorer({
 						</p>
 					) : null}
 
+					{isTeam ? (
+						<p className="m-0 mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+							<Link href={`${SITUATIONS_PATH}?team=${subject.id}`} className="text-lab-ink underline underline-offset-4">
+								{subject.name} flags by score, down, field and clock
+							</Link>
+							<Link href={`${COMPARE_PATH}?a=${subject.id}`} className="text-lab-ink underline underline-offset-4">
+								Compare with another team
+							</Link>
+						</p>
+					) : null}
+
 					<section className="mt-9" aria-labelledby="costly-h">
 						<h2 id="costly-h" className="m-0 font-serif text-2xl font-bold tracking-tight">
 							Costly flags
@@ -190,7 +222,7 @@ export default function FlagsExplorer({
 						{costly.length ? (
 							<ul className="m-0 mt-4 grid list-none gap-3 p-0 md:grid-cols-2">
 								{costly.map((f) => (
-									<FlagCard key={f.id} f={f} players={players} showWho={isTeam} per={per} />
+									<FlagCard key={f.id} f={f} players={players} showWho={isTeam} per={per} share={{ season: cur.season, stamp }} />
 								))}
 							</ul>
 						) : (
@@ -308,7 +340,7 @@ export default function FlagsExplorer({
 						{log.length ? (
 							<ul className="m-0 mt-3 grid list-none gap-3 p-0 md:grid-cols-2">
 								{log.slice(0, shown).map((f) => (
-									<FlagCard key={f.id} f={f} players={players} showWho={isTeam} per={per} />
+									<FlagCard key={f.id} f={f} players={players} showWho={isTeam} per={per} share={{ season: cur.season, stamp }} />
 								))}
 							</ul>
 						) : (
