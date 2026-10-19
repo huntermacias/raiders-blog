@@ -13,7 +13,7 @@ import type { ReactElement } from "react"
 import { SIZE_PIXELS, type ShareSize } from "../lab/lastShare"
 import { teamByAbbr } from "../nfl"
 import { GOAL_INFO, pctText, pointsText } from "../rooting/guide"
-import { type GuideView, ownGame, topThree } from "../rooting/view"
+import { type GuideView, topThree } from "../rooting/view"
 import type { Goal } from "../rooting/types"
 import { BRIGHT, Brand, Button, DIM, Eyebrow, Frame, GOLD, HIT, LINE, MISS, SILVER, WHITE, accent, caps, clip, rgba } from "./kit"
 
@@ -30,7 +30,7 @@ export type RootingPick = {
 	yours: boolean
 	/** The best result minus the worst, in points: what the games are ranked by. */
 	swing: number
-	/** The big number: "+20" for a gain, or "12" when the game is worth avoiding a bad result rather than hoping for a good one. */
+	/** The big number: the game's swing in points, the same number the page ranks by. */
 	big: string
 	unit: string
 	/** Chance at the goal now, and after the result that helps, 0-100. */
@@ -40,12 +40,15 @@ export type RootingPick = {
 	thenText: string
 }
 
-/** The followed team's own game: what a win and a loss are each worth to it. Shown as a highlight, never as a "root for" pick. */
+/** The followed team's next game: its chance after a win and after a loss. Shown as a highlight, never as a "root for" pick. */
 export type RootingOwn = {
 	opp: string
 	venue: "vs" | "at"
+	week: number
 	win: { text: string; delta: string }
 	loss: { text: string; delta: string }
+	/** Win minus loss, in whole points. */
+	swing: number
 }
 
 export type RootingCardSpec = {
@@ -80,9 +83,8 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 	const info = teamByAbbr(view.team)
 	const goal = view.goals.find((g) => g.goal === view.goal)
 	const picks: RootingPick[] = topThree(view).flatMap((r, i) => {
-		if (!r.rootFor || r.rootAgainst === null || r.bestP === null || r.gain === null) return []
+		if (!r.rootFor || r.rootAgainst === null || r.bestP === null) return []
 		const t = teamByAbbr(r.rootFor)
-		const gainPts = wholePct(r.gain)
 		const swing = wholePct(r.spread)
 		return [
 			{
@@ -94,8 +96,8 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 				venue: r.rootFor === r.away ? ("at" as const) : ("vs" as const),
 				yours: r.yours,
 				swing,
-				big: gainPts >= 1 ? `+${gainPts}` : String(Math.max(1, swing)),
-				unit: gainPts >= 1 ? (gainPts === 1 ? "pt" : "pts") : "pt swing",
+				big: String(Math.max(1, swing)),
+				unit: "pt swing",
 				now: wholePct(r.baseline),
 				then: wholePct(r.bestP),
 				nowText: pctText(r.baseline),
@@ -104,10 +106,11 @@ export function buildRootingSpec(view: GuideView, input: { season: number; size:
 		]
 	})
 
-	const g = ownGame(view)
-	const own: RootingOwn | null = g
-		? { opp: g.opp, venue: g.venue, win: { text: pctText(g.win.p), delta: pointsText(g.win.delta) }, loss: { text: pctText(g.loss.p), delta: pointsText(g.loss.delta) } }
-		: null
+	const g = view.own
+	const own: RootingOwn | null =
+		g && view.status === "live"
+			? { opp: g.opp, venue: g.venue, week: g.week, win: { text: pctText(g.win.p), delta: pointsText(g.win.delta) }, loss: { text: pctText(g.loss.p), delta: pointsText(g.loss.delta) }, swing: wholePct(g.swing) }
+			: null
 
 	const status = view.status
 	const live = status === "live"
@@ -193,26 +196,23 @@ function Row({ pick, tall, w, tight }: { pick: RootingPick; tall: boolean; w: nu
 	)
 }
 
-/** The followed team's own game, drawn as a highlight: what winning it and losing it are each worth, in points. */
+/** The followed team's next game, drawn as a highlight: its chance after winning it and after losing it. */
 function Own({ own, tall, w }: { own: RootingOwn; tall: boolean; w: number }) {
 	const stat = (name: string, v: { text: string; delta: string }, color: string) => (
 		<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginLeft: tall ? 40 : 26 }}>
 			<div style={label({ fontSize: tall ? 22 : 14, letterSpacing: 4, color: SILVER })}>{name}</div>
-			<div style={{ display: "flex", alignItems: "flex-end" }}>
-				<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 62 : 40, lineHeight: 1, color }}>{v.delta.replace(/ pts?$/, "")}</div>
-				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 3, color: SILVER, marginLeft: 8, marginBottom: tall ? 8 : 4 })}>{v.delta.endsWith("pt") ? "pt" : "pts"}</div>
-			</div>
-			<div style={label({ fontSize: tall ? 22 : 14, letterSpacing: 2, color: DIM })}>{`${v.text} chance`}</div>
+			<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 62 : 40, lineHeight: 1, color }}>{v.text}</div>
+			<div style={label({ fontSize: tall ? 22 : 14, letterSpacing: 2, color: DIM })}>{`${v.delta} from now`}</div>
 		</div>
 	)
 	return (
 		<div style={{ display: "flex", alignItems: "center", width: w, height: tall ? 132 : 96, paddingLeft: tall ? 30 : 22, paddingRight: tall ? 28 : 20, backgroundColor: "rgba(15,16,18,0.92)", border: `2px solid ${GOLD}`, borderRadius: 14 }}>
 			<div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 5, color: GOLD })}>Your game</div>
+				<div style={label({ fontSize: tall ? 24 : 15, letterSpacing: 5, color: GOLD })}>{`Your next game \u00b7 ${own.swing} pt swing`}</div>
 				<div style={{ display: "flex", fontFamily: "Anton", fontSize: tall ? 58 : 38, lineHeight: 1.1, letterSpacing: 1, color: WHITE, ...caps }}>{`${own.venue} ${own.opp}`}</div>
 			</div>
-			{stat("A win is worth", own.win, HIT)}
-			{stat("A loss costs", own.loss, MISS)}
+			{stat("If they win", own.win, HIT)}
+			{stat("If they lose", own.loss, MISS)}
 		</div>
 	)
 }
@@ -266,7 +266,7 @@ export function renderRootingCard(spec: RootingCardSpec): ReactElement {
 			</div>
 		)
 
-	const fine = "Odds from a simulation of the rest of the season · Data: nflverse, CC BY 4.0"
+	const fine = "Odds from a simulation of the rest of the season · Swing = chance if it goes your way minus chance if not · Data: nflverse, CC BY 4.0"
 
 	if (!tall) {
 		return (

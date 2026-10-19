@@ -52,6 +52,19 @@ def test_builds_every_game_and_locks_finished_ones():
     assert any(x["spread"] == -2.5 for x in unplayed)
 
 
+def test_keeps_the_spread_of_played_games_and_flags_neutral_sites():
+    g = full_schedule()
+    g.loc[0, ["away_score", "home_score"]] = [20, 27]
+    g.loc[0, "spread_line"] = 3.5
+    g.loc[2, "location"] = "Neutral"
+    g["location"] = g["location"].fillna("Home") if "location" in g else "Home"
+    g.loc[2, "location"] = "Neutral"
+    out = b.build(g, 2026)["games"]
+    assert out[0]["homeScore"] == 27 and out[0]["spread"] == 3.5
+    assert out[2].get("neutral") is True
+    assert all("neutral" not in x for i, x in enumerate(out) if i != 2)
+
+
 def test_keeps_a_tied_game():
     g = full_schedule()
     g.loc[0, ["away_score", "home_score"]] = [17, 17]
@@ -108,3 +121,84 @@ def test_a_broken_download_does_not_replace_a_good_file(tmp_path):
     out.write_text("keep me")
     assert b.main(["--season", "2026", "--input", str(src), "--out", str(out)]) == 1
     assert out.read_text() == "keep me"
+
+
+# ---- ESPN fills in scores nflverse has not recorded yet -------------------------------------------------------------
+
+
+def espn_event(home, away, hs, as_, state="post"):
+    return {
+        "competitions": [
+            {
+                "status": {"type": {"state": state}},
+                "competitors": [
+                    {"homeAway": "home", "score": str(hs), "team": {"abbreviation": home}},
+                    {"homeAway": "away", "score": str(as_), "team": {"abbreviation": away}},
+                ],
+            }
+        ]
+    }
+
+
+def result_with(g=None):
+    return b.build(g if g is not None else full_schedule(), 2026)
+
+
+def first_open(result, week=1):
+    return next(r for r in result["games"] if r["week"] == week and "homeScore" not in r)
+
+
+def test_espn_final_fills_a_game_nflverse_has_not_scored():
+    result = result_with()
+    row = first_open(result)
+    board = {"events": [espn_event(row["home"], row["away"], 27, 20)]}
+    filled = b.merge_espn(result, {1: board})
+    assert filled == [row["id"]]
+    assert row["homeScore"] == 27 and row["awayScore"] == 20
+    assert result["played"] == 1 and result["throughWeek"] == 1
+    assert result["espnFinals"] == [row["id"]]
+
+
+def test_espn_never_overwrites_a_score_nflverse_has():
+    g = full_schedule()
+    g.loc[0, ["away_score", "home_score"]] = [20, 27]
+    result = result_with(g)
+    row = result["games"][0]
+    board = {"events": [espn_event(row["home"], row["away"], 99, 98)]}
+    assert b.merge_espn(result, {1: board}) == []
+    assert (row["homeScore"], row["awayScore"]) == (27, 20)
+
+
+def test_espn_games_that_are_not_over_or_do_not_match_are_ignored():
+    result = result_with()
+    row = first_open(result)
+    other = next(r for r in result["games"] if r["week"] == 1 and r["id"] != row["id"])
+    board = {
+        "events": [
+            espn_event(row["home"], row["away"], 10, 7, state="in"),  # still playing
+            espn_event(other["away"], other["home"], 10, 7),  # home and away swapped: not this game
+            {"competitions": [{"status": {"type": {"state": "post"}}, "competitors": [{"homeAway": "home", "score": "x", "team": {"abbreviation": "KC"}}]}]},
+        ]
+    }
+    assert b.merge_espn(result, {1: board}) == []
+    # A final for the right teams but another week is not this week's game either.
+    assert b.merge_espn(result, {2: {"events": [espn_event(row["home"], row["away"], 10, 7)]}}) == []
+    assert "homeScore" not in row
+
+
+def test_espn_abbreviations_are_the_sites():
+    assert b._espn_abbr("WSH") == "WAS" and b._espn_abbr("jac") == "JAX" and b._espn_abbr("KC") == "KC"
+
+
+def test_espn_failures_add_nothing_and_only_weeks_that_could_be_over_are_asked():
+    result = result_with()
+    calls = []
+
+    def opener(url):
+        calls.append(url)
+        raise OSError("down")
+
+    boards = b.fetch_boards(result, "2026-09-03", opener=opener)
+    assert boards == {} and calls  # asked about the weeks already started, got nothing, carried on
+    assert all("week=1" in u or "week=2" in u or "week=3" in u for u in calls)
+    assert b.fetch_boards(result, "2026-08-01", opener=opener) == {}  # before the season: nothing to ask

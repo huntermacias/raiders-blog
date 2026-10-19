@@ -4,6 +4,7 @@ import { cannotTakeTopSeed, cannotWinDivision, clinchStatuses } from "@/lib/play
 import { seedConference } from "@/lib/playoffs/standings"
 import { simulateOdds } from "@/lib/playoffs/odds"
 import { getGames } from "@/lib/playoffs/data"
+import { getModel } from "@/lib/ratings/data"
 import { makeContext, resultsKey, simulateBaseline, simulateConditional, simulateTie, flipped, resultSwing } from "@/lib/rooting/engine"
 import { actionable, goalStatus, rankGames } from "@/lib/rooting/guide"
 import { SCALE } from "@/lib/rooting/types"
@@ -208,11 +209,26 @@ describe("the results key", () => {
 		expect(resultsKey(next)).not.toBe(resultsKey(games))
 	})
 
-	it("changes when a score is corrected, but not when only the kickoff or the spread moves", () => {
+	it("changes when a score is corrected, but not when only the kickoff moves", () => {
 		const fixed = games.map((g, i) => (i === 0 ? { ...g, homeScore: (g.homeScore ?? 0) + 1 } : g))
 		expect(resultsKey(fixed)).not.toBe(resultsKey(games))
-		const moved = games.map((g) => (g.status === "final" ? g : { ...g, week: g.week + 1, spread: 3 }))
+		const moved = games.map((g) => (g.status === "final" ? g : { ...g, week: g.week + 1, date: "2026-12-01", time: "20:15" }))
 		expect(resultsKey(moved)).toBe(resultsKey(games))
+	})
+
+	it("changes when a posted spread appears or moves, since the spread is what prices an open game", () => {
+		const lined = games.map((g) => (g.status === "final" ? g : { ...g, spread: 3 }))
+		expect(resultsKey(lined)).not.toBe(resultsKey(games))
+		const moved = lined.map((g) => (g.status === "final" ? g : { ...g, spread: 4.5 }))
+		expect(resultsKey(moved)).not.toBe(resultsKey(lined))
+		// A spread on a game that is already final prices nothing any more.
+		const late = games.map((g) => (g.status === "final" ? { ...g, spread: 7 } : g))
+		expect(resultsKey(late)).toBe(resultsKey(games))
+	})
+
+	it("changes with the fitted ratings model, so a refit rebuilds the guide", () => {
+		const m = getModel()
+		expect(resultsKey(games, { model: { ...m, generatedAt: "2099-01-01T00:00:00Z" } })).not.toBe(resultsKey(games))
 	})
 
 	it("changes with the settings, so a bigger sample is not mistaken for the old one", () => {

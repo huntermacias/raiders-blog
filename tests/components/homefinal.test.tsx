@@ -179,6 +179,7 @@ describe("<LabBand />", () => {
 					pct: "Clinched",
 					baseline: 1,
 					change: null,
+					range: null,
 					best: null,
 					own: null,
 					matters: 0,
@@ -204,8 +205,9 @@ describe("<LabBand />", () => {
 			pct: "41%",
 			baseline: 0.41,
 			change: { text: "+6 pts", dir: "up" as const, since: "since Week 4" },
-			best: { gameId: "g", rootFor: "DEN", against: "LAC", forNick: "Broncos", againstNick: "Chargers", matchup: "Chargers at Broncos", gain: "+4 pts", small: false },
-			own: { opp: "Patriots", venue: "vs" as const, win: "+8 pts", loss: "−5 pts" },
+			range: "34% to 47%",
+			best: { gameId: "g", rootFor: "DEN", against: "LAC", forNick: "Broncos", againstNick: "Chargers", matchup: "Chargers at Broncos", swing: "9-pt swing", small: false },
+			own: { opp: "Patriots", venue: "vs" as const, week: 7, win: "48%", loss: "30%", swing: "18-pt swing" },
 			matters: 5,
 			headline: "",
 			updating: true,
@@ -216,7 +218,9 @@ describe("<LabBand />", () => {
 		expect(screen.getByText("+6 pts")).toBeTruthy()
 		expect(screen.getByText("Root for the Broncos")).toBeTruthy()
 		expect(screen.getByText("Chargers at Broncos")).toBeTruthy()
-		expect(screen.getByText(/A final score is still being worked in/)).toBeTruthy()
+		expect(screen.getByText("9-pt swing")).toBeTruthy()
+		expect(screen.getByText(/lands between 34% to 47%/)).toBeTruthy()
+		expect(screen.getByText(/A recent result is still being worked in/)).toBeTruthy()
 		expect((screen.getByRole("link", { name: /See all 5 games that matter/ }) as HTMLAnchorElement).getAttribute("href")).toBe("/lab/rooting-guide?team=LV&goal=playoffs")
 		expect(screen.getByRole("img", { name: "41 percent" })).toBeTruthy()
 	})

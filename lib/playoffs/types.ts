@@ -30,6 +30,8 @@ export type Game = {
 	time?: string | null
 	/** The market spread (positive means the home team is favored), kept only when the schedule has one. */
 	spread?: number | null
+	/** True for a game at a neutral site (an international game, say), where neither team has home field. */
+	neutral?: boolean
 }
 
 /** A reader's pick for one game: the home team, the away team, or a tie. */

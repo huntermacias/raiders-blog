@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { getGames } from "@/lib/playoffs/data"
-import { DEFAULT_SIMS, MIN_BUCKET, homeChance, oddsRun, ratingsFor, simulateOdds, uniform } from "@/lib/playoffs/odds"
+import { DEFAULT_SIMS, MIN_BUCKET, homeChance, oddsRun, ratingsFor, rollerFor, simulateOdds, uniform } from "@/lib/playoffs/odds"
 import { pickTeamGames } from "@/lib/playoffs/picks"
 import { actualOutcome } from "@/lib/playoffs/season"
 import { simulateSeason } from "@/lib/playoffs/simulator"
@@ -68,16 +68,81 @@ describe("the dice", () => {
 })
 
 describe("ratings", () => {
-	it("rate winners above losers and leave teams that have not played at 1500", () => {
+	it("rate winners above losers and leave teams that have not played at average", () => {
 		const r = ratingsFor(lopsided())
-		expect(r.A1).toBeGreaterThan(1500)
-		expect(r.C4).toBeLessThan(1500)
-		expect(ratingsFor([scheduled("A1", "A2")]).A1).toBeUndefined()
+		expect(r.elo.A1).toBeGreaterThan(1500)
+		expect(r.elo.C4).toBeLessThan(1500)
+		expect(ratingsFor([scheduled("A1", "A2")]).elo.A1).toBeUndefined()
 	})
 
 	it("make the home team the favorite when the teams are level, and by more when the visitors are weak", () => {
-		expect(homeChance({}, { homeTeam: "A1", awayTeam: "A2" })).toBeGreaterThan(0.5)
-		expect(homeChance({ A1: 1600, A2: 1400 }, { homeTeam: "A1", awayTeam: "A2" })).toBeGreaterThan(homeChance({ A1: 1500, A2: 1500 }, { homeTeam: "A1", awayTeam: "A2" }))
+		const level = ratingsFor([scheduled("A1", "A2")])
+		expect(homeChance(level, { homeTeam: "A1", awayTeam: "A2" })).toBeGreaterThan(0.5)
+		const strong = { ...level, elo: { A1: 1600, A2: 1400 } }
+		expect(homeChance(strong, { homeTeam: "A1", awayTeam: "A2" })).toBeGreaterThan(homeChance(level, { homeTeam: "A1", awayTeam: "A2" }))
+	})
+
+	it("price a game from its spread when it has one", () => {
+		const level = ratingsFor([scheduled("A1", "A2")])
+		const fav = homeChance(level, { homeTeam: "A1", awayTeam: "A2", spread: 7 })
+		const dog = homeChance(level, { homeTeam: "A1", awayTeam: "A2", spread: -7 })
+		expect(fav).toBeGreaterThan(0.7)
+		expect(fav + dog).toBeCloseTo(1, 9)
+		expect(homeChance(level, { homeTeam: "A1", awayTeam: "A2", spread: 0 })).toBeCloseTo(0.5, 9)
+	})
+})
+
+describe("team-strength shocks in the dice", () => {
+	const g = [
+		{ id: "2026_01_A1_A2", homeTeam: "A2", awayTeam: "A1" },
+		{ id: "2026_02_A1_A3", homeTeam: "A3", awayTeam: "A1" },
+		{ id: "2026_03_A2_A3", homeTeam: "A3", awayTeam: "A2" },
+	]
+	const logits = [0, 0, 0]
+
+	it("give the forecast chance on average, game by game", () => {
+		for (const sigma of [0, 0.485]) {
+			const roll = rollerFor(g, logits, sigma)
+			const out = new Uint8Array(3)
+			const wins = [0, 0, 0]
+			const n = 20000
+			for (let s = 0; s < n; s++) {
+				roll(s, out)
+				out.forEach((v, i) => (wins[i] += v))
+			}
+			for (const w of wins) expect(w / n).toBeCloseTo(0.5, 1)
+		}
+	})
+
+	it("make a team's games move together only when strength is uncertain", () => {
+		const corr = (sigma: number) => {
+			const roll = rollerFor(g, logits, sigma)
+			const out = new Uint8Array(3)
+			let both = 0
+			const n = 30000
+			for (let s = 0; s < n; s++) {
+				roll(s, out)
+				// A1 wins game 1 (away) and game 2 (away): the same team winning twice.
+				if (out[0] === 0 && out[1] === 0) both++
+			}
+			return both / n
+		}
+		expect(corr(0)).toBeGreaterThan(0.23)
+		expect(corr(0)).toBeLessThan(0.27)
+		expect(corr(0.6)).toBeGreaterThan(corr(0) + 0.01)
+	})
+
+	it("belong to the game's id, not its place in the list", () => {
+		const a = new Uint8Array(3)
+		const b = new Uint8Array(2)
+		const all = rollerFor(g, [0.3, -0.2, 0.1], 0.485)
+		const some = rollerFor([g[2], g[0]], [0.1, 0.3], 0.485)
+		for (let s = 0; s < 300; s++) {
+			all(s, a)
+			some(s, b)
+			expect(b[0]).toBe(a[2])
+			expect(b[1]).toBe(a[0])
+		}
 	})
 })
 

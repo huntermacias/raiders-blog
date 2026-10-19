@@ -12,8 +12,14 @@ export function isRootingData(value: unknown): value is RootingData {
 	const size = d.teams.length * GOALS.length
 	if (!Array.isArray(d.baseline) || d.baseline.length !== size) return false
 	if (!Array.isArray(d.games) || !Array.isArray(d.completed) || !Array.isArray(d.history) || typeof d.ties !== "object" || d.ties === null) return false
+	if (!d.model || typeof d.model.sigma !== "number" || typeof d.model.fitted !== "string") return false
+	if (d.range !== null && d.range !== undefined) {
+		if (!Array.isArray(d.range.lo) || !Array.isArray(d.range.hi) || d.range.lo.length !== size || d.range.hi.length !== size) return false
+	}
 	for (const g of d.games) {
 		if (!g || typeof g.id !== "string" || !Array.isArray(g.H) || !Array.isArray(g.A) || g.H.length !== size || g.A.length !== size) return false
+		if (typeof g.line !== "boolean" || !Array.isArray(g.swingLo) || !Array.isArray(g.swingHi)) return false
+		if ((g.swingLo.length !== 0 && g.swingLo.length !== size) || (g.swingHi.length !== 0 && g.swingHi.length !== size)) return false
 	}
 	for (const t of Object.values(d.ties)) if (!Array.isArray(t) || t.length !== size) return false
 	return true

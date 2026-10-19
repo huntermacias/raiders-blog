@@ -244,8 +244,10 @@ describe("tied games", () => {
 
 	it("can be picked for an open game", () => {
 		const g = openGames[0]
+		// Either team may already have a real tie on its record (the schedule is live data), so count from where they stand.
+		const before = simulateSeason({ games, predictions: {} })
 		const sim = simulateSeason({ games, predictions: { [g.id]: "T" } as Predictions })
-		expect(sim.teams[g.homeTeam].overall.t).toBe(1)
-		expect(sim.teams[g.awayTeam].overall.t).toBe(1)
+		expect(sim.teams[g.homeTeam].overall.t).toBe(before.teams[g.homeTeam].overall.t + 1)
+		expect(sim.teams[g.awayTeam].overall.t).toBe(before.teams[g.awayTeam].overall.t + 1)
 	})
 })

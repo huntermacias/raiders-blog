@@ -3,15 +3,20 @@
 // scripts/rooting/build.ts reads the schedule file, calls this and writes data/lab/rooting.json.
 
 import type { Game } from "../playoffs/types"
+import { getModel } from "../ratings/data"
+import type { RatingsModel } from "../ratings/model"
 import {
 	EXACT_MAX_OPEN,
 	HISTORY_SIMS,
 	MODEL_VERSION,
+	RANGE_DRAWS,
+	RANGE_SIMS,
 	ROOTING_SIMS,
 	SWING_SIMS,
 	TIE_SIMS,
 	gamesThroughWeek,
 	makeContext,
+	replaysFor,
 	resultOf,
 	resultSwing,
 	resultsKey,
@@ -35,12 +40,19 @@ export type BuildOptions = {
 	historySims?: number
 	exactMax?: number
 	completedWeeks?: number
+	/** Refits of the model replayed to measure model error, and how many of the simulated seasons they are replayed on. 0 draws turns it off. */
+	rangeDraws?: number
+	rangeSims?: number
+	model?: RatingsModel
 	/** The file from the last build. Snapshots whose results have not changed are reused instead of simulated again. */
 	previous?: RootingData | null
 	log?: (line: string) => void
 }
 
 const ints = (list: readonly number[]): number[] => list.map((v) => Math.round(v * SCALE))
+/** Rounded outward, so a stored range never claims to be tighter than it was. */
+const floors = (list: readonly number[]): number[] => list.map((v) => Math.floor(v * SCALE + 1e-9))
+const ceils = (list: readonly number[]): number[] => list.map((v) => Math.ceil(v * SCALE - 1e-9))
 
 /** The weeks in which every game has been played, in order. */
 export function finishedWeeks(games: readonly Game[]): number[] {
@@ -63,24 +75,30 @@ export function buildRooting(games: readonly Game[], opts: BuildOptions): Rootin
 	const historySims = opts.historySims ?? HISTORY_SIMS
 	const exactMax = opts.exactMax ?? EXACT_MAX_OPEN
 
-	const ctx = makeContext(games)
+	const model = opts.model ?? getModel()
+	const ctx = makeContext(games, undefined, { model })
 	const finals = games.filter((g) => g.status === "final")
 	const throughWeek = finals.reduce((m, g) => Math.max(m, g.week), 0)
+	const lastFinal = finals.reduce<string | null>((m, g) => (g.date && (m === null || g.date > m) ? g.date : m), null)
 
 	log(`main pass: ${ctx.open.length} open games`)
-	const cond = simulateConditional(ctx, { sims, exactMax })
+	const replays = replaysFor(ctx, model, opts.rangeDraws ?? RANGE_DRAWS)
+	const cond = simulateConditional(ctx, { sims, exactMax, replays, rangeSims: opts.rangeSims ?? RANGE_SIMS })
 	const data: RootingData = {
 		version: MODEL_VERSION,
 		season: opts.season,
 		throughWeek,
 		generatedAt: opts.generatedAt,
-		resultsKey: resultsKey(games, { sims, tieSims }),
+		resultsKey: resultsKey(games, { sims, tieSims, model }),
 		finals: finals.length,
 		open: ctx.open.length,
 		sims: cond.sims,
 		exact: cond.exact,
 		tieSims,
 		source: opts.source,
+		lastFinal,
+		model: { version: model.version, fitted: model.generatedAt, sigma: ctx.sigma, fitSeasons: model.fitSeasons },
+		range: cond.range ? { draws: cond.range.draws, sims: cond.range.sims, lo: floors(cond.range.baselineLo), hi: ceils(cond.range.baselineHi) } : null,
 		teams: ctx.teams,
 		baseline: ints(cond.baseline),
 		games: ctx.open.map((g, i) => ({
@@ -88,10 +106,15 @@ export function buildRooting(games: readonly Game[], opts: BuildOptions): Rootin
 			week: g.week,
 			away: g.awayTeam,
 			home: g.homeTeam,
+			date: g.date ?? null,
+			time: g.time ?? null,
 			pHome: Math.round(ctx.chances[i] * SCALE),
+			line: ctx.lined[i],
 			n: cond.games[i].n,
 			H: ints(cond.games[i].H),
 			A: ints(cond.games[i].A),
+			swingLo: cond.games[i].swingLo ? floors(cond.games[i].swingLo as number[]) : [],
+			swingHi: cond.games[i].swingHi ? ceils(cond.games[i].swingHi as number[]) : [],
 		})),
 		ties: {},
 		completed: [],
@@ -114,7 +137,7 @@ export function buildRooting(games: readonly Game[], opts: BuildOptions): Rootin
 		const result = resultOf(g)
 		if (!result || g.homeScore === null || g.awayScore === null) continue
 		log(`swing: ${g.id}`)
-		const swing = result === "T" ? null : resultSwing(games, g.id, { sims: swingSims, exactMax })
+		const swing = result === "T" ? null : resultSwing(games, g.id, { sims: swingSims, exactMax }, undefined, model)
 		done.push({ id: g.id, week: g.week, away: g.awayTeam, home: g.homeTeam, awayScore: g.awayScore, homeScore: g.homeScore, result, swing: swing ? ints(swing) : [] })
 	}
 	data.completed = done
@@ -124,14 +147,14 @@ export function buildRooting(games: readonly Game[], opts: BuildOptions): Rootin
 	const history: HistoryPoint[] = []
 	for (const w of finishedWeeks(games)) {
 		const through = gamesThroughWeek(games, w)
-		const key = resultsKey(through, { sims: historySims, tieSims: 0 })
+		const key = resultsKey(through, { sims: historySims, tieSims: 0, model })
 		const old = reuse.get(key)
 		if (old && old.week === w) {
 			history.push(old)
 			continue
 		}
 		log(`snapshot: week ${w}`)
-		history.push({ week: w, key, p: ints(simulateBaseline(makeContext(through), { sims: historySims, exactMax })) })
+		history.push({ week: w, key, p: ints(simulateBaseline(makeContext(through, undefined, { model }), { sims: historySims, exactMax })) })
 	}
 	data.history = history
 	return data

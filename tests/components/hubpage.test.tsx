@@ -133,7 +133,7 @@ describe("Since you were last here", () => {
 	})
 
 	it("reports what changed since the numbers this browser last saw", async () => {
-		stored({ week: 4, record: "3-1", odds: 0.71, drops: ["odds:71%"] })
+		stored({ week: (hub.pulse.week ?? 1) - 1, record: "3-1", odds: 0.71, drops: ["odds:71%"] })
 		render(<HubPulse pulse={hub.pulse} />)
 		const box = screen.getByTestId("hub-pulse")
 		await waitFor(() => expect(box.textContent).toContain("Since you were last here"))
@@ -143,7 +143,7 @@ describe("Since you were last here", () => {
 	})
 
 	it("shows the same news on a reload, and moves on only when the Lab's numbers change again", async () => {
-		stored({ week: 4, record: "3-1", odds: 0.71, drops: [] })
+		stored({ week: (hub.pulse.week ?? 1) - 1, record: "3-1", odds: 0.71, drops: [] })
 		const a = render(<HubPulse pulse={hub.pulse} />)
 		await waitFor(() => expect(screen.getByTestId("hub-pulse").textContent).toContain(`Week ${hub.pulse.week} numbers are in`))
 		a.unmount()

@@ -29,8 +29,7 @@ describe("a game on the list", () => {
 		const rec = view.recs[0]
 		render(<ul><RootingGame rec={rec} rank={1} team="LV" color="#000" facts={facts[rec.gameId]} /></ul>)
 		expect(screen.getByLabelText(/^Root for the /)).toBeTruthy()
-		expect(screen.getByText(/pts$/, { selector: "span.font-serif" }).textContent).toMatch(/^[+−]\d+ pts$/)
-		expect(screen.getByText(/-pt swing/)).toBeTruthy()
+		expect(screen.getByText(/^\d+-pt swing$/, { selector: "span.font-serif" })).toBeTruthy()
 	})
 
 	it("opens to every outcome, the baseline and the reason, reports it once, and closes again", () => {
@@ -63,10 +62,10 @@ describe("a game on the list", () => {
 	it("states the error bar for a sampled swing and none for an exact one", () => {
 		const rec = { ...view.recs[0], se: 0.01 }
 		const { unmount } = render(<ul><RootingGame rec={rec} rank={1} team="LV" color="#000" facts={facts[rec.gameId]} /></ul>)
-		expect(screen.getByText(/95% range/)).toBeTruthy()
+		expect(screen.getByText(/pins the swing down to about/)).toBeTruthy()
 		unmount()
 		render(<ul><RootingGame rec={{ ...rec, se: 0 }} rank={1} team="LV" color="#000" facts={facts[rec.gameId]} /></ul>)
-		expect(screen.getByText(/no sampling error/)).toBeTruthy()
+		expect(screen.getByText(/no simulation error/)).toBeTruthy()
 	})
 })
 

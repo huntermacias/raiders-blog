@@ -15,7 +15,7 @@ export function loadRootingSnapshot(): RootingSnapshot | null {
 		const schedule = getGames()
 		const season = getSchedule().season
 		const settled = settledGames(data, schedule, [])
-		const view = chooseView((goal) => buildView({ data, schedule, query: { team: DEFAULT_TEAM, goal, week: null, scope: "week" }, settled, season }))
+		const view = chooseView((goal) => buildView({ data, schedule, query: { team: DEFAULT_TEAM, goal, week: null, scope: "week" }, settled, season, now: Date.now() }))
 		if (view.empty === "season-over") return null
 		return rootingSnapshot(view)
 	} catch (err) {

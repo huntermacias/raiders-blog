@@ -14,16 +14,17 @@ import {
 	type Recommendation,
 	actionable,
 	baselineOf,
+	baselineRange,
 	completedFor,
 	goalStatus,
 	pctText,
-	pointsText,
 	rankGames,
+	recommend,
 	sinceLastWeek,
 } from "./guide"
-import type { Settled } from "./live"
+import { type Settled, overdueGames } from "./live"
 import type { GuideQuery } from "./share"
-import { GOALS, type Goal, type RootingData } from "./types"
+import { GOALS, type Goal, type RootingData, SCALE } from "./types"
 
 export type Standing = {
 	record: string
@@ -37,6 +38,19 @@ export type Standing = {
 }
 
 export type GoalSummary = { goal: Goal; label: string; short: string; baseline: number; status: GoalStatus; text: string }
+
+/** Whether the numbers include every result that has happened, and if not, what is missing. */
+export type Freshness = {
+	state: "current" | "settling" | "behind"
+	/** Results the numbers do not include: games reported final since they were built. */
+	pending: number
+	/** Games that kicked off long enough ago to be over but have no final score anywhere yet. */
+	overdue: number
+	/** The date of the latest final score the numbers include, or null. */
+	through: string | null
+	/** One sentence a reader can act on. */
+	text: string
+}
 
 export type Emptiness = "none" | "season-over" | "no-games-this-week" | "nothing-matters" | "clinched" | "out"
 
@@ -56,6 +70,11 @@ export type GuideView = {
 	status: GoalStatus
 	/** The one-sentence state of the selected goal. */
 	headline: string
+	/** The team's chance at the goal could be this low / high if the model were refitted on other past seasons. Null when not worked out. */
+	baselineRange: [number, number] | null
+	/** The team's next game that has not been played, with what a win and a loss are each worth. Null when it has none left. */
+	own: OwnGame | null
+	freshness: Freshness
 	/** Games to root in, most important first, within the scope. */
 	recs: Recommendation[]
 	/** Games in the scope that were looked at and do not move this goal. */
@@ -127,6 +146,8 @@ function statusText(team: string, goal: Goal, status: GoalStatus): string {
 }
 
 export type ViewInput = {
+	/** The current time in milliseconds, to tell whether the data is behind. Left out, the data is assumed to be current. */
+	now?: number
 	data: RootingData
 	/** The schedule file's games, for the record and for what has finished since the guide was built. */
 	schedule: readonly Game[]
@@ -136,7 +157,7 @@ export type ViewInput = {
 	season?: number
 }
 
-export function buildView({ data, schedule, query, settled = [], season }: ViewInput): GuideView {
+export function buildView({ data, schedule, query, settled = [], season, now }: ViewInput): GuideView {
 	const { team, goal } = query
 	const info = teamByAbbr(team)
 	const { standing, proof, cannotDiv, cannotTop } = standingOf(schedule, team)
@@ -159,10 +180,10 @@ export function buildView({ data, schedule, query, settled = [], season }: ViewI
 	const quiet = Math.max(0, allInScopeGames.length - inScope.length)
 
 	const stale = isStale(data, schedule)
+	const overdue = now === undefined ? [] : overdueGames(data, settled, now)
+	const freshness = freshnessOf(data, settled.length, overdue.length, stale)
 	const notes: string[] = []
 	if (season !== undefined && data.season !== season) notes.push("This guide is for a different season than the schedule. It will refresh with the next data update.")
-	if (stale) notes.push("A final score has come in since these numbers were worked out. They are being recalculated, so rankings may shift a little.")
-	if (settled.length) notes.push(`${settled.length === 1 ? "A game has" : `${settled.length} games have`} just ended and ${settled.length === 1 ? "is" : "are"} taken off the list. The rankings will catch up with the result at the next refresh.`)
 	if (data.exact) notes.push("Few enough games are left that every possible ending was counted, so these chances are exact for the model.")
 
 	let empty: Emptiness = "none"
@@ -199,6 +220,9 @@ export function buildView({ data, schedule, query, settled = [], season }: ViewI
 		goals,
 		status,
 		headline: statusText(team, goal, status),
+		baselineRange: baselineRange(data, team, goal),
+		own: ownNextGame(data, team, goal, done),
+		freshness,
 		recs: inScope,
 		quiet,
 		remaining: all.length,
@@ -220,28 +244,105 @@ export function topThree(view: GuideView): Recommendation[] {
 	return view.recs.filter((r) => !r.yours).slice(0, 3)
 }
 
-/** The followed team's own game in the list, with what a win and a loss are each worth to it; null when it has no game that matters. */
-export type OwnGame = { gameId: string; opp: string; venue: "vs" | "at"; win: { p: number; delta: number }; loss: { p: number; delta: number }; swing: number }
-
-export function ownGame(view: GuideView): OwnGame | null {
-	const r = view.recs.find((x) => x.yours)
-	if (!r || r.pHome === null || r.pAway === null) return null
-	const home = r.home === view.team
-	const win = home ? r.pHome : r.pAway
-	const loss = home ? r.pAway : r.pHome
-	return { gameId: r.gameId, opp: home ? r.away : r.home, venue: home ? "vs" : "at", win: { p: win, delta: win - r.baseline }, loss: { p: loss, delta: loss - r.baseline }, swing: r.spread }
+/**
+ * The followed team's next game that has not been played, with what a win and a loss are each worth to it. This is its next game
+ * whether or not the game is the one that matters most: "your next game" and "the game that swings your odds most" are different
+ * questions, and a headline about the first must not be built from the second.
+ */
+export type OwnGame = {
+	gameId: string
+	week: number
+	date: string | null
+	opp: string
+	venue: "vs" | "at"
+	/** The model's chance the followed team wins. */
+	pWin: number
+	/** True when that chance is the game's posted spread; false when it comes from the teams' ratings. */
+	line: boolean
+	/** The team's chance at the goal after a win and after a loss, and each one's change from now. */
+	win: { p: number; delta: number }
+	loss: { p: number; delta: number }
+	/** Win minus loss: what the game is worth. */
+	swing: number
+	/** The swing's lowest and highest value across refits of the model, or null. */
+	range: [number, number] | null
 }
 
-/** The words that go with a post: the week, the goal, what the team's own game is worth, then the other games to root in, each with what it is worth. */
+export function ownNextGame(data: RootingData, team: string, goal: Goal, skip: ReadonlySet<string> = new Set()): OwnGame | null {
+	const base = baselineOf(data, team, goal)
+	if (base === null) return null
+	const mine = data.games.filter((g) => !skip.has(g.id) && (g.home === team || g.away === team)).sort((a, b) => a.week - b.week || (a.date ?? "").localeCompare(b.date ?? "") || (a.id < b.id ? -1 : 1))
+	const next = mine[0]
+	if (!next) return null
+	const r = recommend(data, next, team, goal, base)
+	if (r.pHome === null || r.pAway === null) return null
+	const home = next.home === team
+	const win = home ? r.pHome : r.pAway
+	const loss = home ? r.pAway : r.pHome
+	const hi = r.range
+	// `range` is oriented to the best side; reorient it to a win for this team.
+	const winIsBest = r.best === null ? null : (r.best === "H") === home
+	const range: [number, number] | null = hi === null || winIsBest === null ? null : winIsBest ? hi : [-hi[1], -hi[0]]
+	return {
+		gameId: next.id,
+		week: next.week,
+		date: next.date,
+		opp: home ? next.away : next.home,
+		venue: home ? "vs" : "at",
+		pWin: home ? next.pHome / SCALE : 1 - next.pHome / SCALE,
+		line: next.line,
+		win: { p: win, delta: win - base },
+		loss: { p: loss, delta: loss - base },
+		swing: win - loss,
+		range,
+	}
+}
+
+/** The followed team's next game (see ownNextGame), for the share card and the post text. */
+export function ownGame(view: GuideView): OwnGame | null {
+	return view.own
+}
+
+const pts = (v: number) => `${Math.round(Math.abs(v) * 100)}-pt`
+
+/** The words that go with a post: the week, the goal, the team's next game as a win and a loss, then the other games that swing its odds most. */
 export function shareText(view: GuideView): string {
 	const goal = GOAL_INFO[view.goal].phrase
 	if (view.empty === "clinched" || view.empty === "out") return `${view.nick} Sunday Rooting Guide: ${view.headline}`
 	const picks = topThree(view)
-	const own = ownGame(view)
+	const own = view.own
 	const week = view.week ? `Week ${view.week} ` : ""
 	if (!picks.length && !own) return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: nothing left moves their odds by a point.`
 	const parts: string[] = []
-	if (own) parts.push(`A ${view.nick} win is worth ${pointsText(own.win.delta)} (a loss ${pointsText(own.loss.delta)}).`)
-	if (picks.length) parts.push(`${own ? "Elsewhere: " : ""}${picks.map((r, i) => `${i + 1}. ${nickOf(r.rootFor as string)} win (${pointsText(r.gain ?? 0)})`).join(" ")}`)
+	if (own) {
+		const opp = nickOf(own.opp)
+		parts.push(`Next game, ${own.venue} the ${opp} (Week ${own.week}): a win puts the ${view.nick} at ${pctText(own.win.p)}, a loss at ${pctText(own.loss.p)} (${pts(own.swing)} swing).`)
+	}
+	if (picks.length) parts.push(`${own ? "Elsewhere: " : ""}${picks.map((r, i) => `${i + 1}. ${nickOf(r.rootFor as string)} win (${pts(r.spread)} swing)`).join(" ")}`)
 	return `${week}rooting guide for ${view.nick} fans hoping to ${goal}: ${parts.join(" ")}`
+}
+
+function freshnessOf(data: RootingData, pending: number, overdue: number, stale: boolean): Freshness {
+	const through = data.lastFinal
+	const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`
+	if (pending > 0 || stale) {
+		const k = Math.max(pending, 0)
+		return {
+			state: "settling",
+			pending: k,
+			overdue,
+			through,
+			text: k > 0 ? `${n(k, "game has", "games have")} ended since these numbers were worked out, so they do not include ${k === 1 ? "that result" : "those results"} yet. They are being recalculated.` : "A newer score has come in than these numbers include. They are being recalculated.",
+		}
+	}
+	if (overdue > 0) {
+		return {
+			state: "behind",
+			pending: 0,
+			overdue,
+			through,
+			text: `${n(overdue, "game", "games")} that should be over ${overdue === 1 ? "has" : "have"} no final score in our data yet, so the numbers do not include ${overdue === 1 ? "it" : "them"}.`,
+		}
+	}
+	return { state: "current", pending: 0, overdue: 0, through, text: through ? `Includes every final score through ${through}.` : "No games have been played yet." }
 }

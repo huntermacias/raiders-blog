@@ -4,7 +4,7 @@
 //   node /tmp/rooting.cjs [--schedule data/lab/schedule.json] [--out data/lab/rooting.json] [--force]
 //
 // The simulation is the slow part (a minute or two), so it only runs when the results have changed: the file records a key made
-// from the model version, the settings and every final score, and an unchanged key means there is nothing to do. The run is
+// from the model version, the fitted ratings model, the settings, every final score and every posted spread, and an unchanged key means there is nothing to do. The run is
 // deterministic, so the same schedule always gives the same file.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
@@ -43,7 +43,7 @@ if (!force && previous && previous.resultsKey === key && previous.season === raw
 	const data = buildRooting(games, {
 		season: raw.season,
 		generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
-		source: "Elo ratings from this season's final scores (the Playoff Machine's model), simulated with the Playoff Machine's engine and tiebreakers. Calculations by Raiders Rundown.",
+		source: "Win chances from the posted spreads and a back-tested team-strength model (data/lab/ratings-model.json), simulated with the Playoff Machine's engine and tiebreakers. Calculations by Raiders Rundown.",
 		previous: previous && previous.season === raw.season ? previous : null,
 		log: (line) => console.log(line),
 	})

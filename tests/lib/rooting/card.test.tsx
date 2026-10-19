@@ -32,7 +32,7 @@ describe("the share card's spec", () => {
 				expect(spec.picks.map((p) => p.abbr)).toEqual(topThree(view).map((r) => r.rootFor))
 				spec.picks.forEach((p, i) => {
 					expect(p.rank).toBe(i + 1)
-					expect(p.big).toMatch(/^(\+\d+|\d+)$/)
+					expect(p.big).toMatch(/^\d+$/)
 					expect(p.then).toBeGreaterThanOrEqual(0)
 					expect(p.then).toBeLessThanOrEqual(100)
 					expect(["vs", "at"]).toContain(p.venue)
@@ -53,35 +53,34 @@ describe("the share card's spec", () => {
 					expect([p.abbr, p.opp], `${team} ${goal}`).not.toContain(team)
 					expect(p.yours).toBe(false)
 				}
-				const mine = view.recs.find((r) => r.yours)
-				expect(spec.own !== null).toBe(Boolean(mine && mine.pHome !== null && mine.pAway !== null))
-				if (spec.own && mine) {
-					const home = mine.home === team
-					expect(spec.own.opp).toBe(home ? mine.away : mine.home)
-					expect(spec.own.venue).toBe(home ? "vs" : "at")
+				// The team's own game is its next game, whether or not it is the one that matters most, and only while the race is live.
+				expect(spec.own !== null, `${team} ${goal}`).toBe(view.status === "live" && view.own !== null)
+				if (spec.own && view.own) {
+					expect(spec.own.opp).toBe(view.own.opp)
+					expect(spec.own.venue).toBe(view.own.venue)
+					expect(spec.own.week).toBe(view.own.week)
 				}
 			}
 		}
 	})
 
-	it("says what a win and a loss are each worth to the team in its own game, from its side", () => {
+	it("says what a win and a loss are each worth to the team in its own next game, from its side", () => {
 		const view = viewFor("LV", "playoffs")
-		const mine = view.recs.find((r) => r.yours)
+		const own = view.own
 		const spec = buildRootingSpec(view, { season: 2026, size: "wide" })
-		// The team has no game of its own to show on a bye, or once it has played this week's game.
-		if (!mine) {
+		// The team has no game of its own to show once it has played its last one.
+		if (!own) {
 			expect(spec.own).toBeNull()
 			return
 		}
-		const homeIsLV = mine.home === "LV"
-		const win = (homeIsLV ? mine.pHome : mine.pAway) as number
-		const loss = (homeIsLV ? mine.pAway : mine.pHome) as number
-		expect(spec.own!.win).toEqual({ text: pctText(win), delta: pointsText(win - mine.baseline) })
-		expect(spec.own!.loss).toEqual({ text: pctText(loss), delta: pointsText(loss - mine.baseline) })
-		expect(win).toBeGreaterThan(loss)
+		expect(spec.own!.win).toEqual({ text: pctText(own.win.p), delta: pointsText(own.win.delta) })
+		expect(spec.own!.loss).toEqual({ text: pctText(own.loss.p), delta: pointsText(own.loss.delta) })
+		expect(spec.own!.swing).toBe(Math.round(own.swing * 100))
+		// A win is never worse than a loss for the team that wins it.
+		expect(own.win.p).toBeGreaterThanOrEqual(own.loss.p)
 	})
 
-	it("shows the same chance the page shows for the goal, and a '+N' that is the gain over now", () => {
+	it("shows the same chance the page shows for the goal, and each game's swing in points", () => {
 		// On a day when only one game of the week is left (Monday night) a team can have no game that moves it, so pick a team that does.
 		const team = TEAMS.find((t) => topThree(viewFor(t, "playoffs")).length > 0)
 		if (!team) return
@@ -90,7 +89,8 @@ describe("the share card's spec", () => {
 		const g = view.goals.find((x) => x.goal === "playoffs")!
 		expect(spec.hero.big + spec.hero.small).toBe(g.text)
 		const first = topThree(view)[0]
-		expect(spec.picks[0].big).toBe(`+${Math.round((first.gain as number) * 100)}`)
+		expect(spec.picks[0].big).toBe(String(Math.max(1, Math.round(first.spread * 100))))
+		expect(spec.picks[0].unit).toBe("pt swing")
 		expect(spec.picks[0].nowText).toBe(g.text)
 	})
 

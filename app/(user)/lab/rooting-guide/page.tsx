@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import Link from "@/components/SiteLink"
 import MoreFromLab from "@/components/lab/MoreFromLab"
 import UpdatedStamp from "@/components/lab/UpdatedStamp"
+import NextGame from "@/components/rooting/NextGame"
 import OpenPing from "@/components/rooting/OpenPing"
 import RootingControls from "@/components/rooting/RootingControls"
 import RootingGame from "@/components/rooting/RootingGame"
@@ -10,6 +11,7 @@ import RootingShare from "@/components/rooting/RootingShare"
 import PlayoffMachineLink from "@/components/rooting/TrackedLink"
 import { TeamBadge } from "@/components/rooting/parts"
 import { getScoreboard } from "@/lib/live/service"
+import { getModel } from "@/lib/ratings/data"
 import { labWeeks } from "@/lib/lab/toolsData"
 import { matchupPath } from "@/lib/lab/unitsKit"
 import { teamByAbbr } from "@/lib/nfl"
@@ -21,7 +23,7 @@ import { GOAL_INFO, pctText, pointsText } from "@/lib/rooting/guide"
 import { type BoardGame, settledGames } from "@/lib/rooting/live"
 import { ROOTING_PATH, SITE_URL, type RawQuery, canonicalFor, readQuery } from "@/lib/rooting/share"
 import { getRooting } from "@/lib/rooting/data"
-import { buildView, ownGame, shareText, topThree } from "@/lib/rooting/view"
+import { buildView, shareText, topThree } from "@/lib/rooting/view"
 
 // Built per request from the stored guide (data/lab/rooting.json), the schedule file and ESPN's scoreboard, so a game that has just ended
 // comes off the list right away. No simulation runs here: the numbers were worked out when the final scores last arrived, by the
@@ -51,7 +53,7 @@ async function load(props: Props) {
 	const games = getGames()
 	if (!data) return { query, data: null, view: null, games, schedule }
 	const settled = settledGames(data, games, await liveBoard())
-	const view = buildView({ data, schedule: games, query, settled, season: schedule.season })
+	const view = buildView({ data, schedule: games, query, settled, season: schedule.season, now: Date.now() })
 	return { query, data, view, games, schedule }
 }
 
@@ -72,14 +74,14 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	const games = getGames()
 	const view = buildView({ data, schedule: games, query, settled: settledGames(data, games, []), season })
 	const lead = topThree(view)[0]
-	const own = ownGame(view)
+	const own = view.own
 	const goal = GOAL_INFO[query.goal]
 	const weekText = view.week ? `Week ${view.week}` : `${season}`
 	const title = `${info.nick} Sunday Rooting Guide: who to root for in ${weekText} | Raiders Rundown`
 	const base = view.goals.find((g) => g.goal === query.goal)
 	const standing = base && base.status === "live" ? `The ${info.nick}' chance to ${goal.phrase} is ${pctText(base.baseline)}. ` : view.headline ? `${view.headline} ` : ""
-	const mine = own ? `A ${info.nick} win is worth ${pointsText(own.win.delta)} to that. ` : ""
-	const top = lead && lead.rootFor && lead.gain !== null ? `${mine}Best game to root for elsewhere: the ${teamByAbbr(lead.rootFor).nick} (${pointsText(lead.gain)}).` : mine ? mine.trim() : "See which games still move your odds."
+	const mine = own && base?.status === "live" ? `The next game, ${own.venue} the ${teamByAbbr(own.opp).nick}, is worth a ${Math.round(own.swing * 100)}-point swing: ${pctText(own.win.p)} with a win, ${pctText(own.loss.p)} with a loss. ` : ""
+	const top = lead && lead.rootFor ? `${mine}Biggest game to root for elsewhere: the ${teamByAbbr(lead.rootFor).nick} (${Math.round(lead.spread * 100)}-point swing).` : mine ? mine.trim() : "See which games still move your odds."
 	const description = `${standing}${top}`
 	const card = `${SITE_URL}/api/og?type=rooting&team=${query.team}&goal=${query.goal}${view.week ? `&week=${view.week}` : ""}&size=wide&v=${stampOf(data.generatedAt)}`
 	return {
@@ -128,6 +130,8 @@ export default async function RootingGuidePage(props: Props) {
 	const machineHref = `${PLAYOFFS_PATH}${view.team === "LV" ? "" : `?${scenarioQuery("", view.team)}`}`
 	const scopeLabel = view.scope === "all" || view.week === null ? "All remaining games" : `Week ${view.week}`
 	const baseGoal = view.goals.find((g) => g.goal === view.goal)
+	const model = getModel()
+	const calibrationGap = Math.max(1, Math.round(100 * Math.max(...model.calibration.later.filter((b) => b.n >= 1000).map((b) => Math.abs(b.predicted - b.observed)))))
 	const jsonLd = {
 		"@context": "https://schema.org",
 		"@type": "WebPage",
@@ -157,6 +161,14 @@ export default async function RootingGuidePage(props: Props) {
 						your odds, so you know who to cheer for on Sunday.
 					</p>
 					<UpdatedStamp at={data.generatedAt} kind="odds" className="mt-4" />
+					<p
+						role="status"
+						data-state={view.freshness.state}
+						className={`m-0 mt-2 inline-flex max-w-2xl items-start gap-2 rounded-lg px-3 py-2 text-sm ${view.freshness.state === "current" ? "bg-lab-tint text-lab-soft" : "border border-lab-line-strong bg-lab-surface font-semibold text-lab-ink"}`}
+					>
+						<span aria-hidden="true">{view.freshness.state === "current" ? "\u2713" : "!"}</span>
+						<span>{view.freshness.text}</span>
+					</p>
 				</div>
 			</section>
 
@@ -179,8 +191,15 @@ export default async function RootingGuidePage(props: Props) {
 					<div className="w-full border-t border-lab-line pt-3 sm:w-auto sm:border-0 sm:pt-0 sm:text-right">
 						<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{goalInfo.label}</p>
 						<p className="m-0 font-serif text-4xl font-bold leading-none tabular-nums">{baseGoal?.text}</p>
+						{view.status === "live" && view.baselineRange ? (
+							<p className="m-0 mt-1 text-xs text-lab-muted">
+								{pctText(view.baselineRange[0])} to {pctText(view.baselineRange[1])} if the model were refit
+							</p>
+						) : null}
 					</div>
 				</div>
+
+				{view.status === "live" && view.own ? <NextGame own={view.own} nick={info.nick} team={view.team} goalPhrase={goalInfo.phrase} baseline={baseGoal?.baseline ?? 0} color={info.color} /> : null}
 
 				{view.weekNote ? (
 					<p role="status" className="m-0 rounded-lg border border-lab-line bg-lab-tint px-4 py-3 text-sm text-lab-soft">
@@ -201,7 +220,7 @@ export default async function RootingGuidePage(props: Props) {
 							{scopeLabel}: who to root for
 						</h2>
 						<p className="m-0 mt-1 max-w-2xl text-sm text-lab-muted">
-							Ranked by how far the {info.nick}&rsquo; chance to {goalInfo.phrase} moves between the best and worst result. Changes are in percentage points.
+							Ranked by swing: how far the {info.nick}&rsquo; chance to {goalInfo.phrase} moves between the best and the worst result of the game, whoever is favored. Changes are in percentage points.
 						</p>
 					</div>
 					{view.week !== null && view.empty !== "clinched" && view.empty !== "out" ? <RootingShare team={view.team} nick={info.nick} goal={view.goal} goalLabel={goalInfo.label} week={view.week} scope={view.scope} stamp={stamp} text={shareText(view)} /> : null}
@@ -239,7 +258,7 @@ export default async function RootingGuidePage(props: Props) {
 				{view.settled.length ? (
 					<div className="mt-6 rounded-2xl border border-dashed border-lab-line-strong p-4 sm:p-5">
 						<h3 className="m-0 font-serif text-lg font-bold">Just finished</h3>
-						<p className="m-0 mt-1 text-xs text-lab-muted">These games are over, so they are off the list. The numbers above catch up at the next refresh.</p>
+						<p className="m-0 mt-1 text-xs text-lab-muted">These games are over, so they are off the list. The numbers above were worked out before them and are being recalculated.</p>
 						<ul className="m-0 mt-3 grid list-none gap-1.5 p-0 text-sm">
 							{view.settled.map((s) => (
 								<li key={s.gameId} className="flex items-center gap-2">
@@ -285,25 +304,44 @@ export default async function RootingGuidePage(props: Props) {
 					<h2 className="m-0 font-serif text-2xl font-bold">How the Sunday Rooting Guide works</h2>
 					<p className="mt-3 leading-relaxed text-lab-soft">
 						For every game still to play, the guide asks one question: how much does the result change your team&rsquo;s chance to {goalInfo.phrase}? It plays the rest of the {season}{" "}
-						season {data.exact ? "every possible way" : `${data.sims.toLocaleString("en-US")} times`}, with the same Elo ratings and the same NFL tiebreakers as the{" "}
+						season {data.exact ? "every possible way" : `${data.sims.toLocaleString("en-US")} times`}, with the same win chances and the same NFL tiebreakers as the{" "}
 						<PlayoffMachineLink href={machineHref} className="underline underline-offset-4">
 							Playoff Machine
 						</PlayoffMachineLink>
-						. In each simulated season it records who made the playoffs, who won each division and who took the No. 1 seed. A game&rsquo;s effect is the difference between your team&rsquo;s
+						. In each simulated season it records who made the playoffs, who won each division and who took the No. 1 seed. A game&rsquo;s swing is the difference between your team&rsquo;s
 						chance in the seasons where one side won and in the seasons where the other did.
 					</p>
-					<h2 className="mt-8 font-serif text-2xl font-bold">Reading the numbers</h2>
+					<h2 className="mt-8 font-serif text-2xl font-bold">Swing and change from now are different things</h2>
 					<p className="mt-3 leading-relaxed text-lab-soft">
-						Every change is in percentage points of your team&rsquo;s chance, not percent growth: going from 40% to 48% is +8 points. Games are ranked by the gap between the best and the worst result, and
-						a game is only ranked when that gap is at least a point and clearly bigger than the simulation&rsquo;s own margin of error. The three goals are worked out separately, because a result that
-						helps a wild-card chase can hurt a division race. When the standings already prove a goal is won or out of reach, the guide says so instead of showing odds. The same simulated seasons
-						are used for every comparison, so the rankings do not shift from one reload to the next.
+						The <strong>swing</strong> is what a game is worth: your chance after the result you want minus your chance after the one you do not. It is the same whether the team you are cheering
+						for is a heavy favorite or a long shot, and it is what the list is ranked by. The <strong>change from now</strong> is how far a result would move today&rsquo;s number. It depends on how
+						likely the result was: if your team was expected to win, winning barely changes the picture, while an upset changes it a lot. Both are shown, and the card says which is which.
+						Everything is in percentage points of your team&rsquo;s chance, not percent growth.
+					</p>
+					<h2 className="mt-8 font-serif text-2xl font-bold">Where the win chances come from</h2>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						A game with a posted betting line is priced from the line: in our back-test, adding team ratings on top of the spread did not make the forecast of the coming week&rsquo;s games any better. Every other game is priced from
+						two team ratings, an Elo rating built from this season&rsquo;s scores that starts from a share of last season&rsquo;s, and a rating backed out of the spreads of the games so far, with recent
+						weeks counting most. The weights were fitted on {model.fitSeasons[0]} to {model.fitSeasons[1]} and nothing was adjusted by hand to make the output look reasonable.
+					</p>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						We checked it on seasons the fit never saw ({model.holdout.scoredOn}). Against a coin flip the log loss is {model.holdout.coinFlip.logLoss.toFixed(3)}; the model this replaces scored{" "}
+						{model.holdout.previousModel.allGames.logLoss.toFixed(3)} and this one {model.holdout.newModel.allGames.logLoss.toFixed(3)} (lower is better), and for the coming week&rsquo;s games{" "}
+						{model.holdout.previousModel.nextWeek.logLoss.toFixed(3)} against {model.holdout.newModel.nextWeek.logLoss.toFixed(3)}. Across forecasts from 20% to 90%, the share that came true was within {calibrationGap} {calibrationGap === 1 ? "point" : "points"} of the forecast at every level with a large sample.
+					</p>
+					<h2 className="mt-8 font-serif text-2xl font-bold">How sure is it?</h2>
+					<p className="mt-3 leading-relaxed text-lab-soft">
+						There are two kinds of doubt, and they are kept apart. <strong>Team strength is uncertain</strong>, because a rating is an estimate: in every simulated season each team is a little better or
+						worse than its rating says (about {Math.round(model.sigma * 100) / 100} on the log-odds scale, worth roughly two wins over a full season, measured from how much real teams&rsquo; win totals have
+						varied beyond what independent games would give), and a team that is better wins more of its games all year. That is part of the answer, not an error bar. <strong>Simulation noise</strong> is how much
+						{data.exact ? " a sample of seasons would wobble; here every ending was counted, so there is none." : ` ${data.sims.toLocaleString("en-US")} seasons wobble from run to run: under half a point on a team's odds, and the margin shown on each game.`}
+						{data.range ? ` Separately, we replayed those same seasons under ${data.range.draws} refits of the model on resampled past seasons. The range shown beside a team's chance, and the range of each swing, is how far the answer moves when the model itself changes.` : ""}
 					</p>
 					<h2 className="mt-8 font-serif text-2xl font-bold">What it does not know</h2>
 					<p className="mt-3 leading-relaxed text-lab-soft">
-						This is a model, not a forecast. The ratings come only from this season&rsquo;s final scores, so early in the year they are rough. They know nothing about injuries, quarterbacks, rest or the
-						spread, and ties are not part of the main simulation (a tie is worked out separately for the biggest games, from a smaller sample). Cross-conference games matter only through tiebreakers such as
-						strength of victory. The numbers are rebuilt when final scores reach our data, which can take a few hours after a game ends, and a game that has just finished is taken off the list in the meantime.
+						This is a model, not a forecast. It knows nothing about injuries or quarterbacks beyond what the betting lines and the results already show, and ties are not part of the main simulation (a tie is
+						worked out separately for the biggest games, from a smaller sample). Cross-conference games matter only through tiebreakers such as strength of victory. The numbers are rebuilt when final
+						scores reach our data; the line near the top says whether they include every result, and a game that has just finished is taken off the list in the meantime.
 					</p>
 					<p className="mt-6 text-sm">
 						<PlayoffMachineLink href={machineHref} className="font-semibold underline underline-offset-4">

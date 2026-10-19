@@ -3,13 +3,22 @@ name: Refresh Rooting Guide
 # The Sunday Rooting Guide (/lab/rooting-guide) reads data/lab/rooting.json, which is worked out ahead of time so that no page view
 # runs a simulation. This pulls the latest results into data/lab/schedule.json (the same file the Playoff Machine reads), and if a
 # final score has changed since the guide was last built it rebuilds the guide: every team, every goal, every game still to play.
-# The build is skipped when nothing changed (the file carries a key made from every final score), so a run with no new results
-# costs a few seconds. A commit to main triggers the normal Vercel deploy.
 #
-# The times are the hours after games end, in UTC: Sunday evening and night, the early hours of Monday and Tuesday (Sunday and
-# Monday night games), Friday (Thursday night games), and Saturday for the late-season Saturday games.
+# Results come from nflverse, which can trail a finished game by hours, so any game nflverse has not scored yet is filled in from
+# ESPN's scoreboard when ESPN calls it final (scripts/lab/build_schedule.py --espn; never over a score nflverse has).
+#
+# Game days run every 30 minutes (the "*/30" schedules). Those runs stop after the schedule step when nothing changed, which costs
+# well under a minute, so the guide follows a final score within about half an hour instead of waiting for the next fixed time.
+# The fixed-time runs (and a manual run) always carry on to rebuild whenever the guide is out of date, which also catches a change to
+# the model. A commit to main triggers the normal Vercel deploy.
+#
+# Times are UTC: Sunday afternoon to Monday morning, the early hours of Tuesday (Monday night games) and Friday (Thursday night
+# games), and Saturday afternoon and evening for the late-season Saturday games.
 on:
   schedule:
+    - cron: "*/30 17-23 * * 0"
+    - cron: "*/30 0-4 * * 1,2,5"
+    - cron: "*/30 17-23 * * 6"
     - cron: "20 21,23 * * 0"
     - cron: "20 1,3,5,8 * * 0,1,2,5"
     - cron: "20 21,23 * * 6"
@@ -45,31 +54,55 @@ jobs:
         run: pip install pandas numpy
 
       - name: Refresh the schedule and results
-        # Keeps the file as it is if the download looks wrong.
-        run: python scripts/lab/build_schedule.py --season "$SEASON" --out data/lab/schedule.json
+        id: sched
+        # Keeps the file as it is if the download looks wrong. A frequent game-day run with nothing new ends here.
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          python scripts/lab/build_schedule.py --season "$SEASON" --espn --out data/lab/schedule.json
+          if git diff --quiet data/lab/schedule.json; then changed=false; else changed=true; fi
+          case "$SCHEDULE" in "*/30"*) frequent=true ;; *) frequent=false ;; esac
+          if [ "$frequent" = "true" ] && [ "$changed" = "false" ] && [ "$FORCE" != "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Nothing new on a game-day check."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # Corepack first: setup-node's yarn cache step runs `yarn` itself, and the runner's own Yarn 1 refuses a project
       # that pins Yarn 4 in package.json ("packageManager").
       - name: Enable Corepack
+        if: steps.sched.outputs.skip != 'true'
         run: corepack enable
 
       - uses: actions/setup-node@v4
+        if: steps.sched.outputs.skip != 'true'
         with:
           node-version: 24
           cache: yarn
 
       - name: Install site packages
+        if: steps.sched.outputs.skip != 'true'
         run: |
           corepack enable
           yarn install --immutable
 
       - name: Rebuild the guide
+        if: steps.sched.outputs.skip != 'true'
         run: |
           npx esbuild scripts/rooting/build.ts --bundle --platform=node --format=cjs --alias:@=. --log-level=warning --outfile=/tmp/rooting.cjs
           if [ "${{ inputs.force }}" = "true" ]; then FLAG="--force"; else FLAG=""; fi
           node /tmp/rooting.cjs $FLAG
 
+      # Never commit a pair of files that disagree or fail the checks: the schedule and the guide must describe the same results, every
+      # probability must add up, and the guide must not be missing a final score the schedule has.
+      - name: Check the data before committing
+        if: steps.sched.outputs.skip != 'true'
+        run: yarn vitest run tests/lib/rooting/freshness.test.ts tests/lib/rooting/consistency.test.ts
+
       - name: Commit if changed
+        if: steps.sched.outputs.skip != 'true'
         run: |
           git add data/lab/schedule.json data/lab/rooting.json
           if git diff --cached --quiet; then

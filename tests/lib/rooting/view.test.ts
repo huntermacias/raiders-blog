@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { getGames } from "@/lib/playoffs/data"
 import { NFL_LEAGUE } from "@/lib/playoffs/season"
 import { teamByAbbr } from "@/lib/nfl"
-import { pointsText, rankGames } from "@/lib/rooting/guide"
+import { pctText, pointsText, rankGames } from "@/lib/rooting/guide"
 import { getRooting } from "@/lib/rooting/data"
 import { settledGames } from "@/lib/rooting/live"
 import { type GuideQuery, readQuery } from "@/lib/rooting/share"
@@ -92,11 +92,13 @@ describe("the view, for all 32 teams and every goal", () => {
 		expect(text).toContain("rooting guide")
 		const top = topThree(v)
 		expect(top.length).toBeLessThanOrEqual(3)
-		expect(text).toContain(`1. ${teamByAbbr(top[0].rootFor as string).nick} win (${pointsText(top[0].gain ?? 0)})`)
-		expect(text).not.toContain("%")
-		// The team's own game is described by its stakes, and is not one of the numbered games to root for.
+		const swingPts = (v: number) => `${Math.round(Math.abs(v) * 100)}-pt swing`
+		expect(text).toContain(`1. ${teamByAbbr(top[0].rootFor as string).nick} win (${swingPts(top[0].spread)})`)
+		// The team's own game is described by what a win and a loss each leave it at, with its swing; the other games by their swing alone.
 		const own = ownGame(v)!
-		expect(text).toContain(`A Raiders win is worth ${pointsText(own.win.delta)} (a loss ${pointsText(own.loss.delta)}).`)
+		const opp = teamByAbbr(own.opp).nick
+		expect(text).toContain(`Next game, ${own.venue} the ${opp} (Week ${own.week}): a win puts the Raiders at ${pctText(own.win.p)}, a loss at ${pctText(own.loss.p)} (${swingPts(own.swing)}).`)
+		expect(text.split("Elsewhere:")[1]).not.toContain("%")
 		expect(top.every((r) => !r.yours)).toBe(true)
 		expect(text).not.toMatch(/1\. Raiders win/)
 	})
@@ -129,8 +131,9 @@ describe("a result that arrives before the guide is rebuilt", () => {
 		const v = buildView({ data, schedule: finalized, query: q(open.home, "playoffs", "all"), settled, season: 2026 })
 		expect(v.recs.map((r) => r.gameId)).not.toContain(open.id)
 		expect(v.stale).toBe(true)
-		expect(v.notes.join(" ")).toMatch(/final score has come in/)
-		expect(v.notes.join(" ")).toMatch(/just ended/)
+		expect(v.freshness.state).toBe("settling")
+		expect(v.freshness.pending).toBe(1)
+		expect(v.freshness.text).toMatch(/ended since these numbers were worked out/)
 	})
 
 	it("comes off the list when ESPN says it is over, matched by teams, and ignores games not over", () => {
