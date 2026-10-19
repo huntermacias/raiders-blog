@@ -8,6 +8,7 @@ import OpenPing from "@/components/rooting/OpenPing"
 import RootingControls from "@/components/rooting/RootingControls"
 import RootingGame from "@/components/rooting/RootingGame"
 import RootingShare from "@/components/rooting/RootingShare"
+import StandingsPanel from "@/components/rooting/StandingsPanel"
 import PlayoffMachineLink from "@/components/rooting/TrackedLink"
 import { TeamBadge } from "@/components/rooting/parts"
 import { getScoreboard } from "@/lib/live/service"
@@ -23,6 +24,8 @@ import { GOAL_INFO, pctText, pointsText } from "@/lib/rooting/guide"
 import { type BoardGame, settledGames } from "@/lib/rooting/live"
 import { ROOTING_PATH, SITE_URL, type RawQuery, canonicalFor, readQuery } from "@/lib/rooting/share"
 import { getRooting } from "@/lib/rooting/data"
+import { tableRows } from "@/lib/rooting/table"
+import { getUnits } from "@/lib/lab/data"
 import { buildView, shareText, topThree } from "@/lib/rooting/view"
 
 // Built per request from the stored guide (data/lab/rooting.json), the schedule file and ESPN's scoreboard, so a game that has just ended
@@ -130,6 +133,9 @@ export default async function RootingGuidePage(props: Props) {
 	const machineHref = `${PLAYOFFS_PATH}${view.team === "LV" ? "" : `?${scenarioQuery("", view.team)}`}`
 	const scopeLabel = view.scope === "all" || view.week === null ? "All remaining games" : `Week ${view.week}`
 	const baseGoal = view.goals.find((g) => g.goal === view.goal)
+	const unitTeams = getUnits().teams
+	const ranks = Object.fromEntries(Object.entries(unitTeams).map(([abbr, t]) => [abbr, { off: t.overall.off?.rank ?? null, def: t.overall.def?.rank ?? null }]))
+	const standings = tableRows({ data, schedule: games, goal: view.goal, settled: view.settled, ranks })
 	const model = getModel()
 	const calibrationGap = Math.max(1, Math.round(100 * Math.max(...model.calibration.later.filter((b) => b.n >= 1000).map((b) => Math.abs(b.predicted - b.observed)))))
 	const jsonLd = {
@@ -214,63 +220,68 @@ export default async function RootingGuidePage(props: Props) {
 			</section>
 
 			<section className="container pb-8 sm:pb-12" aria-labelledby="rooting-heading">
-				<div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-					<div>
-						<h2 id="rooting-heading" className="m-0 font-serif text-2xl font-bold sm:text-3xl">
-							{scopeLabel}: who to root for
-						</h2>
-						<p className="m-0 mt-1 max-w-2xl text-sm text-lab-muted">
-							Ranked by swing: how far the {info.nick}&rsquo; chance to {goalInfo.phrase} moves between the best and the worst result of the game, whoever is favored. Changes are in percentage points.
-						</p>
+				<div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-8">
+					<div className="min-w-0">
+						<div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+							<div>
+								<h2 id="rooting-heading" className="m-0 font-serif text-2xl font-bold sm:text-3xl">
+									{scopeLabel}: who to root for
+								</h2>
+								<p className="m-0 mt-1 max-w-2xl text-sm text-lab-muted">
+									Ranked by swing: how far the {info.nick}&rsquo; chance to {goalInfo.phrase} moves between the best and the worst result of the game, whoever is favored. Changes are in percentage points.
+								</p>
+							</div>
+							{view.week !== null && view.empty !== "clinched" && view.empty !== "out" ? <RootingShare team={view.team} nick={info.nick} goal={view.goal} goalLabel={goalInfo.label} week={view.week} scope={view.scope} stamp={stamp} text={shareText(view)} /> : null}
+						</div>
+
+						{view.recs.length ? (
+							<ol className="m-0 grid list-none gap-3 p-0">
+								{view.recs.map((rec, i) => (
+									<RootingGame key={rec.gameId} rec={rec} rank={i + 1} team={view.team} color={info.color} facts={facts[rec.gameId]} />
+								))}
+							</ol>
+						) : (
+							<div className="rounded-2xl border border-lab-line bg-lab-surface p-5 sm:p-6">
+								<p className="m-0 font-serif text-xl font-bold">{emptyTitle(view.empty)}</p>
+								<p className="m-0 mt-2 max-w-2xl text-sm leading-relaxed text-lab-soft">{view.emptyText}</p>
+								<p className="m-0 mt-4 flex flex-wrap gap-4 text-sm font-semibold">
+									{view.empty === "no-games-this-week" ? (
+										<Link href={`${ROOTING_PATH}?team=${view.team}&goal=${view.goal}${view.week ? `&week=${view.week}` : ""}&scope=all`} className="underline underline-offset-4">
+											See every remaining game
+										</Link>
+									) : null}
+									<PlayoffMachineLink href={machineHref} className="underline underline-offset-4">
+										Try it in the Playoff Machine
+									</PlayoffMachineLink>
+								</p>
+							</div>
+						)}
+
+						{view.quiet > 0 && view.recs.length ? (
+							<p className="m-0 mt-3 text-sm text-lab-muted">
+								{view.quiet} other {view.quiet === 1 ? "game" : "games"} {view.scope === "all" ? "still to play" : `in Week ${view.week}`} {view.quiet === 1 ? "moves" : "move"} your odds by less than a point, or by less than the guide can tell apart from chance, so {view.quiet === 1 ? "it is" : "they are"} left off.
+							</p>
+						) : null}
+
+						{view.settled.length ? (
+							<div className="mt-6 rounded-2xl border border-dashed border-lab-line-strong p-4 sm:p-5">
+								<h3 className="m-0 font-serif text-lg font-bold">Just finished</h3>
+								<p className="m-0 mt-1 text-xs text-lab-muted">These games are over, so they are off the list. The numbers above were worked out before them and are being recalculated.</p>
+								<ul className="m-0 mt-3 grid list-none gap-1.5 p-0 text-sm">
+									{view.settled.map((s) => (
+										<li key={s.gameId} className="flex items-center gap-2">
+											<span className="font-mono tabular-nums">
+												{s.away} {s.awayScore}, {s.home} {s.homeScore}
+											</span>
+											<span className="text-xs text-lab-muted">Final</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						) : null}
 					</div>
-					{view.week !== null && view.empty !== "clinched" && view.empty !== "out" ? <RootingShare team={view.team} nick={info.nick} goal={view.goal} goalLabel={goalInfo.label} week={view.week} scope={view.scope} stamp={stamp} text={shareText(view)} /> : null}
+					<StandingsPanel rows={standings} team={view.team} goal={view.goal} goalShort={goalInfo.short} week={view.week} color={info.color} />
 				</div>
-
-				{view.recs.length ? (
-					<ol className="m-0 grid list-none gap-3 p-0">
-						{view.recs.map((rec, i) => (
-							<RootingGame key={rec.gameId} rec={rec} rank={i + 1} team={view.team} color={info.color} facts={facts[rec.gameId]} />
-						))}
-					</ol>
-				) : (
-					<div className="rounded-2xl border border-lab-line bg-lab-surface p-5 sm:p-6">
-						<p className="m-0 font-serif text-xl font-bold">{emptyTitle(view.empty)}</p>
-						<p className="m-0 mt-2 max-w-2xl text-sm leading-relaxed text-lab-soft">{view.emptyText}</p>
-						<p className="m-0 mt-4 flex flex-wrap gap-4 text-sm font-semibold">
-							{view.empty === "no-games-this-week" ? (
-								<Link href={`${ROOTING_PATH}?team=${view.team}&goal=${view.goal}${view.week ? `&week=${view.week}` : ""}&scope=all`} className="underline underline-offset-4">
-									See every remaining game
-								</Link>
-							) : null}
-							<PlayoffMachineLink href={machineHref} className="underline underline-offset-4">
-								Try it in the Playoff Machine
-							</PlayoffMachineLink>
-						</p>
-					</div>
-				)}
-
-				{view.quiet > 0 && view.recs.length ? (
-					<p className="m-0 mt-3 text-sm text-lab-muted">
-						{view.quiet} other {view.quiet === 1 ? "game" : "games"} {view.scope === "all" ? "still to play" : `in Week ${view.week}`} {view.quiet === 1 ? "moves" : "move"} your odds by less than a point, or by less than the guide can tell apart from chance, so {view.quiet === 1 ? "it is" : "they are"} left off.
-					</p>
-				) : null}
-
-				{view.settled.length ? (
-					<div className="mt-6 rounded-2xl border border-dashed border-lab-line-strong p-4 sm:p-5">
-						<h3 className="m-0 font-serif text-lg font-bold">Just finished</h3>
-						<p className="m-0 mt-1 text-xs text-lab-muted">These games are over, so they are off the list. The numbers above were worked out before them and are being recalculated.</p>
-						<ul className="m-0 mt-3 grid list-none gap-1.5 p-0 text-sm">
-							{view.settled.map((s) => (
-								<li key={s.gameId} className="flex items-center gap-2">
-									<span className="font-mono tabular-nums">
-										{s.away} {s.awayScore}, {s.home} {s.homeScore}
-									</span>
-									<span className="text-xs text-lab-muted">Final</span>
-								</li>
-							))}
-						</ul>
-					</div>
-				) : null}
 			</section>
 
 			{view.completed.length ? (
