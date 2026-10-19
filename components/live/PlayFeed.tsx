@@ -24,7 +24,7 @@ function tag(p: LivePlay): { text: string; tone: "ink" | "bad" | "muted" } | nul
 	return null
 }
 
-function Row({ p, side }: { p: LivePlay; side: Side | null }) {
+function Row({ p, side, score }: { p: LivePlay; side: Side | null; score: string }) {
 	const dd = downText(p.down, p.distance, p.from != null ? 100 - p.from : null)
 	const t = tag(p)
 	return (
@@ -40,6 +40,9 @@ function Row({ p, side }: { p: LivePlay; side: Side | null }) {
 			<span className={"min-w-0 text-sm leading-snug " + (p.big ? "font-semibold text-lab-ink" : "text-lab-soft")}>
 				{dd && <span className="mr-1.5 font-mono text-[11px] font-bold text-lab-muted">{dd}</span>}
 				{p.text}
+				<span className="mt-0.5 block font-mono text-[11px] font-normal tabular-nums text-lab-muted" data-testid="play-score">
+					{score}
+				</span>
 			</span>
 			{t && (
 				<span
@@ -105,7 +108,7 @@ export default function PlayFeed({ game, sides }: { game: LiveGame; sides: { awa
 								{expanded && (
 									<ul className="mt-1 divide-y divide-lab-line">
 										{plays.map((p) => (
-											<Row key={p.id} p={p} side={side} />
+											<Row key={p.id} p={p} side={side} score={`${game.info.away.abbr} ${p.away} \u00b7 ${game.info.home.abbr} ${p.home}`} />
 										))}
 									</ul>
 								)}

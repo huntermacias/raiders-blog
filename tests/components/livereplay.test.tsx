@@ -64,6 +64,22 @@ describe("replaying a finished game on /live", () => {
 		expect(bug.getByText(String(plays[td - 1].away))).toBeTruthy()
 	})
 
+	it("shows the score under the down and distance on the field, and with every play in the feed", async () => {
+		render(<LiveCenter initialBoard={board} pinned={null} />)
+		await flush()
+		fireEvent.click(screen.getByRole("button", { name: /Replay this game/ }))
+		fireEvent.click(screen.getByRole("button", { name: "Pause" }))
+		fireEvent.click(screen.getByRole("button", { name: "Jump to the next score" }))
+		const td = plays.findIndex((p) => p.scoring)
+		const a = finalInfo.away.abbr
+		const h = finalInfo.home.abbr
+		expect(screen.getByTestId("field-score").textContent).toBe(`${a} ${plays[td].away} · ${h} ${plays[td].home}`)
+		const shown = screen.getAllByTestId("play-score").map((e) => e.textContent)
+		expect(shown).toHaveLength(td + 1)
+		expect(shown).toContain(`${a} ${plays[td].away} · ${h} ${plays[td].home}`)
+		expect(shown[shown.length - 1]).toBe(`${a} ${plays[0].away} · ${h} ${plays[0].home}`)
+	})
+
 	it("scrubs to any play and shows only the plays up to it", async () => {
 		render(<LiveCenter initialBoard={board} pinned={null} />)
 		await flush()
