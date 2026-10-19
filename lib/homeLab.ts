@@ -9,7 +9,7 @@ import { teamByAbbr } from "./nfl"
 import { type GoalStatus, GOAL_INFO, pctText, pointsText } from "./rooting/guide"
 import { guidePath } from "./rooting/share"
 import type { Goal } from "./rooting/types"
-import { type GuideView, ownGame, topThree } from "./rooting/view"
+import { type GuideView, topThree } from "./rooting/view"
 
 export type LabPhase = "live" | "final" | "early" | "late" | "idle"
 
@@ -68,8 +68,12 @@ export type RootingSnapshot = {
 	/** 0 to 1, for the bar. */
 	baseline: number
 	change: { text: string; dir: "up" | "down" | "flat"; since: string } | null
-	best: { gameId: string; rootFor: string; against: string; forNick: string; againstNick: string; matchup: string; gain: string; small: boolean } | null
-	own: { opp: string; venue: "vs" | "at"; win: string; loss: string } | null
+	/** "9% to 17% if the model were refit", or null when that was not worked out. */
+	range: string | null
+	/** The game elsewhere that swings the odds most. `swing` is what the game is worth (best result minus worst), in points, as text. */
+	best: { gameId: string; rootFor: string; against: string; forNick: string; againstNick: string; matchup: string; swing: string; small: boolean } | null
+	/** The next game: the chance after a win and after a loss, and its swing. */
+	own: { opp: string; venue: "vs" | "at"; week: number; win: string; loss: string; swing: string } | null
 	/** How many games in this week's list move the odds by a point or more. */
 	matters: number
 	/** One sentence for the cases with no list: clinched, out, nothing moves it. */
@@ -86,7 +90,7 @@ const nickOf = (abbr: string) => teamByAbbr(abbr).nick
 export function rootingSnapshot(view: GuideView): RootingSnapshot {
 	const picks = topThree(view)
 	const top = picks[0]
-	const own = ownGame(view)
+	const own = view.own
 	const goal = view.goals.find((g) => g.goal === view.goal)
 	const since = view.since
 	const change: RootingSnapshot["change"] =
@@ -105,6 +109,7 @@ export function rootingSnapshot(view: GuideView): RootingSnapshot {
 		pct: view.status === "clinched" ? "Clinched" : view.status === "out" ? "Out" : pctText(goal?.baseline ?? 0),
 		baseline: goal?.baseline ?? 0,
 		change,
+		range: view.status === "live" && view.baselineRange ? `${pctText(view.baselineRange[0])} to ${pctText(view.baselineRange[1])}` : null,
 		best:
 			top && top.rootFor && top.rootAgainst
 				? {
@@ -114,14 +119,14 @@ export function rootingSnapshot(view: GuideView): RootingSnapshot {
 						forNick: nickOf(top.rootFor),
 						againstNick: nickOf(top.rootAgainst),
 						matchup: `${nickOf(top.away)} at ${nickOf(top.home)}`,
-						gain: pointsText(top.gain ?? 0),
-						small: (top.gain ?? 0) < 0.02,
+						swing: `${Math.round(top.spread * 100)}-pt swing`,
+						small: top.spread < 0.03,
 				  }
 				: null,
-		own: own ? { opp: nickOf(own.opp), venue: own.venue, win: pointsText(own.win.delta), loss: pointsText(own.loss.delta) } : null,
+		own: own ? { opp: nickOf(own.opp), venue: own.venue, week: own.week, win: pctText(own.win.p), loss: pctText(own.loss.p), swing: `${Math.round(own.swing * 100)}-pt swing` } : null,
 		matters: view.recs.length,
 		headline: view.headline || view.emptyText,
-		updating: view.stale || view.settled.length > 0,
+		updating: view.freshness.state !== "current",
 		updatedAt: view.generatedAt,
 		href: guidePath({ team: view.team, goal: view.goal }),
 	}

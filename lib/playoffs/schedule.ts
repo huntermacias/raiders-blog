@@ -13,6 +13,7 @@ export type RawScheduleGame = {
 	awayScore?: number
 	homeScore?: number
 	spread?: number | null
+	neutral?: boolean
 }
 
 export type RawSchedule = {
@@ -41,6 +42,7 @@ export function scheduleGames(raw: RawSchedule): Game[] {
 			date: g.date,
 			time: g.time ?? null,
 			spread: g.spread ?? null,
+			...(g.neutral ? { neutral: true } : {}),
 		}
 	})
 }

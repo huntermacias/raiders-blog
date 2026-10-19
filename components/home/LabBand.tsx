@@ -66,7 +66,7 @@ function OddsPanel({ s }: { s: RootingSnapshot }) {
 				</div>
 				{settled ? <p className="mt-3 max-w-md text-sm text-zinc-300">{s.headline}</p> : <Meter value={s.baseline} />}
 				<p className="mt-2 text-xs text-zinc-500">
-					A model estimate from the standings and the schedule left.{s.updating ? " A final score is still being worked in." : ""}
+					A model estimate from the standings, the betting lines and team ratings.{s.range ? ` Refit the model and it lands between ${s.range}.` : ""}{s.updating ? " A recent result is still being worked in." : ""}
 					{s.updatedAt && updatedText(s.updatedAt) ? (
 						<>
 							{" "}
@@ -85,13 +85,13 @@ function OddsPanel({ s }: { s: RootingSnapshot }) {
 								<p className="truncate text-sm text-zinc-400">{s.best.matchup}</p>
 							</div>
 							<span className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-sm font-bold tabular-nums text-emerald-300">
-								{s.best.gain}
+								{s.best.swing}
 								<span className="sr-only"> to the {s.nick}&rsquo; odds</span>
 							</span>
 						</div>
 					) : s.own ? (
 						<p className="mt-3 text-sm leading-relaxed text-zinc-300">
-							No other game moves it much. The one that does is the {s.nick}&rsquo; own: a win is worth <span className="font-bold text-emerald-300">{s.own.win}</span>, a loss{" "}
+							No other game moves it much. The one that does is the {s.nick}&rsquo; own: a win puts them at <span className="font-bold text-emerald-300">{s.own.win}</span>, a loss at{" "}
 							<span className="font-bold text-rose-300">{s.own.loss}</span>.
 						</p>
 					) : (
@@ -100,7 +100,7 @@ function OddsPanel({ s }: { s: RootingSnapshot }) {
 					{s.best?.small && <p className="mt-3 text-xs text-zinc-400">Not much moves the odds this week; this is the best of a small field.</p>}
 					{s.best && s.own && (
 						<p className="mt-3 text-xs text-zinc-400">
-							A {s.nick} win over the {s.own.opp} is worth {s.own.win}; a loss, {s.own.loss}.
+							Next game, {s.own.venue} the {s.own.opp} (Week {s.own.week}): a win puts the {s.nick} at {s.own.win}, a loss at {s.own.loss}.
 						</p>
 					)}
 				</div>

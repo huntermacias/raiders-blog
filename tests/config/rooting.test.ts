@@ -32,7 +32,7 @@ describe("the Sunday Rooting Guide", () => {
 			expect(src, f).not.toMatch(/from "node:|from "fs"/)
 		}
 		const engine = read("lib/rooting/engine.ts")
-		for (const name of ["buildSeason", "seedConference", "ratingsFor", "homeChance", "uniform"]) expect(engine).toContain(name)
+		for (const name of ["buildSeason", "seedConference", "ratingsFor", "rollerFor"]) expect(engine).toContain(name)
 		expect(engine).toMatch(/from "\.\.\/playoffs\/odds"/)
 		expect(engine).toMatch(/from "\.\.\/playoffs\/standings"/)
 	})

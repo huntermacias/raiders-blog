@@ -55,7 +55,7 @@ export type OddsIn = {
 	pct: string
 	baseline: number
 	change: { text: string; dir: "up" | "down" | "flat"; since: string } | null
-	best: { rootFor: string; against: string; forNick: string; againstNick: string; matchup: string; gain: string; small: boolean } | null
+	best: { rootFor: string; against: string; forNick: string; againstNick: string; matchup: string; swing: string; small: boolean } | null
 	href: string
 	updatedAt?: string
 }
@@ -114,7 +114,7 @@ function oddsDrop(o: OddsIn): Drop {
 	const headline = o.status === "clinched" ? `The ${o.nick} have clinched.` : o.status === "out" ? `The ${o.nick} are out of the playoff race.` : `The ${o.nick} have a ${o.pct} chance to ${o.goalPhrase}.`
 	const pts = o.change ? /[\d.]+/.exec(o.change.text)?.[0] : null
 	const move = o.change && o.change.dir !== "flat" && pts ? `${o.change.dir === "up" ? "Up" : "Down"} ${pts} ${pts === "1" ? "point" : "points"} ${o.change.since}.` : o.change ? `Unchanged ${o.change.since}.` : ""
-	const root = o.best && !o.best.small ? `Biggest game to watch: ${o.best.matchup}, root for the ${o.best.forNick} (${o.best.gain} for the ${o.nick}).` : ""
+	const root = o.best && !o.best.small ? `Biggest game to watch: ${o.best.matchup}, root for the ${o.best.forNick} (a ${o.best.swing} for the ${o.nick}).` : ""
 	return {
 		id: "odds",
 		kind: "odds",

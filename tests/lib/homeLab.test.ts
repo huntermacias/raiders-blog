@@ -83,7 +83,7 @@ describe("rootingSnapshot", () => {
 		expect(s.pct).toMatch(/^(<1%|>99%|\d{1,2}%|100%|Clinched|Out)$/)
 		expect(s.href).toBe("/lab/rooting-guide?team=LV&goal=playoffs")
 		if (s.best) {
-			expect(s.best.gain).toMatch(/^[+−]\d+ pts?$/)
+			expect(s.best.swing).toMatch(/^\d+-pt swing$/)
 			expect(s.best.rootFor).not.toBe("LV")
 			expect(s.best.matchup).toMatch(/ at /)
 		}

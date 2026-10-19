@@ -74,7 +74,7 @@ describe("the page's metadata, for every team", () => {
 			return
 		}
 		expect(String(meta.description)).toMatch(/chance to make the playoffs is \d+%|<1%|>99%/)
-		expect(String(meta.description)).toMatch(/\+\d+ pts?\b/)
+		expect(String(meta.description)).toMatch(/\d+-point swing/)
 	})
 
 	it("falls back to a true page for a bad team or goal", async () => {
@@ -120,7 +120,7 @@ describe("the page, rendered on the server", () => {
 		render(await RootingGuidePage(props({ team: open.home, scope: "all" })))
 		expect(screen.getByRole("heading", { name: "Just finished" })).toBeTruthy()
 		expect(screen.getByText(new RegExp(`${open.away} 13, ${open.home} 30`))).toBeTruthy()
-		expect(screen.getAllByRole("status").some((n) => /just ended/.test(n.textContent ?? ""))).toBe(true)
+		expect(screen.getAllByRole("status").some((n) => /ended since these numbers were worked out/.test(n.textContent ?? ""))).toBe(true)
 	})
 
 	it("still works when ESPN does not answer", async () => {

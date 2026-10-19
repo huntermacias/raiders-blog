@@ -32,6 +32,12 @@ export type RootingData = {
 	exact: boolean
 	tieSims: number
 	source: string
+	/** The date (YYYY-MM-DD) of the most recent final score the numbers include, or null before the first game. */
+	lastFinal: string | null
+	/** The team-strength model behind the chances: the fitted file it came from, and how wide a team's true strength is around its rating. */
+	model: ModelInfo
+	/** How far the baseline moves when the model is refitted on resampled seasons, per (team, goal). Null when that was not worked out. */
+	range: { draws: number; sims: number; lo: number[]; hi: number[] } | null
 	teams: string[]
 	/** Each team's chance at each goal as things stand, out of SCALE. */
 	baseline: number[]
@@ -45,18 +51,36 @@ export type RootingData = {
 	history: HistoryPoint[]
 }
 
+/** What the team-strength model was when the guide was built, so the page can say how it was checked. */
+export type ModelInfo = {
+	version: number
+	/** The fitted file's own timestamp: a refit changes it, and the guide is then out of date. */
+	fitted: string
+	/** Spread of a team's true strength around its rating, on the log-odds scale. */
+	sigma: number
+	fitSeasons: [number, number]
+}
+
 export type RootingGame = {
 	id: string
 	week: number
 	away: string
 	home: string
+	/** The date (YYYY-MM-DD) and Eastern kickoff time ("13:00") of the game, when the schedule has them. */
+	date: string | null
+	time: string | null
 	/** The model's chance the home team wins, out of SCALE. */
 	pHome: number
+	/** True when that chance comes from the game's posted spread; false when it comes from the two teams' ratings. */
+	line: boolean
 	/** Simulated seasons in which the home team won, and in which the away team won. 0 for both when played out exactly. */
 	n: [number, number]
 	/** Each (team, goal)'s chance if the home team wins / if the away team wins, out of SCALE. */
 	H: number[]
 	A: number[]
+	/** The lowest and highest (chance if home wins minus chance if away wins) across refits of the model, out of SCALE (signed). Empty when not worked out. */
+	swingLo: number[]
+	swingHi: number[]
 }
 
 export type CompletedGame = {

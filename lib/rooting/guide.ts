@@ -12,8 +12,13 @@ export const NEGLIGIBLE = 0.01
 /** Spreads under this are "minor", under NOTABLE "notable", and from there "major". */
 export const MINOR = 0.03
 export const NOTABLE = 0.08
-/** How many standard errors a difference must clear before it is called real. Two is about 95% sure. */
-export const Z = 2
+/**
+ * How many standard errors a difference must clear before it is called real. A guide compares a couple of hundred games for every
+ * team and goal, so at two (about 1 in 20 by chance alone) a few games with no effect at all would be called minor; three is about
+ * 1 in 400 per comparison, which keeps the "no real impact" label honest. It costs nothing that matters: with the guide's 60,000
+ * seasons three standard errors is about a point of probability, the same size as the NEGLIGIBLE floor.
+ */
+export const Z = 3
 
 export type Impact = "none" | "minor" | "notable" | "major"
 
@@ -40,6 +45,12 @@ const at = (data: RootingData, list: number[], team: string, goal: Goal): number
 /** The team's chance at the goal as things stand, 0 to 1. Null for a team the data does not have. */
 export function baselineOf(data: RootingData, team: string, goal: Goal): number | null {
 	return teamIndex(data, team) < 0 ? null : at(data, data.baseline, team, goal)
+}
+
+/** The lowest and highest chance across refits of the model, or null when that was not worked out. */
+export function baselineRange(data: RootingData, team: string, goal: Goal): [number, number] | null {
+	if (!data.range || teamIndex(data, team) < 0) return null
+	return [at(data, data.range.lo, team, goal), at(data, data.range.hi, team, goal)]
 }
 
 // ---------------------------------------------------------------------------------------------- relations
@@ -100,10 +111,23 @@ export type Recommendation = {
 	/** Chance at the goal after the best and the worst outcome, and how far each is from the baseline, in points as a fraction. */
 	bestP: number | null
 	worstP: number | null
+	/**
+	 * How far the best / worst outcome leaves the chance from where it is now. These depend on how likely each outcome was (an upset
+	 * moves the chance more than the expected result does), so they say what a result would do, not how much the game matters.
+	 * gain = (1 - chance the rooted-for side wins) x swing.
+	 */
 	gain: number | null
 	loss: number | null
-	/** Best minus worst: how much the game is worth. */
+	/** Best minus worst: how much the game is worth. The importance of the game: it does not depend on who is favored. */
 	spread: number
+	/** The model's chance that the side to root for wins. Null when there is no side to root for. */
+	pBest: number | null
+	/** True when the game is priced from its posted spread; false when it is priced from the teams' ratings. */
+	line: boolean
+	/** The swing's lowest and highest value across refits of the model, with the best side as the positive direction. Null when not worked out. */
+	range: [number, number] | null
+	/** True when every refit agrees on which side to root for. */
+	robust: boolean
 	/** The sampling error of that difference. Zero when every ending was added up exactly. */
 	se: number
 	/** True when the spread is bigger than sampling error alone would produce. */
@@ -124,7 +148,7 @@ export function impactOf(spread: number, se: number, exact: boolean): Impact {
 /** The bucket sizes below which a conditional chance is too rough to quote (same floor the Playoff Machine uses). */
 export const MIN_BUCKET = 120
 
-function recommend(data: RootingData, g: RootingGame, team: string, goal: Goal, base: number): Recommendation {
+export function recommend(data: RootingData, g: RootingGame, team: string, goal: Goal, base: number): Recommendation {
 	const idx = teamIndex(data, team) * GOALS.length + goalIndex(goal)
 	const [nH, nA] = g.n
 	const exact = data.exact
@@ -149,6 +173,11 @@ function recommend(data: RootingData, g: RootingGame, team: string, goal: Goal, 
 		se = exact ? 0 : Math.sqrt((pH * (1 - pH)) / nH + (pA * (1 - pA)) / nA)
 	}
 	const impact = best === null ? "none" : impactOf(spread, se, exact)
+	// The refits' lowest and highest (home minus away); with the away side best, the same range read the other way round.
+	const hasRange = g.swingLo.length === data.baseline.length && g.swingHi.length === data.baseline.length
+	const lo = hasRange ? g.swingLo[idx] / SCALE : null
+	const hi = hasRange ? g.swingHi[idx] / SCALE : null
+	const range: [number, number] | null = best === null || lo === null || hi === null ? null : best === "H" ? [lo, hi] : [-hi, -lo]
 	return {
 		gameId: g.id,
 		week: g.week,
@@ -168,6 +197,10 @@ function recommend(data: RootingData, g: RootingGame, team: string, goal: Goal, 
 		gain: bestP === null ? null : bestP - base,
 		loss: worstP === null ? null : worstP - base,
 		spread,
+		pBest: best === null ? null : best === "H" ? g.pHome / SCALE : 1 - g.pHome / SCALE,
+		line: g.line,
+		range,
+		robust: range === null || range[0] > 0,
 		se,
 		significant: impact !== "none",
 		thin: !okH || !okA,

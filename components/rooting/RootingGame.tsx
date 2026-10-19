@@ -50,7 +50,11 @@ export default function RootingGame({ rec, rank, team, color, facts }: Props) {
 	const best = rec.bestP as number
 	const worst = rec.worstP as number
 	const gain = rec.gain as number
+	const loss = rec.loss as number
+	const swing = Math.round(rec.spread * 100)
 	const range = `${pctText(worst)} to ${pctText(best)}, from ${pctText(rec.baseline)} now`
+	const model = rec.range ? `${Math.round(rec.range[0] * 100)} to ${Math.round(rec.range[1] * 100)}` : null
+	const sampling = rec.se > 0 ? Math.max(1, Math.round(rec.se * 196)) : 0
 	const homeNick = home.nick
 	const awayNick = away.nick
 
@@ -87,12 +91,15 @@ export default function RootingGame({ rec, rank, team, color, facts }: Props) {
 							{awayNick} at {homeNick}
 						</span>
 					</span>
-					<span className="mt-3 flex flex-wrap items-center gap-2">
-						<span className="font-serif text-2xl font-bold leading-none tabular-nums">{pointsText(gain)}</span>
-						<span className="text-xs text-lab-muted">to your odds, against {pointsText(rec.loss as number)} if it goes the other way</span>
-						<span className={`ml-auto rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ${tone[rec.impact]}`}>
-							{IMPACT_LABEL[rec.impact]} &middot; {Math.round(rec.spread * 100)}-pt swing
+					<span className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+						<span className="font-serif text-2xl font-bold leading-none tabular-nums">{swing}-pt swing</span>
+						<span className="text-xs text-lab-muted">
+							{pctText(worst)} if the {teamByAbbr(against).nick} win, {pctText(best)} if the {forInfo.nick} win
 						</span>
+						<span className={`ml-auto rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ${tone[rec.impact]}`}>{IMPACT_LABEL[rec.impact]}</span>
+					</span>
+					<span className="mt-1 block text-xs text-lab-muted">
+						From {pctText(rec.baseline)} now: {pointsText(gain)} if it goes your way, {pointsText(loss)} if not
 					</span>
 					<span className="mt-2 block">
 						<OddsRange worst={worst} best={best} baseline={rec.baseline} color={color} label={`Chance to ${facts.goalPhrase}: ${range}`} />
@@ -119,8 +126,14 @@ export default function RootingGame({ rec, rank, team, color, facts }: Props) {
 						<dd className="m-0 font-mono">{facts.homeRecord}</dd>
 					</div>
 					<div className="flex justify-between gap-2 sm:col-span-2">
-						<dt>The model gives the {home.nick} a</dt>
+						<dt>
+							The {rec.line ? "betting line" : "team ratings"} give the {home.nick} a
+						</dt>
 						<dd className="m-0 font-mono">{pctText(rec.modelHome)} chance to win</dd>
+					</div>
+					<div className="flex justify-between gap-2 sm:col-span-2">
+						<dt>Chance the {forInfo.nick} win, which is what you are rooting for</dt>
+						<dd className="m-0 font-mono">{pctText(rec.pBest as number)}</dd>
 					</div>
 				</dl>
 				{facts.context.length ? (
@@ -132,10 +145,18 @@ export default function RootingGame({ rec, rank, team, color, facts }: Props) {
 						))}
 					</ul>
 				) : null}
-				<p className="m-0 mt-3 text-[11px] leading-relaxed text-lab-muted">
-					{rec.se > 0 ? `The swing is measured to within about ${Math.max(1, Math.round(rec.se * 196))} ${Math.max(1, Math.round(rec.se * 196)) === 1 ? "point" : "points"} either way (95% range). ` : "Every ending was counted, so these chances carry no sampling error. "}
-					Points are percentage points of the team&rsquo;s chance, not percent growth.
-				</p>
+				<div className="mt-3 rounded-xl bg-lab-tint px-3.5 py-3 text-xs leading-relaxed text-lab-soft">
+					<p className="m-0">
+						<span className="font-bold text-lab-ink">The swing</span> is what the game is worth: your chance if the {forInfo.nick} win minus your chance if the {teamByAbbr(against).nick} win. It does not depend on who is favored. The
+						<span className="font-bold text-lab-ink"> change from now</span> does: an upset moves your odds more than the expected result.
+					</p>
+					<p className="m-0 mt-2">
+						<span className="font-bold text-lab-ink">How sure:</span>{" "}
+						{sampling ? `the simulation pins the swing down to about ${sampling} ${sampling === 1 ? "point" : "points"} either way. ` : "every ending was counted, so there is no simulation error. "}
+						{model ? `Refitting the model on other past seasons would put it between ${model} points${rec.robust ? ", with the same team to root for every time." : ", and in some refits the other team becomes the better result: treat this one as a close call."} ` : ""}
+						Points are percentage points of the team&rsquo;s chance, not percent growth.
+					</p>
+				</div>
 			</div>
 		</li>
 	)

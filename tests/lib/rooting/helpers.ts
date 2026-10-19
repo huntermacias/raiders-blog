@@ -2,6 +2,7 @@
 
 import { getGames } from "@/lib/playoffs/data"
 import type { Game, League } from "@/lib/playoffs/types"
+import { getModel } from "@/lib/ratings/data"
 import { MODEL_VERSION, makeContext, resultsKey, simulateConditional, simulateTie } from "@/lib/rooting/engine"
 import { GOALS, type RootingData, SCALE } from "@/lib/rooting/types"
 
@@ -28,9 +29,12 @@ export function dataFor(games: readonly Game[], league: League, opts: { sims?: n
 		exact: cond.exact,
 		tieSims: 2000,
 		source: "test",
+		lastFinal: null,
+		model: { version: getModel().version, fitted: getModel().generatedAt, sigma: ctx.sigma, fitSeasons: getModel().fitSeasons },
+		range: null,
 		teams: ctx.teams,
 		baseline: ints(cond.baseline),
-		games: ctx.open.map((g, i) => ({ id: g.id, week: g.week, away: g.awayTeam, home: g.homeTeam, pHome: Math.round(ctx.chances[i] * SCALE), n: cond.games[i].n, H: ints(cond.games[i].H), A: ints(cond.games[i].A) })),
+		games: ctx.open.map((g, i) => ({ id: g.id, week: g.week, away: g.awayTeam, home: g.homeTeam, date: g.date ?? null, time: g.time ?? null, pHome: Math.round(ctx.chances[i] * SCALE), line: ctx.lined[i], n: cond.games[i].n, H: ints(cond.games[i].H), A: ints(cond.games[i].A), swingLo: [], swingHi: [] })),
 		ties,
 		completed: [],
 		history: [],
