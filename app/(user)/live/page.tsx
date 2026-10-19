@@ -6,6 +6,7 @@ import { client } from "../../../lib/sanity.client"
 import { Badge } from "@/components/ui/badge"
 import LiveCenter from "@/components/live/LiveCenter"
 import type { Pinned } from "@/components/live/PinnedTake"
+import { getSeason } from "@/lib/lab/data"
 import { getScoreboard } from "@/lib/live/service"
 import type { LiveGameInfo } from "@/lib/live/types"
 
@@ -74,6 +75,15 @@ async function loadThreads(): Promise<Thread[]> {
 	}
 }
 
+/** The Raiders games the Lab has a replay for, so a finished game here can link to it. */
+function labGames() {
+	try {
+		return getSeason().games.map((g) => ({ week: g.week, date: g.date, opp: g.opp }))
+	} catch {
+		return []
+	}
+}
+
 async function loadBoard(): Promise<LiveGameInfo[] | null> {
 	try {
 		return (await getScoreboard()).value
@@ -103,7 +113,7 @@ async function LiveIndexPage(props: { searchParams?: Promise<{ game?: string | s
 			</section>
 
 			<section className="container py-6 sm:py-10">
-				<LiveCenter initialBoard={board} pinned={pinned} initialGame={gameParam(searchParams?.game) || null} />
+				<LiveCenter initialBoard={board} pinned={pinned} initialGame={gameParam(searchParams?.game) || null} labGames={labGames()} />
 			</section>
 
 			{threads.length > 0 && (

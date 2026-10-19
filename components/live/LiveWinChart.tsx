@@ -19,13 +19,15 @@ const TALL = { W: 480, H: 300, L: 40, R: 12, T: 26, B: 28, font: 15 }
  * play. The numbers are our own estimate from score, clock, possession, field position and the
  * pregame line, so the card says so.
  */
-export default function LiveWinChart({ info, series, swings, focus, other, live }: { info: LiveGameInfo; series: WpSample[]; swings: Swing[]; focus: Side; other: Side; live: boolean }) {
+export default function LiveWinChart({ info, series: fullSeries, swings, focus, other, live, through }: { info: LiveGameInfo; series: WpSample[]; swings: Swing[]; focus: Side; other: Side; live: boolean; through?: number }) {
 	const uid = React.useId().replace(/:/g, "")
 	const compact = useCompact()
 	const { W, H, L, R, T, B, font } = compact ? TALL : WIDE
+	// A replay draws only the first part of the line but keeps the whole game's width, so the line grows across a fixed chart.
+	const series = through == null ? fullSeries : fullSeries.slice(0, through + 1)
 	const focusIsHome = focus.abbr === info.home.abbr
 	const pOf = (s: WpSample) => (focusIsHome ? s.home : 1 - s.home)
-	const total = Math.max(3600, series[series.length - 1]?.el ?? 3600)
+	const total = Math.max(3600, fullSeries[fullSeries.length - 1]?.el ?? 3600)
 	const x = (el: number) => L + (el / total) * (W - L - R)
 	const y = (p: number) => T + (1 - p) * (H - T - B)
 	const mid = y(0.5)
