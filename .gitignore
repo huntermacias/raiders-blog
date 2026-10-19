@@ -43,3 +43,6 @@ next-env.d.ts
 
 # yarn berry cache artifacts (project uses classic yarn v1 lockfile)
 .yarn/install-state.gz
+
+# private working guides (Claude notes, not for the repo)
+/guides/
