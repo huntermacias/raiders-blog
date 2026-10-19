@@ -164,7 +164,9 @@ describe("the tools' live lines", () => {
 			expect(line.length).toBeGreaterThan(10)
 			expect(line).not.toMatch(/undefined|NaN/)
 		}
-		expect(Object.keys(hub.teasers)).toEqual(expect.arrayContaining(["playoff-machine", "players", "matchups"]))
+		// The matchups line is about the Raiders' next game, so it is there only while they have one (not on a bye or after the last game).
+		expect(Object.keys(hub.teasers)).toEqual(expect.arrayContaining(["playoff-machine", "players", ...(hub.input.next ? ["matchups"] : [])]))
+		expect("matchups" in hub.teasers).toBe(Boolean(hub.input.next))
 	})
 
 	it("drop the playoff lines once the race is settled", () => {

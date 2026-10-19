@@ -8,6 +8,7 @@ import { gamesThrough } from "../../../lib/live/service"
 import { recordsAsOf } from "../../../lib/live/standings"
 import { type RankingsDoc, buildBoards, noLabel, raidersRow } from "../../../lib/rankings"
 import RankingsBoard, { type Records } from "../../../components/rankings/RankingsBoard"
+import RankingsShare from "../../../components/rankings/RankingsShare"
 
 // Rendered on every request, like /predictions: these pages are small, the data
 // changes by hand in Studio, and an edit should show up immediately instead of
@@ -78,6 +79,8 @@ export default async function RankingsPage() {
 	}
 
 	const lv = latest ? raidersRow(latest.rows) : null
+	// When the latest rankings were last saved: the version that goes on shared links so X fetches a fresh card.
+	const stamp = docs.filter((d) => d.week === latest?.week && d._updatedAt).map((d) => Date.parse(d._updatedAt as string))[0] ?? 0
 
 	const jsonLd = latest
 		? {
@@ -108,6 +111,13 @@ export default async function RankingsPage() {
 							? `All 32 teams, ranked every week. The Raiders are ${noLabel(lv.rank)} right now.`
 							: "All 32 teams, ranked every week, with movement and rank history.")}
 				</p>
+				{latest && (
+					<RankingsShare
+						url={PAGE_URL}
+						stamp={stamp}
+						text={`Week ${latest.week} NFL power rankings${lv ? `: the Raiders are ${noLabel(lv.rank)}.` : "."}`}
+					/>
+				)}
 			</div>
 
 			{latest && (
