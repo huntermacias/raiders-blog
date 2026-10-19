@@ -52,6 +52,7 @@ describe("every share button stamps its link", () => {
 		"components/lab/players/CompareShare.tsx": /stampedUrl\(`\$\{SITE_URL\}\/lab\/players\/compare/,
 		"components/live/ShareGame.tsx": /&v=\$\{/,
 		"components/math/ShareMenu.tsx": /pagePath\(view, stamp\)/,
+		"components/rankings/RankingsShare.tsx": /stampedUrl\(url, stamp\)/,
 	}
 	for (const [file, token] of Object.entries(files)) {
 		it(`${file} puts the stamp on the link`, () => {
