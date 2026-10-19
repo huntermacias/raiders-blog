@@ -1,16 +1,14 @@
-import { groq } from "next-sanity"
-import Link from "@/components/SiteLink"
 import type { Metadata } from "next"
 
-import { client } from "../../../lib/sanity.client"
-import { Badge } from "@/components/ui/badge"
 import LiveCenter from "@/components/live/LiveCenter"
-import type { Pinned } from "@/components/live/PinnedTake"
+import NextMatchup from "@/components/live/NextMatchup"
+import { getSeason } from "@/lib/lab/data"
+import { nextRaidersGame } from "@/lib/live/nextUp"
 import { getScoreboard } from "@/lib/live/service"
+import { getGames } from "@/lib/playoffs/data"
 import type { LiveGameInfo } from "@/lib/live/types"
 
-// The scores come from a live feed and the threads flip between live and final, so this is always
-// rendered fresh. The score feed is cached for a few seconds inside lib/live, so this stays cheap.
+// The scores come from a live feed, so this is always rendered fresh. The score feed is cached for a few seconds inside lib/live, so this stays cheap.
 export const dynamic = "force-dynamic"
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -57,18 +55,10 @@ export async function generateMetadata(props: { searchParams?: Promise<{ game?: 
 	}
 }
 
-type Thread = { _id: string; title: string; slug: { current: string }; status: "upcoming" | "live" | "final"; startedAt?: string; updateCount: number; latest?: { body: string; postedAt: string } | null }
-
-async function loadThreads(): Promise<Thread[]> {
-	const query = groq`
-		*[_type=='liveEvent'] | order(startedAt desc) {
-			_id, title, slug, status, startedAt, "updateCount": count(updates),
-			"latest": updates | order(postedAt desc)[0]{ body, postedAt }
-		}
-	`
+/** The Raiders games the Lab has a replay for, so a finished game here can link to it. */
+function labGames() {
 	try {
-		const threads = await client.fetch(query)
-		return Array.isArray(threads) ? threads : []
+		return getSeason().games.map((g) => ({ week: g.week, date: g.date, opp: g.opp }))
 	} catch {
 		return []
 	}
@@ -82,13 +72,19 @@ async function loadBoard(): Promise<LiveGameInfo[] | null> {
 	}
 }
 
+/** The Raiders' next game, from the schedule in the repo and the board (the schedule can lag a final). */
+function nextUp(board: LiveGameInfo[] | null) {
+	try {
+		return nextRaidersGame(getGames(), board, Date.now())
+	} catch {
+		return null
+	}
+}
+
 async function LiveIndexPage(props: { searchParams?: Promise<{ game?: string | string[] }> }) {
     const searchParams = await props.searchParams;
-    const [threads, board] = await Promise.all([loadThreads(), loadBoard()])
-
-    // The note pinned over a Raiders game: the newest update of whichever thread is live right now.
-    const liveThread = threads.find((t) => t.status === "live" && t.latest?.body)
-    const pinned: Pinned | null = liveThread?.latest ? { title: liveThread.title, slug: liveThread.slug.current, body: liveThread.latest.body, postedAt: liveThread.latest.postedAt } : null
+    const board = await loadBoard()
+    const next = nextUp(board)
 
     return (
 		<div className="lab min-h-screen bg-lab-page text-lab-ink">
@@ -103,34 +99,10 @@ async function LiveIndexPage(props: { searchParams?: Promise<{ game?: string | s
 			</section>
 
 			<section className="container py-6 sm:py-10">
-				<LiveCenter initialBoard={board} pinned={pinned} initialGame={gameParam(searchParams?.game) || null} />
+				<LiveCenter initialBoard={board} pinned={null} initialGame={gameParam(searchParams?.game) || null} labGames={labGames()} />
 			</section>
 
-			{threads.length > 0 && (
-				<section className="container pb-12 sm:pb-16">
-					<h2 className="font-serif text-2xl font-bold tracking-tight">Live threads</h2>
-					<p className="mt-1 text-sm text-lab-soft">Hunter&apos;s own timestamped updates, for game days and other events like the draft.</p>
-					<div className="mt-4 grid gap-3 sm:grid-cols-2">
-						{threads.map((event) => (
-							<Link
-								key={event._id}
-								href={`/live/${event.slug.current}`}
-								className="flex items-center justify-between gap-3 rounded-xl border border-lab-line bg-lab-surface px-4 py-3 transition-colors hover:bg-lab-hover"
-							>
-								<div className="min-w-0">
-									<p className="truncate font-medium">{event.title}</p>
-									<p className="text-xs text-lab-muted">
-										{event.updateCount} update{event.updateCount === 1 ? "" : "s"}
-									</p>
-								</div>
-								{event.status === "live" && <Badge className="animate-pulse bg-red-600 text-white hover:bg-red-600">Live</Badge>}
-								{event.status === "final" && <Badge variant="secondary">Final</Badge>}
-								{event.status === "upcoming" && <Badge variant="outline">Upcoming</Badge>}
-							</Link>
-						))}
-					</div>
-				</section>
-			)}
+			<NextMatchup next={next} />
 
 			<footer className="border-t border-lab-line">
 				<p className="container py-5 text-[11px] leading-relaxed text-lab-muted">

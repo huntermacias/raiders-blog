@@ -146,6 +146,9 @@ export default function LiveField({ game, away, home, banner }: { game: LiveGame
 					<span className="ml-2 font-normal normal-case tracking-normal text-lab-soft">
 						{periodName(info.period)} {clockText(info.clockSeconds)}
 					</span>
+					<span className="mt-0.5 block font-mono text-xs font-bold normal-case tracking-normal tabular-nums" data-testid="field-score">
+						{info.away.abbr} {info.away.score} &middot; {info.home.abbr} {info.home.score}
+					</span>
 				</div>
 			)}
 

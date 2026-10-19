@@ -41,7 +41,7 @@ function TeamBlock({ team, side, ball, align }: { team: LiveTeam; side: Side; ba
 }
 
 /** The scoreboard bug: both teams and scores, the clock, who has the ball, down and distance, and the line. */
-export default function ScoreBug({ info, away, home }: { info: LiveGameInfo; away: Side; home: Side }) {
+export default function ScoreBug({ info, away, home, replay = false }: { info: LiveGameInfo; away: Side; home: Side; replay?: boolean }) {
 	const now = useNow(1000)
 	const live = info.state === "in"
 	const sit = info.situation
@@ -56,7 +56,12 @@ export default function ScoreBug({ info, away, home }: { info: LiveGameInfo; awa
 		<section className="rounded-2xl border border-lab-line bg-lab-surface p-4 shadow-[var(--lab-shadow)] sm:p-6" aria-label="Score">
 			<div className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-lab-muted">
 				<span>{info.venue ?? "NFL"}{info.network ? ` · ${info.network}` : ""}</span>
-				{live ? (
+				{live && replay ? (
+					<span className="inline-flex items-center gap-2 text-lab-ink">
+						<span className="h-2 w-2 rounded-full bg-lab-muted" aria-hidden />
+						Replay
+					</span>
+				) : live ? (
 					<span className="inline-flex items-center gap-2 text-lab-ink">
 						<span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden />
 						Live

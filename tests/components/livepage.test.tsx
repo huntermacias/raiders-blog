@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("../../lib/sanity.client", () => ({ client: { fetch: vi.fn() }, readClient: { fetch: vi.fn() } }))
 vi.mock("../../lib/live/service", () => ({ getScoreboard: vi.fn() }))
 
-import { generateMetadata } from "../../app/(user)/live/page"
+import { cleanup, render, screen } from "@testing-library/react"
+import LiveIndexPage, { generateMetadata } from "../../app/(user)/live/page"
+import { client } from "../../lib/sanity.client"
 import { parseScoreboard } from "../../lib/live/espn"
 import { getScoreboard } from "../../lib/live/service"
 import { scoreboard } from "../stubs/liveFeed"
@@ -15,6 +18,8 @@ const images = (m: Awaited<ReturnType<typeof generateMetadata>>) => ({
 	og: ((m.openGraph as { images: unknown[] }).images[0] as string),
 	tw: ((m.twitter as { images: string[] }).images[0] as string),
 })
+
+afterEach(cleanup)
 
 beforeEach(() => {
 	scoreboardMock.mockReset()
@@ -68,5 +73,21 @@ describe("/live metadata", () => {
 		scoreboardMock.mockRejectedValue(new Error("down"))
 		const m = await generateMetadata({})
 		expect(images(m).og).toContain("/api/og?type=live")
+	})
+})
+
+describe("/live page", () => {
+	it("ends with the next-game section, and no longer reads Sanity for live threads", async () => {
+		scoreboardMock.mockResolvedValue({ value: board, stale: false, at: 0 })
+		render(await LiveIndexPage({}))
+		expect(screen.getByTestId("next-matchup")).toBeTruthy()
+		expect(screen.queryByText("Live threads")).toBeNull()
+		expect((client.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0)
+	})
+
+	it("still renders when the score feed is down", async () => {
+		scoreboardMock.mockRejectedValue(new Error("down"))
+		render(await LiveIndexPage({}))
+		expect(screen.getByTestId("next-matchup")).toBeTruthy()
 	})
 })
