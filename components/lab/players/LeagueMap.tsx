@@ -241,7 +241,7 @@ export default function LeagueMap({ group, focal, headline, peers, initialX, ini
 									<>
 										{" "}
 										&middot;{" "}
-										<Link href={compareHref(focal[0], sel.slug)} className="font-semibold underline decoration-lab-line-strong underline-offset-2">
+										<Link href={compareHref(focal[0], sel.slug)} rel="nofollow" className="font-semibold underline decoration-lab-line-strong underline-offset-2">
 											Compare
 										</Link>
 									</>

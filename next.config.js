@@ -22,6 +22,18 @@ module.exports = {
   images: {
     domains: ["i.pinimg.com", "cdn.sanity.io"],
   },
+  // The comparison page reads its two players from the query string, so Next renders it for every request and marks the response private. Its
+  // output depends only on the deployment's data and that query string, so Vercel's CDN may keep it: Vercel-CDN-Cache-Control is read by the CDN
+  // alone, wins over the Cache-Control Next sets, and is stripped before the response reaches the browser. The cache is per deployment, so a new
+  // build (new data) starts empty.
+  async headers() {
+    return [
+      {
+        source: "/lab/players/compare",
+        headers: [{ key: "Vercel-CDN-Cache-Control", value: "max-age=3600, stale-while-revalidate=86400" }],
+      },
+    ]
+  },
   // Permanent (308) redirects for URLs that changed after they were shared.
   // Add a line here whenever a post's slug is edited in Studio, so the old
   // link keeps working and search engines carry its ranking to the new one.

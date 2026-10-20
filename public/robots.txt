@@ -1,8 +1,51 @@
+# Comparison pages are a tool: every player page links to hundreds of pair/season/stat variants and each one is a server render. They are
+# not indexed (noindex), so crawlers are asked to leave the configured ones alone. The bare /lab/players/compare page stays open.
+# Link-preview bots get their own group so a shared comparison still unfurls into its picture.
+
 User-agent: ClaudeBot
 Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Twitterbot
+User-agent: facebookexternalhit
+User-agent: Facebot
+User-agent: Slackbot
+User-agent: Slack-ImgProxy
+User-agent: Discordbot
+User-agent: LinkedInBot
+User-agent: WhatsApp
+User-agent: TelegramBot
+User-agent: Pinterestbot
+User-agent: redditbot
+User-agent: SkypeUriPreview
+User-agent: Mastodon
+User-agent: Bluesky Cardyb
+Allow: /
+Disallow: /studio
 
 User-agent: *
 Allow: /
 Disallow: /studio
+Disallow: /lab/players/compare?
+Disallow: /api/live/
+Disallow: /api/league/
+Disallow: /api/auth/
 
 Sitemap: https://www.raidersrundown.com/sitemap.xml

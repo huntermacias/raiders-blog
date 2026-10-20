@@ -999,7 +999,7 @@ function RoleSection({ row, primary }: { row: PlayerRow; primary: boolean }) {
 
                     <p className="m-0 mt-2 text-xs">
 
-                      <Link href={compareHref(row.slug, slug)} className="font-semibold text-lab-ink underline decoration-lab-line-strong underline-offset-2">
+                      <Link href={compareHref(row.slug, slug)} rel="nofollow" className="font-semibold text-lab-ink underline decoration-lab-line-strong underline-offset-2">
 
                         Compare
 
@@ -1273,7 +1273,7 @@ export default async function PlayerPage(props: { params: Promise<{ slug: string
           ) : null}
 
           <div className="mt-7 flex flex-wrap items-center gap-2.5 border-t border-lab-line pt-6 text-sm">
-            <Link href={compareHref(p.slug)} className="inline-flex min-h-10 items-center justify-center rounded-lg border border-lab-ink bg-lab-ink px-4 py-2 font-semibold text-lab-page transition-opacity hover:opacity-85">
+            <Link href={compareHref(p.slug)} rel="nofollow" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-lab-ink bg-lab-ink px-4 py-2 font-semibold text-lab-page transition-opacity hover:opacity-85">
               Compare player <span className="ml-2" aria-hidden="true">&rarr;</span>
             </Link>
             <Link href={headlineInfo ? boardHref(p.group, headlineInfo.path) : `/lab/players/leaders/${p.group}`} className="inline-flex min-h-10 items-center justify-center rounded-lg border border-lab-line-strong px-4 py-2 font-semibold text-lab-ink transition-colors hover:bg-lab-tint">

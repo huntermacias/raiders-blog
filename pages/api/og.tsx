@@ -37,7 +37,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { groq } from "next-sanity"
 import satori from "satori"
-import { Resvg } from "@resvg/resvg-js"
 
 import { readClient } from "../../lib/sanity.client"
 import urlFor from "../../lib/urlFor"
@@ -47,6 +46,7 @@ import { buildBoards, type RankingsDoc } from "../../lib/rankings"
 import { SEASON, gradeGame, summarize, summarizeFlags, summarizeKeys, type FlagPlant, type GamePrediction } from "../../lib/predictions"
 import { OG_HEIGHT, cardSize, renderCard, type CardSpec } from "../../lib/og/cards"
 import { ogFonts } from "../../lib/og/fonts"
+import { rasterize } from "../../lib/og/rasterize"
 import { client } from "../../lib/sanity.client"
 import { featuredGame, getGame, getScoreboard } from "../../lib/live/service"
 import { buildLiveSpec } from "../../lib/og/liveCard"
@@ -98,6 +98,24 @@ async function photoDataUri(image: unknown): Promise<string | null> {
 
 /** A player's photo as a data: URI for the card, or null: a slow or missing photo never costs the card. */
 async function headshotDataUri(url: string): Promise<string | null> {
+	const hit = headshots.get(url)
+	if (hit && hit.until > Date.now()) {
+		// Touch it so the least recently used entry is the one that goes when the map is full.
+		headshots.delete(url)
+		headshots.set(url, hit)
+		return hit.uri
+	}
+	const uri = await fetchHeadshot(url)
+	// A face that loaded is kept for an hour (a warm instance draws many cards of the same few players); a miss for a minute, so a slow image host is not asked again for every card.
+	headshots.set(url, { uri, until: Date.now() + (uri ? 3_600_000 : 60_000) })
+	if (headshots.size > HEADSHOT_CACHE_MAX) headshots.delete(headshots.keys().next().value as string)
+	return uri
+}
+
+const HEADSHOT_CACHE_MAX = 120
+const headshots = new Map<string, { uri: string | null; until: number }>()
+
+async function fetchHeadshot(url: string): Promise<string | null> {
 	const ctrl = new AbortController()
 	const timer = setTimeout(() => ctrl.abort(), 3000)
 	try {
@@ -400,7 +418,7 @@ async function debugReport(query: NextApiRequest["query"]) {
 			const { width, height } = cardSize(spec)
 			const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
 			out.svgBytes = svg.length
-			const png = new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng()
+			const png = rasterize(svg, width)
 			out.pngBytes = png.length
 			out.stage = "done"
 		}
@@ -433,7 +451,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const svg = await satori(renderCard(spec), { width, height, fonts: ogFonts() })
 		// scale=2 is the download: the same card at twice the pixels (comparison cards only, so no other card can be asked for a huge image).
 		const scale = spec.type === "compare" && first(req.query.scale) === "2" ? 2 : 1
-		const png = new Resvg(svg, { fitTo: { mode: "width", value: width * scale } }).render().asPng()
+		const png = rasterize(svg, width * scale)
 
 		res.setHeader("Content-Type", "image/png")
 		// The page URL carries `v=<updatedAt>`, so a long cache is safe: an edit
