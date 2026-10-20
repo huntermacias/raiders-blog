@@ -16,6 +16,24 @@ msg="$(git log -1 --format=%B)"
 paths=("$@")
 [ "${#paths[@]}" -gt 0 ] || { echo "no paths given" >&2; exit 2; }
 
+# Every push to main is a Vercel build, and every build empties the CDN and ISR caches (so share cards and pages are drawn again). The data jobs
+# rebuild their files from the feeds on every run, so holding a commit back loses nothing: the next run produces the same files plus anything newer,
+# and commits them once enough time has passed. A person starting the job by hand (workflow_dispatch) is never held.
+# DATA_COMMIT_MIN_MINUTES is the shortest gap between two data commits from the bot (default 180; set it to 0 to switch the hold off).
+hold="${DATA_COMMIT_MIN_MINUTES:-180}"
+if [ "${GITHUB_EVENT_NAME:-}" != "workflow_dispatch" ] && [ "$hold" -gt 0 ] 2>/dev/null; then
+  if [ "$(git log -1 --format=%an)" = "github-actions[bot]" ]; then
+    git fetch --quiet --depth=200 origin "${branch}" 2>/dev/null || true
+    last="$(git log "origin/${branch}" -1 --format=%ct --author='github-actions' -- data public/lab 2>/dev/null || true)"
+    now="$(date +%s)"
+    if [ -n "$last" ] && [ $(( (now - last) / 60 )) -lt "$hold" ]; then
+      echo "The bot's last data commit on ${branch} was $(( (now - last) / 60 )) min ago (hold: ${hold}). Not pushing; the next run rebuilds these files from the same sources."
+      git reset --quiet --hard HEAD~1
+      exit 0
+    fi
+  fi
+fi
+
 for i in 1 2 3 4 5; do
   if git push origin "HEAD:${branch}"; then exit 0; fi
   echo "Push rejected (attempt $i): main moved. Rebuilding the commit on top of it."

@@ -1,0 +1,40 @@
+name: Tests
+
+# The test suite used to run inside every Vercel build (`vitest run && next build`), which spent build CPU on it for each of the 75-odd deploys a
+# week, data refreshes and previews included. It runs here instead, on GitHub's minutes, for every push to main and every pull request.
+# Make this check required on main (Settings > Branches) if you want a red run to stop a merge.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "data/**"
+      - "public/lab/clips/**"
+      - "notes/**"
+      - "guides/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_LAB_METHOD: v2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test

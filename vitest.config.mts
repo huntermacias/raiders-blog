@@ -7,8 +7,8 @@ const root = fileURLToPath(new URL(".", import.meta.url))
 // grading and ranking math, the API routes that take input from strangers, the
 // feeds crawlers read, the Studio schemas and the homepage components.
 //
-// `yarn build` runs these first (see package.json), so a failing test stops a
-// deploy before `next build` starts and the last good version stays live.
+// They run in GitHub Actions (.github/workflows/ci.yml) on every push to main and every pull request, not inside the Vercel build: `yarn build` is
+// just `next build`, so a deploy spends no build CPU on them.
 export default defineConfig({
 	resolve: {
 		alias: [
