@@ -7,7 +7,7 @@ import type { LabGame, LabSeason } from "./types"
 import type { ScoutingData } from "./scouting"
 import type { HistoryData, TrailData } from "./history"
 import type { UnitsData } from "./unitsKit"
-import type { PlayersData } from "./playersKit"
+import { type PlayersData, STAT } from "./playersKit"
 
 const season = seasonJson as unknown as LabSeason
 const scouting = scoutingJson as unknown as ScoutingData
@@ -15,7 +15,10 @@ const history = historyJson as unknown as HistoryData
 const units = unitsJson as unknown as UnitsData
 // The method switch (labMethod.ts) picks the players file at build time; v1 is the default and the only one in the bundle unless it is set.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const players = (process.env.NEXT_PUBLIC_LAB_METHOD === "v2" ? require("../../data/lab/v2/players.json") : require("../../data/lab/players.json")) as PlayersData
+const rawPlayers = (process.env.NEXT_PUBLIC_LAB_METHOD === "v2" ? require("../../data/lab/v2/players.json") : require("../../data/lab/players.json")) as PlayersData
+// The builder writes the stats v2 adds into the v1 file as well, and v1's catalog has no entry for them: v1 keeps the stats it describes, so a run on
+// v1 (a local `next dev` without the flag) shows exactly what it always has instead of failing on a stat it cannot name.
+const players: PlayersData = process.env.NEXT_PUBLIC_LAB_METHOD === "v2" ? rawPlayers : { ...rawPlayers, players: rawPlayers.players.map((p) => (p.stats.every((s) => STAT[p.group]?.[s.k]) ? p : { ...p, stats: p.stats.filter((s) => STAT[p.group]?.[s.k]) })) }
 
 export function getPlayers(): PlayersData {
 	return players
