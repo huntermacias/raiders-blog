@@ -1,6 +1,6 @@
 import Yardstick from "@/components/lab/players/Yardstick"
-import { type Comparison, type Metric, lastName, nameOf, pctWord } from "@/lib/lab/compareKit"
-import { GROUP_META, SIGNAL_HELP, formatStat, ordinal, yardOf } from "@/lib/lab/playersKit"
+import { type Comparison, type Metric, lastName, nameOf, pctWord, peersWord } from "@/lib/lab/compareKit"
+import { SIGNAL_HELP, formatStat, ordinal } from "@/lib/lab/playersKit"
 
 /**
  * Stat by stat: his number on the left, hers on the right, and between them two bars growing out from the middle for each one's
@@ -17,7 +17,7 @@ function sentence(c: Comparison, m: Metric): string {
 	return m.strength === "clear" ? `${who}: clear lead` : `${who}: slight edge`
 }
 
-function Num({ side, m, color, lit }: { side: "a" | "b"; m: Metric; color: string; lit: boolean }) {
+function Num({ side, m, color, lit, tag }: { side: "a" | "b"; m: Metric; color: string; lit: boolean; tag?: string }) {
 	const s = side === "a" ? m.a : m.b
 	return (
 		<p className={`m-0 font-mono tabular-nums ${side === "a" ? "text-left sm:text-right" : "text-right sm:text-left"}`}>
@@ -25,6 +25,7 @@ function Num({ side, m, color, lit }: { side: "a" | "b"; m: Metric; color: strin
 				{s.text}
 			</span>
 			<span className="block text-[10px] font-normal leading-tight text-lab-muted">{s.rank !== null && s.of !== null ? `${ordinal(s.rank)} of ${s.of}` : pctWord(s.pct)}</span>
+			{s.own && tag ? <span className="block text-[10px] font-normal leading-tight text-lab-muted" data-testid="own-rank">{`${ordinal(s.own.rank)} of ${s.own.of} ${tag}`}</span> : null}
 		</p>
 	)
 }
@@ -47,7 +48,7 @@ export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colo
 				<span className="truncate text-right" style={{ color: colorA }}>
 					{nameOf(c, "a")}
 				</span>
-				<span className="text-center">Percentile among {GROUP_META[c.group].peers} &middot; farther out is better</span>
+				<span className="text-center">{c.cross ? `One scale: all ${peersWord(c)}` : `Percentile among ${peersWord(c)}`} &middot; farther out is better</span>
 				<span className="truncate" style={{ color: colorB }}>
 					{nameOf(c, "b")}
 				</span>
@@ -56,9 +57,10 @@ export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colo
 				{rows.map((m) => {
 					const litA = m.signal !== "luck" && m.lead === "a"
 					const litB = m.signal !== "luck" && m.lead === "b"
-					const yA = yardOf(c.views.a, c.group, m.key)
-						const yB = yardOf(c.views.b, c.group, m.key)
-						const same = c.views.a === c.views.b
+					const yA = m.a.yard
+					const yB = m.b.yard
+					const same = c.views.a === c.views.b
+					const fmt = (v: number) => formatStat(c.a.group, m.keys.a, v)
 					return (
 						<li key={m.key} className="border-t border-lab-line first:border-t-0" data-testid="compare-row" data-lead={m.signal === "luck" ? "luck" : m.lead}>
 							<details className="group">
@@ -71,13 +73,13 @@ export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colo
 										<span className={`text-xs ${m.signal === "luck" ? "text-lab-muted" : litA || litB ? "font-semibold text-lab-ink" : "text-lab-muted"}`}>{sentence(c, m)}</span>
 									</div>
 									<div className="mt-2 grid grid-cols-[5.5rem_1fr_5.5rem] items-center gap-x-2 sm:grid-cols-[7rem_1fr_7rem] sm:gap-x-4">
-										<Num side="a" m={m} color={colorA} lit={litA} />
+										<Num side="a" m={m} color={colorA} lit={litA} tag={c.cross?.tags.a} />
 										<div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
 											<Half pct={m.a.pct} color={colorA} lit={litA || (m.signal !== "luck" && m.lead === "even")} mirror />
 											<span aria-hidden="true" className="h-4 w-px bg-lab-line-strong" />
 											<Half pct={m.b.pct} color={colorB} lit={litB || (m.signal !== "luck" && m.lead === "even")} mirror={false} />
 										</div>
-										<Num side="b" m={m} color={colorB} lit={litB} />
+										<Num side="b" m={m} color={colorB} lit={litB} tag={c.cross?.tags.b} />
 									</div>
 									<span className="mt-1 block text-center text-[11px] text-lab-muted group-open:hidden">Tap for the league spread</span>
 								</summary>
@@ -90,8 +92,8 @@ export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colo
 											]}
 											yard={yA}
 											higher={m.info.higher}
-											fmt={(v) => formatStat(c.group, m.key, v)}
-											peers={GROUP_META[c.group].peers}
+											fmt={fmt}
+											peers={peersWord(c)}
 										/>
 									) : null}
 									{!same ? (
@@ -104,8 +106,8 @@ export default function CompareBars({ c, colorA, colorB }: { c: Comparison; colo
 															marks={[{ v: (side === "a" ? m.a : m.b).value, se: (side === "a" ? m.a : m.b).se, name: nameOf(c, side), color }]}
 															yard={y}
 															higher={m.info.higher}
-															fmt={(v) => formatStat(c.group, m.key, v)}
-															peers={GROUP_META[c.group].peers}
+															fmt={fmt}
+															peers={peersWord(c)}
 														/>
 													</div>
 												) : null,

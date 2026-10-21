@@ -15,7 +15,7 @@ import type { ReactElement } from "react"
 
 import { opponentColors } from "../lab/colors"
 import type { PlayerHistory } from "../lab/seasonKit"
-import { type CompareConfig, type Comparison, type Metric, buildComparison, configQuery, lastName, pctWord, spotlightOf } from "../lab/compareKit"
+import { type CompareConfig, type Comparison, type Metric, buildComparison, configQuery, lastName, pctWord, peersWord, spotlightOf } from "../lab/compareKit"
 import { SIZE_PIXELS } from "../lab/lastShare"
 import { teamNick } from "../lab/playerView"
 import { type PlayerRow, type PlayersData, GROUP_META, headshotUrl, ordinal, shotUrl } from "../lab/playersKit"
@@ -38,6 +38,8 @@ export type ComparePlayer = {
 	initials: string
 	/** The overall grade, 1 to 99, or null for a job with none (offensive linemen). */
 	overall: number | null
+	/** True across positions: a grade is a standing at his own position, so it is not drawn as a score to set against the other's. */
+	hideOverall?: boolean
 	/** "3rd of 38 tight ends", season view only. */
 	place: string | null
 	/** Where his photo is, for the route to fetch; null when he has none. */
@@ -124,10 +126,12 @@ function playerOf(data: PlayersData, c: Comparison, side: "a" | "b", color: stri
 		name: p.name,
 		last: named ? `${lastName(p)} ${year}` : lastName(p),
 		team: named ? `${teamNick(p.team)} ${year}` : teamNick(p.team),
-		pos: p.pos,
+		// "DB" and "DL" do not say which of the two jobs is being compared; the pair's own tag ("CB", "EDGE") does.
+		pos: c.cross ? c.cross.tags[side] : p.pos,
 		color,
 		initials: initialsOf(p.name),
-		overall: o,
+		overall: c.cross ? null : o,
+		hideOverall: !!c.cross,
 		place: rank ? `${ordinal(rank.rank)} of ${rank.of} ${GROUP_META[p.group].peers}` : null,
 		headshot: headshotOf(p),
 	}
@@ -173,7 +177,7 @@ export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { 
 			const other = side === "a" ? c.b : c.a
 			spot = {
 				side,
-				versus: wins > 0 && n ? `Ahead of ${lastName(other)} on ${wins} of ${n} stats` : `Strongest numbers among ${GROUP_META[c.group].peers}`,
+				versus: wins > 0 && n ? `Ahead of ${lastName(other)} on ${wins} of ${n} ${c.cross ? "shared stats" : "stats"}` : `Strongest numbers among ${peersWord(c)}`,
 				rows: mine.map((m: Metric) => {
 					const s = side === "a" ? m.a : m.b
 					return {
@@ -191,8 +195,8 @@ export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { 
 		type: "compare",
 		format,
 		size,
-		title: GROUP_META[c.group].title,
-		peers: GROUP_META[c.group].peers,
+		title: c.cross ? `${c.cross.tags.a} vs ${c.cross.tags.b} · ${c.cross.short}` : GROUP_META[c.group].title,
+		peers: peersWord(c),
 		a,
 		b,
 		range: c.seasons.a !== c.seasons.b ? `${c.seasons.a} and ${c.seasons.b} seasons` : c.seasons.a !== data.season ? `${c.seasons.a} season · Full season` : `${c.rangeName} · ${c.rangeWeeks}`,
@@ -203,7 +207,13 @@ export function buildCompareSpec(data: PlayersData, cfg: CompareConfig, opts: { 
 		spot,
 		early: c.early.a || c.early.b,
 		link: printedLink(cfg, c.a.slug, c.b.slug),
-		basis: c.range === "season" ? `Bars: season rank among ${c.metrics.length ? GROUP_META[c.group].peers : "peers"}, 100 is best.` : `Bars: these games against the season's spread among ${GROUP_META[c.group].peers}. Fewer plays, so they swing more.`,
+		basis: c.cross
+			? c.range === "season"
+				? `Shared stats only. Bars: one scale for ${c.cross.pool}, 100 is best.`
+				: `Shared stats only. Bars: these games against the season's spread among ${c.cross.pool}. Fewer plays, so they swing more.`
+			: c.range === "season"
+				? `Bars: season rank among ${c.metrics.length ? GROUP_META[c.group].peers : "peers"}, 100 is best.`
+				: `Bars: these games against the season's spread among ${GROUP_META[c.group].peers}. Fewer plays, so they swing more.`,
 		season: data.season,
 		week: data.week,
 	}
@@ -277,6 +287,7 @@ function Footer({ spec, width }: { spec: CompareCardSpec; width: number }) {
 }
 
 function Overall({ p, size, align }: { p: ComparePlayer; size: number; align: "left" | "right" | "center" }) {
+	if (p.hideOverall) return null
 	const ai = align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"
 	return (
 		<div style={{ display: "flex", flexDirection: "column", alignItems: ai }}>
@@ -515,14 +526,14 @@ function RadarCard({ spec }: { spec: CompareCardSpec }) {
 								<Face p={spec.a} size={96} />
 								<div style={{ display: "flex", flexDirection: "column", marginLeft: 18 }}>
 									<div style={anton({ fontSize: 40, lineHeight: 1.02, color: WHITE, ...caps })}>{clip(spec.a.name, 18)}</div>
-									<div style={dim({ fontSize: 17, letterSpacing: 3, color: spec.a.color, marginTop: 4 })}>{`${spec.a.team} · Overall ${spec.a.overall ?? "–"}`}</div>
+									<div style={dim({ fontSize: 17, letterSpacing: 3, color: spec.a.color, marginTop: 4 })}>{spec.a.hideOverall ? `${spec.a.team} · ${spec.a.pos}` : `${spec.a.team} · Overall ${spec.a.overall ?? "–"}`}</div>
 								</div>
 							</div>
 							<div style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
 								<Face p={spec.b} size={96} />
 								<div style={{ display: "flex", flexDirection: "column", marginLeft: 18 }}>
 									<div style={anton({ fontSize: 40, lineHeight: 1.02, color: WHITE, ...caps })}>{clip(spec.b.name, 18)}</div>
-									<div style={dim({ fontSize: 17, letterSpacing: 3, color: spec.b.color, marginTop: 4 })}>{`${spec.b.team} · Overall ${spec.b.overall ?? "–"}`}</div>
+									<div style={dim({ fontSize: 17, letterSpacing: 3, color: spec.b.color, marginTop: 4 })}>{spec.b.hideOverall ? `${spec.b.team} · ${spec.b.pos}` : `${spec.b.team} · Overall ${spec.b.overall ?? "–"}`}</div>
 								</div>
 							</div>
 							<div style={{ display: "flex", marginTop: 22 }}>

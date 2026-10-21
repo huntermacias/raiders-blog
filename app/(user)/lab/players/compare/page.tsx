@@ -7,6 +7,7 @@ import type { ShareVariant } from "@/components/lab/ShareCard"
 import CompareBars from "@/components/lab/players/CompareBars"
 import CompareControls from "@/components/lab/players/CompareControls"
 import ComparePicker from "@/components/lab/players/ComparePicker"
+import CompareCross from "@/components/lab/players/CompareCross"
 import CompareHero from "@/components/lab/players/CompareHero"
 import V2Compare from "@/components/lab/v2/V2Compare"
 import { isV2, type V2Row } from "@/lib/lab/v2/types"
@@ -24,8 +25,10 @@ import {
 	buildComparison,
 	compareUrl,
 	configQuery,
+	crossDebates,
 	featuredDebates,
 	nameOf,
+	peersWord,
 	rangeLabels,
 	readConfig,
 	resolvePair,
@@ -61,8 +64,16 @@ export async function generateMetadata(props: { searchParams: Promise<Search> })
 	const cfg = readConfig(q)
 	const c = cfg.a && cfg.b ? buildComparison(data, cfg, getPlayerHistory()) : null
 	const base = `${SITE_URL}/lab/players/compare`
-	const title = c ? `${nameOf(c, "a")} vs ${nameOf(c, "b")}: stats compared in context | Raiders Rundown` : "Compare any two NFL players in context | Raiders Rundown"
-	const description = c ? `${c.headline} Percentiles, who leads each stat and what it means, from the Raiders Rundown Player Lab.` : "Two players, side by side on the stats that matter for their position: where each ranks in the league, who is clearly ahead and who is too close to call."
+	const title = c
+		? c.cross
+			? `${nameOf(c, "a")} vs ${nameOf(c, "b")}: ${c.cross.tags.a} vs ${c.cross.tags.b} ${c.cross.topic} compared | Raiders Rundown`
+			: `${nameOf(c, "a")} vs ${nameOf(c, "b")}: stats compared in context | Raiders Rundown`
+		: "Compare any two NFL players in context | Raiders Rundown"
+	const description = c
+		? c.cross
+			? `${c.headline} Only stats both positions are measured on the same way, ranked on one scale, with each player's rank at his own position. From the Raiders Rundown Player Lab.`
+			: `${c.headline} Percentiles, who leads each stat and what it means, from the Raiders Rundown Player Lab.`
+		: "Two players, side by side on the stats that matter: same position, or across positions on the stats they share (WR and TE, running backs and receivers, edge and interior rushers, corners and safeties). See who is clearly ahead and who is too close to call."
 	// The picture is the comparison's own graphic, so a link posted to X or anywhere else unfurls into these two players, this range and these stats.
 	const image = c ? `${SITE_URL}/api/og?type=compare&${configQuery({ ...cfg, a: c.a.slug, b: c.b.slug })}&size=wide&v=${stampOf(data.generatedAt)}` : `${SITE_URL}/og-default-v2.png`
 	const alt = c ? `${nameOf(c, "a")} against ${nameOf(c, "b")}: ${c.headline}` : "Raiders Rundown Player Lab: compare two players"
@@ -85,7 +96,7 @@ function problemText(p: ReturnType<typeof resolvePair>, cfg: CompareConfig, curr
 		return `We have no ${(!p.a ? cfg.sa : cfg.sb) ?? current} line for ${who.replace(/-/g, " ")}. Try another season, or the one being played.`
 	}
 	if (p.problem === "jobs" && p.a && p.b) {
-		return `${p.a.name} is a ${GROUP_META[p.a.group].single.toLowerCase()} and ${p.b.name} is a ${GROUP_META[p.b.group].single.toLowerCase()}, and they are measured on different stats. Pick two players who do the same job.`
+		return `${p.a.name} is a ${GROUP_META[p.a.group].single.toLowerCase()} and ${p.b.name} is a ${GROUP_META[p.b.group].single.toLowerCase()}, and they are measured on different stats, with none defined the same way. Pick two players at one position, or across positions that share stats: wide receivers and tight ends, a running back and a receiver, edge rushers and interior linemen, cornerbacks and safeties.`
 	}
 	return null
 }
@@ -140,14 +151,15 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 					.map((side) => {
 						const p = side === "a" ? c.a : c.b
 						const shown = nameOf(c, side)
-						return { id: `spot-${side}`, name: `${possessive(p.name.split(" ").slice(-1)[0])} case`, hint: `${shown}'s strongest numbers against his position.`, params: `f=spot&side=${side}`, alt: `${shown}'s strongest numbers` }
+						return { id: `spot-${side}`, name: `${possessive(p.name.split(" ").slice(-1)[0])} case`, hint: c.cross ? `${shown}'s strongest numbers among ${c.cross.pool}.` : `${shown}'s strongest numbers against his position.`, params: `f=spot&side=${side}`, alt: `${shown}'s strongest numbers` }
 					}),
 			]
 		: []
 
 	// A line's chart opens on his own stat: his headline is the line's, which both men on one line share.
 	let trail: { key: string; label: string; pa: { w: number; pct: number | null }[]; pb: { w: number; pct: number | null }[] } | null = null
-	if (c && A && B && !past) {
+	// Across positions a weekly rank is a rank at each man's own position, so there is no one line to draw for both.
+	if (c && A && B && !past && !c.cross) {
 		const key = statInfo(A.group, HEADLINE[A.group])?.unit ? (Object.keys(STAT[A.group]).find((k) => isCore(A.group, k)) ?? HEADLINE[A.group]) : HEADLINE[A.group]
 		const pa = trailOf(logs[A.slug]?.[A.group], key).map((t) => ({ w: t[0], pct: t[3] }))
 		const pb = trailOf(logs[B.slug]?.[B.group], key).map((t) => ({ w: t[0], pct: t[3] }))
@@ -155,6 +167,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 	}
 
 	const debates = featuredDebates(data, 10)
+	const acrossDebates = crossDebates(data, 4)
 	const note = pair ? problemText(pair, cfg, data.season) : null
 	// A man set against nobody can be set against himself in another season.
 	const self = pair && "problem" in pair && pair.problem === "same" ? seasonsOf(data, history, cfg.a).filter((y) => y !== data.season) : []
@@ -170,11 +183,14 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 						&rsaquo; Compare
 					</p>
 					<h1 className="mt-3 font-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Settle the debate</h1>
-					<p className="mt-3 max-w-2xl text-base leading-relaxed text-lab-soft">Put two players who do the same job side by side. For each stat you see where both rank in the league, who is ahead, and whether the gap is bigger than the noise a few plays create. Then post the graphic.</p>
+					<p className="mt-3 max-w-2xl text-base leading-relaxed text-lab-soft">Put two players side by side. For each stat you see where both rank in the league, who is ahead, and whether the gap is bigger than the noise a few plays create. Then post the graphic.</p>
+					<p className="mt-2 max-w-2xl text-sm leading-relaxed text-lab-muted" data-testid="pairing-help">
+						Same position, or across positions on the stats they share: receivers and tight ends, a running back against a receiver, edge rushers against interior linemen, corners against safeties.
+					</p>
 					<div className="mt-6 max-w-3xl">
 						<ComparePicker key={`${cfg.a}|${cfg.b}|${cfg.sa}|${cfg.sb}`} index={index} a={entry(c?.a.slug ?? cfg.a)} b={entry(c?.b.slug ?? cfg.b)} range={cfg.range} sa={cfg.sa} sb={cfg.sb} />
 					</div>
-					{c ? <TrackView event="player_compare" props={{ a: c.a.slug, b: c.b.slug, group: c.group, range: c.range, sa: c.seasons.a, sb: c.seasons.b }} /> : null}
+					{c ? <TrackView event="player_compare" props={{ a: c.a.slug, b: c.b.slug, group: c.group, cross: c.cross?.family ?? "none", range: c.range, sa: c.seasons.a, sb: c.seasons.b }} /> : null}
 					<UpdatedStamp at={data.generatedAt} kind="grades" className="mt-5" />
 				</div>
 			</section>
@@ -183,6 +199,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 				<div className="lab-opp lab-opp2" style={pageStyle}>
 					<section className="container py-6 sm:py-10">
 						<CompareHero data={data} c={c} />
+						<CompareCross c={c} />
 						{isV2(data) && c.range === "season" && c.seasons.a === data.season && c.seasons.b === data.season && c.a.group === c.b.group && !lineRecord(data, c.a) ? <V2Compare data={data} a={c.a as V2Row} b={c.b as V2Row} colors={colors} /> : null}
 						{c.early.a || c.early.b ? (
 							<p className="m-0 mt-3 max-w-3xl text-xs leading-relaxed text-lab-muted" data-testid="early-note">
@@ -198,7 +215,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 									cfg={{ ...cfg, a: A.slug, b: B.slug }}
 									current={data.season}
 									a={{ name: A.name, seasons: seasonsOf(data, history, A.slug, c.group), shown: c.seasons.a }}
-									b={{ name: B.name, seasons: seasonsOf(data, history, B.slug, c.group), shown: c.seasons.b }}
+									b={{ name: B.name, seasons: seasonsOf(data, history, B.slug, B.group), shown: c.seasons.b }}
 								/>
 							</div>
 							<CompareControls
@@ -228,7 +245,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 												<h2 id="shape-h" className="m-0 font-serif text-2xl font-bold">
 													The shape of each player
 												</h2>
-												<p className="m-0 mb-3 mt-1 max-w-xl text-sm text-lab-soft">Each spoke is a stat. The farther out a point sits, the better he ranks at his job.</p>
+												<p className="m-0 mb-3 mt-1 max-w-xl text-sm text-lab-soft">{c.cross ? `Each spoke is a stat both positions share. The farther out a point sits, the better he ranks among all ${peersWord(c)}.` : "Each spoke is a stat. The farther out a point sits, the better he ranks at his job."}</p>
 												<CompareRadar axes={c.radar} aName={an} bName={bn} colorA={colors.a} colorB={colors.b} />
 											</div>
 										) : null}
@@ -317,7 +334,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 										text={shareText(c)}
 										a={{ slug: A.slug, name: an }}
 										b={{ slug: B.slug, name: bn }}
-										group={c.group}
+										group={c.cross ? `${c.cross.tags.a}-${c.cross.tags.b}` : c.group}
 										variants={variants}
 									/>
 								</div>
@@ -384,6 +401,22 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 							</li>
 						))}
 					</ul>
+					{acrossDebates.length ? (
+						<>
+							<h2 className="m-0 mt-10 font-serif text-2xl font-bold">Across positions</h2>
+							<p className="m-0 mt-1 max-w-3xl text-sm text-lab-soft">Different jobs, compared only on the stats both are measured on the same way.</p>
+							<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="cross-debates">
+								{acrossDebates.map(({ a, b, tag }) => (
+									<li key={`${a.slug}|${b.slug}`}>
+										<Link href={compareHref(a.slug, b.slug)} className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
+											<span className="font-semibold text-lab-ink">{a.name}</span> <span className="text-lab-muted">vs</span> <span className="font-semibold text-lab-ink">{b.name}</span>
+											<span className="block text-xs text-lab-muted">{tag}</span>
+										</Link>
+									</li>
+								))}
+							</ul>
+						</>
+					) : null}
 				</section>
 			)}
 
