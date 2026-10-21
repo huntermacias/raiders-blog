@@ -10,6 +10,7 @@ afterEach(cleanup)
 const data = getPlayers()
 const te = data.players.filter((p) => p.group === "te" && p.stats.length >= 4).sort((a, b) => b.games - a.games)
 const qb = data.players.filter((p) => p.group === "qb" && p.stats.length >= 4).sort((a, b) => b.games - a.games)
+const wr = data.players.filter((p) => p.group === "wr" && p.stats.length >= 4).sort((a, b) => b.games - a.games)
 const page = (q: Record<string, string>) => ComparePage({ searchParams: Promise.resolve(q) })
 
 describe("the comparison page", () => {
@@ -49,6 +50,34 @@ describe("the comparison page", () => {
 		expect(screen.getByText(/one player twice/)).toBeTruthy()
 	})
 
+	it("compares two positions on their shared stats, and says how far to trust it", async () => {
+		render(await page({ a: te[0].slug, b: wr[0].slug }))
+		expect(screen.getByTestId("compare-hero")).toBeTruthy()
+		expect(screen.getByTestId("compare-bars")).toBeTruthy()
+		const note = screen.getByTestId("cross-note")
+		expect(note.textContent).toMatch(/Different positions/)
+		expect(note.textContent).toMatch(/TE vs WR/)
+		expect(note.textContent).toMatch(/What this cannot tell you/)
+		// each number carries his rank at his own position beside the one on the shared scale
+		expect(screen.getAllByTestId("own-rank").length).toBeGreaterThan(0)
+		expect(screen.getByTestId("compare-bars").textContent).toMatch(/One scale: all tight ends and wide receivers/)
+		expect(screen.getByTestId("headline").textContent).toMatch(/\((TE|WR)\)/)
+		// the graphic that is posted is the same comparison, and the link is the same short address
+		expect(screen.getByTestId("compare-share").querySelector("img")?.getAttribute("src")).toContain(`a=${te[0].slug}&b=${wr[0].slug}`)
+	})
+
+	it("shows no cross-position note for two men at one position", async () => {
+		render(await page({ a: te[0].slug, b: te[1].slug }))
+		expect(screen.queryByTestId("cross-note")).toBeNull()
+		expect(screen.queryAllByTestId("own-rank")).toHaveLength(0)
+	})
+
+	it("offers debates across positions too, and says which pairings work", async () => {
+		render(await page({}))
+		expect(within(screen.getByTestId("cross-debates")).getAllByRole("link").length).toBeGreaterThan(0)
+		expect(screen.getByTestId("pairing-help").textContent).toMatch(/across positions/)
+	})
+
 	it("shrugs off a mangled address", async () => {
 		render(await page({ a: "../../etc", b: "<script>", r: "zzz", m: "&&&", g: "nope" }))
 		expect(screen.getByTestId("debates")).toBeTruthy()
@@ -67,6 +96,15 @@ describe("what a link to a comparison unfolds into", () => {
 		expect(meta.robots).toEqual({ index: false, follow: true })
 		expect(String(meta.title)).toContain(`${te[0].name} vs ${te[1].name}`)
 		expect(String(meta.description)).toMatch(/Player Lab/)
+	})
+
+	it("names both positions in the title and says what is compared, for a cross-position link", async () => {
+		const meta = await generateMetadata({ searchParams: Promise.resolve({ a: te[0].slug, b: wr[0].slug }) })
+		expect(String(meta.title)).toMatch(/TE vs WR receiving compared/)
+		expect(String(meta.description)).toMatch(/both positions are measured on the same way/)
+		expect(meta.robots).toEqual({ index: false, follow: true })
+		const og = meta.openGraph as { images: { url: string }[] }
+		expect(og.images[0].url).toContain(`a=${te[0].slug}&b=${wr[0].slug}`)
 	})
 
 	it("is the site card and stays indexable for the plain tool page", async () => {
