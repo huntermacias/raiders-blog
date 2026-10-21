@@ -21,9 +21,11 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 	const record = lineRecord(view, p)
 	const seasonTag = view.season !== data.season ? `${view.season} season` : c.seasons.a !== c.seasons.b ? `${view.season} so far` : null
 	const meta = GROUP_META[p.group]
+	const pos = c.cross ? c.cross.tags[side] : p.pos
 	// v1: the number beside each name decides. v2: a lead is only called when the gap beats the two numbers' own uncertainty, the same call the
 	// three-question block makes, so the badge never says "higher" over a pair that block calls too close.
-	const v2Lead = isV2Site() && c.range === "season" && c.seasons.a === data.season && c.seasons.b === data.season && !record ? threeWay(data as V2Data, c.a as V2Row, c.b as V2Row)[0]?.lead : null
+	// Across positions each grade is a standing at his own position, so neither is called the higher.
+	const v2Lead = isV2Site() && !c.cross && c.range === "season" && c.seasons.a === data.season && c.seasons.b === data.season && !record ? threeWay(data as V2Data, c.a as V2Row, c.b as V2Row)[0]?.lead : null
 	const leads = isV2Site() ? v2Lead === side : c.overall.lead === side
 	// The card's own colors: the first player's are the page's, the second's are set here so the headshot's backing and the ring follow him.
 	const vars = side === "a" ? cardStyle(p.team) : { ...cardStyle(p.team), ["--pc-accent" as string]: color, ["--pc-on" as string]: on }
@@ -45,10 +47,10 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 				<p className="m-0 mt-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">
 					<TeamLogo team={p.team} size={16} />
 					<span className="sm:hidden">
-						{p.team} &middot; {p.pos}
+						{p.team} &middot; {pos}
 					</span>
 					<span className="hidden sm:inline">
-						{teamName(p.team)} &middot; {p.pos}
+						{teamName(p.team)} &middot; {pos}
 					</span>
 				</p>
 				<h2 className="m-0 mt-1 font-serif text-xl font-bold leading-[1.05] sm:text-3xl">
@@ -72,7 +74,10 @@ function Side({ data, p, side, c, color, on }: { data: PlayersData; p: PlayerRow
 							<span className="font-mono text-2xl font-bold tabular-nums leading-none">{score === null ? "–" : score}</span>
 						</GradeRing>
 						<div className="text-center sm:text-left">
-							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">{isV2Site() ? "This season" : "Overall"}</p>
+							<p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-lab-muted">
+								{isV2Site() ? "This season" : "Overall"}
+								{c.cross ? " · own position" : ""}
+							</p>
 							{rank ? (
 								<p className="m-0 text-xs font-semibold leading-snug text-lab-ink sm:text-sm">
 									{rankPhrase(rank.rank, rank.of)} {meta.peers}

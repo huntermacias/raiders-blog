@@ -154,6 +154,50 @@ describe("drawing the card", () => {
 	})
 })
 
+describe("the comparison card across positions", () => {
+	const best = (g: string, key: string) => data.players.filter((p) => p.group === g && p.stats.some((s) => s.k === key && s.season.r != null)).sort((a, b) => b.games - a.games)
+	const pairs: [string, string, string][] = [["te", "wr", "epaTgt"], ["edge", "idl", "pressRate"], ["cb", "saf", "yardsTgt"]]
+
+	it("names both positions and the family, keeps a grade out of it, and prints the same short link", () => {
+		const [x, y] = [best("te", "epaTgt")[0], best("wr", "epaTgt")[0]]
+		const s = buildCompareSpec(data, readConfig({ a: x.slug, b: y.slug }))!
+		expect(s.title).toBe("TE vs WR · Receiving")
+		expect(s.peers).toBe("tight ends and wide receivers")
+		expect([s.a.pos, s.b.pos]).toEqual(["TE", "WR"])
+		expect([s.a.overall, s.b.overall]).toEqual([null, null])
+		expect(s.a.hideOverall && s.b.hideOverall).toBe(true)
+		expect(s.headline).toMatch(/\((TE|WR)\)|shared stat/)
+		expect(s.basis).toMatch(/Shared stats only/)
+		expect(s.link).toBe(`raidersrundown.com/lab/players/compare?a=${x.slug}&b=${y.slug}`)
+		// each man's place at his own position is still printed
+		expect(s.a.place).toMatch(/tight ends/)
+		expect(s.b.place).toMatch(/wide receivers/)
+	})
+
+	it("keeps the grade on the card for two men at one position", () => {
+		const s = buildCompareSpec(data, readConfig({ a: te[0].slug, b: te[1].slug }))!
+		expect(s.a.hideOverall).toBeFalsy()
+		expect(s.title).not.toMatch(/ vs /)
+	})
+
+	it("draws every family in every format and size, with the longest names", async () => {
+		for (const [ga, gb, key] of pairs) {
+			const xs = best(ga, key)
+			const ys = best(gb, key)
+			const longest = (l: typeof xs) => [...l].sort((a, b) => b.name.length - a.name.length)[0]
+			for (const [x, y] of [[xs[0], ys[0]], [longest(xs), longest(ys)]]) {
+				for (const format of ["h2h", "radar", "spot"] as const) {
+					for (const size of ["wide", "tall"] as const) {
+						const s = buildCompareSpec(data, readConfig({ a: x.slug, b: y.slug }), { format, size })
+						expect(s, `${ga} ${gb}`).toBeTruthy()
+						if (s) expect((await png(s)).length, `${ga} ${gb} ${format} ${size}`).toBeGreaterThan(10_000)
+					}
+				}
+			}
+		}
+	})
+})
+
 describe("the comparison card across seasons", () => {
 	const history = getPlayerHistory()
 	const x = data.players.find((p) => p.group === "qb" && seasonsOf(data, history, p.slug, "qb").length >= 3)!
