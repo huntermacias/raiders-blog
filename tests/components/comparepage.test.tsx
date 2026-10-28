@@ -93,7 +93,7 @@ describe("what a link to a comparison unfolds into", () => {
 		const tw = meta.twitter as { card: string; images: { url: string }[] }
 		expect(tw.card).toBe("summary_large_image")
 		expect(tw.images[0].url).toBe(og.images[0].url)
-		expect(meta.robots).toEqual({ index: false, follow: true })
+		expect(meta.robots).toEqual({ index: false, follow: false })
 		expect(String(meta.title)).toContain(`${te[0].name} vs ${te[1].name}`)
 		expect(String(meta.description)).toMatch(/Player Lab/)
 	})
@@ -102,7 +102,7 @@ describe("what a link to a comparison unfolds into", () => {
 		const meta = await generateMetadata({ searchParams: Promise.resolve({ a: te[0].slug, b: wr[0].slug }) })
 		expect(String(meta.title)).toMatch(/TE vs WR receiving compared/)
 		expect(String(meta.description)).toMatch(/both positions are measured on the same way/)
-		expect(meta.robots).toEqual({ index: false, follow: true })
+		expect(meta.robots).toEqual({ index: false, follow: false })
 		const og = meta.openGraph as { images: { url: string }[] }
 		expect(og.images[0].url).toContain(`a=${te[0].slug}&b=${wr[0].slug}`)
 	})

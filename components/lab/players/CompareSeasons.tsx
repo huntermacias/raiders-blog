@@ -36,6 +36,7 @@ export default function CompareSeasons({ cfg, current, a, b }: { cfg: CompareCon
 					<Link
 						key={s}
 						href={compareUrl({ ...cfg, sa: val(s), sb: val(s) })}
+						rel="nofollow"
 						scroll={false}
 						prefetch={false}
 						onClick={() => hit("both", s)}
@@ -65,6 +66,7 @@ export default function CompareSeasons({ cfg, current, a, b }: { cfg: CompareCon
 								<Link
 									key={s}
 									href={compareUrl({ ...cfg, ...(side === "a" ? { sa: val(s) } : { sb: val(s) }) })}
+									rel="nofollow"
 									scroll={false}
 									prefetch={false}
 									onClick={() => hit(side, s)}
