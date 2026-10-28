@@ -1,6 +1,9 @@
 # Comparison pages are a tool: every player page links to hundreds of pair/season/stat variants and each one is a server render. They are
 # not indexed (noindex), so crawlers are asked to leave the configured ones alone. The bare /lab/players/compare page stays open.
-# Link-preview bots get their own group so a shared comparison still unfurls into its picture.
+# Link-preview bots get their own group so a shared comparison still unfurls into its picture. A crawler uses only the one group that names it, so
+# that group repeats every rule of the general one except the comparison rule it is exempt from.
+# Meta's crawlers do not always follow this file (its own documentation says Meta-ExternalFetcher and some FacebookExternalHit checks may bypass
+# it), so the middleware refuses the non-preview ones as well; see lib/og/guard.ts.
 
 User-agent: ClaudeBot
 Disallow: /
@@ -18,6 +21,15 @@ User-agent: Amazonbot
 Disallow: /
 
 User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: Meta-WebIndexer
+Disallow: /
+
+User-agent: Meta-ExternalAds
+Disallow: /
+
+User-agent: Meta-ExternalFetcher
 Disallow: /
 
 User-agent: PerplexityBot
@@ -39,11 +51,15 @@ User-agent: Mastodon
 User-agent: Bluesky Cardyb
 Allow: /
 Disallow: /studio
+Disallow: /api/live/
+Disallow: /api/league/
+Disallow: /api/auth/
 
 User-agent: *
 Allow: /
 Disallow: /studio
 Disallow: /lab/players/compare?
+Disallow: /lab/players/compare/?
 Disallow: /api/live/
 Disallow: /api/league/
 Disallow: /api/auth/

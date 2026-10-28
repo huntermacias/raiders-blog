@@ -46,6 +46,7 @@ import { labColorVarsB } from "@/lib/lab/colors"
 import { cardStyle, compareHref, sideColors } from "@/lib/lab/playerView"
 import { GROUP_META, HEADLINE, STAT, UNIT_NOTE, isCore, lineRecord, searchIndex, statInfo, trailOf } from "@/lib/lab/playersKit"
 import { labWeeks } from "@/lib/lab/toolsData"
+import { compareMetadata } from "@/lib/lab/compareMeta"
 
 const SITE_URL = "https://www.raidersrundown.com"
 
@@ -59,33 +60,7 @@ const stampOf = (generatedAt: string) => {
 }
 
 export async function generateMetadata(props: { searchParams: Promise<Search> }): Promise<Metadata> {
-	const q = await props.searchParams
-	const data = getPlayers()
-	const cfg = readConfig(q)
-	const c = cfg.a && cfg.b ? buildComparison(data, cfg, getPlayerHistory()) : null
-	const base = `${SITE_URL}/lab/players/compare`
-	const title = c
-		? c.cross
-			? `${nameOf(c, "a")} vs ${nameOf(c, "b")}: ${c.cross.tags.a} vs ${c.cross.tags.b} ${c.cross.topic} compared | Raiders Rundown`
-			: `${nameOf(c, "a")} vs ${nameOf(c, "b")}: stats compared in context | Raiders Rundown`
-		: "Compare any two NFL players in context | Raiders Rundown"
-	const description = c
-		? c.cross
-			? `${c.headline} Only stats both positions are measured on the same way, ranked on one scale, with each player's rank at his own position. From the Raiders Rundown Player Lab.`
-			: `${c.headline} Percentiles, who leads each stat and what it means, from the Raiders Rundown Player Lab.`
-		: "Two players, side by side on the stats that matter: same position, or across positions on the stats they share (WR and TE, running backs and receivers, edge and interior rushers, corners and safeties). See who is clearly ahead and who is too close to call."
-	// The picture is the comparison's own graphic, so a link posted to X or anywhere else unfurls into these two players, this range and these stats.
-	const image = c ? `${SITE_URL}/api/og?type=compare&${configQuery({ ...cfg, a: c.a.slug, b: c.b.slug })}&size=wide&v=${stampOf(data.generatedAt)}` : `${SITE_URL}/og-default-v2.png`
-	const alt = c ? `${nameOf(c, "a")} against ${nameOf(c, "b")}: ${c.headline}` : "Raiders Rundown Player Lab: compare two players"
-	return {
-		title,
-		description,
-		alternates: { canonical: base },
-		// A comparison of two particular players is a tool, not a page worth indexing on its own.
-		robots: c ? { index: false, follow: true } : undefined,
-		openGraph: { type: "website", title, description, url: base, siteName: "Raiders Rundown", images: [{ url: image, width: 1200, height: 630, alt }] },
-		twitter: { card: "summary_large_image", title, description, images: [{ url: image, alt }] },
-	}
+	return compareMetadata(await props.searchParams)
 }
 
 function problemText(p: ReturnType<typeof resolvePair>, cfg: CompareConfig, current: number): string | null {
@@ -382,7 +357,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 						<ul className="m-0 mb-6 flex list-none flex-wrap gap-2 p-0" data-testid="self-seasons">
 							{self.map((y) => (
 								<li key={y}>
-									<Link href={compareUrl({ ...cfg, sa: y, sb: null })} className="inline-flex min-h-[44px] items-center rounded-xl border border-lab-line-strong bg-lab-surface px-4 py-2 text-sm font-semibold text-lab-ink hover:border-lab-ink">
+									<Link href={compareUrl({ ...cfg, sa: y, sb: null })} rel="nofollow" className="inline-flex min-h-[44px] items-center rounded-xl border border-lab-line-strong bg-lab-surface px-4 py-2 text-sm font-semibold text-lab-ink hover:border-lab-ink">
 										{y} against {data.season}
 									</Link>
 								</li>
@@ -394,7 +369,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 					<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="debates">
 						{debates.map(({ a, b, tag }) => (
 							<li key={`${a.slug}|${b.slug}`}>
-								<Link href={compareHref(a.slug, b.slug)} className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
+								<Link href={compareHref(a.slug, b.slug)} rel="nofollow" className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
 									<span className="font-semibold text-lab-ink">{a.name}</span> <span className="text-lab-muted">vs</span> <span className="font-semibold text-lab-ink">{b.name}</span>
 									<span className="block text-xs text-lab-muted">{tag}</span>
 								</Link>
@@ -408,7 +383,7 @@ export default async function ComparePage(props: { searchParams: Promise<Search>
 							<ul className="m-0 mt-4 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="cross-debates">
 								{acrossDebates.map(({ a, b, tag }) => (
 									<li key={`${a.slug}|${b.slug}`}>
-										<Link href={compareHref(a.slug, b.slug)} className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
+										<Link href={compareHref(a.slug, b.slug)} rel="nofollow" className="block rounded-xl border border-lab-line bg-lab-surface px-4 py-3 text-sm transition hover:border-lab-ink">
 											<span className="font-semibold text-lab-ink">{a.name}</span> <span className="text-lab-muted">vs</span> <span className="font-semibold text-lab-ink">{b.name}</span>
 											<span className="block text-xs text-lab-muted">{tag}</span>
 										</Link>

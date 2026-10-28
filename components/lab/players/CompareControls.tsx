@@ -65,6 +65,7 @@ export default function CompareControls({
 						<Link
 							key={r.id}
 							href={compareUrl({ ...cfg, range: r.id })}
+						rel="nofollow"
 							scroll={false}
 							prefetch={false}
 							onClick={() => trackPlayers("player_compare_range", { a: cfg.a, b: cfg.b, range: r.id })}

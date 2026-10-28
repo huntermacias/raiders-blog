@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
-import { OG_TYPES, checkCompare, checkOg, isAutomatedClient } from "../../lib/og/guard"
+import { HUMAN_COOKIE, OG_TYPES, checkCompare, checkOg, humanCookieOk, humanCookieValue, isAutomatedClient, isLinkPreviewBot } from "../../lib/og/guard"
 
 const root = resolve(__dirname, "../..")
 const read = (p: string) => readFileSync(resolve(root, p), "utf8")
@@ -81,11 +81,48 @@ describe("checkCompare", () => {
 		}
 	})
 
-	it("serves a configured comparison to readers and previews, not to scrapers", () => {
-		const search = "?a=brock-bowers&b=trey-mcbride&r=form&m=epaTgt,croe"
-		for (const ua of [BROWSER, ...PREVIEW]) expect(checkCompare(search, ua)).toEqual({ action: "allow" })
-		for (const ua of BAD) expect(checkCompare(search, ua)).toMatchObject({ action: "deny", status: 403 })
-		expect(checkCompare(`?a=${"b".repeat(2000)}`, BROWSER)).toMatchObject({ action: "deny", status: 414 })
+	const search = "?a=brock-bowers&b=trey-mcbride&r=form&m=epaTgt,croe"
+	const NOW = Date.UTC(2026, 9, 28, 12)
+
+	it("refuses scrapers and over-long addresses before anything else", () => {
+		for (const ua of BAD) expect(checkCompare(search, ua, humanCookieValue(NOW), NOW)).toMatchObject({ action: "deny", status: 403 })
+		expect(checkCompare(`?a=${"b".repeat(2000)}`, BROWSER, humanCookieValue(NOW), NOW)).toMatchObject({ action: "deny", status: 414 })
+	})
+
+	it("renders a configured comparison in full only for a client that has shown it runs JavaScript", () => {
+		expect(checkCompare(search, BROWSER, humanCookieValue(NOW), NOW)).toEqual({ action: "allow" })
+		for (const missing of [undefined, null, "", "0", "abc", "99999999", humanCookieValue(NOW - 30 * 86_400_000)]) expect(checkCompare(search, BROWSER, missing, NOW)).toEqual({ action: "proof" })
+		// Search engines and the like are not link-preview bots, so they are asked for proof like anyone else (they are told not to come by robots.txt too).
+		expect(checkCompare(search, "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)", undefined, NOW)).toEqual({ action: "proof" })
+	})
+
+	it("gives a link-preview bot the small page with the share tags, cookie or not", () => {
+		for (const ua of ["Twitterbot/1.0", "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)", "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)", "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)", "LinkedInBot/1.0", "WhatsApp/2.23.20.0 A", "TelegramBot (like TwitterBot)", "Facebot", "Bluesky Cardyb/1.1"]) {
+			expect(isLinkPreviewBot(ua), ua).toBe(true)
+			expect(checkCompare(search, ua, undefined, NOW), ua).toEqual({ action: "preview" })
+		}
+		expect(isLinkPreviewBot(BROWSER)).toBe(false)
+		expect(isLinkPreviewBot(null)).toBe(false)
+	})
+
+	it("refuses Meta's AI and ads crawlers, and keeps Facebook's link preview", () => {
+		for (const ua of ["meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)", "meta-externalads/1.1", "meta-externalagent/1.1", "meta-externalfetcher/1.1"]) {
+			expect(isAutomatedClient(ua), ua).toBe(true)
+			expect(checkCompare(search, ua, undefined, NOW), ua).toMatchObject({ action: "deny", status: 403 })
+		}
+		expect(isAutomatedClient("facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)")).toBe(false)
+	})
+
+	it("does not treat Next's own client-navigation parameter as a configuration", () => {
+		expect(checkCompare("?_rsc=abc12", BROWSER, undefined, NOW)).toEqual({ action: "allow" })
+		expect(checkCompare("?_rsc=abc12&a=x", BROWSER, undefined, NOW)).toEqual({ action: "proof" })
+	})
+
+	it("accepts a cookie from the last week and a day ahead, and nothing else", () => {
+		const day = (n: number) => String(Math.floor(NOW / 86_400_000) + n)
+		for (const n of [1, 0, -1, -7]) expect(humanCookieOk(day(n), NOW), String(n)).toBe(true)
+		for (const n of [2, -8, -400]) expect(humanCookieOk(day(n), NOW), String(n)).toBe(false)
+		expect(HUMAN_COOKIE).toBe("rr_h")
 	})
 })
 
@@ -105,7 +142,20 @@ describe("what ships alongside the guard", () => {
 		const previews = groups.find((g) => /User-agent: Twitterbot/.test(g))!
 		for (const bot of ["facebookexternalhit", "Slackbot", "Discordbot", "LinkedInBot"]) expect(previews).toContain(`User-agent: ${bot}`)
 		expect(previews).not.toContain("Disallow: /lab")
+		// A crawler obeys only the one group that names it, so the preview group repeats the general group's other rules.
+		for (const rule of star.split("\n").filter((l) => l.startsWith("Disallow:") && !l.includes("/lab/players/compare"))) expect(previews, rule).toContain(rule)
 		expect(robots).toContain("Sitemap: https://www.raidersrundown.com/sitemap.xml")
+	})
+
+	it("robots.txt turns away Meta's AI, ads and fetch crawlers, which are not link previews", () => {
+		const groups = read("public/robots.txt").split(/\n\s*\n/)
+		for (const bot of ["Meta-ExternalAgent", "Meta-WebIndexer", "Meta-ExternalAds", "Meta-ExternalFetcher"]) {
+			const g = groups.find((x) => new RegExp(`^User-agent: ${bot}$`, "m").test(x))
+			expect(g, bot).toBeTruthy()
+			expect(g).toMatch(/^Disallow: \/$/m)
+		}
+		// The trailing-slash spelling of the comparison address is covered too.
+		expect(groups.find((g) => /^User-agent: \*$/m.test(g))).toContain("Disallow: /lab/players/compare/?")
 	})
 
 	it("the comparison page is cached by the CDN only", () => {
