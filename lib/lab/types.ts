@@ -70,6 +70,50 @@ export type Drive = {
 	top: string | null
 }
 
+/** One offense's game, from scripts/lab/game_box.py. A rate is 0 to 1, EPA is points per play. */
+export type BoxTeam = {
+	points: number
+	plays: number
+	yards: number
+	ypp: number | null
+	epa: number | null
+	epaPass: number | null
+	epaRush: number | null
+	success: number | null
+	earlySuccess: number | null
+	explosive: number
+	explosiveRate: number | null
+	rushAtt: number
+	rushYds: number
+	rushSuccess: number | null
+	/** Share of first- and second-down plays that were runs. */
+	earlyRunShare: number | null
+	passYds: number
+	dropbacks: number
+	sacks: number
+	thirdAtt: number
+	thirdConv: number
+	fourthAtt: number
+	fourthConv: number
+	redZoneTrips: number
+	redZoneTds: number
+	giveaways: number
+	penalties: number
+	penaltyYards: number
+}
+
+export type BoxPasser = { id: string; name: string; att: number; cmp: number; yds: number; td: number; int: number; sacks: number; dropbacks: number; epa: number | null; success: number | null; cpoe: number | null; adot: number | null }
+export type BoxRusher = { id: string; name: string; car: number; yds: number; td: number; long: number; epa: number | null; success: number | null; explosive: number }
+export type BoxReceiver = { id: string; name: string; tgt: number; rec: number; yds: number; td: number; air: number; yac: number; epa: number | null }
+export type BoxDefender = { id: string; name: string; tkl: number; sack: number; hit: number; tfl: number; pd: number; int: number; ff: number }
+export type BoxPlayers = { pass: BoxPasser[]; rush: BoxRusher[]; rec: BoxReceiver[]; def: BoxDefender[] }
+
+/** `me` is the team the file is about (the Raiders), `opp` the other side. */
+export type GameBox = {
+	teams: { me: BoxTeam; opp: BoxTeam }
+	players: { me: BoxPlayers; opp: BoxPlayers }
+}
+
 export type LabGame = {
 	id: string
 	week: number
@@ -87,6 +131,8 @@ export type LabGame = {
 	scores: [number, number, number][]
 	keyPlays: KeyPlay[]
 	drives: Drive[]
+	/** Team and player numbers for the game. Missing from files built before the recap pages used them. */
+	box?: GameBox
 }
 
 export type LabSeason = {

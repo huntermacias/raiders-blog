@@ -3,6 +3,7 @@
 //   /api/og?type=post&slug=<post slug>
 //   /api/og?type=game&slug=<game report slug>
 //   /api/og?type=pick&id=<gamePrediction id>
+//   /api/og?type=report&slug=<game report slug>[&kind=final|stats|players][&size=wide|tall]   (a game report: the scoreboard, the numbers behind the game, or the players who mattered)
 //   /api/og?type=scoreboard
 //   /api/og?type=rankings   (the top of the ladder, the Raiders' spot and all 32 teams)
 //   /api/og?type=nflleague&mode=winners|confidence|upset[&week=N][&view=me|board|alert][&handle=<league handle>][&size=wide|tall]   (the public NFL formats: a player's week, the week's standings, the upset of the week)
@@ -56,7 +57,11 @@ import { buildMathSpec } from "../../lib/og/mathCard"
 import { buildLabSpec } from "../../lib/og/labCard"
 import { insightSpec } from "../../lib/og/insightSpecs"
 import { buildRankingsSpec } from "../../lib/og/rankingsCard"
-import { getGameBySlug, getSeason } from "../../lib/lab/data"
+import { getGameBySlug, getGames, getSeason } from "../../lib/lab/data"
+import { labGameFor } from "../../lib/lab/match"
+import { composeReport, roster } from "../../lib/report/build"
+import { realScore } from "../../lib/report/score"
+import { buildReportSpec, reportImageUrls, type ReportKind } from "../../lib/og/reportCards"
 import { loadMath } from "../../lib/math/server"
 import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
 
@@ -71,11 +76,11 @@ function first(v: string | string[] | undefined): string {
 }
 
 /** Fetch a Sanity image as a data: URI sized for the photo panel, or null. */
-async function photoDataUri(image: unknown): Promise<string | null> {
+async function photoDataUri(image: unknown, w: number = PHOTO_W, h: number = OG_HEIGHT): Promise<string | null> {
 	if (!image) return null
 	let url: string
 	try {
-		url = urlFor(image).width(PHOTO_W).height(OG_HEIGHT).fit("crop").format("jpg").quality(80).url()
+		url = urlFor(image).width(w).height(h).fit("crop").format("jpg").quality(80).url()
 	} catch {
 		return null
 	}
@@ -150,7 +155,12 @@ const postQuery = groq`
 
 const gameQuery = groq`
 	*[_type == "gameReport" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
-		title, opponent, raidersScore, opponentScore, mainImage
+		title, opponent, gameDate, raidersScore, opponentScore, mainImage
+	}`
+
+const reportQuery = groq`
+	*[_type == "gameReport" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
+		_id, title, description, opponent, homeAway, gameDate, raidersScore, opponentScore, mainImage
 	}`
 
 const pickQuery = groq`
@@ -200,13 +210,39 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		if (!SLUG.test(slug)) return null
 		const g = await readClient.fetch(gameQuery, { slug })
 		if (!g?.title || typeof g.raidersScore !== "number" || typeof g.opponentScore !== "number") return null
+		const real = realScore({ ...g, raidersScore: g.raidersScore, opponentScore: g.opponentScore })
 		return {
 			type: "game",
 			title: g.title,
 			opponent: g.opponent || "Opponent",
-			raidersScore: g.raidersScore,
-			opponentScore: g.opponentScore,
+			raidersScore: real.raiders,
+			opponentScore: real.opponent,
 			photo: await photoDataUri(g.mainImage),
+		}
+	}
+
+	if (type === "report") {
+		const slug = first(query.slug)
+		if (!SLUG.test(slug)) return null
+		const g = await readClient.fetch(reportQuery, { slug })
+		if (!g?.title || typeof g.raidersScore !== "number" || typeof g.opponentScore !== "number") return null
+		const k = first(query.kind)
+		const kind: ReportKind = k === "stats" || k === "players" ? k : "final"
+		const size = first(query.size) === "tall" ? "tall" : "wide"
+		const lab = labGameFor(g)
+		// The numbers and the players come from the Lab's play-by-play; a game it has not built yet only has the scoreboard.
+		if (kind !== "final" && !lab?.box) return null
+		const view = composeReport(slug, g, lab, getGames(), null, roster())
+		const spec = buildReportSpec(view, kind, size)
+		const urls = reportImageUrls(spec)
+		const [photo, ...images] = await Promise.all([kind === "final" ? photoDataUri(g.mainImage, size === "tall" ? 1080 : PHOTO_W, size === "tall" ? 470 : OG_HEIGHT) : Promise.resolve(null), ...urls.map((u) => headshotDataUri(u))])
+		const byUrl = new Map(urls.map((u, i) => [u, images[i]]))
+		return {
+			...spec,
+			photo,
+			me: { ...spec.me, logo: byUrl.get(spec.me.logoUrl) ?? null },
+			opp: { ...spec.opp, logo: byUrl.get(spec.opp.logoUrl) ?? null },
+			players: spec.players.map((p) => ({ ...p, photo: p.headshotUrl ? byUrl.get(p.headshotUrl) ?? null : null })),
 		}
 	}
 
@@ -384,6 +420,7 @@ function cacheFor(spec: CardSpec): string {
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
 	if (spec.type === "flags") return "public, s-maxage=86400, stale-while-revalidate=604800"
 	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare" || spec.type === "hub") return "public, s-maxage=604800, stale-while-revalidate=2592000"
+	if (spec.type === "report") return "public, s-maxage=86400, stale-while-revalidate=604800"
 	if (spec.type === "league" || spec.type === "math" || spec.type === "nflleague") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

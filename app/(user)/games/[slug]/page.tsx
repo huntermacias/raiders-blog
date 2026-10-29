@@ -1,14 +1,11 @@
 import { groq } from "next-sanity"
 import { notFound } from "next/navigation"
-import Image from "next/image"
 import Link from "@/components/SiteLink"
-import { PortableText } from "@portabletext/react"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
 
 import { isrFetch } from "../../../../lib/sanity.client"
 import { heroImageUrl, ogImageUrl, hotspotPosition } from "../../../../lib/urlFor"
-import { RichTextComponents } from "../../../../components/RichTextComponents"
 import { readingMinutes } from "../../../../lib/home"
 import BoxScore from "../../../../components/BoxScore"
 import GameLeaders from "../../../../components/GameLeaders"
@@ -24,11 +21,22 @@ import GameReportNav from "../../../../components/GameReportNav"
 import SubscribeBox from "../../../../components/SubscribeBox"
 import MyPicksStrip from "../../../../components/league/MyPicksStrip"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
-import LabTake from "../../../../components/games/LabTake"
+import ReportHero from "../../../../components/report/ReportHero"
+import ReportNav, { type NavSection } from "../../../../components/report/ReportNav"
+import Glance from "../../../../components/report/Glance"
+import Recap from "../../../../components/report/Recap"
+import RecapRail from "../../../../components/report/RecapRail"
+import WinSection from "../../../../components/report/WinSection"
+import NumbersSection from "../../../../components/report/NumbersSection"
+import DrivesSection from "../../../../components/report/DrivesSection"
+import PlayersSection from "../../../../components/report/PlayersSection"
+import ReportShare from "../../../../components/report/ReportShare"
+import { composeReport, roster } from "../../../../lib/report/build"
+import { realScore } from "../../../../lib/report/score"
 import { labGameFor } from "../../../../lib/lab/match"
+import { getGames } from "../../../../lib/lab/data"
 import { getReportStats } from "../../../../lib/live/service"
 import { mergeStats } from "../../../../lib/live/gamestats"
-import { Badge } from "@/components/ui/badge"
 import type { PickKey } from "../../../../lib/predictions"
 
 const SITE_URL = "https://www.raidersrundown.com"
@@ -63,17 +71,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     const game = await isrFetch(query, { slug })
     if (!game) return {}
 
-    const won = game.raidersScore > game.opponentScore
+    // The score as it really was, so a score typed the wrong way round in Studio does not turn a loss into a win in the description.
+    const real = realScore(game)
+    const won = real.raiders > real.opponent
     const title = `${game.title} | Raiders Rundown`
     const description =
 		game.description ||
-		`Raiders ${won ? "beat" : "fell to"} the ${game.opponent} ${game.raidersScore}-${game.opponentScore}.`
+		`Raiders ${won ? "beat" : "fell to"} the ${game.opponent} ${real.raiders}-${real.opponent}.`
     const url = `${SITE_URL}/games/${slug}`
     // Designed share card (see pages/api/og.tsx). `v` changes when the report
     // is edited so social networks re-fetch instead of serving a stale image.
     // Absolute URL because this Next version (13.2.1) has no `metadataBase`.
     const stamp = game._updatedAt ? new Date(game._updatedAt).getTime() : 0
-    const image = `${SITE_URL}/api/og?type=game&slug=${encodeURIComponent(slug)}&v=${stamp}`
+    const image = `${SITE_URL}/api/og?type=report&kind=final&slug=${encodeURIComponent(slug)}&v=${stamp}`
 
     return {
 		title,
@@ -103,8 +113,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	}
 }
 
-function formatDate(date: string) {
-	return new Date(date).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+function shortDate(date: string) {
+	return new Date(date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Los_Angeles" })
 }
 
 async function GameReportPage(props: Props) {
@@ -150,19 +160,39 @@ async function GameReportPage(props: Props) {
     const auto = game.autoStats === false ? null : await getReportStats(game)
     const stats = mergeStats(game, auto)
 
-    const won = game.raidersScore > game.opponentScore
-    // The Lab's replay of this game, found by opponent and date, if the Lab has it yet.
+    // The Lab's play-by-play for this game, found by opponent and date, if the Lab has it yet. Everything the report works out
+    // (the real score, the win probability, the numbers, the drives, the players) is built from it; without it the page is the recap and the box score.
     const labGame = labGameFor({ opponent: game.opponent, gameDate: game.gameDate })
+    const view = composeReport(slug, game, labGame, getGames(), auto, roster())
+    const stamp = game._updatedAt ? new Date(game._updatedAt).getTime() : 0
+    const minutes = game.body ? readingMinutes(game.body) : null
+
     const currentIndex = allGames.findIndex((g) => g.slug.current === slug)
     // Sorted newest-first: the entry after this one in the array is the
     // chronologically earlier ("previous") game, the one before is later ("next").
     const prevGame = currentIndex >= 0 ? allGames[currentIndex + 1] ?? null : null
     const nextGame = currentIndex > 0 ? allGames[currentIndex - 1] ?? null : null
-    const moreGames = allGames.filter((g) => g.slug.current !== slug).slice(0, 3)
+    const moreGames = allGames
+		.filter((g) => g.slug.current !== slug)
+		.slice(0, 3)
+		.map((g) => {
+			const r = realScore(g)
+			return { ...g, raidersScore: r.raiders, opponentScore: r.opponent }
+		})
 
     const pageUrl = `${SITE_URL}/games/${slug}`
     const homeTeam = game.homeAway === "home" ? "Las Vegas Raiders" : game.opponent
     const awayTeam = game.homeAway === "home" ? game.opponent : "Las Vegas Raiders"
+
+    const sections: NavSection[] = [
+		{ id: "recap", label: "Recap" },
+		...(view.lab ? [{ id: "win-probability", label: "Win probability" }] : []),
+		...(view.head.length ? [{ id: "numbers", label: "The numbers" }] : []),
+		...(view.drives.length ? [{ id: "drives", label: "Drives" }] : []),
+		...(view.performers.me.length || view.performers.opp.length ? [{ id: "players", label: "Players" }] : []),
+		{ id: "box-score", label: "Box score" },
+		{ id: "comments", label: `Comments${game.comments?.length ? ` (${game.comments.length})` : ""}` },
+	]
 
     const jsonLd = [
 		{
@@ -206,111 +236,77 @@ async function GameReportPage(props: Props) {
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-			<div className="container max-w-3xl py-12">
-				{/* min-w-0 on the nav + flex-1/min-w-0 on the title span is what
-				    actually lets `truncate` kick in -- flex items don't shrink
-				    below their content size by default, so without this the
-				    title just overflowed instead of ellipsizing on narrow
-				    screens. The middle crumb also shortens to "Games" below the
-				    sm breakpoint so two crumbs of chrome don't crowd out the
-				    part that actually matters, the title. */}
-				<nav className="mb-4 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-					<Link href="/" className="shrink-0 hover:text-foreground hover:underline">
-						Home
-					</Link>
-					<span className="shrink-0">/</span>
-					<Link href="/games" className="shrink-0 hover:text-foreground hover:underline">
-						<span className="sm:hidden">Games</span>
-						<span className="hidden sm:inline">Game Reports</span>
-					</Link>
-					<span className="shrink-0">/</span>
-					<span className="min-w-0 flex-1 truncate text-foreground/70">{game.title}</span>
-				</nav>
-
-				<div className="mb-4 flex flex-wrap gap-2">
-					{game.categories?.map((category) => (
-						<Badge key={category._id} variant="secondary">
-							{category.title}
-						</Badge>
-					))}
-					<Badge variant={won ? "default" : "destructive"}>
-						{won ? "WIN" : "LOSS"}
-					</Badge>
-				</div>
-
-				<h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
-					{game.title}
-				</h1>
-
-				{game.description && <p className="mt-4 text-xl text-muted-foreground">{game.description}</p>}
-
-				{/* Stacked on mobile (date, then a wrapping row of share/comment/
-				    reactions) instead of one wide flex-wrap row -- cramming four
-				    share icons, a comment count, and three reaction pills into
-				    whatever width was left next to the date was overflowing and
-				    wrapping mid-icon on phones. From sm: up it goes back to a
-				    single row with the date on the left. */}
-				<div className="mt-6 flex flex-col gap-3 border-y border-border/70 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-					<span>
-						{formatDate(game.gameDate)}
-						{game.body ? <> &middot; {readingMinutes(game.body)} min read</> : null}
-					</span>
-					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+			<ReportHero
+				view={view}
+				imageUrl={heroImageUrl(game.mainImage)}
+				imagePosition={hotspotPosition(game.mainImage)}
+				author={game.author?.name || "Raiders Rundown"}
+				published={shortDate(game.gameDate)}
+				minutes={minutes}
+				homeAway={game.homeAway}
+				actions={
+					<>
+						<ReportShare slug={slug} kind="final" stamp={stamp} text={`${game.title}`} alt={`${game.title}: the final score card`} label="Share" tone="dark" />
 						<SocialShare customurl={pageUrl} />
-						<a
-							href="#comments"
-							className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-						>
+						<a href="#comments" className="flex shrink-0 items-center gap-1.5 text-sm text-white/70 hover:text-white">
 							<MessageCircle className="h-4 w-4" />
 							{game.comments?.length ?? 0}
 						</a>
 						<ReactionBar docId={game._id} initialReactions={game.reactions} />
+					</>
+				}
+			/>
+
+			<ReportNav sections={sections} progressFor="recap" />
+
+			<Glance view={view} />
+
+			<section id="recap" className="container max-w-6xl scroll-mt-32 pb-14 pt-6">
+				<div className="grid gap-x-14 lg:grid-cols-[minmax(0,720px)_260px] lg:justify-center">
+					<div className="order-last min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
+						{game.body && <Recap body={view.body} headings={view.headings} />}
+
+						{game.videoEmbeds?.map((embed) => (
+							<div key={embed._key} className="mt-10">
+								<Embed url={embed.url} caption={embed.caption} />
+							</div>
+						))}
+
+						<div className="mt-10 space-y-10">
+							<GameTimeline moments={game.keyMoments} />
+							<KeysScorecard keys={keysDoc?.keys} title="The keys, graded" />
+						</div>
+					</div>
+					<div className="lg:col-start-2 lg:row-start-1">
+						<RecapRail headings={view.headings.filter((h) => h.level === 2)} minutes={minutes} />
 					</div>
 				</div>
-			</div>
+			</section>
 
-			<div className="container max-w-5xl">
-				<div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-[28rem]">
-					<Image className="object-cover" src={heroImageUrl(game.mainImage)} alt={game.title} fill style={{ objectPosition: hotspotPosition(game.mainImage) }} sizes="100vw" priority />
+			{view.lab ? (
+				<div className="container max-w-6xl space-y-10 pb-14">
+					<WinSection view={view} stamp={stamp} />
+					<NumbersSection view={view} stamp={stamp} />
+					<DrivesSection view={view} stamp={stamp} />
+					<PlayersSection view={view} stamp={stamp} />
 				</div>
-			</div>
+			) : null}
 
-			<div className="container max-w-3xl space-y-10 pt-12">
+			<section id="box-score" className="container max-w-3xl scroll-mt-32 space-y-10 pb-14">
 				<BoxScore
 					opponent={game.opponent}
 					homeAway={game.homeAway}
-					raidersScore={game.raidersScore}
-					opponentScore={game.opponentScore}
+					raidersScore={view.score.raiders}
+					opponentScore={view.score.opponent}
 					teamStats={stats.teamStats}
 					quarterScores={stats.quarterScores}
 					playerStats={stats.playerStats}
 					fromEspn={stats.fromEspn}
 				/>
-
-				<GameLeaders playerStats={stats.playerStats} />
-			</div>
-
-			{labGame && (
-				<div className="container max-w-5xl py-10">
-					<LabTake game={labGame} />
-				</div>
-			)}
+				{!view.lab && <GameLeaders playerStats={stats.playerStats} />}
+			</section>
 
 			<div className="container max-w-3xl space-y-10 pb-12">
-				{game.videoEmbeds?.map((embed) => (
-					<Embed key={embed._key} url={embed.url} caption={embed.caption} />
-				))}
-
-				<GameTimeline moments={game.keyMoments} />
-
-				<KeysScorecard keys={keysDoc?.keys} title="The keys, graded" />
-
-				{game.body && (
-					<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
-						<PortableText value={game.body} components={RichTextComponents} />
-					</div>
-				)}
-
 				{game.pollQuestion && game.pollOptionA && game.pollOptionB && (
 					<GamePoll
 						docId={game._id}
@@ -333,7 +329,7 @@ async function GameReportPage(props: Props) {
 				<GameReportNav prevGame={prevGame} nextGame={nextGame} />
 			</div>
 
-			<div id="comments">
+			<div id="comments" className="scroll-mt-32">
 				<CommentField postId={game._id} />
 
 				{game.comments && game.comments.length > 0 && (
