@@ -7,8 +7,10 @@ import type { GamePrediction } from "@/lib/predictions"
 import type { HubState } from "@/lib/home"
 import { type ScheduleRow, recordText } from "@/lib/schedule"
 import { kickoffText } from "@/components/schedule/ScheduleList"
+import ShareCard from "@/components/lab/ShareCard"
+import { TeamLogo } from "@/components/lab/players/Media"
 import Countdown from "./Countdown"
-import FinalPanel from "./FinalPanel"
+import FinalPanel, { type FinalExtra } from "./FinalPanel"
 import HeroVote from "./HeroVote"
 
 type Props = {
@@ -20,6 +22,8 @@ type Props = {
 	record: { w: number; l: number; t: number }
 	/** The most recent game recap, linked from the bottom of the right column. */
 	latestReport?: { slug: string; title: string } | null
+	/** The finished game's real score and line score from the Lab, when it has the game. */
+	finalExtra?: FinalExtra | null
 }
 
 function ResultChip({ row }: { row: ScheduleRow }) {
@@ -85,7 +89,7 @@ function PickScore({ game }: { game: ScheduleRow }) {
 	)
 }
 
-export default function GameDayHub({ state, picks, played, record, latestReport }: Props) {
+export default function GameDayHub({ state, picks, played, record, latestReport, finalExtra }: Props) {
 	const rec = recordText(record)
 	const hasPlayed = played.length > 0
 	const recent = played.slice(-4)
@@ -101,27 +105,28 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 	const keys = pick?.keys?.filter((k) => k?.text?.trim()) ?? []
 	const when = game ? kickoffText(game.kickoff) : null
 	const live = state.kind === "live"
+	const pickStamp = pick ? new Date(pick.kickoff).getTime() || 0 : 0
 
 	return (
 		<section
+			id="game"
 			aria-label={game ? `Week ${game.week} ${final ? "final" : "game day"}` : "Season at a glance"}
-			className="relative overflow-hidden rounded-2xl border border-[#27272a] bg-[#09090b] text-zinc-50 shadow-xl"
+			className="relative scroll-mt-32 overflow-hidden rounded-2xl border border-[#27272a] bg-[#09090b] text-zinc-50 shadow-xl"
 		>
-			{/* Silver wash behind the numbers. Decorative. */}
+			{/* Silver wash behind the numbers, with a touch of the opponent's color in the corner. Decorative. */}
 			<div
 				aria-hidden
 				className="pointer-events-none absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(60% 80% at 100% 0%, rgba(161,161,170,0.14) 0%, rgba(9,9,11,0) 60%), radial-gradient(50% 60% at 0% 100%, rgba(63,63,70,0.28) 0%, rgba(9,9,11,0) 70%)",
+					background: `radial-gradient(60% 80% at 100% 0%, ${opp && !final ? `${opp.color}33` : "rgba(161,161,170,0.14)"} 0%, rgba(9,9,11,0) 60%), radial-gradient(50% 60% at 0% 100%, rgba(63,63,70,0.28) 0%, rgba(9,9,11,0) 70%)`,
 				}}
 			/>
 
-			<div className="relative grid gap-px bg-[#27272a] lg:grid-cols-[1.45fr_1fr]">
+			<div className="relative grid grid-cols-1 gap-px bg-[#27272a] lg:grid-cols-[1.45fr_1fr]">
 				{/* LEFT: the game */}
-				<div className="bg-[#09090b]/95 p-5 sm:p-6 md:p-8">
+				<div className="min-w-0 bg-[#09090b]/95 p-5 sm:p-6 md:p-8">
 					{state.kind === "final" ? (
-						<FinalPanel game={state.game} next={state.next} recap={recap} />
+						<FinalPanel game={state.game} next={state.next} recap={recap} extra={finalExtra} />
 					) : game && opp ? (
 						<>
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -129,6 +134,12 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 									Week {game.week}
 								</span>
 								<span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">{live ? "Game day" : "Next game"}</span>
+							</div>
+
+							<div className="mt-5 flex items-center gap-3" aria-hidden>
+								<TeamLogo team="LV" size={64} className="h-12 w-12 sm:h-16 sm:w-16" />
+								<span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500">{game.homeAway === "away" ? "at" : "vs"}</span>
+								<TeamLogo team={opp.abbr} size={64} className="h-12 w-12 sm:h-16 sm:w-16" />
 							</div>
 
 							<h2 className="mt-4 font-serif text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
@@ -193,6 +204,17 @@ export default function GameDayHub({ state, picks, played, record, latestReport 
 									>
 										Read the Week {game.week} preview <ArrowRight aria-hidden className="h-4 w-4" />
 									</Link>
+								)}
+								{pick && (
+									<ShareCard
+										sizes={["wide"]}
+										stamp={pickStamp}
+										text={`My Week ${game.week} pick: Raiders ${game.pick?.raiders}, ${opp.nick} ${game.pick?.opponent}.`}
+										alt={`My Week ${game.week} pick for Raiders ${game.homeAway === "away" ? "at" : "vs."} ${opp.nick}`}
+										label="Share my pick"
+										className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-semibold text-white hover:bg-white/20"
+										target={{ type: "pick", query: `id=${encodeURIComponent(pick._id)}`, linkQuery: "", sharePath: `/predictions/pick/${pick._id}`, name: `Week ${game.week} pick`, file: `raiders-rundown-week-${game.week}-pick`, campaign: "home_share" }}
+									/>
 								)}
 								<Link href="/predictions" className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-zinc-50 hover:underline">
 									Full scoreboard <ArrowRight aria-hidden className="h-3.5 w-3.5" />

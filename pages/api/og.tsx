@@ -12,6 +12,7 @@
 //   /api/og?type=math[&team=XX | &take=XX][&week=N][&model=season]   (Blogger vs. the Math: the Raiders by default)
 //   /api/og?type=lab&slug=week-N[&view=drive][&drive=N]   (a game lab: the win-probability story, or the best drive)
 //   /api/og?type=lab&slug=week-N|season&view=play[&rank=N]   (a top play: the play that moved the game or the season most)
+//   /api/og?type=home&kind=season&wk=N&w=W&l=L&t=T[&res=WLLW...][&odds=P&oddsd=D][&rank=N&rankd=D][&hit=H&miss=M][&sk=hit|miss&sl=N]   (the homepage's "season so far" card; whole numbers only)
 //   /api/og?type=scout&opp=XX[&week=N]   (the scouting report for an opponent)
 //   /api/og?type=last[&kind=chart|wins|fifths|checklist|season|bottom][&size=wide|tall][&stat=def.turnovers]
 //           [&scope=all][&team=KC][&po=made|missed][&years=2016,2021][&pin=2016-LV][&y=wins]
@@ -62,6 +63,8 @@ import { labGameFor } from "../../lib/lab/match"
 import { composeReport, roster } from "../../lib/report/build"
 import { realScore } from "../../lib/report/score"
 import { buildReportSpec, reportImageUrls, type ReportKind } from "../../lib/og/reportCards"
+import { HOME_LOGO_TEAM, parseHomeQuery } from "../../lib/og/homeCard"
+import { logoUrl } from "../../lib/lab/playersKit"
 import { loadMath } from "../../lib/math/server"
 import { LEAGUE_QUERY, normalizeLeagueData } from "../../lib/league"
 
@@ -246,6 +249,12 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 		}
 	}
 
+	if (type === "home") {
+		const spec = parseHomeQuery((k) => first(query[k]) || undefined)
+		if (!spec) return null
+		return { ...spec, logo: await headshotDataUri(logoUrl(HOME_LOGO_TEAM)) }
+	}
+
 	if (type === "pick") {
 		const id = first(query.id)
 		if (!DOC_ID.test(id) || id.startsWith("drafts.")) return null
@@ -420,7 +429,7 @@ function cacheFor(spec: CardSpec): string {
 	// The lab data is a static file that only changes with a deploy, and the page stamps its links.
 	if (spec.type === "flags") return "public, s-maxage=86400, stale-while-revalidate=604800"
 	if (spec.type === "lab" || spec.type === "play" || spec.type === "scout" || spec.type === "last" || spec.type === "twins" || spec.type === "playoffs" || spec.type === "rooting" || spec.type === "matchup" || spec.type === "slate" || spec.type === "board" || spec.type === "player" || spec.type === "playerboard" || spec.type === "compare" || spec.type === "hub") return "public, s-maxage=604800, stale-while-revalidate=2592000"
-	if (spec.type === "report") return "public, s-maxage=86400, stale-while-revalidate=604800"
+	if (spec.type === "report" || spec.type === "home") return "public, s-maxage=86400, stale-while-revalidate=604800"
 	if (spec.type === "league" || spec.type === "math" || spec.type === "nflleague") return "public, s-maxage=3600, stale-while-revalidate=86400"
 	return "public, s-maxage=86400, stale-while-revalidate=604800"
 }

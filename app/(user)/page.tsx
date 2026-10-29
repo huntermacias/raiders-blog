@@ -23,7 +23,13 @@ import GameReportsTeaser from "../../components/GameReportsTeaser";
 import SubscribeBox from "../../components/SubscribeBox";
 import GameDayHub from "../../components/home/GameDayHub";
 import LiveStrip from "../../components/home/LiveStrip";
-import StatStrip, { type HomeRank } from "../../components/home/StatStrip";
+import { type HomeRank } from "../../components/home/StatStrip";
+import SeasonGlance from "../../components/home/SeasonGlance";
+import ReportNav, { type NavSection } from "../../components/report/ReportNav";
+import { labGameFor } from "../../lib/lab/match";
+import { realScore } from "../../lib/report/score";
+import { halftimeLine, quarterLine } from "../../lib/report/story";
+import type { FinalExtra } from "../../components/home/FinalPanel";
 import FeaturedStories, { type FeaturedPost } from "../../components/home/FeaturedStories";
 import FlagCard from "../../components/home/FlagCard";
 import LeagueTeaser from "../../components/league/LeagueTeaser";
@@ -174,6 +180,7 @@ export default async function page() {
 			copy={labCopy(phase, snapshot?.week ?? weeks.slate)}
 			snapshot={snapshot}
 			tools={labTools(phase).map((tool) => ({ tool, badges: toolBadges(tool, weeks) }))}
+			stamp={snapshot?.updatedAt ? new Date(snapshot.updatedAt).getTime() || 0 : 0}
 		/>
 	)
 	// On game days the Lab is the more useful thing to scroll to, so it comes before the stories.
@@ -195,6 +202,17 @@ export default async function page() {
 	const leagueLast = leagueWeeks.length > 0 ? weekSummary(league.data.games, league.data.players, league.data.picks, leagueWeeks[leagueWeeks.length - 1]) : null
 	const leagueOpen = openGames(league.data.games, Date.now()).length
 
+	// A finished game's real score and line score come from the Lab's play-by-play when it has the game, never from the hand-typed Studio fields.
+	let finalExtra: FinalExtra | null = null
+	if (state.kind === "final") {
+		const lab = labGameFor({ opponent: state.game.opponent, gameDate: state.game.kickoff })
+		if (lab) finalExtra = { score: lab.score, quarters: quarterLine(lab), halftime: halftimeLine(lab), stamp: new Date(state.game.kickoff ?? 0).getTime() || 0 }
+	}
+	const reportScores = Object.fromEntries((games ?? []).map((g) => {
+		const s = realScore(g)
+		return [g._id, { raiders: s.raiders, opponent: s.opponent }]
+	}))
+
 	// Stories
 	const featured: FeaturedPost[] = (posts ?? []).slice(0, 3).map((post, i) => ({
 		_id: post._id,
@@ -207,6 +225,19 @@ export default async function page() {
 		imageUrl: i === 0 ? heroImageUrl(post.mainImage) : cardImageUrl(post.mainImage),
 		imagePosition: hotspotPosition(post.mainImage),
 	}))
+
+	// The bar under the hub: one chip for each part of the page, in the order they are on it.
+	const hasLab = Boolean(snapshot) || labTools(phase).length > 0
+	const nav: NavSection[] = [
+		{ id: "game", label: state.kind === "final" ? "The final" : state.kind === "idle" ? "Picks" : "This week" },
+		{ id: "season", label: "Season" },
+		...(labFirst && hasLab ? [{ id: "lab", label: "The Lab" }] : []),
+		...(featured.length > 0 ? [{ id: "stories", label: "Stories" }] : []),
+		...(!labFirst && hasLab ? [{ id: "lab", label: "The Lab" }] : []),
+		...((games ?? []).length > 0 ? [{ id: "reports", label: "Game reports" }] : []),
+		{ id: "league", label: "League" },
+		{ id: "latest", label: "All stories" },
+	]
 
 	const today = new Date().toLocaleDateString("en-US", {
 		weekday: "long",
@@ -259,10 +290,23 @@ export default async function page() {
 				  played={played}
 				  record={record}
 				  latestReport={games?.[0] ? { slug: games[0].slug.current, title: games[0].title } : null}
+				  finalExtra={finalExtra}
 			  />
-			  <div className="mt-4">
-				  <StatStrip rank={rank} summary={summary} keys={keysSummary} />
+			  <div className="mt-5">
+				  <SeasonGlance
+					  record={record}
+					  played={played}
+					  odds={snapshot}
+					  rank={rank}
+					  summary={summary}
+					  keys={keysSummary}
+					  stamp={played.length ? new Date(played[played.length - 1].kickoff ?? 0).getTime() || 0 : 0}
+				  />
 			  </div>
+		  </div>
+
+		  <div className="mt-6">
+			  <ReportNav sections={nav} label="Parts of the home page" containerClass="container" />
 		  </div>
 
 		  {labFirst && labBand}
@@ -273,10 +317,11 @@ export default async function page() {
 
 		  <MyPicksStrip className="pt-10" />
 
+		  <div id="league" className="scroll-mt-32" />
 		  <LeagueTeaser players={league.data.players.length} top={leagueRows} lastWeek={leagueLast} open={leagueOpen} />
 
 		  <div className="pt-14">
-			  <GameReportsTeaser games={games} />
+			  <GameReportsTeaser games={games} scores={reportScores} />
 		  </div>
 
 		  {latestFlag && <FlagCard flag={latestFlag} summary={flagSummary} />}

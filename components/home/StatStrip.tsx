@@ -21,7 +21,7 @@ type Props = {
 }
 
 /** Rank history. No. 1 is at the top, so a line going up means rising. */
-function Spark({ history }: { history: (number | null)[] }) {
+export function Spark({ history }: { history: (number | null)[] }) {
 	const real = history.map((r, i) => (r === null ? null : { i, r })).filter((p): p is { i: number; r: number } => p !== null)
 	if (real.length < 2) return null
 	const width = 88
@@ -39,7 +39,7 @@ function Spark({ history }: { history: (number | null)[] }) {
 	)
 }
 
-function Tile({ href, label, children, foot }: { href: string; label: string; children: React.ReactNode; foot?: React.ReactNode }) {
+export function Tile({ href, label, children, foot }: { href: string; label: string; children: React.ReactNode; foot?: React.ReactNode }) {
 	return (
 		<Link
 			href={href}
