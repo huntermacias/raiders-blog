@@ -171,7 +171,7 @@ export function scoreAtHalf(game: Pick<LabGame, "scores">): [number, number] {
 	let me = 0
 	let opp = 0
 	for (const [el, a, b] of game.scores) {
-		if (el > 1800) break
+		if (el >= 1800) break
 		me = a
 		opp = b
 	}
@@ -183,11 +183,11 @@ export function halftimeLine(game: Pick<LabGame, "scores" | "oppName" | "score">
 	let me = 0
 	let opp = 0
 	for (const [el, a, b] of game.scores) {
-		if (el > 1800) break
+		if (el >= 1800) break
 		me = a
 		opp = b
 	}
-	if (me === 0 && opp === 0 && game.scores.every((s) => s[0] > 1800)) return null
+	if (me === 0 && opp === 0 && game.scores.every((s) => s[0] >= 1800)) return null
 	if (me === opp) return `Tied ${me}–${opp} at the half`
 	return me > opp ? `Raiders led ${me}–${opp} at the half` : `${game.oppName} led ${opp}–${me} at the half`
 }
@@ -196,11 +196,13 @@ export type QuarterCell = { label: string; me: number; opp: number }
 
 /** Points each team scored in each quarter (overtime as one column), from the running score log. */
 export function quarterLine(game: Pick<LabGame, "scores" | "score">): QuarterCell[] {
+	// A score stamped exactly on a quarter line (a drive that ran out the clock, with the touchdown logged at 15:00 of the next quarter) belongs to
+	// the quarter that is starting, the same way the Lab's clock labels that play. Only the end of regulation counts the line itself.
 	const at = (t: number): [number, number] => {
 		let me = 0
 		let opp = 0
 		for (const [el, a, b] of game.scores) {
-			if (el > t) break
+			if (t === 3600 ? el > t : el >= t) break
 			me = a
 			opp = b
 		}

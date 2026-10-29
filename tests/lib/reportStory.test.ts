@@ -79,6 +79,13 @@ describe("scores by quarter", () => {
 		const ot = quarterLine({ scores, score: [12, 14] })
 		expect(ot[ot.length - 1]).toEqual({ label: "OT", me: 3, opp: 0 })
 	})
+	it("puts a score stamped exactly on a quarter line in the quarter that is starting", () => {
+		// Week 7: the touchdown that ended a drive begun late in the third is logged at 2700 (15:00 of the fourth), as the writer counted it.
+		const wk7: [number, number, number][] = [[512, 0, 6], [845, 3, 7], [1195, 3, 13], [1715, 3, 27], [1798, 6, 28], [2700, 12, 28], [2802, 18, 28], [3345, 21, 35]]
+		const q = quarterLine({ scores: wk7, score: [21, 35] })
+		expect(q.map((c) => c.me)).toEqual([3, 3, 0, 15])
+		expect(q.map((c) => c.opp)).toEqual([7, 21, 0, 7])
+	})
 	it("reads the score and the story at the half", () => {
 		expect(scoreAtHalf({ scores })).toEqual([3, 14])
 		expect(halftimeLine({ scores, oppName: "Rams", score: [9, 14] })).toBe("Rams led 14–3 at the half")
