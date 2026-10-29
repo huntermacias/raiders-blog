@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from game_box import game_box
+
 SOURCE_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.csv.gz"
 LICENSE = "nflverse play-by-play data, CC BY 4.0. Charts and edits by Raiders Rundown."
 
@@ -350,6 +352,7 @@ def build_game(g: pd.DataFrame, team: str) -> dict | None:
         "scores": score_log,
         "keyPlays": key_plays,
         "drives": drives,
+        "box": game_box(g, team, opp, team_score, opp_score),
     }
 
 

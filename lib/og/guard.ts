@@ -14,7 +14,7 @@
 /** Every `type` /api/og knows. A request for anything else can only produce the default picture, so it never needs to reach the function. */
 export const OG_TYPES = [
 	"post", "game", "pick", "rankings", "league", "nflleague", "live", "math", "lab", "scoreboard",
-	"scout", "last", "twins", "hub", "playoffs", "rooting", "matchup", "slate", "board", "flags", "player", "playerboard", "compare",
+	"scout", "last", "twins", "hub", "playoffs", "rooting", "matchup", "slate", "board", "flags", "player", "playerboard", "compare", "report",
 ] as const
 
 const OG_TYPE_SET: ReadonlySet<string> = new Set(OG_TYPES)
