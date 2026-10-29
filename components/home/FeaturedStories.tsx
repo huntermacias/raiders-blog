@@ -23,7 +23,7 @@ export default function FeaturedStories({ posts }: { posts: FeaturedPost[] }) {
 	const side = rest.slice(0, 2)
 
 	return (
-		<section aria-labelledby="top-stories" className="container pt-14">
+		<section id="stories" aria-labelledby="top-stories" className="container scroll-mt-32 pt-14">
 			<div className="mb-6 flex items-end justify-between gap-4">
 				<h2 id="top-stories" className="font-serif text-2xl font-bold tracking-tight sm:text-3xl">
 					Top stories

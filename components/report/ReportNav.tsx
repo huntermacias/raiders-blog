@@ -9,7 +9,7 @@ export type NavSection = { id: string; label: string }
  * drives, the players), the one on screen filled in, and a thin line along the bottom that fills as the recap is read. Plain anchors, so it
  * works without script; the script only lights up the current chip and draws the line.
  */
-export default function ReportNav({ sections, progressFor }: { sections: NavSection[]; progressFor: string }) {
+export default function ReportNav({ sections, progressFor, label = "Parts of this report", containerClass = "container max-w-6xl" }: { sections: NavSection[]; progressFor?: string; /** What the bar is for, read out to screen readers. */ label?: string; /** The width the chips line up with. */ containerClass?: string }) {
 	const [active, setActive] = React.useState(sections[0]?.id ?? "")
 	const [progress, setProgress] = React.useState(0)
 	const bar = React.useRef<HTMLDivElement>(null)
@@ -35,7 +35,7 @@ export default function ReportNav({ sections, progressFor }: { sections: NavSect
 	}, [sections])
 
 	React.useEffect(() => {
-		const el = document.getElementById(progressFor)
+		const el = progressFor ? document.getElementById(progressFor) : null
 		if (!el) return
 		let frame = 0
 		const update = () => {
@@ -68,7 +68,7 @@ export default function ReportNav({ sections, progressFor }: { sections: NavSect
 
 	return (
 		<div className="sticky top-16 z-30 border-b border-border/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75" data-testid="report-nav">
-			<nav aria-label="Parts of this report" className="container max-w-6xl">
+			<nav aria-label={label} className={containerClass}>
 				<div ref={bar} className="-mx-1 flex gap-1 overflow-x-auto px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					{sections.map((s) => (
 						<a
@@ -84,7 +84,7 @@ export default function ReportNav({ sections, progressFor }: { sections: NavSect
 				</div>
 			</nav>
 			<div className="h-0.5 w-full bg-transparent" aria-hidden>
-				<div className="h-full origin-left bg-primary transition-transform duration-150" style={{ transform: `scaleX(${progress})` }} />
+				{progressFor ? <div className="h-full origin-left bg-primary transition-transform duration-150" style={{ transform: `scaleX(${progress})` }} /> : null}
 			</div>
 		</div>
 	)

@@ -16,6 +16,7 @@ import { type BoardCardSpec, type SlateCardSpec, renderBoardCard, renderSlateCar
 import { type TwinsCardSpec, renderTwinsCard, twinsCardSize } from "./twinsCards"
 import { type PlayoffsCardSpec, playoffsCardSize, renderPlayoffsCard } from "./playoffsCard"
 import { type ReportCardSpec, renderReportCard, reportCardSize } from "./reportCards"
+import { type HomeCardSpec, renderHomeCard } from "./homeCard"
 import { type RootingCardSpec, renderRootingCard, rootingCardSize } from "./rootingCard"
 import { type LabCardSpec, renderLabCard } from "./labCard"
 import { type LeagueCardSpec, renderLeagueCard } from "./leagueCard"
@@ -78,6 +79,7 @@ export type CardSpec =
 	| TwinsCardSpec
 	| PlayoffsCardSpec
 	| ReportCardSpec
+	| HomeCardSpec
 	| RootingCardSpec
 	| MatchupCardSpec
 	| SlateCardSpec
@@ -503,6 +505,8 @@ export function renderCard(spec: CardSpec): ReactElement {
 			return renderTwinsCard(spec)
 		case "report":
 			return renderReportCard(spec)
+		case "home":
+			return renderHomeCard(spec)
 
 		case "playoffs":
 			return renderPlayoffsCard(spec)

@@ -2,6 +2,8 @@ import Link from "@/components/SiteLink"
 import { ArrowRight, Minus, TrendingDown, TrendingUp } from "lucide-react"
 
 import { TeamBadge } from "@/components/rooting/parts"
+import RootingShare from "@/components/rooting/RootingShare"
+import { DEFAULT_TEAM } from "@/lib/rooting/share"
 import type { LabCopy, RootingSnapshot } from "@/lib/homeLab"
 import type { LabTool } from "@/lib/lab/tools"
 import { updatedText } from "@/lib/lab/unitsKit"
@@ -47,7 +49,7 @@ function Meter({ value }: { value: number }) {
 	)
 }
 
-function OddsPanel({ s }: { s: RootingSnapshot }) {
+function OddsPanel({ s, stamp }: { s: RootingSnapshot; stamp: number }) {
 	const settled = s.status !== "live"
 	return (
 		<div className="relative flex flex-col overflow-hidden rounded-2xl border border-[#27272a] bg-[#09090b] p-5 text-zinc-50 shadow-xl md:p-7">
@@ -106,12 +108,26 @@ function OddsPanel({ s }: { s: RootingSnapshot }) {
 				</div>
 			</div>
 
-			<Link
-				href={s.href}
-				className="relative mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 px-5 py-2.5 text-sm font-bold text-[#09090b] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b] sm:w-auto sm:self-start"
-			>
-				{s.matters > 1 ? `See all ${s.matters} games that matter` : "Open the Rooting Guide"} <ArrowRight aria-hidden className="h-4 w-4" />
-			</Link>
+			<div className="relative mt-6 flex flex-wrap items-center gap-3">
+				<Link
+					href={s.href}
+					className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 px-5 py-2.5 text-sm font-bold text-[#09090b] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b] sm:w-auto"
+				>
+					{s.matters > 1 ? `See all ${s.matters} games that matter` : "Open the Rooting Guide"} <ArrowRight aria-hidden className="h-4 w-4" />
+				</Link>
+				<span className="[&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center [&_button]:gap-1.5 [&_button]:rounded-lg [&_button]:border [&_button]:border-white/30 [&_button]:bg-white/10 [&_button]:px-4 [&_button]:text-sm [&_button]:font-semibold [&_button]:text-white [&_button]:hover:bg-white/20">
+					<RootingShare
+						team={DEFAULT_TEAM}
+						nick={s.nick}
+						goal={s.goal}
+						goalLabel={s.goalPhrase}
+						week={s.week}
+						scope="week"
+						stamp={stamp}
+						text={`${s.nick}: ${s.pct} to ${s.goalPhrase}${s.best ? `, and the best game to root for is the ${s.best.forNick}.` : "."}`}
+					/>
+				</span>
+			</div>
 		</div>
 	)
 }
@@ -146,10 +162,10 @@ function ToolTile({ tool, badges }: BandTool) {
 	)
 }
 
-export default function LabBand({ copy, snapshot, tools }: { copy: LabCopy; snapshot: RootingSnapshot | null; tools: BandTool[] }) {
+export default function LabBand({ copy, snapshot, tools, stamp = 0 }: { copy: LabCopy; snapshot: RootingSnapshot | null; tools: BandTool[]; stamp?: number }) {
 	if (!snapshot && tools.length === 0) return null
 	return (
-		<section aria-labelledby="home-lab" className="container pt-14">
+		<section id="lab" aria-labelledby="home-lab" className="container scroll-mt-32 pt-14">
 			<div className="mb-6 flex items-end justify-between gap-4">
 				<div className="min-w-0">
 					<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">The Lab</p>
@@ -164,7 +180,7 @@ export default function LabBand({ copy, snapshot, tools }: { copy: LabCopy; snap
 			</div>
 
 			<div className={cn("grid gap-4", snapshot && "lg:grid-cols-[1.15fr_1fr]")}>
-				{snapshot && <OddsPanel s={snapshot} />}
+				{snapshot && <OddsPanel s={snapshot} stamp={stamp} />}
 				<div className={cn("flex flex-col gap-3", !snapshot && "sm:grid sm:grid-cols-3")}>
 					{tools.map((t) => (
 						<ToolTile key={t.tool.id} {...t} />

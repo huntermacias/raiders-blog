@@ -6,19 +6,60 @@ import { pickMarginError } from "@/lib/home"
 import { teamInfo } from "@/lib/nfl"
 import type { ScheduleRow } from "@/lib/schedule"
 import { kickoffText } from "@/components/schedule/ScheduleList"
+import { TeamLogo } from "@/components/lab/players/Media"
+import ReportShare from "@/components/report/ReportShare"
+import type { QuarterCell } from "@/lib/report/story"
 import Countdown from "./Countdown"
+
+/** What the page works out for a finished game beyond the schedule row: the real score from the Lab's play-by-play, the line score, and the share stamp. */
+export type FinalExtra = { score: [number, number]; quarters: QuarterCell[]; halftime: string | null; stamp: number }
 
 /**
  * The left side of the hub for the days after a game: the score, how the pick graded, where to read about it, and what is next.
  * Server component; only the little countdown to the next kickoff ticks in the browser.
  */
 
-function Side({ nick, score, wins, align = "left" }: { nick: string; score: number; wins: boolean; align?: "left" | "right" }) {
+function Side({ nick, code, score, wins }: { nick: string; code: string; score: number; wins: boolean }) {
 	return (
-		<div className={cn("min-w-0", !wins && "opacity-60", align === "right" && "text-right")}>
-			<p className="truncate text-[11px] font-semibold uppercase tracking-widest text-zinc-400">{nick}</p>
-			<p className="font-serif text-6xl font-bold leading-none tabular-nums sm:text-7xl md:text-8xl">{score}</p>
+		<div className={cn("flex min-w-0 items-center gap-2 sm:gap-4", !wins && "opacity-60")}>
+			<TeamLogo team={code} size={64} className="h-9 w-9 sm:h-16 sm:w-16" />
+			<div className="min-w-0">
+				<p className="truncate text-[11px] font-semibold uppercase tracking-widest text-zinc-400">{nick}</p>
+				<p className="font-sans text-5xl font-extrabold leading-none tabular-nums sm:text-7xl md:text-8xl">{score}</p>
+			</div>
 		</div>
+	)
+}
+
+function Quarters({ quarters, oppCode }: { quarters: QuarterCell[]; oppCode: string }) {
+	if (quarters.length === 0) return null
+	const rows = [
+		{ code: "LV", pick: (q: QuarterCell) => q.me },
+		{ code: oppCode, pick: (q: QuarterCell) => q.opp },
+	]
+	return (
+		<table className="mt-5 w-full max-w-xs border-separate border-spacing-y-0.5 text-center text-sm tabular-nums text-zinc-300" aria-label="Score by quarter">
+			<thead>
+				<tr className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+					<th scope="col" className="w-1/4 text-left font-semibold"><span className="sr-only">Team</span></th>
+					{quarters.map((q) => (
+						<th key={q.label} scope="col" className="font-semibold">{q.label}</th>
+					))}
+					<th scope="col" className="font-semibold text-zinc-400">T</th>
+				</tr>
+			</thead>
+			<tbody>
+				{rows.map((row) => (
+					<tr key={row.code}>
+						<th scope="row" className="text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">{row.code}</th>
+						{quarters.map((q) => (
+							<td key={q.label}>{row.pick(q)}</td>
+						))}
+						<td className="font-bold text-zinc-50">{quarters.reduce((a, q) => a + row.pick(q), 0)}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
 	)
 }
 
@@ -57,9 +98,11 @@ function PickGrade({ game }: { game: ScheduleRow }) {
 	)
 }
 
-export default function FinalPanel({ game, next, recap }: { game: ScheduleRow; next: ScheduleRow | null; recap: { slug: string; title: string } | null }) {
-	const o = game.outcome
-	if (!o) return null
+export default function FinalPanel({ game, next, recap, extra }: { game: ScheduleRow; next: ScheduleRow | null; recap: { slug: string; title: string } | null; extra?: FinalExtra | null }) {
+	const base = game.outcome
+	if (!base) return null
+	// The Lab's play-by-play score wins over the one typed into Studio, so a score entered the wrong way round never turns a loss into a win here.
+	const o = extra ? { raiders: extra.score[0], opponent: extra.score[1], result: (extra.score[0] > extra.score[1] ? "W" : extra.score[0] < extra.score[1] ? "L" : "T") as "W" | "L" | "T" } : base
 	const opp = teamInfo(game.opponent)
 	const win = o.result === "W"
 	const tie = o.result === "T"
@@ -86,11 +129,17 @@ export default function FinalPanel({ game, next, recap }: { game: ScheduleRow; n
 			<h2 className="sr-only">
 				Raiders {o.raiders}, {opp.nick} {o.opponent}, final
 			</h2>
-			<div className="mt-5 flex items-end gap-4 sm:gap-6" aria-hidden>
-				<Side nick="Raiders" score={o.raiders} wins={o.raiders >= o.opponent} />
-				<span className="pb-2 font-serif text-3xl text-zinc-600 sm:pb-3">&ndash;</span>
-				<Side nick={opp.nick} score={o.opponent} wins={o.opponent >= o.raiders} />
+			<div className="mt-5 flex items-end gap-2 sm:gap-6" aria-hidden>
+				<Side nick="Raiders" code="LV" score={o.raiders} wins={o.raiders >= o.opponent} />
+				<span className="pb-2 font-sans text-3xl text-zinc-600 sm:pb-3">&ndash;</span>
+				<Side nick={opp.nick} code={opp.abbr} score={o.opponent} wins={o.opponent >= o.raiders} />
 			</div>
+			{extra && extra.quarters.length > 0 && (
+				<div aria-hidden={false}>
+					<Quarters quarters={extra.quarters} oppCode={opp.abbr} />
+					{extra.halftime && <p className="mt-2 text-xs text-zinc-500">{extra.halftime}</p>}
+				</div>
+			)}
 
 			<p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-300">
 				<span>
@@ -124,6 +173,9 @@ export default function FinalPanel({ game, next, recap }: { game: ScheduleRow; n
 					>
 						See every pick graded <ArrowRight aria-hidden className="h-4 w-4" />
 					</Link>
+				)}
+				{recap && extra && (
+					<ReportShare slug={recap.slug} kind="final" stamp={extra.stamp} text={`Raiders ${o.raiders}, ${opp.nick} ${o.opponent}: ${recap.title}`} alt={`Week ${game.week} final score card`} label="Share the final" tone="dark" />
 				)}
 				<Link href="/lab/rooting-guide" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-zinc-50 hover:underline">
 					What it did to the playoff race <ArrowRight aria-hidden className="h-3.5 w-3.5" />
