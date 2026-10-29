@@ -113,6 +113,11 @@ jobs:
           retention-days: 30
 
       - name: Commit if changed
+        # This job runs twice a week, so it is never held back by the data-commit hold in the push script (that hold is for the jobs that run every
+        # few hours and will simply try again). Held, a Monday refresh was dropped because the injury, flag or Rooting Guide job had pushed an hour
+        # earlier, and the new game's replay page did not exist until the following week.
+        env:
+          DATA_COMMIT_MIN_MINUTES: "0"
         run: |
           git add -A data/lab public/lab/clips
           if git diff --cached --quiet; then

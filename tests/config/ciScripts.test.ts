@@ -169,3 +169,12 @@ describe("scripts/ci/push-data.sh hold", () => {
 		expect(remoteHead(origin)).toBe(head)
 	})
 })
+
+describe("the weekly Lab refresh", () => {
+	it("is never held back, because it only runs twice a week and a dropped commit means no page for the new game", () => {
+		const wf = readFileSync(resolve(root, ".github/workflows/lab-data.yml"), "utf8")
+		const step = wf.slice(wf.indexOf("name: Commit if changed"))
+		expect(step).toMatch(/DATA_COMMIT_MIN_MINUTES: "0"/)
+		expect(step).toMatch(/bash scripts\/ci\/push-data\.sh data\/lab public\/lab\/clips/)
+	})
+})
