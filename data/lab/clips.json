@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-10-19T16:46:33.621Z",
+ "generatedAt": "2026-11-02T19:59:23.651Z",
  "games": {
   "1": {
    "week": 1,
@@ -114,6 +114,44 @@
     "poster": 58786,
     "vertical": 225205,
     "square": 154238
+   }
+  },
+  "7": {
+   "week": 7,
+   "hash": "eabfdcea7840ce14",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-7-landscape.mp4",
+    "gif": "/lab/clips/week-7.gif",
+    "poster": "/lab/clips/week-7-poster.jpg",
+    "vertical": "/lab/clips/week-7-vertical.mp4",
+    "square": "/lab/clips/week-7-square.mp4"
+   },
+   "bytes": {
+    "landscape": 217242,
+    "gif": 245936,
+    "poster": 56992,
+    "vertical": 236159,
+    "square": 170572
+   }
+  },
+  "8": {
+   "week": 8,
+   "hash": "1180a1fbee23780f",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-8-landscape.mp4",
+    "gif": "/lab/clips/week-8.gif",
+    "poster": "/lab/clips/week-8-poster.jpg",
+    "vertical": "/lab/clips/week-8-vertical.mp4",
+    "square": "/lab/clips/week-8-square.mp4"
+   },
+   "bytes": {
+    "landscape": 222434,
+    "gif": 292003,
+    "poster": 56148,
+    "vertical": 247059,
+    "square": 176356
    }
   }
  }
