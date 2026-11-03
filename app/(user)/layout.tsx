@@ -1,8 +1,6 @@
 import { Inter, Fraunces } from "next/font/google"
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import UtmCapture from "../../components/UtmCapture"
-import GoogleAnalytics from "@bradgarropy/next-google-analytics"
+import TrustedAnalytics from "../../components/TrustedAnalytics"
 
 import Header from "../../components/Header"
 import Footer from "../../components/Footer"
@@ -98,17 +96,10 @@ export default function RootLayout({
             <Footer />
           </div>
         </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
         <UtmCapture />
-        {/* Moved here from the homepage's page.tsx: this component (per its
-            own docs) is meant to be mounted once at the app root so it
-            tracks every route. Mounted only on "/" it was firing solely on
-            the homepage -- meaning GA4 was blind to every game report,
-            post, and the /games and /community pages, which is most of
-            this site's actual content and where real reader behavior would
-            show up. */}
-        <GoogleAnalytics measurementId="G-P1HE62KWXG" />
+        {/* Vercel Web Analytics, Speed Insights and GA4 (mounted once at the root so every route is tracked, not only the homepage). They skip
+            browsers that announce themselves as automated; see lib/likelyHuman.ts. */}
+        <TrustedAnalytics measurementId="G-P1HE62KWXG" />
       </body>
     </html>
   )

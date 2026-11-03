@@ -4,6 +4,8 @@
 # that group repeats every rule of the general one except the comparison rule it is exempt from.
 # Meta's crawlers do not always follow this file (its own documentation says Meta-ExternalFetcher and some FacebookExternalHit checks may bypass
 # it), so the middleware refuses the non-preview ones as well; see lib/og/guard.ts.
+# SEO-tool and data-broker crawlers send no readers and are refused the whole site. Many ignore this file, which is why lib/og/guard.ts and the
+# Vercel firewall refuse them too.
 
 User-agent: ClaudeBot
 Disallow: /
@@ -34,6 +36,107 @@ Disallow: /
 
 User-agent: PerplexityBot
 Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Timpibot
+Disallow: /
+
+User-agent: FriendlyCrawler
+Disallow: /
+
+User-agent: Webzio-Extended
+Disallow: /
+
+User-agent: Brightbot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: Barkrowler
+Disallow: /
+
+User-agent: serpstatbot
+Disallow: /
+
+User-agent: SeekportBot
+Disallow: /
+
+User-agent: ZoominfoBot
+Disallow: /
+
+User-agent: MauiBot
+Disallow: /
+
+User-agent: AspiegelBot
+Disallow: /
+
+User-agent: Exabot
+Disallow: /
+
+User-agent: ExaBot
+Disallow: /
+
+# AI assistants' search crawlers can cite posts and rankings (that is traffic), but they walk the whole Player Lab, thousands of generated pages
+# a server renders on demand. They get the writing and the rankings, not the lab. Remove the two Disallow lines to let them in.
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /lab/
+Disallow: /studio
+Disallow: /api/
+
+# Bing is the one mainstream crawler that honours Crawl-delay. Google ignores it (its rate is set in Search Console).
+User-agent: bingbot
+Crawl-delay: 5
+Allow: /
+Disallow: /studio
+Disallow: /lab/players/compare?
+Disallow: /lab/players/compare/?
+Disallow: /api/live/
+Disallow: /api/league/
+Disallow: /api/auth/
 
 User-agent: Twitterbot
 User-agent: facebookexternalhit

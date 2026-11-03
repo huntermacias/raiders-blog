@@ -112,3 +112,29 @@ export function movementWords(change: number | null): string {
 export function noLabel(rank: number): string {
 	return `No. ${rank}`
 }
+
+/** The number in a slug like "week-9-power-rankings", or null. */
+export function slugWeek(slug: string | null | undefined): number | null {
+	const m = (slug ?? "").match(/^week-(\d{1,2})-/)
+	if (!m) return null
+	const n = parseInt(m[1], 10)
+	return n >= 1 && n <= 22 ? n : null
+}
+
+/**
+ * Which Power Rankings document a power-rankings story is about. Stories and documents number weeks differently: a story titled "After Week 8" is
+ * posted at /post/week-9-power-rankings and its document is week 9, while the older Week 8 document holds last week's board. Matching on the title's
+ * week showed last week's board under this week's story. The order of trust:
+ *   1. the document that links to this story (the "post" field in Studio),
+ *   2. the document numbered like the story's slug,
+ *   3. the document numbered like the story's week (an explicit Week field, or the one in the title).
+ * Returns the week of the document to show, or null when none of them exists.
+ */
+export function rankingsWeekForPost(
+	post: { slug?: string | null; week?: number | null },
+	docs: { week: number; teams?: unknown[] | null; postSlug?: string | null }[]
+): number | null {
+	const has = (w: number | null | undefined) => (w != null && docs.some((d) => d.week === w && (d.teams?.length ?? 0) > 0) ? w : null)
+	const linked = docs.find((d) => d.postSlug && d.postSlug === post.slug && (d.teams?.length ?? 0) > 0)
+	return linked?.week ?? has(slugWeek(post.slug)) ?? has(post.week)
+}

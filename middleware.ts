@@ -1,14 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import { HUMAN_COOKIE, checkCompare, checkOg, type Verdict } from "./lib/og/guard"
+import { HUMAN_COOKIE, checkCompare, checkLab, checkOg, type Verdict } from "./lib/og/guard"
 import { proofPage } from "./lib/og/proofPage"
 
-// Runs on the Edge in front of two routes only (see lib/og/guard.ts): the share-card renderer and the player comparison page. Every other
-// request on the site skips it. It reads the user agent and one cookie; it never touches the data files.
+// Runs on the Edge in front of the share-card renderer and the Player Lab (see lib/og/guard.ts). Every other request on the site skips it.
+// It reads the user agent, one request header and one cookie; it never touches the data files.
 export function middleware(req: NextRequest) {
 	const { pathname, search } = req.nextUrl
 	const ua = req.headers.get("user-agent")
-	const verdict: Verdict = pathname === "/api/og" ? checkOg(search, ua) : checkCompare(search, ua, req.cookies.get(HUMAN_COOKIE)?.value)
+	const verdict: Verdict =
+		pathname === "/api/og"
+			? checkOg(search, ua)
+			: (() => {
+					// Anything under /lab must first look like a reader, a search engine or a link preview; the comparison tool is stricter still.
+					const lab = checkLab(ua, req.headers.get("sec-fetch-mode"))
+					if (lab.action !== "allow") return lab
+					return pathname === "/lab/players/compare" ? checkCompare(search, ua, req.cookies.get(HUMAN_COOKIE)?.value) : lab
+				})()
 
 	if (verdict.action === "deny") {
 		return new NextResponse(verdict.status === 414 ? "Request too long" : "Automated access to this page is not allowed. Use the public site.", {
@@ -38,4 +46,4 @@ export function middleware(req: NextRequest) {
 	return NextResponse.next()
 }
 
-export const config = { matcher: ["/api/og", "/lab/players/compare"] }
+export const config = { matcher: ["/api/og", "/lab", "/lab/:path*"] }

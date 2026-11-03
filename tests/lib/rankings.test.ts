@@ -155,3 +155,39 @@ describe("raidersRow / movementWords / noLabel", () => {
 		expect(noLabel(12)).toBe("No. 12")
 	})
 })
+
+import { rankingsWeekForPost, slugWeek } from "../../lib/rankings"
+
+describe("which rankings a power-rankings story shows", () => {
+	const t = [{ team: "Chicago Bears" }]
+	const docs = [
+		{ week: 8, teams: t, postSlug: null },
+		{ week: 9, teams: t, postSlug: null },
+	]
+
+	it("reads the number out of a slug", () => {
+		expect(slugWeek("week-9-power-rankings")).toBe(9)
+		expect(slugWeek("raiders-offense-week-9")).toBeNull()
+		expect(slugWeek("week-99-power-rankings")).toBeNull()
+		expect(slugWeek(undefined)).toBeNull()
+	})
+
+	it("uses the slug's week when the title says one week less (After Week 8 at /week-9-power-rankings)", () => {
+		expect(rankingsWeekForPost({ slug: "week-9-power-rankings", week: 8 }, docs)).toBe(9)
+	})
+
+	it("prefers the document that links to the story", () => {
+		const linked = [{ week: 8, teams: t, postSlug: "week-9-power-rankings" }, { week: 9, teams: t, postSlug: null }]
+		expect(rankingsWeekForPost({ slug: "week-9-power-rankings", week: 8 }, linked)).toBe(8)
+	})
+
+	it("falls back to the story's week when the slug has no number or no such document", () => {
+		expect(rankingsWeekForPost({ slug: "the-big-board", week: 8 }, docs)).toBe(8)
+		expect(rankingsWeekForPost({ slug: "week-12-power-rankings", week: 8 }, docs)).toBe(8)
+	})
+
+	it("returns null when nothing matches, and ignores documents with no teams", () => {
+		expect(rankingsWeekForPost({ slug: "x", week: 3 }, docs)).toBeNull()
+		expect(rankingsWeekForPost({ slug: "week-9-power-rankings", week: null }, [{ week: 9, teams: [], postSlug: null }])).toBeNull()
+	})
+})

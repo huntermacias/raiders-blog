@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
 import { client } from "../../lib/sanity.client"
+import { predictionLimiter } from "../../lib/writeLimiters"
+import { guardWrite, validDocId } from "../../lib/apiGuard"
+
+export const config = { api: { bodyParser: { sizeLimit: "8kb" } } }
 
 type Body = { _id?: string; choice?: "away" | "home" }
 
@@ -11,15 +15,13 @@ type Body = { _id?: string; choice?: "away" | "home" }
  * arbitrary documents or after the result is known.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	if (req.method !== "POST") {
-		return res.status(405).json({ message: "Method not allowed" })
-	}
+	const guarded = guardWrite(req, res, { limiter: predictionLimiter })
+	if (!guarded) return
 
 	try {
-		const body: Body = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {}
-		const { _id, choice } = body
+		const { _id, choice } = guarded as Body
 
-		if (!_id || typeof _id !== "string" || (choice !== "away" && choice !== "home")) {
+		if (!validDocId(_id) || (choice !== "away" && choice !== "home")) {
 			return res.status(400).json({ message: "Invalid request" })
 		}
 

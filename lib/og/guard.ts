@@ -97,3 +97,37 @@ export function checkCompare(search: string, userAgent: string | null | undefine
 	if (humanCookieOk(humanCookie, now)) return { action: "allow" }
 	return { action: "proof" }
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+// /lab/*: the Player Lab is thousands of near-identical pages (every player, flag, matchup), which is exactly what a crawler walks end to end.
+// Search engines and link previews are welcome; what is refused, at the edge before any function runs, is traffic that announces itself as a
+// script or an unattended browser, and traffic that claims to be a desktop browser but cannot be one.
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+// Browsers driven by a program say so in their default user agent, as do the HTTP libraries scripts are written with.
+const HEADLESS_OR_SCRIPT =
+	/HeadlessChrome|PhantomJS|Playwright|Puppeteer|Selenium|WebDriver|Nightmare|node-fetch|node-superfetch|axios\/|undici|got \(|Go-http-client|Java\/|Apache-HttpClient|Jakarta|okhttp-scrape|HTTrack|Wget|libcurl|Faraday|Ruby|PycURL|urllib3|scrapy|crawler4j|Colly|Katana|nuclei|zgrab|masscan|Nmap|sqlmap|Nikto|WPScan/i
+
+// Programs that say they are a crawler or a preview, so they are judged by robots.txt and the rate limit, not by the browser check below.
+const SELF_DECLARED_BOT =
+	/bot\b|bot\/|bots?[ ;)]|crawl|spider|slurp|preview|Google-|GoogleOther|Storebot|Lighthouse|facebookexternalhit|Facebot|embedly|Applebot|Bing|DuckDuck|Yandex|Baidu|Sogou|ia_archiver|Feedly|Flipboard|Inoreader|NewsBlur|Pingdom|UptimeRobot|Vercel|Mastodon|Slack|Discord|Telegram|WhatsApp|LinkedIn|Twitter|Pinterest|reddit/i
+
+// Chromium (since 2019) and Firefox (since 2021) put `Sec-Fetch-Mode` on every request. A tool that borrows their user agent string almost never
+// copies it. Safari and iOS Chrome (WebKit) are not checked: older versions did not send it.
+const DESKTOP_ENGINE = /(?:^|[\s(])(?:Chrome|Firefox)\/\d+/
+
+/** Does this look like a program pretending to be a Chrome or Firefox browser? */
+export function isBrowserImpostor(userAgent: string | null | undefined, secFetchMode: string | null | undefined): boolean {
+	const ua = userAgent ?? ""
+	if (!DESKTOP_ENGINE.test(ua) || /CriOS|FxiOS/.test(ua)) return false
+	if (SELF_DECLARED_BOT.test(ua)) return false
+	return !secFetchMode
+}
+
+/** Refuse an unattended browser or script, or a program posing as a browser. Everything else (readers, search engines, previews) is allowed. */
+export function checkLab(userAgent: string | null | undefined, secFetchMode: string | null | undefined): Verdict {
+	if (isAutomatedClient(userAgent)) return { action: "deny", status: 403, reason: "automated client" }
+	if (HEADLESS_OR_SCRIPT.test(userAgent ?? "")) return { action: "deny", status: 403, reason: "scripted client" }
+	if (isBrowserImpostor(userAgent, secFetchMode)) return { action: "deny", status: 403, reason: "not a browser" }
+	return { action: "allow" }
+}

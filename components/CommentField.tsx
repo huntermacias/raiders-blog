@@ -14,6 +14,7 @@ interface IFormInput {
 	name: string
 	email: string
 	comment: string
+	website?: string
 }
 
 type Props = {
@@ -36,6 +37,7 @@ function CommentField({ postId }: Props) {
 			// silently shows the success state.
 			const res = await fetch("/api/createComment", {
 				method: "POST",
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
 			})
 
@@ -75,6 +77,15 @@ function CommentField({ postId }: Props) {
 						</div>
 
 						<input {...register("_id")} type="hidden" value={postId} />
+						{/* Honeypot: off-screen and skipped by keyboards and screen readers; only a bot that fills every input touches it. */}
+						<input
+							{...register("website")}
+							type="text"
+							tabIndex={-1}
+							autoComplete="off"
+							aria-hidden="true"
+							className="absolute left-[-9999px] h-0 w-0 opacity-0"
+						/>
 
 						<label className="flex flex-col gap-1.5">
 							<span className="text-sm font-medium">Name</span>

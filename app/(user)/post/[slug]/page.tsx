@@ -16,7 +16,7 @@ import type { PickKey } from "../../../../lib/predictions"
 import { readingMinutes } from "../../../../lib/home"
 import { headings } from "../../../../lib/report/story"
 import { SEASON } from "../../../../lib/predictions"
-import { buildBoards, type RankingsDoc } from "../../../../lib/rankings"
+import { buildBoards, rankingsWeekForPost, type RankingsDoc } from "../../../../lib/rankings"
 import { morePicks, seriesNeighbors, withTypes, type PostRow } from "../../../../lib/postSeries"
 import { storyTypeInfo, storyTypeOf, storyWeek } from "../../../../lib/storyType"
 import AtAGlance from "../../../../components/post/AtAGlance"
@@ -177,15 +177,19 @@ async function Post(props: Props) {
 					{ id: post._id, season: SEASON, week: week ?? -1 }
 				)) ?? null)
 			: null
+    // The rankings a power-rankings story is about: found by link, then by the number in its slug, then by its week (see rankingsWeekForPost),
+    // so "After Week 8" at /post/week-9-power-rankings shows the Week 9 document, not last week's board. The card is labelled with the
+    // story's own week.
     const boardRows =
-		type === "power-rankings" && week
+		type === "power-rankings"
 			? await (async () => {
-					const docs: RankingsDoc[] = (await isrFetch(
-						groq`*[_type=='powerRankings' && season == $season && week <= $week && !(_id in path('drafts.**'))] | order(_updatedAt asc){ _id, season, week, headline, teams[]{ _key, team, note } }`,
-						{ season: SEASON, week }
+					const docs: (RankingsDoc & { postSlug?: string | null })[] = (await isrFetch(
+						groq`*[_type=='powerRankings' && season == $season && !(_id in path('drafts.**'))] | order(_updatedAt asc){ _id, season, week, headline, "postSlug": post->slug.current, teams[]{ _key, team, note } }`,
+						{ season: SEASON }
 					)) ?? []
-					const boards = buildBoards(docs)
-					return boards.find((b) => b.week === week)?.rows ?? []
+					const boardWeek = rankingsWeekForPost({ slug: post.slug.current, week }, docs)
+					if (boardWeek == null) return []
+					return buildBoards(docs.filter((d) => d.week <= boardWeek)).find((b) => b.week === boardWeek)?.rows ?? []
 				})()
 			: []
 
@@ -276,7 +280,7 @@ async function Post(props: Props) {
 					<div id="story-body" className={hasRail ? "order-last min-w-0 lg:order-none lg:col-start-1 lg:row-start-1" : "min-w-0"}>
 						<AtAGlance facts={post.facts} />
 						{type === "preview" && <GameCard game={game} />}
-						{type === "power-rankings" && week ? <RankingsStrip rows={boardRows} week={week} /> : null}
+						{type === "power-rankings" && boardRows.length ? <RankingsStrip rows={boardRows} week={week ?? undefined} /> : null}
 						{type === "power-rankings" && game?.report?.slug ? (
 							<p className="-mt-6 mb-10 text-sm">
 								<a href={`/games/${game.report.slug}`} className="font-semibold underline-offset-4 hover:underline">

@@ -107,7 +107,7 @@ export function storyTypeOf(story: TypedStory | null | undefined): StoryTypeId {
 
 /**
  * The week a story is about, read from its title ("Week 8 Preview", "Power Rankings After Week 8"). Null when there isn't one.
- * A power ranking is "after Week 8", so it belongs to week 8 (its slug may say 9, because it is posted ahead of Week 9).
+ * A power ranking is "after Week 8", so it belongs to week 8 (its slug may say 9: the slug number and the Power Rankings document are numbered one ahead, see rankingsWeekForPost).
  */
 export function storyWeek(story: { title?: string | null } | null | undefined): number | null {
 	const m = (story?.title ?? "").match(/\bweek\s+(\d{1,2})\b/i)

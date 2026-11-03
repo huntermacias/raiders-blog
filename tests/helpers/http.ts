@@ -92,3 +92,10 @@ export function fakePatch(result: Record<string, unknown>) {
 	chain.commit = vi.fn(async () => result)
 	return { chain, calls }
 }
+
+/** The headers a browser on this site's own page sends with a fetch. */
+export const SITE_HEADERS = { origin: "https://www.raidersrundown.com", host: "www.raidersrundown.com" }
+
+/** A POST that looks like it came from this site's page. */
+export const sitePost = (body: unknown, extra: ReqInit = {}) =>
+	mockReq({ method: "POST", headers: SITE_HEADERS, body: typeof body === "string" ? body : JSON.stringify(body), ...extra })

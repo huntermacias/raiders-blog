@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
 import { sanitizeUtm } from "../../lib/utm"
+import { clientIp } from "../../lib/rateLimit"
+import { subscribeLimiter } from "../../lib/writeLimiters"
+
+export const config = { api: { bodyParser: { sizeLimit: "8kb" } } }
 
 // Newsletter signup. Emails go straight to Buttondown (https://buttondown.com)
 // and are NOT stored in Sanity: this project's dataset is public, so anything
@@ -36,6 +40,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		return res.status(405).json({ message: "Method not allowed" })
 	}
 	if (!sameSite(req)) return res.status(403).json({ message: "Not allowed" })
+	const hit = subscribeLimiter.hit(clientIp(req))
+	if (!hit.ok) {
+		res.setHeader("Retry-After", String(hit.retryAfter))
+		return res.status(429).json({ message: "Too many attempts. Try again in a few minutes." })
+	}
 
 	const key = process.env.BUTTONDOWN_API_KEY
 	if (!key) return res.status(503).json({ message: "Signups aren't open yet." })
