@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
-import { HUMAN_COOKIE, OG_TYPES, checkCompare, checkOg, humanCookieOk, humanCookieValue, isAutomatedClient, isLinkPreviewBot } from "../../lib/og/guard"
+import { HUMAN_COOKIE, OG_TYPES, checkCompare, checkLab, checkOg, humanCookieOk, humanCookieValue, isAutomatedClient, isBrowserImpostor, isLinkPreviewBot } from "../../lib/og/guard"
 
 const root = resolve(__dirname, "../..")
 const read = (p: string) => readFileSync(resolve(root, p), "utf8")
@@ -127,9 +127,9 @@ describe("checkCompare", () => {
 })
 
 describe("what ships alongside the guard", () => {
-	it("runs the middleware on these two routes only", () => {
+	it("runs the middleware on the card route and the Player Lab only", () => {
 		const src = read("middleware.ts")
-		expect(src).toMatch(/matcher:\s*\["\/api\/og",\s*"\/lab\/players\/compare"\]/)
+		expect(src).toMatch(/matcher:\s*\["\/api\/og",\s*"\/lab",\s*"\/lab\/:path\*"\]/)
 	})
 
 	it("robots.txt keeps link-preview bots, and the bare comparison page, open", () => {
@@ -166,3 +166,56 @@ describe("what ships alongside the guard", () => {
 		})
 	})
 })
+
+describe("checkLab / isBrowserImpostor", () => {
+	const CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+	const IOS_CHROME = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.153 Mobile/15E148 Safari/604.1"
+
+	it("calls a Chrome or Firefox user agent without Sec-Fetch-Mode an impostor, and nothing else", () => {
+		expect(isBrowserImpostor(CHROME, null)).toBe(true)
+		expect(isBrowserImpostor(CHROME, "navigate")).toBe(false)
+		expect(isBrowserImpostor(BROWSER, null)).toBe(false) // Safari: older versions never send it
+		expect(isBrowserImpostor(IOS_CHROME, null)).toBe(false) // WebKit under the hood
+		expect(isBrowserImpostor("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/126.0.0.0", null)).toBe(false)
+		expect(isBrowserImpostor("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2) Chrome/126.0.0.0", null)).toBe(false)
+	})
+
+	it("allows readers, search engines and previews, and refuses scripts and unattended browsers", () => {
+		expect(checkLab(CHROME, "navigate").action).toBe("allow")
+		expect(checkLab(BROWSER, null).action).toBe("allow")
+		expect(checkLab("Twitterbot/1.0", null).action).toBe("allow")
+		expect(checkLab("Mozilla/5.0 (compatible; bingbot/2.0)", null).action).toBe("allow")
+		expect(checkLab(CHROME.replace("Chrome/", "HeadlessChrome/"), "navigate").action).toBe("deny")
+		expect(checkLab("Playwright/1.45", "navigate").action).toBe("deny")
+		expect(checkLab(CHROME, undefined).action).toBe("deny")
+		expect(checkLab("", "navigate").action).toBe("deny")
+		expect(checkLab("curl/8.4", null).action).toBe("deny")
+	})
+})
+
+describe("robots.txt: SEO crawlers and AI search", () => {
+	const groups = () => read("public/robots.txt").split(/\n\s*\n/)
+
+	it("turns away SEO-tool and data-broker crawlers from the whole site", () => {
+		for (const bot of ["SemrushBot", "AhrefsBot", "MJ12bot", "DotBot", "PetalBot", "DataForSeoBot", "Exabot", "Google-Extended", "anthropic-ai"]) {
+			const g = groups().find((x) => new RegExp(`^User-agent: ${bot}$`, "m").test(x))
+			expect(g, bot).toBeTruthy()
+			expect(g).toMatch(/^Disallow: \/$/m)
+		}
+	})
+
+	it("lets AI search crawlers read the writing but not the Player Lab", () => {
+		const g = groups().find((x) => /^User-agent: OAI-SearchBot$/m.test(x))!
+		expect(g).toContain("User-agent: Claude-SearchBot")
+		expect(g).toContain("Disallow: /lab/")
+		expect(g).toMatch(/^Allow: \/$/m)
+	})
+
+	it("asks Bing to slow down and repeats the general rules for it", () => {
+		const g = groups().find((x) => /^User-agent: bingbot$/m.test(x))!
+		expect(g).toContain("Crawl-delay: 5")
+		expect(g).toContain("Disallow: /studio")
+		expect(g).toContain("Disallow: /lab/players/compare?")
+	})
+})
+

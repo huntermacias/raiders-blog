@@ -33,15 +33,15 @@ function Row({ row }: { row: RankRow }) {
  * The top of that week's power rankings on a power-rankings story, with where the Raiders landed. It reads the Power Rankings documents
  * the Rankings page uses, so the numbers are the same everywhere.
  */
-export default function RankingsStrip({ rows, week }: { rows: RankRow[]; week: number }) {
+export default function RankingsStrip({ rows, week }: { rows: RankRow[]; week?: number }) {
 	if (!rows?.length) return null
 	const top = rows.slice(0, 5)
 	const mine = rows.find((r) => r.team === RAIDERS)
 	const showMine = mine && mine.rank > 5
 	return (
-		<section aria-label={`Power rankings after week ${week}`} className="mb-10 overflow-hidden rounded-2xl border border-border/70 bg-card" data-testid="rankings-strip">
+		<section aria-label={week ? `Power rankings after week ${week}` : "Power rankings"} className="mb-10 overflow-hidden rounded-2xl border border-border/70 bg-card" data-testid="rankings-strip">
 			<h2 className="flex items-center justify-between border-b border-border/70 bg-muted/50 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-				<span>The top five · after Week {week}</span>
+				<span>{week ? `The top five · after Week ${week}` : "The top five"}</span>
 				<Link href="/rankings" className="inline-flex items-center gap-1 normal-case tracking-normal hover:text-foreground">
 					All 32 <ArrowRight aria-hidden className="h-3.5 w-3.5" />
 				</Link>

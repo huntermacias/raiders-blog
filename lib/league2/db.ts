@@ -37,6 +37,16 @@ export function dbFromPool(pool: Pool): Db {
 // On globalThis so separately bundled routes share one pool.
 const poolHolder = globalThis as unknown as { __leaguePool?: Pool | null }
 
+/**
+ * Spell the SSL mode out. pg 8 reads `sslmode=prefer`, `require` and `verify-ca` as `verify-full` and prints a warning on every new connection
+ * (hundreds of lines a day in the Vercel logs) that the next major version will change what they mean. Writing `verify-full` keeps exactly
+ * today's behaviour (encrypted, certificate and host name checked) and silences the warning. Other parameters and local, unencrypted URLs
+ * (`sslmode=disable`, or none) are left alone.
+ */
+export function normalizeSslMode(url: string): string {
+	return url.replace(/([?&]sslmode=)(prefer|require|verify-ca)(?=&|$|#)/i, "$1verify-full")
+}
+
 /** The connection string comes from the environment; it should be the pooled one on serverless. */
 export function leagueDatabaseUrl(): string | null {
 	return process.env.LEAGUE_DATABASE_URL || process.env.DATABASE_URL || null
@@ -46,6 +56,6 @@ export function leagueDatabaseUrl(): string | null {
 export function sharedPool(): Pool | null {
 	const url = leagueDatabaseUrl()
 	if (!url) return null
-	if (!poolHolder.__leaguePool) poolHolder.__leaguePool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 8_000 })
+	if (!poolHolder.__leaguePool) poolHolder.__leaguePool = new Pool({ connectionString: normalizeSslMode(url), max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 8_000 })
 	return poolHolder.__leaguePool as Pool
 }

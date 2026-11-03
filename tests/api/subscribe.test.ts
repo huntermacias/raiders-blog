@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import handler from "../../pages/api/subscribe"
+import { subscribeLimiter } from "../../lib/writeLimiters"
 import { mockReq, mockRes } from "../helpers/http"
 
 const KEY = "test-key"
@@ -9,6 +10,7 @@ const okResponse = () => new Response("{}", { status: 201 })
 let fetchMock: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
+	subscribeLimiter.reset()
 	process.env.BUTTONDOWN_API_KEY = KEY
 	fetchMock = vi.fn(async () => okResponse())
 	vi.stubGlobal("fetch", fetchMock)
@@ -255,5 +257,17 @@ describe("POST /api/subscribe: Buttondown's answer", () => {
 		await handler(post({ email: "fan@example.com" }), res)
 		expect(res.statusCode).toBe(500)
 		expect(JSON.stringify(res.body)).not.toContain("network down")
+	})
+})
+
+describe("POST /api/subscribe: rate limit", () => {
+	it("answers 429 with Retry-After once one address has tried too often", async () => {
+		let last = mockRes()
+		for (let i = 0; i < 7; i++) {
+			last = mockRes()
+			await handler(post({ email: `fan${i}@example.com` }, {}, { remoteAddress: "203.0.113.9" }), last)
+		}
+		expect(last.statusCode).toBe(429)
+		expect(Number(last.headers["Retry-After"])).toBeGreaterThan(0)
 	})
 })

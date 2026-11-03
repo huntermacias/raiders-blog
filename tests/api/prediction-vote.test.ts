@@ -4,7 +4,8 @@ vi.mock("../../lib/sanity.client", () => ({ client: { fetch: vi.fn(), patch: vi.
 
 import { client } from "../../lib/sanity.client"
 import handler from "../../pages/api/prediction-vote"
-import { fakePatch, mockReq, mockRes } from "../helpers/http"
+import { predictionLimiter } from "../../lib/writeLimiters"
+import { SITE_HEADERS, fakePatch, mockReq, mockRes } from "../helpers/http"
 
 const fetchDoc = client.fetch as unknown as ReturnType<typeof vi.fn>
 const patch = client.patch as unknown as ReturnType<typeof vi.fn>
@@ -12,9 +13,10 @@ const patch = client.patch as unknown as ReturnType<typeof vi.fn>
 const FUTURE = new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString()
 const PAST = new Date(Date.now() - 3600 * 1000).toISOString()
 
-const vote = (body: unknown) => mockReq({ method: "POST", body })
+const vote = (body: unknown) => mockReq({ method: "POST", headers: SITE_HEADERS, body })
 
 beforeEach(() => {
+	predictionLimiter.reset()
 	fetchDoc.mockReset()
 	patch.mockReset()
 	vi.spyOn(console, "log").mockImplementation(() => {})
@@ -116,5 +118,24 @@ describe("POST /api/prediction-vote", () => {
 		await handler(vote({ _id: "abc", choice: "home" }), res)
 		expect(res.statusCode).toBe(500)
 		expect(JSON.stringify(res.body)).not.toContain("token")
+	})
+})
+
+describe("POST /api/prediction-vote: who may call it", () => {
+	it("refuses a request that didn't come from this site's page", async () => {
+		const res = mockRes()
+		await handler(mockReq({ method: "POST", body: { _id: "abc", choice: "home" } }), res)
+		expect(res.statusCode).toBe(403)
+		expect(fetchDoc).not.toHaveBeenCalled()
+	})
+
+	it("slows one address down after 40 picks in ten minutes", async () => {
+		fetchDoc.mockResolvedValue(null)
+		let last = mockRes()
+		for (let i = 0; i < 41; i++) {
+			last = mockRes()
+			await handler(vote({ _id: "abc", choice: "home" }), last)
+		}
+		expect(last.statusCode).toBe(429)
 	})
 })

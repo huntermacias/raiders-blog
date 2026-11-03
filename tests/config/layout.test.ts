@@ -12,15 +12,19 @@ describe("root layout", () => {
 		expect(layout.indexOf("<UtmCapture />")).toBeGreaterThan(layout.indexOf("<body"))
 	})
 
-	it("still mounts both analytics components", () => {
-		expect(layout).toContain("<Analytics />")
-		expect(layout).toContain("<GoogleAnalytics")
+	// Web Analytics, GA4 and Speed Insights are mounted once, in the body, through one wrapper that skips browsers that announce they are automated.
+	it("mounts the analytics wrapper once, in the body", () => {
+		expect(layout).toContain('import TrustedAnalytics from "../../components/TrustedAnalytics"')
+		expect(layout.match(/<TrustedAnalytics /g)).toHaveLength(1)
+		expect(layout.indexOf("<TrustedAnalytics")).toBeGreaterThan(layout.indexOf("<body"))
+		expect(layout).toContain('measurementId="G-P1HE62KWXG"')
 	})
 
-	// Real-user speed data (Core Web Vitals) in Vercel's Speed Insights tab. It must be mounted once, in the body.
-	it("mounts Speed Insights once, in the body", () => {
-		expect(layout).toContain('import { SpeedInsights } from "@vercel/speed-insights/next"')
-		expect(layout.match(/<SpeedInsights \/>/g)).toHaveLength(1)
-		expect(layout.indexOf("<SpeedInsights />")).toBeGreaterThan(layout.indexOf("<body"))
+	it("the wrapper mounts Web Analytics, Speed Insights and GA4, each once", () => {
+		const wrapper = readFileSync(resolve(__dirname, "../../components/TrustedAnalytics.tsx"), "utf8")
+		expect(wrapper).toContain('import { SpeedInsights } from "@vercel/speed-insights/next"')
+		expect(wrapper.match(/<Analytics /g)).toHaveLength(1)
+		expect(wrapper.match(/<SpeedInsights /g)).toHaveLength(1)
+		expect(wrapper.match(/<GoogleAnalytics /g)).toHaveLength(1)
 	})
 })
