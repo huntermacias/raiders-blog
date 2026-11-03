@@ -8,7 +8,7 @@ import type { Heading } from "@/lib/report/story"
  * "In this recap": the headings of the writer's piece, the one being read marked. Under a phone-width screen it is a collapsed list above the
  * text; from large screens it sits beside the text and stays in view.
  */
-export default function RecapRail({ headings, minutes }: { headings: Heading[]; minutes: number | null }) {
+export default function RecapRail({ headings, minutes, label = "In this recap" }: { headings: Heading[]; minutes: number | null; label?: string }) {
 	const [active, setActive] = React.useState(headings[0]?.id ?? "")
 	React.useEffect(() => {
 		const els = headings.map((h) => document.getElementById(h.id)).filter((e): e is HTMLElement => !!e)
@@ -43,12 +43,12 @@ export default function RecapRail({ headings, minutes }: { headings: Heading[]; 
 		<>
 			<details className="mb-8 rounded-2xl border border-border/70 bg-card p-4 lg:hidden">
 				<summary className="cursor-pointer select-none text-sm font-semibold">
-					In this recap <span className="font-normal text-muted-foreground">({headings.filter((h) => h.level === 2).length} sections{minutes ? `, ${minutes} min` : ""})</span>
+					{label} <span className="font-normal text-muted-foreground">({headings.filter((h) => h.level === 2).length} sections{minutes ? `, ${minutes} min` : ""})</span>
 				</summary>
 				<div className="mt-3">{list}</div>
 			</details>
-			<aside aria-label="In this recap" className="sticky top-36 hidden max-h-[calc(100vh-10rem)] overflow-y-auto pr-2 lg:block">
-				<p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">In this recap{minutes ? ` · ${minutes} min` : ""}</p>
+			<aside aria-label={label} className="sticky top-36 hidden max-h-[calc(100vh-10rem)] overflow-y-auto pr-2 lg:block">
+				<p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}{minutes ? ` · ${minutes} min` : ""}</p>
 				{list}
 			</aside>
 		</>

@@ -35,6 +35,31 @@ export default defineType({
       name: 'mainImage',
       title: 'Main image',
       type: 'image',
+      description:
+        'Shown at the top of the post at its own shape: a 4:5 graphic stays 4:5 and a 16:9 photo stays 16:9, nothing is trimmed. To show only part of it on the page, use Crop below; otherwise the whole picture shows. The hotspot sets the focus for the small cards on the homepage.',
+      options: {
+        hotspot: true,
+      },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Description (for screen readers)',
+          type: 'string',
+        }),
+        defineField({
+          name: 'caption',
+          title: 'Caption (optional)',
+          type: 'string',
+          description: 'Shown under the picture on the post.',
+        }),
+      ],
+    }),
+    defineField({
+      name: 'shareImage',
+      title: 'Share card photo (optional)',
+      type: 'image',
+      description:
+        'The photo used on the X / link-preview card, which is always a wide 1.91:1 shape. Leave empty to use the main image. Set the hotspot to choose what stays in frame. This never changes the picture on the post itself.',
       options: {
         hotspot: true,
       },

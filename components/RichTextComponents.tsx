@@ -1,39 +1,15 @@
-import Image from "next/image"
 import Link from "@/components/SiteLink"
 
-import { bodyImageUrl, hotspotPosition, imageAspectRatio } from "../lib/urlFor"
+import Figure from "./post/Figure"
 import PlayerEmbed from "./lab/players/PlayerEmbed"
 import Embed from "./embeds/Embed"
 
 export const RichTextComponents = {
 	types: {
-		image: ({ value }: any) => {
-			// The container's aspect-ratio is derived from this specific
-			// image's real dimensions (read off its Sanity asset ref, no
-			// network round trip), so it always matches the photo exactly --
-			// nothing is ever cropped (the old object-cover behavior) and
-			// nothing is ever letterboxed (the old fixed-16:9-box behavior).
-			// A tall phone screenshot gets a tall box; a wide screenshot gets
-			// a wide one. object-contain is safe here specifically because
-			// the box already matches the image, so it never has to shrink
-			// to fit and reveal empty space.
-			const ratio = imageAspectRatio(value)
-			return (
-				<span
-					className="relative my-8 block w-full max-h-[80vh] overflow-hidden rounded-lg bg-muted not-prose"
-					style={{ aspectRatio: ratio }}
-				>
-					<Image
-						className="object-contain"
-						src={bodyImageUrl(value)}
-						alt="Blog post image"
-						fill
-						style={{ objectPosition: hotspotPosition(value) }}
-						sizes="(min-width: 1024px) 768px, 100vw"
-					/>
-				</span>
-			)
-		},
+		// An image inside the text keeps its own shape (the Studio crop if one was set, otherwise the whole picture), is never taller than
+		// 80% of the screen, sits on a blurred copy of itself when it is narrower than the column, opens large on click, and shows the
+		// caption if the editor wrote one. See components/post/Figure.tsx.
+		image: ({ value }: any) => <Figure image={value} alt={value?.alt} caption={value?.caption} />,
 		// Lets an editor place a YouTube or X (Twitter) embed anywhere inside
 		// the rich text body, reusing the same detection/rendering used for
 		// the game report's standalone "Video / social embeds" field.

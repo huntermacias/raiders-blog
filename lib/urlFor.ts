@@ -1,5 +1,6 @@
 import { client } from "./sanity.client"
 import imageUrlBuilder from "@sanity/image-url"
+import { imageBox } from "./imageBox"
 
 // get a pre-config url-builder from sanity client
 const builder = imageUrlBuilder(client)
@@ -109,21 +110,39 @@ export function bodyImageUrl(source: any) {
 }
 
 /**
- * Reads an image's real width/height straight out of its Sanity asset
- * reference (e.g. "image-abc123-1600x900-jpg") so a caller can size a
- * container to the image's actual aspect ratio without a network round
- * trip. Falls back to a 16:9 guess if the ref is missing or unparseable
- * (e.g. a still-uploading asset, or a non-Sanity source).
+ * Aspect ratio of what the CDN returns for this image (Studio crop applied).
+ * Kept as a thin wrapper over `imageBox` for older callers.
  */
 export function imageAspectRatio(source: any, fallback = 16 / 9): number {
-	const ref: string | undefined = source?.asset?._ref
-	if (!ref) return fallback
-	const match = ref.match(/-(\d+)x(\d+)-/)
-	if (!match) return fallback
-	const width = parseInt(match[1], 10)
-	const height = parseInt(match[2], 10)
-	if (!width || !height) return fallback
-	return width / height
+	return imageBox(source, fallback).ratio
+}
+
+// The whole image at its own shape -- no forced height, no server crop. If
+// an editor set a crop in Studio the CDN applies it; otherwise nothing is
+// trimmed. Used for the post cover and body images.
+export function fullImageUrl(source: any, width = 1600) {
+	if (!source) return "/placeholder-card.jpg"
+	try {
+		return urlFor(source).width(width).auto("format").url()
+	} catch {
+		return "/placeholder-card.jpg"
+	}
+}
+
+// Large copy for the click-to-enlarge view.
+export function zoomImageUrl(source: any) {
+	return fullImageUrl(source, 2400)
+}
+
+// A tiny copy used only as a blurred, darkened backdrop behind images that
+// are narrower than their column.
+export function backdropImageUrl(source: any) {
+	if (!source) return ""
+	try {
+		return urlFor(source).width(64).quality(40).auto("format").url()
+	} catch {
+		return ""
+	}
 }
 
 // Open Graph / Twitter card image - the fixed 1200x630 ratio social
