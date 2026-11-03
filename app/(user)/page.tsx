@@ -1,7 +1,8 @@
 import { groq } from "next-sanity";
 import type { Metadata } from "next";
 import { cdnClient, readClient } from "../../lib/sanity.client";
-import { type HomePostRow, homeGameReportsQuery, homePostsQuery } from "../../lib/homeQueries";
+import { type BrowseGameReportRow, type HomePostRow, homeBrowseGameReportsQuery, homeGameReportsQuery, homePostsQuery } from "../../lib/homeQueries";
+import { storyTypeInfo, storyTypeOf, storyWeek } from "../../lib/storyType";
 import { cardImageUrl, heroImageUrl, hotspotPosition } from "../../lib/urlFor";
 import {
 	SEASON,
@@ -143,11 +144,14 @@ async function liveBoard(): Promise<LiveGameInfo[] | null> {
 	}
 }
 
-export default async function page() {
+export default async function page({ searchParams }: { searchParams?: Promise<{ type?: string | string[] }> }) {
+	const typeParam = (await searchParams)?.type
+	const initialType = Array.isArray(typeParam) ? typeParam[0] : typeParam ?? null
 
-	const [posts, games, scheduleDoc, picks, flags, rankingDocs, league, board]: [
+	const [posts, games, browseReports, scheduleDoc, picks, flags, rankingDocs, league, board]: [
 		HomePostRow[],
 		GameReport[],
+		BrowseGameReportRow[],
 		{ games?: ScheduleGame[] } | null,
 		GamePrediction[],
 		FlagPlant[],
@@ -157,6 +161,7 @@ export default async function page() {
 	] = await Promise.all([
 		safe(cdnClient.fetch(homePostsQuery), []),
 		safe(cdnClient.fetch(homeGameReportsQuery), []),
+		safe(cdnClient.fetch(homeBrowseGameReportsQuery), []),
 		safe(readClient.fetch(scheduleQuery, { season: SEASON }), null),
 		safe(readClient.fetch(picksQuery, { season: SEASON }).then((p: GamePrediction[] | null) => withEspnFinals(p ?? [])), []),
 		safe(readClient.fetch(flagsQuery, { season: SEASON }), []),
@@ -214,13 +219,18 @@ export default async function page() {
 	}))
 
 	// Stories
+	// A card's labels: the kind of story, and the week when it is about one. Topics (categories) are no longer what the cards lead with.
+	const featuredLabels = (post: HomePostRow) => {
+		const week = post.week ?? storyWeek(post)
+		return [storyTypeInfo(storyTypeOf(post)).label, ...(week ? [`Week ${week}`] : [])]
+	}
 	const featured: FeaturedPost[] = (posts ?? []).slice(0, 3).map((post, i) => ({
 		_id: post._id,
 		slug: post.slug.current,
 		title: post.title,
 		description: post.description,
 		createdAt: post._createdAt,
-		categories: (post.categories ?? []).map((c) => c.title),
+		categories: featuredLabels(post),
 		minutes: minutesFromWords(post.words ?? 0),
 		imageUrl: i === 0 ? heroImageUrl(post.mainImage) : cardImageUrl(post.mainImage),
 		imagePosition: hotspotPosition(post.mainImage),
@@ -269,7 +279,30 @@ export default async function page() {
 	}
 
 	// BlogList is a client component, so it gets only what a card shows.
-	const listPosts: ListPost[] = (posts ?? []).map((p) => ({ ...p, readMinutes: minutesFromWords(p.words ?? 0) }))
+	// Posts and game recaps in one list, newest first, each with its kind of story. Slugs and addresses are untouched.
+	const postItems: ListPost[] = (posts ?? []).map((p) => ({
+		_id: p._id,
+		_createdAt: p._createdAt,
+		title: p.title,
+		description: p.description,
+		slug: p.slug,
+		mainImage: p.mainImage,
+		type: storyTypeOf(p),
+		week: p.week ?? storyWeek(p),
+		readMinutes: minutesFromWords(p.words ?? 0),
+	}))
+	const reportItems: ListPost[] = (browseReports ?? []).map((g) => ({
+		_id: g._id,
+		_createdAt: g.gameDate ?? g._createdAt,
+		title: g.title,
+		description: g.description,
+		slug: g.slug,
+		mainImage: g.mainImage,
+		type: "game-report",
+		week: storyWeek(g),
+		href: `/games/${g.slug.current}`,
+	}))
+	const listPosts: ListPost[] = [...postItems, ...reportItems].sort((a, b) => +new Date(b._createdAt) - +new Date(a._createdAt))
 
   return (
 	  <div>
@@ -328,7 +361,7 @@ export default async function page() {
 
 		  <SubscribeBox source="home" variant="band" />
 
-		  <BlogList posts={listPosts} featuredIds={featured.map((f) => f._id)} />
+		  <BlogList posts={listPosts} featuredIds={featured.map((f) => f._id)} initialType={initialType} />
 	  </div>
 
   )

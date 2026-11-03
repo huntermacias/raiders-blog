@@ -32,7 +32,8 @@ describe("the homepage's use of Sanity", () => {
 	it("reads stories and recaps through the edge cache, and nothing else through it", () => {
 		expect(src).toMatch(/cdnClient\.fetch\(homePostsQuery\)/)
 		expect(src).toMatch(/cdnClient\.fetch\(homeGameReportsQuery\)/)
-		expect(src.match(/cdnClient\.fetch/g)?.length).toBe(2)
+		expect(src).toMatch(/cdnClient\.fetch\(homeBrowseGameReportsQuery\)/)
+		expect(src.match(/cdnClient\.fetch/g)?.length).toBe(3)
 	})
 
 	it("does not use the token client, which skips the cache", () => {

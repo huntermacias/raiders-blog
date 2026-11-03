@@ -15,6 +15,12 @@ interface Post extends Base {
 	slug: Slug;
 	title: string;
 	description: string;
+	/** What kind of story it is (preview, power-rankings...), picked in Studio. Older posts have none; see lib/storyType. */
+	storyType?: string;
+	/** The week of the season it is about, when an editor set it. */
+	week?: number;
+	/** Key facts shown in a box at the top of the story. */
+	facts?: { _key?: string; label?: string; value?: string }[];
 	/** Filled in by the homepage so the client list needn't carry every article body. */
 	readMinutes?: number;
 }
