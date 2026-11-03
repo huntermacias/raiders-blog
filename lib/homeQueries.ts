@@ -13,6 +13,8 @@ export const STORY_CARD_FIELDS = `
 	description,
 	slug,
 	mainImage,
+	storyType,
+	week,
 	"categories": categories[]->{ _id, title },
 	"words": length(string::split(pt::text(body), " "))
 `
@@ -29,6 +31,25 @@ export const homeGameReportsQuery = `
 	}
 `
 
+/** Every game recap, for the browse list (the "Game Report" type). Only what a card shows. */
+export const homeBrowseGameReportsQuery = `
+	*[_type == 'gameReport' && !(_id in path('drafts.**'))] | order(gameDate desc) {
+		_id, _createdAt, title, description, slug, opponent, gameDate, mainImage
+	}
+`
+
+/** A game recap as the browse query returns it. */
+export type BrowseGameReportRow = {
+	_id: string
+	_createdAt: string
+	title: string
+	description?: string | null
+	slug: { current: string }
+	opponent?: string | null
+	gameDate?: string | null
+	mainImage?: unknown
+}
+
 /** A story as the homepage query returns it. */
 export type HomePostRow = {
 	_id: string
@@ -37,6 +58,8 @@ export type HomePostRow = {
 	description?: string | null
 	slug: { current: string }
 	mainImage?: unknown
+	storyType?: string | null
+	week?: number | null
 	categories?: { _id?: string; title: string }[] | null
 	words?: number | null
 }

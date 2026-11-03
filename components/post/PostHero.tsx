@@ -4,7 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 type Props = {
 	title: string
 	description?: string | null
-	categories: { _id: string; title: string }[]
+	/** The kind of story ("Preview") and the week it is about, shown first. */
+	kind: { id: string; label: string; plural: string }
+	week?: number | null
 	author: string
 	authorImageUrl?: string | null
 	published: string
@@ -20,8 +22,7 @@ type Props = {
  * dark so the type reads the same in either site theme. The cover itself is not used here (it is shown whole, below); only a blurred
  * copy of it tints the background.
  */
-export default function PostHero({ title, description, categories, author, authorImageUrl, published, minutes, ambientUrl, actions }: Props) {
-	const first = categories[0]
+export default function PostHero({ title, description, kind, week, author, authorImageUrl, published, minutes, ambientUrl, actions }: Props) {
 	return (
 		<header className="dark relative isolate overflow-hidden bg-[#0b0d10] text-white" data-testid="post-hero">
 			{ambientUrl && (
@@ -39,25 +40,13 @@ export default function PostHero({ title, description, categories, author, autho
 				<nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-xs text-white/60">
 					<Link href="/" className="shrink-0 hover:text-white hover:underline">Home</Link>
 					<span aria-hidden>/</span>
-					<span className="shrink-0 text-white/70">Stories</span>
-					{first && (
-						<>
-							<span aria-hidden>/</span>
-							<span className="min-w-0 truncate text-white/80">{first.title}</span>
-						</>
-					)}
+					<Link href={`/?type=${kind.id}#latest`} className="min-w-0 truncate text-white/80 hover:text-white hover:underline">{kind.plural}</Link>
 				</nav>
 
-				{categories.length > 0 && (
-					<div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
-						{categories.map((c, i) => (
-							<span key={c._id} className="flex items-center gap-3">
-								{i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-white/40" />}
-								{c.title}
-							</span>
-						))}
-					</div>
-				)}
+				<div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
+					<span className="rounded-full bg-white/10 px-3 py-1 text-white ring-1 ring-white/25" data-testid="story-kind">{kind.label}</span>
+					{week ? <span>Week {week}</span> : null}
+				</div>
 
 				<h1 className="mx-auto mt-6 max-w-4xl text-balance text-center font-serif text-3xl font-bold leading-[1.08] tracking-tight sm:mt-8 sm:text-5xl">{title}</h1>
 				{description && <p className="mx-auto mt-4 max-w-3xl text-pretty text-center text-base text-white/75 sm:text-xl">{description}</p>}

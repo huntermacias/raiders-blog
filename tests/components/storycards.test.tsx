@@ -9,7 +9,7 @@ vi.mock("../../lib/urlFor", () => ({
 	hotspotPosition: (img: { x?: number } | undefined) => (img?.x ? `${img.x}% 50%` : "50% 50%"),
 }))
 
-import BlogList from "../../components/BlogList"
+import BlogList, { type ListPost } from "../../components/BlogList"
 import GameReportsTeaser from "../../components/GameReportsTeaser"
 import RelatedGameReports from "../../components/RelatedGameReports"
 import RelatedPosts from "../../components/RelatedPosts"
@@ -75,14 +75,10 @@ describe("<BlogList />", () => {
 			_createdAt: "2026-09-20T19:00:00Z",
 			mainImage: { id: n },
 			readMinutes: n + 1,
-			categories: [
-				{ _id: "c1", title: "Previews" },
-				{ _id: "c2", title: "Analysis" },
-				{ _id: "c3", title: "Extra" },
-			],
+			type: "preview",
 			body: [],
 			...over,
-		}) as unknown as Post
+		}) as unknown as ListPost
 
 	it("shows every story as an image card linking to its post, with read time", () => {
 		render(<BlogList posts={[post(1), post(2)]} />)
@@ -101,26 +97,39 @@ describe("<BlogList />", () => {
 		expect(screen.getByRole("link", { name: /Post 1/ })).toBeTruthy()
 	})
 
-	it("limits each card to two category badges", () => {
-		render(<BlogList posts={[post(1)]} />)
+	it("labels each card with its kind of story and its week", () => {
+		render(<BlogList posts={[post(1, { type: "power-rankings", week: 8 })]} />)
 		const link = screen.getByRole("link", { name: /Post 1/ })
-		expect(within(link).getByText("Previews")).toBeTruthy()
-		expect(within(link).getByText("Analysis")).toBeTruthy()
-		expect(within(link).queryByText("Extra")).toBeNull()
+		expect(within(link).getByText("Power Rankings")).toBeTruthy()
+		expect(within(link).getByText("Week 8")).toBeTruthy()
 	})
 
-	it("filters by category and shows the empty state", () => {
-		render(<BlogList posts={[post(1, { categories: [{ _id: "c9", title: "Recaps" }] }), post(2)]} />)
-		fireEvent.click(screen.getByRole("button", { name: "Recaps" }))
+	it("filters by kind of story, with counts, and shows the empty state", () => {
+		render(<BlogList posts={[post(1, { type: "trade" }), post(2), post(3)]} />)
+		expect(screen.getByRole("tab", { name: /Previews\s*2/ })).toBeTruthy()
+		fireEvent.click(screen.getByRole("tab", { name: /Trades/ }))
 		expect(screen.getByRole("link", { name: /Post 1/ })).toBeTruthy()
 		expect(screen.queryByRole("link", { name: /Post 2/ })).toBeNull()
-		fireEvent.click(screen.getByRole("button", { name: "All" }))
+		fireEvent.click(screen.getByRole("tab", { name: /^All/ }))
 		fireEvent.change(screen.getByLabelText("Search articles"), { target: { value: "zzz" } })
 		expect(screen.getByText(/No articles match/)).toBeTruthy()
 	})
 
-	it("tolerates a post with no categories or image", () => {
-		render(<BlogList posts={[post(1, { categories: undefined, mainImage: undefined })]} />)
+	it("opens already filtered when the address names a kind", () => {
+		render(<BlogList posts={[post(1, { type: "trade" }), post(2)]} initialType="trade" />)
+		expect(screen.getByRole("link", { name: /Post 1/ })).toBeTruthy()
+		expect(screen.queryByRole("link", { name: /Post 2/ })).toBeNull()
+	})
+
+	it("sends a game report to its own page and shows no read time for it", () => {
+		render(<BlogList posts={[post(1, { type: "game-report", href: "/games/week-7", readMinutes: null })]} />)
+		const link = screen.getByRole("link", { name: /Post 1/ }) as HTMLAnchorElement
+		expect(link.getAttribute("href")).toBe("/games/week-7")
+		expect(link.textContent).not.toContain("min read")
+	})
+
+	it("tolerates a post with no image", () => {
+		render(<BlogList posts={[post(1, { mainImage: undefined })]} />)
 		expect(screen.getByRole("link", { name: /Post 1/ })).toBeTruthy()
 	})
 })

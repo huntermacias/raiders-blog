@@ -15,6 +15,14 @@ import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import type { PickKey } from "../../../../lib/predictions"
 import { readingMinutes } from "../../../../lib/home"
 import { headings } from "../../../../lib/report/story"
+import { SEASON } from "../../../../lib/predictions"
+import { buildBoards, type RankingsDoc } from "../../../../lib/rankings"
+import { morePicks, seriesNeighbors, withTypes, type PostRow } from "../../../../lib/postSeries"
+import { storyTypeInfo, storyTypeOf, storyWeek } from "../../../../lib/storyType"
+import AtAGlance from "../../../../components/post/AtAGlance"
+import GameCard, { type GameLink } from "../../../../components/post/GameCard"
+import RankingsStrip from "../../../../components/post/RankingsStrip"
+import SeriesNav from "../../../../components/post/SeriesNav"
 import PostHero from "../../../../components/post/PostHero"
 import Figure from "../../../../components/post/Figure"
 import Recap from "../../../../components/report/Recap"
@@ -136,30 +144,50 @@ async function Post(props: Props) {
 		{ id: post._id }
 	)
 
-    const latestQuery = groq`
-	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && !(_id in $exclude)]
-	| order(_createdAt desc) [0...3] {
-		_id, title, slug, mainImage, _createdAt,
-		"words": length(string::split(pt::text(body), " "))
+    // The kind of story and the week it is about. A post with no Story type picked yet gets its type worked out from its categories/title.
+    const type = storyTypeOf(post)
+    const kind = storyTypeInfo(type)
+    const week = post.week ?? storyWeek(post)
+
+    // Every published story, lightly: enough to find the one before and after in this series and to pick "more" of the same kind.
+    const listQuery = groq`
+	*[_type=='post' && !(_id in path('drafts.**'))] | order(_createdAt desc) {
+		_id, title, slug, _createdAt, storyType, week, mainImage, "categories": categories[]->{ title }
 	}
 	`
-    const categoryIds = post.categories?.map((c) => c._id) ?? []
-    const relatedQuery = groq`
-	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
-	| order(_createdAt desc) [0...3] {
-		_id, title, slug, mainImage, _createdAt,
-		"words": length(string::split(pt::text(body), " "))
-	}
-	`
-    const sameCategory: RelatedStory[] = categoryIds.length
-		? await isrFetch(relatedQuery, { slug, categoryIds })
+    const allRows = withTypes(((await isrFetch(listQuery)) ?? []) as PostRow[])
+    const { prev, next } = seriesNeighbors(allRows, post._id)
+    const { picks, allSameKind } = morePicks(allRows, post._id, 3)
+    // Read times only for the three that are shown.
+    const words: { _id: string; words: number }[] = picks.length
+		? ((await isrFetch(groq`*[_type=='post' && _id in $ids]{ _id, "words": length(string::split(pt::text(body), " ")) }`, { ids: picks.map((p) => p._id) })) ?? [])
 		: []
-    // A story with no category match (or fewer than three) is topped up with the newest others, so the end of a post never dead-ends.
-    let related = sameCategory
-    if (sameCategory.length < 3) {
-		const latest: RelatedStory[] = await isrFetch(latestQuery, { slug, exclude: sameCategory.map((p) => p._id) })
-		related = [...sameCategory, ...(latest ?? [])].slice(0, 3)
-    }
+    const related: RelatedStory[] = picks.map((p) => ({ _id: p._id, title: p.title, slug: p.slug, mainImage: p.mainImage, _createdAt: p._createdAt, words: words.find((w) => w._id === p._id)?.words }))
+
+    // The game a preview is about (the one that points at this post, otherwise the one for the same week), and the rankings a
+    // power-rankings story is about. Both are the documents the Predictions and Rankings pages already use.
+    const gameFields = `week, awayTeam, homeTeam, kickoff, predictedAwayScore, predictedHomeScore, actualAwayScore, actualHomeScore, "report": gameReport->{ "slug": slug.current, title }`
+    const game: GameLink | null =
+		type === "preview" || type === "power-rankings"
+			? ((await isrFetch(
+					groq`coalesce(
+						*[_type=='gamePrediction' && previewPost._ref == $id && !(_id in path('drafts.**'))][0]{ ${gameFields} },
+						*[_type=='gamePrediction' && season == $season && week == $week && !(_id in path('drafts.**'))][0]{ ${gameFields} }
+					)`,
+					{ id: post._id, season: SEASON, week: week ?? -1 }
+				)) ?? null)
+			: null
+    const boardRows =
+		type === "power-rankings" && week
+			? await (async () => {
+					const docs: RankingsDoc[] = (await isrFetch(
+						groq`*[_type=='powerRankings' && season == $season && week <= $week && !(_id in path('drafts.**'))] | order(_updatedAt asc){ _id, season, week, headline, teams[]{ _key, team, note } }`,
+						{ season: SEASON, week }
+					)) ?? []
+					const boards = buildBoards(docs)
+					return boards.find((b) => b.week === week)?.rows ?? []
+				})()
+			: []
 
     const pageUrl = `${SITE_URL}/post/${post.slug.current}`
     const jsonLd = [
@@ -203,7 +231,7 @@ async function Post(props: Props) {
 
     const sections: NavSection[] = [
 		{ id: "story", label: "The story" },
-		...(related.length ? [{ id: "related", label: "More stories" }] : []),
+		...(related.length ? [{ id: "related", label: allSameKind ? `More ${kind.plural}` : "More stories" }] : []),
 		{ id: "comments", label: commentCount ? `Comments (${commentCount})` : "Comments" },
     ]
 
@@ -215,7 +243,8 @@ async function Post(props: Props) {
 			<PostHero
 				title={post.title}
 				description={post.description}
-				categories={post.categories ?? []}
+				kind={kind}
+				week={week}
 				author={authorName}
 				authorImageUrl={post.author?.image ? urlFor(post.author.image).width(96).height(96).url() : null}
 				published={formatDate(post._createdAt)}
@@ -245,11 +274,41 @@ async function Post(props: Props) {
 			<section id="story" className="container max-w-6xl scroll-mt-32 pb-14 pt-8 sm:pt-10">
 				<div className={hasRail ? "grid gap-x-14 lg:grid-cols-[minmax(0,720px)_260px] lg:justify-center" : "mx-auto max-w-[720px]"}>
 					<div id="story-body" className={hasRail ? "order-last min-w-0 lg:order-none lg:col-start-1 lg:row-start-1" : "min-w-0"}>
+						<AtAGlance facts={post.facts} />
+						{type === "preview" && <GameCard game={game} />}
+						{type === "power-rankings" && week ? <RankingsStrip rows={boardRows} week={week} /> : null}
+						{type === "power-rankings" && game?.report?.slug ? (
+							<p className="-mt-6 mb-10 text-sm">
+								<a href={`/games/${game.report.slug}`} className="font-semibold underline-offset-4 hover:underline">
+									Read the Week {week} game report
+								</a>
+							</p>
+						) : null}
 						{hasKeys && <KeysScorecard keys={keysDoc!.keys!} className="mb-10" />}
 
 						{post.body && <Recap body={post.body as unknown[]} headings={heads} />}
 
 						<div className="mt-12 space-y-8">
+							{/* The story before and after this one of the same kind, for the kinds that run as a series. */}
+							{(type === "preview" || type === "power-rankings" || type === "film-room") && (
+								<SeriesNav
+									kind={kind.label.toLowerCase()}
+									prev={prev ? { title: prev.title, slug: prev.slug.current, week: prev.weekOf } : null}
+									next={next ? { title: next.title, slug: next.slug.current, week: next.weekOf } : null}
+								/>
+							)}
+
+							{post.categories?.length ? (
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Topics</span>
+									{post.categories.map((c) => (
+										<span key={c._id} className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+											{c.title}
+										</span>
+									))}
+								</div>
+							) : null}
+
 							{/* Who wrote it, and a way to pass it on. */}
 							<div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex items-start gap-4">
@@ -281,7 +340,7 @@ async function Post(props: Props) {
 			</section>
 
 			<div id="related" className="scroll-mt-32 border-t border-border/70 bg-muted/30">
-				<RelatedPosts posts={related} />
+				<RelatedPosts posts={related} heading={allSameKind ? `More ${kind.plural}` : "More stories"} />
 			</div>
 
 			<section id="comments" className="scroll-mt-32">

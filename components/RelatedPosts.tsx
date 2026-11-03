@@ -12,12 +12,12 @@ type RelatedPost = {
 	words?: number
 }
 
-function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
+function RelatedPosts({ posts, heading = "More stories" }: { posts: RelatedPost[]; heading?: string }) {
 	if (!posts?.length) return null
 
 	return (
 		<section className="container max-w-6xl py-12">
-			<h2 className="mb-6 font-serif text-2xl font-bold tracking-tight">More stories</h2>
+			<h2 className="mb-6 font-serif text-2xl font-bold tracking-tight">{heading}</h2>
 			<div className="grid gap-6 sm:grid-cols-3">
 				{posts.map((post) => (
 					<StoryCard
