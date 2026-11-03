@@ -16,8 +16,8 @@ function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
 	if (!posts?.length) return null
 
 	return (
-		<section className="container max-w-4xl py-10">
-			<h2 className="mb-6 font-serif text-2xl font-bold tracking-tight">Related Stories</h2>
+		<section className="container max-w-6xl py-12">
+			<h2 className="mb-6 font-serif text-2xl font-bold tracking-tight">More stories</h2>
 			<div className="grid gap-6 sm:grid-cols-3">
 				{posts.map((post) => (
 					<StoryCard

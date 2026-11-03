@@ -81,9 +81,24 @@ export default defineType({
     // You can add additional types here. Note that you can't use
     // primitive types such as 'string' and 'number' in the same array
     // as a block type.
+    // Shown at its own shape on the site: the whole picture, or the crop set here. A caption and a description for screen readers are optional.
     defineArrayMember({
       type: 'image',
       options: {hotspot: true},
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Description (for screen readers)',
+          type: 'string',
+          description: 'What the picture shows, in a few words.',
+        }),
+        defineField({
+          name: 'caption',
+          title: 'Caption (optional)',
+          type: 'string',
+          description: 'Shown under the picture.',
+        }),
+      ],
     }),
     // Lets an editor drop a YouTube or X (Twitter) post embed at any point
     // inside the body -- not just before/after it -- so a tweet reaction or

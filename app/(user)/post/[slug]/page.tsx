@@ -1,23 +1,27 @@
 import { groq } from "next-sanity"
 import { notFound } from "next/navigation"
-import Image from "next/image"
 import type { Metadata } from "next"
 import { MessageCircle } from "lucide-react"
+import { toPlainText } from "@portabletext/react"
 
 import { isrFetch } from "../../../../lib/sanity.client"
-import urlFor, { heroImageUrl, hotspotPosition, ogImageUrl } from "../../../../lib/urlFor"
-import { PortableText } from "@portabletext/react"
-import { RichTextComponents } from "../../../../components/RichTextComponents"
+import urlFor, { backdropImageUrl } from "../../../../lib/urlFor"
 import CommentField from "../../../../components/CommentField"
 import SocialShare from "../../../../components/SocialShare"
 import RelatedPosts from "../../../../components/RelatedPosts"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import SubscribeBox from "../../../../components/SubscribeBox"
 import KeysScorecard from "../../../../components/predictions/KeysScorecard"
 import type { PickKey } from "../../../../lib/predictions"
 import { readingMinutes } from "../../../../lib/home"
+import { headings } from "../../../../lib/report/story"
+import PostHero from "../../../../components/post/PostHero"
+import Figure from "../../../../components/post/Figure"
+import Recap from "../../../../components/report/Recap"
+import RecapRail from "../../../../components/report/RecapRail"
+import ReportNav, { type NavSection } from "../../../../components/report/ReportNav"
+
+type RelatedStory = { _id: string; title: string; slug: { current: string }; mainImage: unknown; _createdAt: string; words?: number }
 
 type Props = {
 	params: Promise<{
@@ -90,11 +94,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 	}
 }
 
+// Dates are Pacific so a Sunday-night post isn't dated Monday.
 function formatDate(date: string) {
 	return new Date(date).toLocaleDateString("en-US", {
 		day: "numeric",
 		month: "long",
 		year: "numeric",
+		timeZone: "America/Los_Angeles",
 	})
 }
 
@@ -130,6 +136,13 @@ async function Post(props: Props) {
 		{ id: post._id }
 	)
 
+    const latestQuery = groq`
+	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && !(_id in $exclude)]
+	| order(_createdAt desc) [0...3] {
+		_id, title, slug, mainImage, _createdAt,
+		"words": length(string::split(pt::text(body), " "))
+	}
+	`
     const categoryIds = post.categories?.map((c) => c._id) ?? []
     const relatedQuery = groq`
 	*[_type=='post' && !(_id in path('drafts.**')) && slug.current != $slug && count((categories[]->_id)[@ in $categoryIds]) > 0]
@@ -138,9 +151,15 @@ async function Post(props: Props) {
 		"words": length(string::split(pt::text(body), " "))
 	}
 	`
-    const related = categoryIds.length
+    const sameCategory: RelatedStory[] = categoryIds.length
 		? await isrFetch(relatedQuery, { slug, categoryIds })
 		: []
+    // A story with no category match (or fewer than three) is topped up with the newest others, so the end of a post never dead-ends.
+    let related = sameCategory
+    if (sameCategory.length < 3) {
+		const latest: RelatedStory[] = await isrFetch(latestQuery, { slug, exclude: sameCategory.map((p) => p._id) })
+		related = [...sameCategory, ...(latest ?? [])].slice(0, 3)
+    }
 
     const pageUrl = `${SITE_URL}/post/${post.slug.current}`
     const jsonLd = [
@@ -170,113 +189,126 @@ async function Post(props: Props) {
 		},
 	]
 
+    const minutes = readingMinutes(post.body)
+    const heads = headings(post.body)
+    const railHeads = heads.filter((h) => h.level === 2)
+    const hasRail = railHeads.length >= 3
+    const cover = post.mainImage as (typeof post.mainImage & { alt?: string; caption?: string }) | undefined
+    const hasCover = !!(cover && (cover as { asset?: unknown }).asset)
+    const commentCount = post.comments?.length ?? 0
+    const authorName = post.author?.name || "Raiders Rundown"
+    const bio = post.author?.bio ? toPlainText(post.author.bio as never).trim() : ""
+    const bioShort = bio.length > 240 ? `${bio.slice(0, 237).trimEnd()}...` : bio
+    const hasKeys = !!(keysDoc?.keys && keysDoc.keys.length > 0)
+
+    const sections: NavSection[] = [
+		{ id: "story", label: "The story" },
+		...(related.length ? [{ id: "related", label: "More stories" }] : []),
+		{ id: "comments", label: commentCount ? `Comments (${commentCount})` : "Comments" },
+    ]
+
     return (
 		<article>
 			{/* eslint-disable-next-line react/no-danger */}
 			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-			{/* header */}
-			<div className="container max-w-3xl py-12">
-				<div className="mb-4 flex flex-wrap gap-2">
-					{post.categories?.map((category) => (
-						<Badge key={category._id} variant="secondary">
-							{category.title}
-						</Badge>
-					))}
-				</div>
 
-				<h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
-					{post.title}
-				</h1>
-
-				{post.description && (
-					<p className="mt-4 text-xl text-muted-foreground">{post.description}</p>
-				)}
-
-				{/* Stacked on mobile (author/date, then share + comment count on
-				    their own row) instead of one wide flex-wrap row that was
-				    squeezing the share icons up against the author block on
-				    narrow screens. Back to a single row with justify-between
-				    from sm: up. */}
-				<div className="mt-8 flex flex-col gap-3 border-y border-border/70 py-4 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex items-center gap-3">
-						<Avatar>
-							{post.author.image && (
-							<AvatarImage src={urlFor(post.author.image).url()} alt={post.author.name} />
-						)}
-							<AvatarFallback>{post.author.name?.[0]}</AvatarFallback>
-						</Avatar>
-						<div className="text-sm">
-							<p className="font-semibold">{post.author.name}</p>
-							<p className="text-muted-foreground">
-								{formatDate(post._createdAt)} &middot; {readingMinutes(post.body)} min read
-							</p>
-						</div>
-					</div>
-
-					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-						<SocialShare customurl={`https://www.raidersrundown.com/post/${post.slug.current}`} />
-						<div className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+			<PostHero
+				title={post.title}
+				description={post.description}
+				categories={post.categories ?? []}
+				author={authorName}
+				authorImageUrl={post.author?.image ? urlFor(post.author.image).width(96).height(96).url() : null}
+				published={formatDate(post._createdAt)}
+				minutes={minutes}
+				ambientUrl={hasCover ? backdropImageUrl(post.mainImage) : undefined}
+				actions={
+					<>
+						<SocialShare customurl={pageUrl} />
+						<a href="#comments" className="flex shrink-0 items-center gap-1.5 text-sm text-white/70 hover:text-white">
 							<MessageCircle className="h-4 w-4" />
-							{post.comments?.length ?? 0}
-						</div>
-					</div>
-				</div>
-			</div>
+							{commentCount}
+						</a>
+					</>
+				}
+			/>
 
-			{/* hero image */}
-			<div className="container max-w-5xl">
-				<div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-[28rem]">
-					<Image
-						className="object-cover"
-						src={heroImageUrl(post.mainImage)}
-						alt={post.title}
-						fill
-						style={{ objectPosition: hotspotPosition(post.mainImage) }}
-						sizes="100vw"
-						priority
-					/>
-				</div>
-			</div>
+			<ReportNav sections={sections} progressFor="story-body" />
 
-			{/* body */}
-			<div className="container max-w-3xl py-12">
-				{keysDoc?.keys && keysDoc.keys.length > 0 && (
-					<KeysScorecard keys={keysDoc.keys} className="mb-10" />
-				)}
-				<div className="prose prose-neutral max-w-none dark:prose-invert lg:prose-lg prose-headings:font-serif prose-blockquote:not-italic">
-					<PortableText value={post.body} components={RichTextComponents} />
-				</div>
-			</div>
-
-			<div className="container max-w-3xl pb-12">
-				<SubscribeBox source="post" />
-			</div>
-
-			<Separator className="container max-w-5xl" />
-
-			<RelatedPosts posts={related} />
-
-			{/* comment form */}
-			<CommentField postId={post._id} />
-
-			{/* comments */}
-			{post.comments?.length > 0 && (
-				<div className="container max-w-2xl py-10">
-					<h3 className="mb-4 font-serif text-2xl font-bold">
-						Comments <span className="text-muted-foreground">({post.comments.length})</span>
-					</h3>
-					<div className="flex flex-col divide-y divide-border">
-						{post.comments.map((comment) => (
-							<div key={comment._id} className="py-4">
-								<p className="text-sm">
-									<span className="font-semibold text-primary">@{comment.name}</span>
-									<span className="ml-2 text-foreground">{comment.comment}</span>
-								</p>
-							</div>
-						))}
-					</div>
+			{/* The cover at its own shape: nothing trimmed, capped at 80% of the screen, centered on a blurred copy of itself. The wide crop
+			    for link previews lives in /api/og and never reaches this page. */}
+			{hasCover && (
+				<div className="container max-w-6xl pt-6 sm:pt-8">
+					<Figure image={post.mainImage} alt={cover?.alt || post.title} caption={cover?.caption} variant="cover" priority />
 				</div>
 			)}
+
+			<section id="story" className="container max-w-6xl scroll-mt-32 pb-14 pt-8 sm:pt-10">
+				<div className={hasRail ? "grid gap-x-14 lg:grid-cols-[minmax(0,720px)_260px] lg:justify-center" : "mx-auto max-w-[720px]"}>
+					<div id="story-body" className={hasRail ? "order-last min-w-0 lg:order-none lg:col-start-1 lg:row-start-1" : "min-w-0"}>
+						{hasKeys && <KeysScorecard keys={keysDoc!.keys!} className="mb-10" />}
+
+						{post.body && <Recap body={post.body as unknown[]} headings={heads} />}
+
+						<div className="mt-12 space-y-8">
+							{/* Who wrote it, and a way to pass it on. */}
+							<div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+								<div className="flex items-start gap-4">
+									<Avatar className="h-12 w-12">
+										{post.author?.image && <AvatarImage src={urlFor(post.author.image).width(120).height(120).url()} alt={authorName} />}
+										<AvatarFallback>{authorName[0]}</AvatarFallback>
+									</Avatar>
+									<div className="min-w-0 text-sm">
+										<p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Written by</p>
+										<p className="font-serif text-lg font-bold leading-tight">{authorName}</p>
+										{bioShort && <p className="mt-1 text-muted-foreground">{bioShort}</p>}
+									</div>
+								</div>
+								<div className="flex shrink-0 flex-col gap-2 sm:items-end">
+									<p className="text-sm font-semibold">Pass it on</p>
+									<SocialShare customurl={pageUrl} />
+								</div>
+							</div>
+
+							<SubscribeBox source="post" />
+						</div>
+					</div>
+					{hasRail && (
+						<div className="lg:col-start-2 lg:row-start-1">
+							<RecapRail headings={railHeads} minutes={minutes} label="In this story" />
+						</div>
+					)}
+				</div>
+			</section>
+
+			<div id="related" className="scroll-mt-32 border-t border-border/70 bg-muted/30">
+				<RelatedPosts posts={related} />
+			</div>
+
+			<section id="comments" className="scroll-mt-32">
+				<div className="container max-w-2xl pt-12">
+					<h2 className="font-serif text-2xl font-bold tracking-tight">
+						Comments <span className="text-muted-foreground">({commentCount})</span>
+					</h2>
+					{commentCount > 0 ? (
+						<ul className="mt-4 flex flex-col divide-y divide-border">
+							{post.comments.map((comment) => (
+								<li key={comment._id} className="flex gap-3 py-4">
+									<span aria-hidden className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase text-muted-foreground">
+										{comment.name?.[0] ?? "?"}
+									</span>
+									<div className="min-w-0 text-sm">
+										<p className="font-semibold text-primary">@{comment.name}</p>
+										<p className="mt-0.5 whitespace-pre-line break-words text-foreground">{comment.comment}</p>
+									</div>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p className="mt-3 text-sm text-muted-foreground">No comments yet. Be the first to weigh in.</p>
+					)}
+				</div>
+				<CommentField postId={post._id} />
+			</section>
 		</article>
 	)
 }

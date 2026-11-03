@@ -150,7 +150,7 @@ function eyebrowFor(title: string, category?: string | null): string {
 
 const postQuery = groq`
 	*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
-		title, mainImage, "category": categories[0]->title
+		title, mainImage, shareImage, "category": categories[0]->title
 	}`
 
 const gameQuery = groq`
@@ -201,7 +201,9 @@ async function specFor(query: NextApiRequest["query"]): Promise<CardSpec | null>
 			type: "article",
 			eyebrow: eyebrowFor(post.title, post.category),
 			title: post.title,
-			photo: await photoDataUri(post.mainImage),
+			// The share card has its own fixed wide crop. An editor can pick a different photo (or just a different hotspot) for it with
+			// "Share card photo"; the post page itself never uses this crop.
+			photo: await photoDataUri(post.shareImage?.asset ? post.shareImage : post.mainImage),
 		}
 	}
 
