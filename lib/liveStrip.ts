@@ -40,7 +40,7 @@ function side(t: LiveGameInfo["home"]) {
 	return { abbr: t.abbr, nick: teamInfo(t.name).nick, score: t.score }
 }
 
-function statusFor(g: LiveGameInfo): string {
+export function statusFor(g: LiveGameInfo): string {
 	if (g.state === "post") return g.period > 4 ? "Final/OT" : "Final"
 	if (g.state === "pre") return kickoffLabel(g.kickoff)
 	const clock = clockText(g.clockSeconds)

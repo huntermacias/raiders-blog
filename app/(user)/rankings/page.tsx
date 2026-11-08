@@ -4,11 +4,11 @@ import Link from "@/components/SiteLink"
 
 import { readClient as client } from "../../../lib/sanity.client"
 import { SEASON } from "../../../lib/predictions"
-import { gamesThrough } from "../../../lib/live/service"
+import { gamesThrough, getScoreboard } from "../../../lib/live/service"
+import type { LiveGameInfo } from "../../../lib/live/types"
 import { recordsAsOf } from "../../../lib/live/standings"
 import { type RankingsDoc, buildBoards, noLabel, raidersRow } from "../../../lib/rankings"
 import RankingsBoard, { type Records } from "../../../components/rankings/RankingsBoard"
-import RankingsShare from "../../../components/rankings/RankingsShare"
 
 // Rendered on every request, like /predictions: these pages are small, the data
 // changes by hand in Studio, and an edit should show up immediately instead of
@@ -79,6 +79,17 @@ export default async function RankingsPage() {
 	}
 
 	const lv = latest ? raidersRow(latest.rows) : null
+	const summary =
+		latest?.headline ||
+		(lv ? `All 32 teams, ranked every week. The Raiders are ${noLabel(lv.rank)} right now.` : "All 32 teams, ranked every week, with movement and rank history.")
+
+	// This week's scoreboard, so scores are on the page the moment it loads. It is the same cached read the Live page uses; if ESPN is slow or
+	// down the page does not wait more than a couple of seconds, and the browser asks for the scores itself.
+	const serverNow = Date.now()
+	const initialGames: LiveGameInfo[] | null = await Promise.race<LiveGameInfo[] | null>([
+		getScoreboard().then((b) => b.value).catch(() => null),
+		new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+	])
 	// When the latest rankings were last saved: the version that goes on shared links so X fetches a fresh card.
 	const stamp = docs.filter((d) => d.week === latest?.week && d._updatedAt).map((d) => Date.parse(d._updatedAt as string))[0] ?? 0
 
@@ -94,36 +105,34 @@ export default async function RankingsPage() {
 		: null
 
 	return (
-		<div className="container py-12">
+		<div className="container py-8 md:py-12">
 			{jsonLd && (
 				// eslint-disable-next-line react/no-danger
 				<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 			)}
 
-			<div className="mb-10">
-				<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-					{SEASON} season{latest ? ` · Week ${latest.week}` : ""}
-				</p>
-				<h1 className="mt-1 font-serif text-4xl font-bold tracking-tight md:text-5xl">Power Rankings</h1>
-				<p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-					{latest?.headline ||
-						(lv
-							? `All 32 teams, ranked every week. The Raiders are ${noLabel(lv.rank)} right now.`
-							: "All 32 teams, ranked every week, with movement and rank history.")}
-				</p>
-				{latest && (
-					<RankingsShare
-						url={PAGE_URL}
-						stamp={stamp}
-						text={`Week ${latest.week} NFL power rankings${lv ? `: the Raiders are ${noLabel(lv.rank)}.` : "."}`}
-					/>
-				)}
-			</div>
+			{latest ? (
+				<RankingsBoard
+					boards={boards}
+					recordsByWeek={recordsByWeek}
+					recordsAsOf={recordsAsOfByWeek}
+					season={SEASON}
+					summary={summary}
+					share={{ url: PAGE_URL, stamp, text: `Week ${latest.week} NFL power rankings${lv ? `: the Raiders are ${noLabel(lv.rank)}.` : "."}` }}
+					initialGames={initialGames}
+					serverNow={serverNow}
+				/>
+			) : (
+				<div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
+					<h1 className="mb-2 font-serif text-3xl font-bold text-foreground">Power Rankings</h1>
+					The first power rankings of {SEASON} haven't been posted yet. Check back soon.
+				</div>
+			)}
 
 			{latest && (
 				<Link
 					href="/rankings/math"
-					className="group mb-8 flex flex-col gap-1 rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-colors hover:bg-muted/60 sm:flex-row sm:items-center sm:justify-between"
+					className="group mt-10 flex flex-col gap-1 rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-colors hover:bg-muted/60 sm:flex-row sm:items-center sm:justify-between"
 				>
 					<span>
 						<span className="block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">New</span>
@@ -132,14 +141,6 @@ export default async function RankingsPage() {
 					</span>
 					<span className="text-sm font-semibold underline-offset-4 group-hover:underline">See the comparison &rarr;</span>
 				</Link>
-			)}
-
-			{latest ? (
-				<RankingsBoard boards={boards} recordsByWeek={recordsByWeek} recordsAsOf={recordsAsOfByWeek} season={SEASON} />
-			) : (
-				<div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
-					The first power rankings of {SEASON} haven't been posted yet. Check back soon.
-				</div>
 			)}
 		</div>
 	)
