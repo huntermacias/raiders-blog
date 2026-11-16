@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-11-09T20:24:42.186Z",
+ "generatedAt": "2026-11-16T20:00:39.864Z",
  "games": {
   "1": {
    "week": 1,
@@ -171,6 +171,25 @@
     "poster": 57766,
     "vertical": 245895,
     "square": 174546
+   }
+  },
+  "10": {
+   "week": 10,
+   "hash": "7e3a1a1429810ffd",
+   "seconds": 14.8,
+   "files": {
+    "landscape": "/lab/clips/week-10-landscape.mp4",
+    "gif": "/lab/clips/week-10.gif",
+    "poster": "/lab/clips/week-10-poster.jpg",
+    "vertical": "/lab/clips/week-10-vertical.mp4",
+    "square": "/lab/clips/week-10-square.mp4"
+   },
+   "bytes": {
+    "landscape": 230420,
+    "gif": 260543,
+    "poster": 62001,
+    "vertical": 252122,
+    "square": 178560
    }
   }
  }
